@@ -31,8 +31,9 @@ const Solon: React.FC<SolonProps> = ({
   const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]); // Default to Aria
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solon', content: string}>>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
   
-  const { memories, getMemoriesForVisitor } = useMemories();
+  const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();
   const { toast } = useToast();
   const { 
     isListening, 
@@ -84,6 +85,17 @@ const Solon: React.FC<SolonProps> = ({
   };
 
   const handleVoiceMessage = async (userMessage: string) => {
+    // Check for end conversation command
+    const endCommands = ['end message', 'end conversation', 'save memory', 'store memory'];
+    const isEndCommand = endCommands.some(cmd => 
+      userMessage.toLowerCase().includes(cmd.toLowerCase())
+    );
+
+    if (isEndCommand && conversationHistory.length > 0) {
+      await handleEndConversation();
+      return;
+    }
+
     setIsLoading(true);
     
     // Add user message to conversation history
@@ -116,6 +128,66 @@ const Solon: React.FC<SolonProps> = ({
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleEndConversation = async () => {
+    if (conversationHistory.length === 0) return;
+
+    setIsProcessing(true);
+    
+    try {
+      // Create conversation text from history
+      const conversationText = conversationHistory
+        .map(entry => `${entry.role === 'user' ? 'You' : 'Solon'}: ${entry.content}`)
+        .join('\n\n');
+
+      // Generate title and content from conversation
+      const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
+      const title = firstUserMessage.length > 50 
+        ? firstUserMessage.substring(0, 47) + '...' 
+        : firstUserMessage || 'Memory Conversation';
+
+      // Create a summary from the conversation
+      const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
+      const content = userMessages.length > 1 
+        ? userMessages.join(' ') 
+        : userMessages[0] || 'A conversation with Solon about memories';
+
+      // Save the memory with conversation
+      const savedMemory = await addMemoryFromConversation(
+        title,
+        content,
+        conversationText,
+        'public' // Default to public, could be made configurable
+      );
+
+      if (savedMemory) {
+        toast({
+          title: "Memory Saved",
+          description: "Your conversation has been preserved as a memory.",
+        });
+
+        // Clear conversation and close
+        setConversationHistory([]);
+        setResponse(null);
+        setIsOpen(false);
+        
+        // Speak confirmation
+        await speakResponse("Your memory has been saved. Thank you for sharing with me.");
+      } else {
+        throw new Error('Failed to save memory');
+      }
+      
+    } catch (error) {
+      console.error('Error saving memory:', error);
+      toast({
+        title: "Save Error",
+        description: "I couldn't save your memory right now. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -290,7 +362,9 @@ const Solon: React.FC<SolonProps> = ({
 
                       {/* Status Text */}
                       <div className="text-center space-y-2 mb-6">
-                        {isLoading ? (
+                        {isProcessing ? (
+                          <p className="text-foreground">Saving your memory...</p>
+                        ) : isLoading ? (
                           <p className="text-foreground">Processing your message...</p>
                         ) : isListening ? (
                           <>
@@ -315,12 +389,20 @@ const Solon: React.FC<SolonProps> = ({
                         {speechError && (
                           <p className="text-destructive text-sm">{speechError}</p>
                         )}
+
+                        {/* Instructions */}
+                        {conversationHistory.length > 0 && !isLoading && !isListening && !isSpeaking && (
+                          <div className="text-xs text-memory bg-memory/10 rounded-lg p-3 mt-4">
+                            <p className="font-medium mb-1">💡 Tip:</p>
+                            <p>Say "end message" to save this conversation as a memory</p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Action Button */}
                       <Button
                         onClick={toggleListening}
-                        disabled={isLoading || isSpeaking}
+                        disabled={isLoading || isSpeaking || isProcessing}
                         size="lg"
                         className={cn(
                           "px-8 py-3 rounded-full font-medium transition-all duration-300",
@@ -329,7 +411,9 @@ const Solon: React.FC<SolonProps> = ({
                             : "bg-gradient-to-br from-accent to-primary hover:opacity-90 text-white"
                         )}
                       >
-                        {isLoading ? (
+                        {isProcessing ? (
+                          "Saving Memory..."
+                        ) : isLoading ? (
                           "Processing..."
                         ) : isListening ? (
                           <>
@@ -339,7 +423,7 @@ const Solon: React.FC<SolonProps> = ({
                         ) : (
                           <>
                             <Mic className="w-4 h-4 mr-2" />
-                            Start Conversation
+                            {conversationHistory.length === 0 ? 'Start Conversation' : 'Continue Conversation'}
                           </>
                         )}
                       </Button>

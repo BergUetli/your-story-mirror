@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { memoryService, type MemoryWithConversation } from '@/services/memoryService';
 import type { Memory } from '@/services/solonService';
 
-// Mock memories that match the timeline and add memory functionality
-const mockMemories: Memory[] = [
+// Mock memories for fallback
+const mockMemories: MemoryWithConversation[] = [
   {
     id: '1',
     title: 'First Day at New Job',
@@ -41,68 +42,87 @@ const mockMemories: Memory[] = [
 ];
 
 export const useMemories = () => {
-  const [memories, setMemories] = useState<Memory[]>([]);
+  const [memories, setMemories] = useState<MemoryWithConversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading from local storage or API
-    const loadMemories = () => {
-      setIsLoading(true);
-      
-      // Try to load from localStorage first
-      const stored = localStorage.getItem('memories');
-      if (stored) {
-        try {
-          const parsedMemories = JSON.parse(stored);
-          setMemories(parsedMemories);
-        } catch (error) {
-          console.error('Error parsing stored memories:', error);
-          setMemories(mockMemories);
-        }
-      } else {
-        setMemories(mockMemories);
-      }
-      
-      setIsLoading(false);
-    };
-
     loadMemories();
   }, []);
 
-  const addMemory = (memory: Omit<Memory, 'id'>) => {
-    const newMemory: Memory = {
-      ...memory,
-      id: Date.now().toString(),
-    };
-    
-    const updatedMemories = [...memories, newMemory];
-    setMemories(updatedMemories);
-    
-    // Save to localStorage
-    localStorage.setItem('memories', JSON.stringify(updatedMemories));
-    
-    return newMemory;
+  const loadMemories = async () => {
+    setIsLoading(true);
+    try {
+      const data = await memoryService.getMemories();
+      if (data.length === 0) {
+        // If no memories in database, use mock data for demo
+        setMemories(mockMemories);
+      } else {
+        setMemories(data);
+      }
+    } catch (error) {
+      console.error('Error loading memories:', error);
+      setMemories(mockMemories);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const updateMemory = (id: string, updates: Partial<Memory>) => {
-    const updatedMemories = memories.map(memory =>
-      memory.id === id ? { ...memory, ...updates } : memory
-    );
-    
-    setMemories(updatedMemories);
-    localStorage.setItem('memories', JSON.stringify(updatedMemories));
+  const addMemory = async (memory: Omit<MemoryWithConversation, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const newMemory = await memoryService.addMemory(memory);
+      if (newMemory) {
+        setMemories(prev => [newMemory, ...prev]);
+        return newMemory;
+      }
+    } catch (error) {
+      console.error('Error adding memory:', error);
+    }
+    return null;
   };
 
-  const deleteMemory = (id: string) => {
-    const updatedMemories = memories.filter(memory => memory.id !== id);
-    setMemories(updatedMemories);
-    localStorage.setItem('memories', JSON.stringify(updatedMemories));
+  const updateMemory = async (id: string, updates: Partial<MemoryWithConversation>) => {
+    try {
+      const updatedMemory = await memoryService.updateMemory(id, updates);
+      if (updatedMemory) {
+        setMemories(prev => prev.map(memory =>
+          memory.id === id ? updatedMemory : memory
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating memory:', error);
+    }
+  };
+
+  const deleteMemory = async (id: string) => {
+    try {
+      const success = await memoryService.deleteMemory(id);
+      if (success) {
+        setMemories(prev => prev.filter(memory => memory.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting memory:', error);
+    }
   };
 
   const getMemoriesForVisitor = (permissions: string[] = ['public']) => {
-    return memories.filter(memory => 
-      !memory.recipient || permissions.includes(memory.recipient)
-    );
+    return memoryService.getMemoriesForVisitor(memories, permissions);
+  };
+
+  const addMemoryFromConversation = async (
+    title: string,
+    content: string,
+    conversationText: string,
+    recipient: string = 'public'
+  ) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    return await addMemory({
+      title,
+      content,
+      date: today,
+      recipient,
+      conversation_text: conversationText
+    });
   };
 
   return {
@@ -112,7 +132,9 @@ export const useMemories = () => {
     updateMemory,
     deleteMemory,
     getMemoriesForVisitor,
+    addMemoryFromConversation,
+    loadMemories,
   };
 };
 
-export type { Memory };
+export type { Memory, MemoryWithConversation };
