@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Plus, Clock, BookOpen } from 'lucide-react';
+import { Heart, Plus, Clock, BookOpen, User, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import heroImage from '@/assets/memory-hero-backdrop.jpg';
 
 const Dashboard = () => {
   const [memoryCount, setMemoryCount] = useState(7);
@@ -17,97 +18,129 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-sanctuary p-4 md:p-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Welcome Header */}
-        <div className="text-center space-y-4 pt-8">
-          <div className="gentle-float">
-            <Heart className="w-12 h-12 mx-auto text-love mb-4" />
+    <div className="min-h-screen relative">
+      {/* Hero Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      >
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      </div>
+      
+      {/* Content */}
+      <div className="relative z-10">
+        {/* Header with navigation */}
+        <header className="flex justify-between items-center p-6 max-w-6xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <Heart className="w-8 h-8 text-primary" />
+            <h1 className="text-2xl font-light text-foreground">You, Remembered</h1>
           </div>
-          <h1 className="text-4xl md:text-5xl font-light text-foreground">
-            Welcome back, {userName}
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Your digital sanctuary for preserving the memories, stories, and love that matter most.
-          </p>
-        </div>
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm">
+              <User className="w-4 h-4 mr-2" />
+              {userName}
+            </Button>
+            <Button variant="ghost" size="sm">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
+        </header>
 
-        {/* Memory Counter */}
-        <Card className="memory-card bg-gradient-to-r from-memory/20 to-love/20 border-memory/30">
-          <CardContent className="p-8 text-center">
-            <div className="space-y-3">
-              <div className="text-5xl font-light text-memory">{memoryCount}</div>
-              <div className="text-xl text-foreground">
-                {memoryCount === 1 ? 'memory preserved' : 'memories preserved'}
+        <div className="max-w-5xl mx-auto px-6 pb-8">
+          {/* Hero Section */}
+          <div className="text-center space-y-6 py-16">
+            <div className="gentle-float">
+              <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary/20 to-memory/20 rounded-full flex items-center justify-center backdrop-blur-sm border border-primary/30">
+                <Heart className="w-10 h-10 text-primary" />
               </div>
-              <p className="text-muted-foreground">
-                Each one a precious thread in the tapestry of your story
-              </p>
             </div>
-          </CardContent>
-        </Card>
+            <h2 className="text-5xl md:text-6xl font-light text-foreground leading-tight">
+              Welcome back,<br />
+              <span className="text-primary">{userName}</span>
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Your digital sanctuary for preserving the memories, stories, and love that matter most.
+            </p>
+          </div>
 
-        {/* Action Buttons */}
-        <div className="grid md:grid-cols-3 gap-6">
-          
-          {/* Add New Memory */}
-          <Card className="memory-card group cursor-pointer hover:bg-memory/10">
-            <Link to="/add-memory">
-              <CardContent className="p-6 text-center space-y-4">
-                <div className="w-16 h-16 bg-memory/20 rounded-full flex items-center justify-center mx-auto group-hover:bg-memory/30 transition-colors">
-                  <Plus className="w-8 h-8 text-memory" />
+          {/* Memory Counter */}
+          <Card className="memory-card bg-card/60 backdrop-blur-md border-primary/20 shadow-2xl">
+            <CardContent className="p-10 text-center">
+              <div className="space-y-4">
+                <div className="text-6xl font-light bg-gradient-to-r from-primary to-memory bg-clip-text text-transparent">
+                  {memoryCount}
                 </div>
-                <h3 className="text-xl font-medium text-foreground">Add New Memory</h3>
-                <p className="text-muted-foreground text-sm">
-                  Capture a moment, story, or reflection
+                <div className="text-2xl text-foreground font-light">
+                  {memoryCount === 1 ? 'memory preserved' : 'memories preserved'}
+                </div>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  Each one a precious thread in the tapestry of your story
                 </p>
-              </CardContent>
-            </Link>
+              </div>
+            </CardContent>
           </Card>
 
-          {/* View Reflections */}
-          <Card className="memory-card group cursor-pointer hover:bg-accent/10">
-            <Link to="/reflections">
-              <CardContent className="p-6 text-center space-y-4">
-                <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center mx-auto group-hover:bg-accent/30 transition-colors">
-                  <BookOpen className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="text-xl font-medium text-foreground">View Reflections</h3>
-                <p className="text-muted-foreground text-sm">
-                  See insights and echoes from your memories
-                </p>
-              </CardContent>
-            </Link>
-          </Card>
+          {/* Action Buttons */}
+          <div className="grid md:grid-cols-3 gap-8 mt-12">
+            
+            {/* Add New Memory */}
+            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-primary/5 transition-all duration-300">
+              <Link to="/add-memory">
+                <CardContent className="p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-memory/30 to-primary/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-memory/40">
+                    <Plus className="w-10 h-10 text-memory" />
+                  </div>
+                  <h3 className="text-2xl font-light text-foreground">Add New Memory</h3>
+                  <p className="text-muted-foreground">
+                    Capture a moment, story, or reflection
+                  </p>
+                </CardContent>
+              </Link>
+            </Card>
 
-          {/* My Timeline */}
-          <Card className="memory-card group cursor-pointer hover:bg-love/10">
-            <Link to="/timeline">
-              <CardContent className="p-6 text-center space-y-4">
-                <div className="w-16 h-16 bg-love/20 rounded-full flex items-center justify-center mx-auto group-hover:bg-love/30 transition-colors">
-                  <Clock className="w-8 h-8 text-love" />
-                </div>
-                <h3 className="text-xl font-medium text-foreground">My Timeline</h3>
-                <p className="text-muted-foreground text-sm">
-                  Journey through your preserved memories
-                </p>
-              </CardContent>
-            </Link>
+            {/* View Reflections */}
+            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-accent/5 transition-all duration-300">
+              <Link to="/reflections">
+                <CardContent className="p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-accent/30 to-love/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-accent/40">
+                    <BookOpen className="w-10 h-10 text-accent" />
+                  </div>
+                  <h3 className="text-2xl font-light text-foreground">View Reflections</h3>
+                  <p className="text-muted-foreground">
+                    See insights and echoes from your memories
+                  </p>
+                </CardContent>
+              </Link>
+            </Card>
+
+            {/* My Timeline */}
+            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-love/5 transition-all duration-300">
+              <Link to="/timeline">
+                <CardContent className="p-8 text-center space-y-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-love/30 to-accent/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-love/40">
+                    <Clock className="w-10 h-10 text-love" />
+                  </div>
+                  <h3 className="text-2xl font-light text-foreground">My Timeline</h3>
+                  <p className="text-muted-foreground">
+                    Journey through your preserved memories
+                  </p>
+                </CardContent>
+              </Link>
+            </Card>
+
+          </div>
+
+          {/* Quote or Inspiration */}
+          <Card className="memory-card bg-card/40 backdrop-blur-md border-primary/10 mt-16 shadow-xl">
+            <CardContent className="p-10 text-center">
+              <blockquote className="text-2xl italic text-muted-foreground font-light leading-relaxed">
+                "The life of the dead is set in the memory of the living."
+              </blockquote>
+              <cite className="text-muted-foreground/80 block mt-4 text-lg">— Marcus Tullius Cicero</cite>
+            </CardContent>
           </Card>
 
         </div>
-
-        {/* Quote or Inspiration */}
-        <Card className="memory-card bg-gradient-to-r from-sanctuary to-background border-muted/20">
-          <CardContent className="p-6 text-center">
-            <blockquote className="text-lg italic text-muted-foreground">
-              "The life of the dead is set in the memory of the living."
-            </blockquote>
-            <cite className="text-sm text-muted-foreground/70 block mt-2">— Marcus Tullius Cicero</cite>
-          </CardContent>
-        </Card>
-
       </div>
     </div>
   );

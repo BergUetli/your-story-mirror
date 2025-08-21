@@ -6,36 +6,36 @@
 
 @layer base {
   :root {
-    /* Warm sanctuary palette */
-    --background: 35 20% 96%;        /* Soft warm beige */
-    --foreground: 210 25% 20%;       /* Deep charcoal navy */
-    --sanctuary: 35 15% 92%;         /* Lighter beige for cards */
-    --sanctuary-foreground: 210 25% 20%;
+    /* Rich memory sanctuary palette */
+    --background: 220 25% 8%;         /* Deep twilight blue */
+    --foreground: 45 95% 85%;         /* Warm cream text */
+    --sanctuary: 220 20% 12%;         /* Slightly lighter backdrop */
+    --sanctuary-foreground: 45 95% 85%;
 
     /* Memory-themed colors */
-    --card: 35 15% 92%;              /* Warm card background */
-    --card-foreground: 210 25% 20%;
+    --card: 220 15% 15%;              /* Rich dark cards */
+    --card-foreground: 45 90% 88%;
 
-    --popover: 35 15% 92%;
-    --popover-foreground: 210 25% 20%;
+    --popover: 220 15% 15%;
+    --popover-foreground: 45 90% 88%;
 
-    --primary: 210 35% 25%;          /* Deep navy for primary actions */
-    --primary-foreground: 35 20% 96%;
+    --primary: 45 85% 65%;            /* Golden amber primary */
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 35 25% 88%;         /* Soft beige for secondary */
-    --secondary-foreground: 210 25% 20%;
+    --secondary: 220 10% 25%;         /* Muted slate secondary */
+    --secondary-foreground: 45 80% 75%;
 
-    --muted: 35 10% 85%;
-    --muted-foreground: 210 15% 45%;
+    --muted: 220 8% 20%;
+    --muted-foreground: 45 25% 65%;
 
-    --accent: 45 60% 70%;            /* Warm gold accent */
-    --accent-foreground: 210 25% 20%;
+    --accent: 35 75% 60%;             /* Warm copper accent */
+    --accent-foreground: 220 25% 8%;
 
-    --memory: 45 55% 75%;            /* Gentle gold for memory highlights */
-    --memory-foreground: 210 25% 20%;
+    --memory: 50 80% 68%;             /* Luminous gold for memories */
+    --memory-foreground: 220 25% 8%;
 
-    --love: 15 35% 85%;              /* Soft rose for love messages */
-    --love-foreground: 210 25% 20%;
+    --love: 15 65% 72%;               /* Soft rose-gold for love */
+    --love-foreground: 220 25% 8%;
 
     --destructive: 0 60% 55%;
     --destructive-foreground: 35 20% 96%;
@@ -47,9 +47,9 @@
     --radius: 0.75rem;               /* Softer, more organic radius */
 
     /* Gradients for warmth */
-    --gradient-sanctuary: linear-gradient(135deg, hsl(35 20% 96%), hsl(35 15% 92%));
-    --gradient-memory: linear-gradient(135deg, hsl(45 55% 75%), hsl(45 45% 80%));
-    --gradient-love: linear-gradient(135deg, hsl(15 35% 85%), hsl(25 30% 88%));
+    --gradient-sanctuary: linear-gradient(135deg, hsl(220 25% 8%), hsl(220 20% 12%));
+    --gradient-memory: linear-gradient(135deg, hsl(50 80% 68%), hsl(45 75% 65%));
+    --gradient-love: linear-gradient(135deg, hsl(15 65% 72%), hsl(25 60% 75%));
 
     /* Shadows for depth */
     --shadow-gentle: 0 4px 20px -4px hsl(210 25% 20% / 0.1);
@@ -60,35 +60,35 @@
   }
 
   .dark {
-    /* Darker sanctuary for evening reflection */
-    --background: 210 25% 12%;
-    --foreground: 35 20% 90%;
-    --sanctuary: 210 20% 15%;
-    --sanctuary-foreground: 35 20% 90%;
+    /* Light sanctuary for bright reflection */
+    --background: 45 40% 92%;
+    --foreground: 220 30% 15%;
+    --sanctuary: 45 35% 88%;
+    --sanctuary-foreground: 220 30% 15%;
 
-    --card: 210 20% 15%;
-    --card-foreground: 35 20% 90%;
+    --card: 45 30% 90%;
+    --card-foreground: 220 30% 15%;
 
-    --popover: 210 20% 15%;
-    --popover-foreground: 35 20% 90%;
+    --popover: 45 30% 90%;
+    --popover-foreground: 220 30% 15%;
 
-    --primary: 35 20% 90%;
-    --primary-foreground: 210 25% 12%;
+    --primary: 220 40% 25%;
+    --primary-foreground: 45 90% 95%;
 
-    --secondary: 210 15% 20%;
-    --secondary-foreground: 35 20% 90%;
+    --secondary: 45 20% 82%;
+    --secondary-foreground: 220 30% 15%;
 
-    --muted: 210 15% 18%;
-    --muted-foreground: 35 10% 65%;
+    --muted: 45 15% 85%;
+    --muted-foreground: 220 15% 40%;
 
-    --accent: 45 50% 60%;
-    --accent-foreground: 210 25% 12%;
+    --accent: 35 60% 55%;
+    --accent-foreground: 45 90% 95%;
 
-    --memory: 45 45% 65%;
-    --memory-foreground: 210 25% 12%;
+    --memory: 50 70% 58%;
+    --memory-foreground: 45 90% 95%;
 
-    --love: 15 30% 70%;
-    --love-foreground: 210 25% 12%;
+    --love: 15 55% 65%;
+    --love-foreground: 45 90% 95%;
 
     --destructive: 0 50% 50%;
     --destructive-foreground: 35 20% 90%;
@@ -97,9 +97,9 @@
     --input: 210 15% 18%;
     --ring: 35 20% 90%;
 
-    --gradient-sanctuary: linear-gradient(135deg, hsl(210 25% 12%), hsl(210 20% 15%));
-    --gradient-memory: linear-gradient(135deg, hsl(45 45% 65%), hsl(45 35% 60%));
-    --gradient-love: linear-gradient(135deg, hsl(15 30% 70%), hsl(25 25% 65%));
+    --gradient-sanctuary: linear-gradient(135deg, hsl(45 40% 92%), hsl(45 35% 88%));
+    --gradient-memory: linear-gradient(135deg, hsl(50 70% 58%), hsl(45 65% 60%));
+    --gradient-love: linear-gradient(135deg, hsl(15 55% 65%), hsl(25 50% 68%));
   }
 }
 
