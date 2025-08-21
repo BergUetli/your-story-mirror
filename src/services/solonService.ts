@@ -17,6 +17,7 @@ interface SolonRequest {
   message?: string;
   memories: Memory[];
   visitorPermissions?: string[];
+  conversationHistory?: Array<{role: 'user' | 'solon', content: string}>;
 }
 
 class SolonService {
@@ -57,39 +58,94 @@ class SolonService {
   }
 
   private getFallbackResponse(request: SolonRequest): SolonResponse {
-    const { mode, message, memories } = request;
+    const { mode, message, memories, conversationHistory = [] } = request;
     
-    // More contextual responses based on the user's message and mode
-    if (mode === 'visitor') {
+    // Analyze the user's message for more contextual responses
+    const userMessage = message?.toLowerCase() || '';
+    const conversationLength = conversationHistory.length;
+    
+    // Memory-related responses
+    if (userMessage.includes('memory') || userMessage.includes('remember') || userMessage.includes('past')) {
       return {
-        quote: "These memories paint a picture of someone who truly lived.",
-        reflection: "From what has been shared, I see a person who found joy in simple moments and deep connections. The memories speak of someone who valued authenticity and human connection.",
-        followUp: "What aspect of these memories resonates most with you?"
+        quote: "Our memories are the threads that weave the tapestry of who we are.",
+        reflection: "I sense you're thinking deeply about your past experiences. Each memory holds wisdom and meaning, whether joyful or challenging. They shape your unique perspective on life.",
+        followUp: "What specific memory has been on your mind lately? I'd love to help you explore its significance."
       };
     }
-
-    // User mode - more personal responses
-    const responses = [
-      {
-        quote: "Every memory you share becomes part of your lasting legacy.",
-        reflection: "I can sense there's depth in what you're sharing. These moments - whether joyful or challenging - are the threads that weave the tapestry of who you are.",
-        followUp: "What memory from today would you want to preserve?"
-      },
-      {
-        quote: "Your voice carries the weight of lived experience.",
-        reflection: "The fact that you're here, ready to share and reflect, tells me you understand the value of preserving these precious moments. Each story adds another layer to your beautiful complexity.",
-        followUp: "Is there a particular time in your life you've been thinking about lately?"
-      },
-      {
-        quote: "In sharing our stories, we find connection across time.",
-        reflection: "Your willingness to open up and share shows courage. These conversations are bridges - connecting your past self to your future, and potentially touching the hearts of those who matter to you.",
-        followUp: "What would you want your loved ones to know about this moment in your life?"
+    
+    // Emotion-related responses
+    if (userMessage.includes('feel') || userMessage.includes('emotion') || userMessage.includes('sad') || userMessage.includes('happy') || userMessage.includes('worried')) {
+      return {
+        quote: "Feelings are the colors that paint our experiences with meaning.",
+        reflection: "Your emotions are valid and important. They're signals from your inner wisdom, telling you what matters most to you. Thank you for sharing what you're feeling with me.",
+        followUp: "How has this feeling been affecting your daily life? Sometimes talking through emotions helps us understand them better."
+      };
+    }
+    
+    // Family/relationship responses
+    if (userMessage.includes('family') || userMessage.includes('mother') || userMessage.includes('father') || userMessage.includes('friend') || userMessage.includes('love')) {
+      return {
+        quote: "The love we share with others becomes part of our eternal story.",
+        reflection: "Relationships are at the heart of what makes life meaningful. The connections you've built, the love you've shared - these become part of your lasting legacy.",
+        followUp: "Tell me about a moment with someone special that still brings you joy. What made that relationship so precious?"
+      };
+    }
+    
+    // Work/career responses
+    if (userMessage.includes('work') || userMessage.includes('job') || userMessage.includes('career') || userMessage.includes('accomplish')) {
+      return {
+        quote: "Our work is how we contribute our unique gifts to the world.",
+        reflection: "Your professional journey says so much about your values and dedication. Whether celebrated or challenging, these experiences have shaped your character and wisdom.",
+        followUp: "What aspect of your work has brought you the most fulfillment? I'd love to hear about a moment you felt truly proud."
+      };
+    }
+    
+    // Growth/learning responses
+    if (userMessage.includes('learn') || userMessage.includes('grow') || userMessage.includes('change') || userMessage.includes('better')) {
+      return {
+        quote: "Growth happens not in spite of our struggles, but because of them.",
+        reflection: "Your willingness to learn and grow shows such strength. Every challenge you've faced has added to your wisdom and resilience.",
+        followUp: "What's the most important lesson life has taught you so far? I'd love to understand how you've grown."
+      };
+    }
+    
+    // Visitor mode responses
+    if (mode === 'visitor') {
+      if (conversationLength > 2) {
+        return {
+          quote: "Every story shared is a gift that transcends time.",
+          reflection: "Through these memories, you're getting to know someone who valued authentic connections and meaningful experiences. Their stories reveal a person who found joy in life's simple moments.",
+          followUp: "Which of these memories resonates most deeply with you? What does it tell you about who they were?"
+        };
       }
-    ];
-
-    // Simple hash of message to pick consistent response
-    const hash = message ? message.length % responses.length : 0;
-    return responses[hash];
+      
+      return {
+        quote: "These memories are windows into a life fully lived.",
+        reflection: "I'm here to share the stories that have been entrusted to me. Each memory reveals something beautiful about the person who lived these experiences.",
+        followUp: "What would you like to know about their life? I can share memories about family, adventures, values, or daily moments of joy."
+      };
+    }
+    
+    // Contextual responses based on conversation length
+    if (conversationLength === 0) {
+      return {
+        quote: "Every story begins with a single word, every memory with a moment of reflection.",
+        reflection: "I'm here to listen and help you explore what's meaningful to you. Whether it's a memory, a feeling, or something you're experiencing right now - I'm honored to be part of your reflection.",
+        followUp: "What's been on your heart lately? I'm here to listen and help you make sense of it all."
+      };
+    } else if (conversationLength < 4) {
+      return {
+        quote: "In sharing our stories, we discover who we really are.",
+        reflection: "I appreciate you opening up and sharing with me. Your willingness to reflect shows wisdom and courage. These moments of connection are precious.",
+        followUp: "Tell me more about what you're thinking about. I'm here to help you explore whatever feels important right now."
+      };
+    } else {
+      return {
+        quote: "Deep conversations are where transformation happens.",
+        reflection: "Our conversation is revealing so much depth and wisdom in your experiences. You're processing important aspects of your life with such thoughtfulness.",
+        followUp: "As we continue talking, what feels most important for you to explore or understand better?"
+      };
+    }
   }
 
   // Get memories from mock data (replace with actual data source later)

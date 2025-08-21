@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, MicOff } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, MicOff, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { solonService, type SolonResponse, type Memory } from '@/services/solonService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
@@ -28,10 +28,18 @@ const Solon: React.FC<SolonProps> = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [message, setMessage] = useState('');
   const [response, setResponse] = useState<SolonResponse | null>(null);
-  const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]); // Default to Aria
+  const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solon', content: string}>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isConversationActive, setIsConversationActive] = useState(false);
+  const [lastResponseTime, setLastResponseTime] = useState<number>(0);
+  
+  // Auto-pause detection
+  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [transcriptBuffer, setTranscriptBuffer] = useState('');
+  const lastTranscriptRef = useRef('');
+  const processingRef = useRef(false);
   
   const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();
   const { toast } = useToast();
@@ -51,20 +59,105 @@ const Solon: React.FC<SolonProps> = ({
       : memories;
   };
 
-  // Handle speech recognition results
+  // Intelligent conversation management
   useEffect(() => {
-    if (transcript && !isLoading) {
-      // Auto-send when speech stops and we have a transcript
-      const timeoutId = setTimeout(() => {
-        if (!isListening && transcript.trim()) {
-          handleVoiceMessage(transcript);
-          resetTranscript();
-        }
-      }, 1500); // Wait 1.5 seconds after speech stops
+    if (transcript && isConversationActive && !isLoading && !isSpeaking) {
+      setTranscriptBuffer(transcript);
+      
+      // Clear any existing timer
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
 
-      return () => clearTimeout(timeoutId);
+      // Set a new timer for auto-processing
+      const timer = setTimeout(() => {
+        if (transcript.trim() && transcript !== lastTranscriptRef.current && !processingRef.current) {
+          handleAutoProcessMessage(transcript);
+        }
+      }, 2000); // Wait 2 seconds of silence before processing
+
+      setSilenceTimer(timer);
     }
-  }, [transcript, isListening, isLoading]);
+
+    return () => {
+      if (silenceTimer) {
+        clearTimeout(silenceTimer);
+      }
+    };
+  }, [transcript, isConversationActive, isLoading, isSpeaking]);
+
+  // Auto-restart listening after Solon finishes speaking
+  useEffect(() => {
+    if (isConversationActive && !isSpeaking && !isLoading && !isListening) {
+      // Small delay to ensure audio has fully stopped
+      const timer = setTimeout(() => {
+        if (isConversationActive && speechSupported) {
+          startListening();
+        }
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isSpeaking, isLoading, isConversationActive, isListening, speechSupported]);
+
+  const handleAutoProcessMessage = async (userMessage: string) => {
+    if (processingRef.current || !userMessage.trim()) return;
+    
+    processingRef.current = true;
+    lastTranscriptRef.current = userMessage;
+    
+    // Check for end conversation command
+    const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solon', 'stop conversation'];
+    const isEndCommand = endCommands.some(cmd => 
+      userMessage.toLowerCase().includes(cmd.toLowerCase())
+    );
+
+    if (isEndCommand && conversationHistory.length > 0) {
+      await handleEndConversation();
+      processingRef.current = false;
+      return;
+    }
+
+    setIsLoading(true);
+    if (isListening) stopListening();
+    
+    // Add user message to conversation history
+    const newHistory = [...conversationHistory, { role: 'user' as const, content: userMessage }];
+    setConversationHistory(newHistory);
+    
+    try {
+      const relevantMemories = getRelevantMemories();
+      
+      // Create more dynamic responses in demo mode
+      const solonResponse = await solonService.chat({
+        mode,
+        message: userMessage,
+        memories: relevantMemories,
+        visitorPermissions,
+        conversationHistory: newHistory, // Pass conversation context
+      });
+      
+      setResponse(solonResponse);
+      setLastResponseTime(Date.now());
+      
+      // Add Solon's response to conversation history
+      const updatedHistory = [...newHistory, { role: 'solon' as const, content: solonResponse.reflection }];
+      setConversationHistory(updatedHistory);
+      
+      // Reset transcript after processing
+      resetTranscript();
+      setTranscriptBuffer('');
+      
+      // Speak the response
+      await speakResponse(solonResponse.reflection);
+      
+    } catch (error) {
+      console.error('Conversation error:', error);
+    } finally {
+      setIsLoading(false);
+      processingRef.current = false;
+    }
+  };
 
   const speakResponse = async (text: string) => {
     if (!voiceEnabled) return;
@@ -74,61 +167,53 @@ const Solon: React.FC<SolonProps> = ({
       await voiceService.speak(text, { voiceId: selectedVoice.id });
     } catch (error) {
       console.error('Error speaking:', error);
-      // Don't show error toast in demo mode, voice fallback handles it gracefully
     } finally {
       setIsSpeaking(false);
     }
   };
 
-  const handleVoiceMessage = async (userMessage: string) => {
-    // Check for end conversation command
-    const endCommands = ['end message', 'end conversation', 'save memory', 'store memory'];
-    const isEndCommand = endCommands.some(cmd => 
-      userMessage.toLowerCase().includes(cmd.toLowerCase())
-    );
-
-    if (isEndCommand && conversationHistory.length > 0) {
-      await handleEndConversation();
-      return;
-    }
-
-    setIsLoading(true);
-    
-    // Add user message to conversation history
-    const newHistory = [...conversationHistory, { role: 'user' as const, content: userMessage }];
-    setConversationHistory(newHistory);
-    
-    try {
-      const relevantMemories = getRelevantMemories();
-      const solonResponse = await solonService.chat({
-        mode,
-        message: userMessage,
-        memories: relevantMemories,
-        visitorPermissions,
-      });
-      
-      setResponse(solonResponse);
-      
-      // Add Solon's response to conversation history
-      const updatedHistory = [...newHistory, { role: 'solon' as const, content: solonResponse.reflection }];
-      setConversationHistory(updatedHistory);
-      
-      // Speak the response
-      await speakResponse(solonResponse.reflection);
-      
-    } catch (error) {
+  const startConversation = () => {
+    if (!speechSupported) {
       toast({
-        title: "Connection Issue",
-        description: "I couldn't connect right now. Please try again.",
+        title: "Speech Recognition Not Supported",
+        description: "Your browser doesn't support speech recognition. Try Chrome or Edge.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+    
+    setIsConversationActive(true);
+    resetTranscript();
+    setTranscriptBuffer('');
+    lastTranscriptRef.current = '';
+    processingRef.current = false;
+    
+    // Give initial greeting
+    const greeting = mode === 'visitor' 
+      ? "Hello, I'm Solon. I'm ready to share the memories that have been entrusted to me. What would you like to know?"
+      : "Hello, I'm Solon. I'm here to listen and help you reflect on your experiences. What's on your mind today?";
+    
+    speakResponse(greeting);
+  };
+
+  const stopConversation = () => {
+    setIsConversationActive(false);
+    if (isListening) stopListening();
+    if (isSpeaking) voiceService.stop();
+    if (silenceTimer) clearTimeout(silenceTimer);
+    
+    setIsSpeaking(false);
+    setIsLoading(false);
+    processingRef.current = false;
+    resetTranscript();
+    setTranscriptBuffer('');
   };
 
   const handleEndConversation = async () => {
-    if (conversationHistory.length === 0) return;
+    if (conversationHistory.length === 0) {
+      stopConversation();
+      return;
+    }
 
     setIsProcessing(true);
     
@@ -155,7 +240,7 @@ const Solon: React.FC<SolonProps> = ({
         title,
         content,
         conversationText,
-        'public' // Default to public, could be made configurable
+        'public'
       );
 
       if (savedMemory) {
@@ -167,6 +252,7 @@ const Solon: React.FC<SolonProps> = ({
         // Clear conversation and close
         setConversationHistory([]);
         setResponse(null);
+        stopConversation();
         setIsOpen(false);
         
         // Speak confirmation
@@ -184,29 +270,14 @@ const Solon: React.FC<SolonProps> = ({
       });
     } finally {
       setIsProcessing(false);
+      stopConversation();
     }
   };
 
   const handleSendMessage = async () => {
     if (!message.trim()) return;
-    await handleVoiceMessage(message.trim());
+    await handleAutoProcessMessage(message.trim());
     setMessage('');
-  };
-
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      if (!speechSupported) {
-        toast({
-          title: "Speech Recognition Not Supported",
-          description: "Your browser doesn't support speech recognition. Try Chrome or Edge.",
-          variant: "destructive",
-        });
-        return;
-      }
-      startListening();
-    }
   };
 
   const toggleVoice = () => {
@@ -224,17 +295,10 @@ const Solon: React.FC<SolonProps> = ({
 
   const handleClose = () => {
     setIsOpen(false);
+    stopConversation();
     setResponse(null);
     setMessage('');
     setConversationHistory([]);
-    if (isSpeaking) {
-      voiceService.stop();
-      setIsSpeaking(false);
-    }
-    if (isListening) {
-      stopListening();
-    }
-    resetTranscript();
   };
 
   const getGreeting = () => {
@@ -242,6 +306,21 @@ const Solon: React.FC<SolonProps> = ({
       return "I'm Solon, the memory keeper for this sanctuary. I can share the stories that have been entrusted to me.";
     }
     return "Hello, I'm Solon, your memory companion. I'm here to help you reflect on your experiences and preserve what matters most.";
+  };
+
+  // Get conversation status text
+  const getConversationStatus = () => {
+    if (isProcessing) return "Saving your memory...";
+    if (isLoading) return "Thinking...";
+    if (isSpeaking) return "Speaking...";
+    if (isConversationActive && isListening) {
+      if (transcriptBuffer) return `"${transcriptBuffer}"`;
+      return "Listening...";
+    }
+    if (isConversationActive && !isListening) return "Starting to listen...";
+    return conversationHistory.length === 0 
+      ? "Ready to begin our conversation" 
+      : "Ready to continue our conversation";
   };
 
   return (
@@ -255,7 +334,7 @@ const Solon: React.FC<SolonProps> = ({
           "shadow-lg hover:shadow-xl transition-all duration-300",
           "gentle-float",
           isOpen ? "scale-0" : "scale-100",
-          isSpeaking && "animate-pulse border-memory"
+          (isSpeaking || isConversationActive) && "animate-pulse border-memory"
         )}
         size="icon"
       >
@@ -273,7 +352,7 @@ const Solon: React.FC<SolonProps> = ({
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center",
-                isSpeaking && "animate-pulse"
+                (isSpeaking || isConversationActive) && "animate-pulse"
               )}>
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
@@ -281,8 +360,7 @@ const Solon: React.FC<SolonProps> = ({
                 <h3 className="font-semibold text-foreground">Solon</h3>
                 <p className="text-xs text-muted-foreground">
                   {mode === 'visitor' ? 'Memory Keeper' : 'Your Companion'}
-                  {isSpeaking && ' • Speaking...'}
-                  {isListening && ' • Listening...'}
+                  {isConversationActive && ' • Active'}
                 </p>
               </div>
             </div>
@@ -328,101 +406,85 @@ const Solon: React.FC<SolonProps> = ({
                     </div>
                   ) : (
                     <>
-                      {/* Pulsing Microphone Circle */}
+                      {/* Pulsing Conversation Circle */}
                       <div className="relative mb-8">
                         <div className={cn(
-                          "w-32 h-32 rounded-full border-4 flex items-center justify-center transition-all duration-300",
-                          isListening 
-                            ? "bg-gradient-to-br from-memory to-accent border-memory animate-pulse shadow-lg shadow-memory/30" 
+                          "w-32 h-32 rounded-full border-4 flex items-center justify-center transition-all duration-300 cursor-pointer",
+                          isConversationActive
+                            ? "bg-gradient-to-br from-memory to-accent border-memory shadow-lg shadow-memory/30" 
                             : "bg-gradient-to-br from-accent to-primary border-accent/50 hover:shadow-lg hover:shadow-accent/30",
-                          isLoading && "opacity-50 cursor-not-allowed"
-                        )}>
-                          {isListening ? (
+                          (isLoading || isProcessing) && "opacity-50 cursor-not-allowed"
+                        )}
+                        onClick={isConversationActive ? stopConversation : startConversation}
+                        >
+                          {isConversationActive ? (
                             <div className="flex flex-col items-center">
-                              <Mic className="h-8 w-8 text-white mb-2" />
-                              <div className="text-xs text-white font-medium">Listening...</div>
+                              <Square className="h-8 w-8 text-white mb-2" />
+                              <div className="text-xs text-white font-medium">Active</div>
                             </div>
                           ) : (
-                            <Mic className="h-8 w-8 text-white" />
+                            <div className="flex flex-col items-center">
+                              <Mic className="h-8 w-8 text-white mb-2" />
+                              <div className="text-xs text-white font-medium">Start</div>
+                            </div>
                           )}
                         </div>
                         
-                        {/* Ripple effect when listening */}
-                        {isListening && (
+                        {/* Animated rings when active */}
+                        {isConversationActive && (
                           <>
                             <div className="absolute inset-0 rounded-full border-4 border-memory animate-ping opacity-20"></div>
                             <div className="absolute inset-2 rounded-full border-2 border-memory animate-ping opacity-30 animation-delay-150"></div>
+                            {isListening && (
+                              <div className="absolute inset-4 rounded-full border border-memory animate-pulse opacity-40"></div>
+                            )}
                           </>
                         )}
                       </div>
 
                       {/* Status Text */}
-                      <div className="text-center space-y-2 mb-6">
-                        {isProcessing ? (
-                          <p className="text-foreground">Saving your memory...</p>
-                        ) : isLoading ? (
-                          <p className="text-foreground">Processing your message...</p>
-                        ) : isListening ? (
-                          <>
-                            <p className="text-foreground font-medium">I'm listening...</p>
-                            {transcript && (
-                              <p className="text-sm text-muted-foreground italic">
-                                "{transcript}"
-                              </p>
-                            )}
-                          </>
-                        ) : isSpeaking ? (
-                          <p className="text-foreground">Speaking...</p>
-                        ) : (
-                          <p className="text-muted-foreground">
-                            {conversationHistory.length === 0 
-                              ? "Tap to start our conversation" 
-                              : "Tap to continue our conversation"
-                            }
-                          </p>
-                        )}
+                      <div className="text-center space-y-2 mb-6 min-h-[60px] flex flex-col justify-center">
+                        <p className={cn(
+                          "font-medium transition-colors duration-300",
+                          isConversationActive ? "text-foreground" : "text-muted-foreground"
+                        )}>
+                          {getConversationStatus()}
+                        </p>
                         
                         {speechError && (
                           <p className="text-destructive text-sm">{speechError}</p>
                         )}
 
                         {/* Instructions */}
-                        {conversationHistory.length > 0 && !isLoading && !isListening && !isSpeaking && (
+                        {!isConversationActive && conversationHistory.length === 0 && (
+                          <div className="text-sm text-muted-foreground max-w-sm">
+                            Click the circle to start a natural conversation with Solon. 
+                            I'll listen and respond automatically.
+                          </div>
+                        )}
+                        
+                        {isConversationActive && conversationHistory.length > 0 && (
                           <div className="text-xs text-memory bg-memory/10 rounded-lg p-3 mt-4">
-                            <p className="font-medium mb-1">💡 Tip:</p>
-                            <p>Say "end message" to save this conversation as a memory</p>
+                            <p className="font-medium mb-1">💡 Say:</p>
+                            <p>"End conversation" to save this as a memory</p>
                           </div>
                         )}
                       </div>
 
-                      {/* Action Button */}
-                      <Button
-                        onClick={toggleListening}
-                        disabled={isLoading || isSpeaking || isProcessing}
-                        size="lg"
-                        className={cn(
-                          "px-8 py-3 rounded-full font-medium transition-all duration-300",
-                          isListening 
-                            ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" 
-                            : "bg-gradient-to-br from-accent to-primary hover:opacity-90 text-white"
-                        )}
-                      >
-                        {isProcessing ? (
-                          "Saving Memory..."
-                        ) : isLoading ? (
-                          "Processing..."
-                        ) : isListening ? (
-                          <>
-                            <MicOff className="w-4 h-4 mr-2" />
-                            Stop Listening
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="w-4 h-4 mr-2" />
-                            {conversationHistory.length === 0 ? 'Start Conversation' : 'Continue Conversation'}
-                          </>
-                        )}
-                      </Button>
+                      {/* Quick Actions */}
+                      {isConversationActive && (
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={stopConversation}
+                            variant="outline"
+                            size="sm"
+                            className="text-xs"
+                          >
+                            <Square className="w-3 h-3 mr-1" />
+                            End Conversation
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
