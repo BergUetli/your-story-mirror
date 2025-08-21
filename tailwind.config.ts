@@ -24,6 +24,10 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				sanctuary: {
+					DEFAULT: 'hsl(var(--sanctuary))',
+					foreground: 'hsl(var(--sanctuary-foreground))'
+				},
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))'
@@ -43,6 +47,14 @@ export default {
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))'
+				},
+				memory: {
+					DEFAULT: 'hsl(var(--memory))',
+					foreground: 'hsl(var(--memory-foreground))'
+				},
+				love: {
+					DEFAULT: 'hsl(var(--love))',
+					foreground: 'hsl(var(--love-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
