@@ -143,27 +143,29 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              onClick={() => setShowAuthModal(true)}
-              size="lg" 
-              className="bg-gradient-to-r from-accent to-primary hover:opacity-90 text-lg px-8 py-6"
-            >
-              <Heart className="h-5 w-5 mr-2" />
-              Start Your Sanctuary
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-memory/30 hover:border-memory hover:bg-memory/10 text-lg px-8 py-6"
-              onClick={() => setShowAuthModal(true)}
-            >
-              <Sparkles className="h-5 w-5 mr-2" />
-              Learn More
-            </Button>
-          </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                onClick={() => setShowAuthModal(true)}
+                size="lg" 
+                className="bg-gradient-to-r from-accent to-primary hover:opacity-90 text-lg px-8 py-6"
+              >
+                <Heart className="h-5 w-5 mr-2" />
+                Start Your Sanctuary
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+              
+              <Button 
+                asChild
+                variant="outline" 
+                size="lg"
+                className="border-memory/30 hover:border-memory hover:bg-memory/10 text-lg px-8 py-6"
+              >
+                <Link to="/dashboard">
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Try Demo Mode
+                </Link>
+              </Button>
+            </div>
         </div>
       </div>
 
