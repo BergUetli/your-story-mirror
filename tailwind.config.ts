@@ -19,7 +19,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'exhibit': ['Work Sans', 'sans-serif'],
+				'exhibit': ['Montserrat', 'sans-serif'],
+				'metropolitan': ['Montserrat', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
