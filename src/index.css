@@ -6,36 +6,36 @@
 
 @layer base {
   :root {
-    /* Rich memory sanctuary palette */
-    --background: 220 25% 8%;         /* Deep twilight blue */
-    --foreground: 45 95% 85%;         /* Warm cream text */
-    --sanctuary: 220 20% 12%;         /* Slightly lighter backdrop */
-    --sanctuary-foreground: 45 95% 85%;
+    /* Galaxy memory sanctuary palette */
+    --background: 250 35% 8%;         /* Deep cosmic purple */
+    --foreground: 240 15% 95%;        /* Soft starlight white */
+    --sanctuary: 245 30% 12%;         /* Deeper nebula backdrop */
+    --sanctuary-foreground: 240 15% 95%;
 
     /* Memory-themed colors */
-    --card: 220 15% 15%;              /* Rich dark cards */
-    --card-foreground: 45 90% 88%;
+    --card: 245 25% 15%;              /* Deep space cards */
+    --card-foreground: 240 10% 92%;
 
-    --popover: 220 15% 15%;
-    --popover-foreground: 45 90% 88%;
+    --popover: 245 25% 15%;
+    --popover-foreground: 240 10% 92%;
 
-    --primary: 45 85% 65%;            /* Golden amber primary */
-    --primary-foreground: 220 25% 8%;
+    --primary: 280 60% 70%;           /* Cosmic purple primary */
+    --primary-foreground: 240 15% 95%;
 
-    --secondary: 220 10% 25%;         /* Muted slate secondary */
-    --secondary-foreground: 45 80% 75%;
+    --secondary: 245 20% 25%;         /* Nebula secondary */
+    --secondary-foreground: 240 10% 85%;
 
-    --muted: 220 8% 20%;
-    --muted-foreground: 45 25% 65%;
+    --muted: 245 15% 20%;
+    --muted-foreground: 240 8% 65%;
 
-    --accent: 35 75% 60%;             /* Warm copper accent */
-    --accent-foreground: 220 25% 8%;
+    --accent: 260 55% 65%;            /* Ethereal violet accent */
+    --accent-foreground: 240 15% 95%;
 
-    --memory: 50 80% 68%;             /* Luminous gold for memories */
-    --memory-foreground: 220 25% 8%;
+    --memory: 50 80% 75%;             /* Luminous gold for memories */
+    --memory-foreground: 245 35% 8%;
 
-    --love: 15 65% 72%;               /* Soft rose-gold for love */
-    --love-foreground: 220 25% 8%;
+    --love: 320 45% 75%;              /* Soft cosmic pink for love */
+    --love-foreground: 245 35% 8%;
 
     --destructive: 0 60% 55%;
     --destructive-foreground: 35 20% 96%;
@@ -46,14 +46,16 @@
 
     --radius: 0.75rem;               /* Softer, more organic radius */
 
-    /* Gradients for warmth */
-    --gradient-sanctuary: linear-gradient(135deg, hsl(220 25% 8%), hsl(220 20% 12%));
-    --gradient-memory: linear-gradient(135deg, hsl(50 80% 68%), hsl(45 75% 65%));
-    --gradient-love: linear-gradient(135deg, hsl(15 65% 72%), hsl(25 60% 75%));
+    /* Gradients for cosmic depth */
+    --gradient-sanctuary: linear-gradient(135deg, hsl(250 35% 8%), hsl(245 30% 12%));
+    --gradient-memory: linear-gradient(135deg, hsl(50 80% 75%), hsl(45 75% 70%));
+    --gradient-love: linear-gradient(135deg, hsl(320 45% 75%), hsl(310 40% 78%));
+    --gradient-galaxy: linear-gradient(135deg, hsl(250 35% 8%) 0%, hsl(260 40% 15%) 50%, hsl(280 30% 20%) 100%);
 
-    /* Shadows for depth */
-    --shadow-gentle: 0 4px 20px -4px hsl(210 25% 20% / 0.1);
-    --shadow-warm: 0 8px 30px -8px hsl(45 55% 75% / 0.3);
+    /* Shadows for cosmic depth */
+    --shadow-gentle: 0 4px 20px -4px hsl(250 35% 8% / 0.3);
+    --shadow-cosmic: 0 8px 30px -8px hsl(280 60% 70% / 0.4);
+    --shadow-starlight: 0 0 40px hsl(240 15% 95% / 0.1);
 
     /* Animations */
     --transition-sanctuary: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -133,7 +135,7 @@
 }
 
 @layer components {
-  /* Memory card animations */
+  /* Memory card animations with cosmic enhancements */
   .memory-card {
     @apply transition-all duration-300 ease-out;
     @apply hover:shadow-lg hover:-translate-y-1;
@@ -142,7 +144,7 @@
   }
 
   .memory-card:hover {
-    box-shadow: var(--shadow-warm);
+    box-shadow: var(--shadow-cosmic);
   }
 
   /* Gentle pulse for interactive elements */

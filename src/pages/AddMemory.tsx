@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Heart, Send, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
 
 const AddMemory = () => {
   const [memory, setMemory] = useState('');
@@ -52,8 +53,12 @@ const AddMemory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-sanctuary p-4 md:p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-no-repeat relative p-4 md:p-6"
+      style={{ backgroundImage: `url(${galaxyBackdrop})` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/70" />
+      <div className="relative z-10 max-w-2xl mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex items-center gap-4 pt-6">
@@ -77,9 +82,9 @@ const AddMemory = () => {
         </div>
 
         {/* Memory Form */}
-        <Card className="memory-card">
+        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
           <CardHeader>
-            <CardTitle className="text-xl font-medium text-center text-foreground">
+            <CardTitle className="text-xl font-medium text-center text-foreground drop-shadow-sm">
               Your Story Matters
             </CardTitle>
           </CardHeader>
@@ -159,9 +164,9 @@ const AddMemory = () => {
         </Card>
 
         {/* Privacy Note */}
-        <Card className="bg-love/10 border-love/20">
+        <Card className="bg-love/20 border-love/30 backdrop-blur-md shadow-cosmic">
           <CardContent className="p-4 text-center">
-            <p className="text-sm text-love-foreground">
+            <p className="text-sm text-love-foreground drop-shadow-sm">
               <Heart className="w-4 h-4 inline mr-1" />
               Your memories are private and never used for training. 
               They remain yours, always.

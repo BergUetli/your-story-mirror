@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, Plus, Clock, BookOpen, User, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import heroImage from '@/assets/memory-hero-backdrop.jpg';
+import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
 
 const Dashboard = () => {
   const [memoryCount, setMemoryCount] = useState(7);
@@ -19,12 +19,12 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Hero Background */}
+      {/* Galaxy Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${heroImage})` }}
+        style={{ backgroundImage: `url(${galaxyBackdrop})` }}
       >
-        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/70" />
       </div>
       
       {/* Content */}
@@ -64,17 +64,17 @@ const Dashboard = () => {
           </div>
 
           {/* Memory Counter */}
-          <Card className="memory-card bg-card/60 backdrop-blur-md border-primary/20 shadow-2xl">
+          <Card className="memory-card bg-card/80 backdrop-blur-md border-primary/30 shadow-cosmic">
             <CardContent className="p-10 text-center">
               <div className="space-y-4">
-                <div className="text-6xl font-light bg-gradient-to-r from-primary to-memory bg-clip-text text-transparent">
+                <div className="text-6xl font-light bg-gradient-to-r from-primary to-memory bg-clip-text text-transparent drop-shadow-lg">
                   {memoryCount}
                 </div>
-                <div className="text-2xl text-foreground font-light">
+                <div className="text-2xl text-foreground font-light drop-shadow-sm">
                   {memoryCount === 1 ? 'memory preserved' : 'memories preserved'}
                 </div>
                 <p className="text-muted-foreground text-lg leading-relaxed">
-                  Each one a precious thread in the tapestry of your story
+                  Each one a precious thread in the cosmic tapestry of your story
                 </p>
               </div>
             </CardContent>
@@ -84,13 +84,13 @@ const Dashboard = () => {
           <div className="grid md:grid-cols-3 gap-8 mt-12">
             
             {/* Add New Memory */}
-            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-primary/5 transition-all duration-300">
+            <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-primary/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
               <Link to="/add-memory">
                 <CardContent className="p-8 text-center space-y-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-memory/30 to-primary/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-memory/40">
-                    <Plus className="w-10 h-10 text-memory" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-memory/30 to-primary/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-memory/40 shadow-starlight">
+                    <Plus className="w-10 h-10 text-memory drop-shadow-sm" />
                   </div>
-                  <h3 className="text-2xl font-light text-foreground">Add New Memory</h3>
+                  <h3 className="text-2xl font-light text-foreground drop-shadow-sm">Add New Memory</h3>
                   <p className="text-muted-foreground">
                     Capture a moment, story, or reflection
                   </p>
@@ -99,13 +99,13 @@ const Dashboard = () => {
             </Card>
 
             {/* View Reflections */}
-            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-accent/5 transition-all duration-300">
+            <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-accent/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
               <Link to="/reflections">
                 <CardContent className="p-8 text-center space-y-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-accent/30 to-love/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-accent/40">
-                    <BookOpen className="w-10 h-10 text-accent" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-accent/30 to-love/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-accent/40 shadow-starlight">
+                    <BookOpen className="w-10 h-10 text-accent drop-shadow-sm" />
                   </div>
-                  <h3 className="text-2xl font-light text-foreground">View Reflections</h3>
+                  <h3 className="text-2xl font-light text-foreground drop-shadow-sm">View Reflections</h3>
                   <p className="text-muted-foreground">
                     See insights and echoes from your memories
                   </p>
@@ -114,13 +114,13 @@ const Dashboard = () => {
             </Card>
 
             {/* My Timeline */}
-            <Card className="memory-card group cursor-pointer bg-card/60 backdrop-blur-md border-primary/20 hover:bg-love/5 transition-all duration-300">
+            <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-love/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
               <Link to="/timeline">
                 <CardContent className="p-8 text-center space-y-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-love/30 to-accent/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-love/40">
-                    <Clock className="w-10 h-10 text-love" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-love/30 to-accent/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-love/40 shadow-starlight">
+                    <Clock className="w-10 h-10 text-love drop-shadow-sm" />
                   </div>
-                  <h3 className="text-2xl font-light text-foreground">My Timeline</h3>
+                  <h3 className="text-2xl font-light text-foreground drop-shadow-sm">My Timeline</h3>
                   <p className="text-muted-foreground">
                     Journey through your preserved memories
                   </p>
@@ -131,12 +131,12 @@ const Dashboard = () => {
           </div>
 
           {/* Quote or Inspiration */}
-          <Card className="memory-card bg-card/40 backdrop-blur-md border-primary/10 mt-16 shadow-xl">
+          <Card className="memory-card bg-card/70 backdrop-blur-md border-primary/20 mt-16 shadow-cosmic">
             <CardContent className="p-10 text-center">
-              <blockquote className="text-2xl italic text-muted-foreground font-light leading-relaxed">
-                "The life of the dead is set in the memory of the living."
+              <blockquote className="text-2xl italic text-muted-foreground font-light leading-relaxed drop-shadow-sm">
+                "The cosmos is within us. We are made of star-stuff."
               </blockquote>
-              <cite className="text-muted-foreground/80 block mt-4 text-lg">— Marcus Tullius Cicero</cite>
+              <cite className="text-muted-foreground/80 block mt-4 text-lg">— Carl Sagan</cite>
             </CardContent>
           </Card>
 

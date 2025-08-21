@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Shield, Heart, User, Mic, Mail } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
 
 const Settings = () => {
   const [userName, setUserName] = useState('Sarah');
@@ -40,8 +41,12 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-sanctuary p-4 md:p-6">
-      <div className="max-w-2xl mx-auto space-y-6">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-no-repeat relative p-4 md:p-6"
+      style={{ backgroundImage: `url(${galaxyBackdrop})` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/70" />
+      <div className="relative z-10 max-w-2xl mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex items-center gap-4 pt-6">
@@ -64,9 +69,9 @@ const Settings = () => {
         </div>
 
         {/* Profile Settings */}
-        <Card className="memory-card">
+        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
+            <CardTitle className="flex items-center gap-2 text-foreground drop-shadow-sm">
               <User className="w-5 h-5" />
               Profile
             </CardTitle>
@@ -116,9 +121,9 @@ const Settings = () => {
         </Card>
 
         {/* Privacy & Notifications */}
-        <Card className="memory-card">
+        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
+            <CardTitle className="flex items-center gap-2 text-foreground drop-shadow-sm">
               <Shield className="w-5 h-5" />
               Privacy & Preferences
             </CardTitle>
@@ -162,13 +167,13 @@ const Settings = () => {
         </Card>
 
         {/* Privacy Promise */}
-        <Card className="bg-love/10 border-love/20">
+        <Card className="bg-love/20 border-love/30 backdrop-blur-md shadow-cosmic">
           <CardContent className="p-6">
             <div className="flex items-start gap-3">
-              <Heart className="w-6 h-6 text-love flex-shrink-0 mt-1" />
+              <Heart className="w-6 h-6 text-love flex-shrink-0 mt-1 drop-shadow-sm" />
               <div className="space-y-2">
-                <h3 className="font-medium text-love-foreground">Our Promise to You</h3>
-                <div className="text-sm text-love-foreground/80 space-y-1">
+                <h3 className="font-medium text-love-foreground drop-shadow-sm">Our Promise to You</h3>
+                <div className="text-sm text-love-foreground/90 space-y-1">
                   <p>• Your memories are private and encrypted</p>
                   <p>• We never use your data for AI training</p>
                   <p>• You own your stories, always</p>
@@ -180,7 +185,7 @@ const Settings = () => {
         </Card>
 
         {/* Account Actions */}
-        <Card className="memory-card">
+        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
           <CardContent className="p-6 space-y-4">
             <Button variant="outline" className="w-full border-muted text-muted-foreground hover:text-foreground">
               Export my memories
