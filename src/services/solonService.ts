@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+
 interface Memory {
   id?: string;
   title: string;
@@ -21,36 +23,49 @@ interface SolonRequest {
 }
 
 class SolonService {
-  private supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  private supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  private supabase: any = null;
   private isSupabaseAvailable = false;
 
   constructor() {
-    this.isSupabaseAvailable = !!(this.supabaseUrl && this.supabaseAnonKey);
+    this.initializeSupabase();
+  }
+
+  private initializeSupabase() {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseAnonKey) {
+        this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+        this.isSupabaseAvailable = true;
+        console.log('Supabase initialized for Solon service');
+      } else {
+        console.warn('Supabase environment variables not found. Using fallback responses.');
+        this.isSupabaseAvailable = false;
+      }
+    } catch (error) {
+      console.error('Failed to initialize Supabase:', error);
+      this.isSupabaseAvailable = false;
+    }
   }
 
   async chat(request: SolonRequest): Promise<SolonResponse> {
-    // If Supabase is not available, return a more contextual fallback response
-    if (!this.isSupabaseAvailable) {
+    // Try to use the real Supabase function first
+    if (!this.isSupabaseAvailable || !this.supabase) {
+      console.warn('Supabase not configured, using fallback responses');
       return this.getFallbackResponse(request);
     }
 
     try {
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/solon-ai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseAnonKey}`,
-        },
-        body: JSON.stringify(request),
+      const { data, error } = await this.supabase.functions.invoke('solon-ai', {
+        body: request
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        throw error;
       }
 
-      const data: SolonResponse = await response.json();
-      return data;
+      return data as SolonResponse;
     } catch (error) {
       console.error('Error calling Solon AI:', error);
       return this.getFallbackResponse(request);

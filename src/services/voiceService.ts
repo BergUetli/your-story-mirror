@@ -1,3 +1,5 @@
+import { createClient } from '@supabase/supabase-js';
+
 interface VoiceOptions {
   voiceId?: string;
   model?: string;
@@ -24,51 +26,64 @@ export const VOICES: Voice[] = [
 ];
 
 class VoiceService {
-  private supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  private supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  private supabase: any = null;
   private isSupabaseAvailable = false;
   private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
-    this.isSupabaseAvailable = !!(this.supabaseUrl && this.supabaseAnonKey);
+    this.initializeSupabase();
+  }
+
+  private initializeSupabase() {
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (supabaseUrl && supabaseAnonKey) {
+        this.supabase = createClient(supabaseUrl, supabaseAnonKey);
+        this.isSupabaseAvailable = true;
+        console.log('Supabase initialized for Voice service');
+      } else {
+        console.warn('Supabase environment variables not found. Using browser TTS fallback.');
+        this.isSupabaseAvailable = false;
+      }
+    } catch (error) {
+      console.error('Failed to initialize Supabase:', error);
+      this.isSupabaseAvailable = false;
+    }
   }
 
   async speak(text: string, options: VoiceOptions = {}): Promise<void> {
     // Stop any currently playing audio
     this.stop();
 
-    // If Supabase is not available, use browser's built-in TTS as fallback
-    if (!this.isSupabaseAvailable) {
+    // Try ElevenLabs first if Supabase is available
+    if (!this.isSupabaseAvailable || !this.supabase) {
+      console.warn('Supabase/ElevenLabs not configured, using browser TTS');
       return this.speakWithBrowserTTS(text);
     }
 
     try {
-      const voiceId = options.voiceId || VOICES[0].id;
-      const model = options.model || 'eleven_multilingual_v2';
-      const voiceSettings = options.voiceSettings || {
-        stability: 0.5,
-        similarity_boost: 0.8,
+      const requestBody = {
+        text,
+        voiceId: options.voiceId || VOICES[0].id,
+        model: options.model || 'eleven_multilingual_v2',
+        voiceSettings: options.voiceSettings || {
+          stability: 0.5,
+          similarity_boost: 0.8,
+        }
       };
 
-      const response = await fetch(`${this.supabaseUrl}/functions/v1/elevenlabs-tts`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.supabaseAnonKey}`,
-        },
-        body: JSON.stringify({
-          text,
-          voiceId,
-          model,
-          voiceSettings,
-        }),
+      const { data, error } = await this.supabase.functions.invoke('elevenlabs-tts', {
+        body: requestBody
       });
 
-      if (!response.ok) {
-        throw new Error(`TTS API error: ${response.status}`);
+      if (error) {
+        throw error;
       }
 
-      const audioBlob = await response.blob();
+      // The response should be audio data
+      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       
       this.currentAudio = new Audio(audioUrl);
