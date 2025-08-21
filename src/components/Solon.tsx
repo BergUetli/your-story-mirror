@@ -2,25 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, X, Send, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { solonService, type SolonResponse, type Memory } from '@/services/solonService';
+import { voiceService, VOICES, type Voice } from '@/services/voiceService';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
 
 interface SolonProps {
   mode?: 'user' | 'visitor';
   visitorPermissions?: string[];
+  autoSpeak?: boolean;
 }
 
 const Solon: React.FC<SolonProps> = ({ 
   mode = 'user', 
-  visitorPermissions = ['public'] 
+  visitorPermissions = ['public'],
+  autoSpeak = true
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [message, setMessage] = useState('');
   const [response, setResponse] = useState<SolonResponse | null>(null);
+  const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]); // Default to Aria
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const { memories, getMemoriesForVisitor } = useMemories();
   const { toast } = useToast();
 
@@ -28,6 +35,24 @@ const Solon: React.FC<SolonProps> = ({
     return mode === 'visitor' 
       ? getMemoriesForVisitor(visitorPermissions)
       : memories;
+  };
+
+  const speakResponse = async (text: string) => {
+    if (!voiceEnabled) return;
+    
+    try {
+      setIsSpeaking(true);
+      await voiceService.speak(text, { voiceId: selectedVoice.id });
+    } catch (error) {
+      console.error('Error speaking:', error);
+      toast({
+        title: "Voice Error",
+        description: "I couldn't speak right now. Check your connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSpeaking(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -46,6 +71,11 @@ const Solon: React.FC<SolonProps> = ({
       setResponse(solonResponse);
       setMessage('');
       
+      // Auto-speak the reflection if voice is enabled
+      if (autoSpeak && voiceEnabled) {
+        await speakResponse(solonResponse.reflection);
+      }
+      
       toast({
         title: "Solon reflects...",
         description: "I've shared some thoughts based on your memories.",
@@ -61,10 +91,27 @@ const Solon: React.FC<SolonProps> = ({
     }
   };
 
+  const toggleVoice = () => {
+    if (isSpeaking) {
+      voiceService.stop();
+      setIsSpeaking(false);
+    }
+    setVoiceEnabled(!voiceEnabled);
+  };
+
+  const playResponse = async () => {
+    if (!response) return;
+    await speakResponse(response.reflection);
+  };
+
   const handleClose = () => {
     setIsOpen(false);
     setResponse(null);
     setMessage('');
+    if (isSpeaking) {
+      voiceService.stop();
+      setIsSpeaking(false);
+    }
   };
 
   const getGreeting = () => {
@@ -84,7 +131,8 @@ const Solon: React.FC<SolonProps> = ({
           "bg-gradient-to-br from-accent to-primary border-2 border-memory/30",
           "shadow-lg hover:shadow-xl transition-all duration-300",
           "gentle-float",
-          isOpen ? "scale-0" : "scale-100"
+          isOpen ? "scale-0" : "scale-100",
+          isSpeaking && "animate-pulse border-memory"
         )}
         size="icon"
       >
@@ -100,24 +148,54 @@ const Solon: React.FC<SolonProps> = ({
         )}>
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center">
+              <div className={cn(
+                "w-8 h-8 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center",
+                isSpeaking && "animate-pulse"
+              )}>
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">Solon</h3>
                 <p className="text-xs text-muted-foreground">
                   {mode === 'visitor' ? 'Memory Keeper' : 'Your Companion'}
+                  {isSpeaking && ' • Speaking...'}
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* Voice Controls */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleVoice}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                title={voiceEnabled ? "Disable voice" : "Enable voice"}
+              >
+                {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
+              
+              {response && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={playResponse}
+                  disabled={isSpeaking}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  title="Play response"
+                >
+                  {isSpeaking ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+              )}
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleClose}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <CardContent className="p-4 space-y-4 max-h-[350px] overflow-y-auto">
@@ -152,7 +230,32 @@ const Solon: React.FC<SolonProps> = ({
           </CardContent>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-border/50">
+          <div className="p-4 border-t border-border/50 space-y-3">
+            {/* Voice Settings */}
+            {voiceEnabled && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground">Voice:</label>
+                <Select value={selectedVoice.id} onValueChange={(value) => {
+                  const voice = VOICES.find(v => v.id === value);
+                  if (voice) setSelectedVoice(voice);
+                }}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VOICES.map((voice) => (
+                      <SelectItem key={voice.id} value={voice.id}>
+                        <div>
+                          <div className="font-medium">{voice.name}</div>
+                          <div className="text-xs text-muted-foreground">{voice.description}</div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div className="flex gap-2">
               <Textarea
                 value={message}
