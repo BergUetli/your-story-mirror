@@ -97,22 +97,6 @@ const Dashboard = () => {
             >
               Your Memories Live Here
             </div>
-            
-            {/* AI Journaler Feature Highlight */}
-            <Card className="memory-card bg-card/90 backdrop-blur-md border-primary/40 shadow-cosmic mt-8 max-w-2xl mx-auto">
-              <CardContent className="p-8 text-center">
-                <div className="flex items-center justify-center space-x-3 mb-4">
-                  <Sparkles className="w-8 h-8 text-memory animate-pulse" />
-                  <h3 className="text-2xl font-semibold text-foreground" style={{ fontFamily: 'Work Sans, sans-serif' }}>
-                    AI Journaler
-                  </h3>
-                  <Sparkles className="w-8 h-8 text-memory animate-pulse" />
-                </div>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Our AI companion will help pen your life stories, turning your memories into beautifully crafted narratives that capture the essence of your journey.
-                </p>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Memory Counter */}
