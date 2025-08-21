@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Plus, Clock, BookOpen, User, LogOut } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Heart, Plus, Clock, BookOpen, User, LogOut, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
+import deepBlueGalaxy from '@/assets/deep-blue-galaxy.jpg';
 
 const Dashboard = () => {
   const [memoryCount, setMemoryCount] = useState(7);
@@ -22,7 +23,7 @@ const Dashboard = () => {
       {/* Galaxy Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${galaxyBackdrop})` }}
+        style={{ backgroundImage: `url(${deepBlueGalaxy})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background/70" />
       </div>
@@ -33,7 +34,7 @@ const Dashboard = () => {
         <header className="flex justify-between items-center p-6 max-w-6xl mx-auto">
           <div className="flex items-center space-x-3">
             <Heart className="w-8 h-8 text-primary" />
-            <h1 className="text-2xl font-light text-foreground">You, Remembered</h1>
+            <h1 className="text-2xl font-light text-foreground">Memory Scape</h1>
           </div>
           <div className="flex items-center space-x-4">
             <Button variant="ghost" size="sm">
@@ -43,6 +44,38 @@ const Dashboard = () => {
             <Button variant="ghost" size="sm">
               <LogOut className="w-4 h-4" />
             </Button>
+            {/* Progressive User Photo */}
+            <div className="relative">
+              <Avatar className="w-16 h-16 border-2 border-primary/30">
+                <AvatarImage src="" alt="Your emerging portrait" />
+                <AvatarFallback className="bg-card/20 backdrop-blur-sm">
+                  <div className="w-full h-full relative overflow-hidden">
+                    {/* Threads that form the portrait based on memories */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-memory/10">
+                      {Array.from({ length: Math.min(memoryCount, 20) }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-px bg-primary/40"
+                          style={{
+                            left: `${(i * 17) % 100}%`,
+                            top: `${(i * 23) % 100}%`,
+                            height: `${20 + (i * 7) % 30}%`,
+                            transform: `rotate(${i * 27}deg)`,
+                            opacity: Math.min(1, memoryCount / 10)
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+                      {memoryCount < 5 ? 'Building...' : memoryCount < 15 ? 'Forming...' : 'You'}
+                    </div>
+                  </div>
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-1 -right-1 text-xs text-muted-foreground bg-card/80 backdrop-blur-sm rounded-full px-2 py-1">
+                {Math.round((memoryCount / 50) * 100)}%
+              </div>
+            </div>
           </div>
         </header>
 
@@ -54,13 +87,32 @@ const Dashboard = () => {
                 <Heart className="w-10 h-10 text-primary" />
               </div>
             </div>
-            <h2 className="text-5xl md:text-6xl font-light text-foreground leading-tight">
+            <h2 className="text-5xl md:text-6xl leading-tight" style={{ fontFamily: 'Work Sans, sans-serif', fontWeight: 300 }}>
               Welcome back,<br />
               <span className="text-primary">{userName}</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Your digital sanctuary for preserving the memories, stories, and love that matter most.
-            </p>
+            <div 
+              className="text-3xl md:text-4xl font-bold text-primary leading-relaxed mt-8"
+              style={{ fontFamily: 'Work Sans, sans-serif' }}
+            >
+              Your Memories Live Here
+            </div>
+            
+            {/* AI Journaler Feature Highlight */}
+            <Card className="memory-card bg-card/90 backdrop-blur-md border-primary/40 shadow-cosmic mt-8 max-w-2xl mx-auto">
+              <CardContent className="p-8 text-center">
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <Sparkles className="w-8 h-8 text-memory animate-pulse" />
+                  <h3 className="text-2xl font-semibold text-foreground" style={{ fontFamily: 'Work Sans, sans-serif' }}>
+                    AI Journaler
+                  </h3>
+                  <Sparkles className="w-8 h-8 text-memory animate-pulse" />
+                </div>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Our AI companion will help pen your life stories, turning your memories into beautifully crafted narratives that capture the essence of your journey.
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Memory Counter */}
@@ -134,9 +186,9 @@ const Dashboard = () => {
           <Card className="memory-card bg-card/70 backdrop-blur-md border-primary/20 mt-16 shadow-cosmic">
             <CardContent className="p-10 text-center">
               <blockquote className="text-2xl italic text-muted-foreground font-light leading-relaxed drop-shadow-sm">
-                "The cosmos is within us. We are made of star-stuff."
+                "Memory is the treasury and guardian of all things. The life of the dead is placed in the memory of the living."
               </blockquote>
-              <cite className="text-muted-foreground/80 block mt-4 text-lg">— Carl Sagan</cite>
+              <cite className="text-muted-foreground/80 block mt-4 text-lg">— Marcus Tullius Cicero</cite>
             </CardContent>
           </Card>
 
