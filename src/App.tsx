@@ -9,6 +9,7 @@ import Timeline from "./pages/Timeline";
 import Settings from "./pages/Settings";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
+import Solon from "./components/Solon";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Navigation />
+          <Solon />
         </div>
       </BrowserRouter>
     </TooltipProvider>
