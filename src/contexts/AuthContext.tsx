@@ -29,33 +29,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
-  );
+  const [supabase, setSupabase] = useState<any>(null);
+  const [isSupabaseAvailable, setIsSupabaseAvailable] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Initialize Supabase client with error handling
+    const initializeSupabase = () => {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        if (supabaseUrl && supabaseAnonKey) {
+          const client = createClient(supabaseUrl, supabaseAnonKey);
+          setSupabase(client);
+          setIsSupabaseAvailable(true);
+          return client;
+        } else {
+          console.warn('Supabase environment variables not found. Authentication will use localStorage fallback.');
+          setIsSupabaseAvailable(false);
+          setLoading(false);
+          return null;
+        }
+      } catch (error) {
+        console.error('Failed to initialize Supabase:', error);
+        setIsSupabaseAvailable(false);
+        setLoading(false);
+        return null;
+      }
+    };
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const client = initializeSupabase();
+    
+    if (client && isSupabaseAvailable) {
+      // Get initial session
+      client.auth.getSession().then(({ data: { session } }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-      }
-    );
+      });
 
-    return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+      // Listen for auth changes
+      const { data: { subscription } } = client.auth.onAuthStateChange(
+        async (event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      );
+
+      return () => subscription.unsubscribe();
+    }
+  }, [isSupabaseAvailable]);
 
   const signUp = async (email: string, password: string) => {
+    if (!isSupabaseAvailable || !supabase) {
+      return { error: { message: 'Authentication service not available. Please contact support.' } };
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -68,6 +98,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseAvailable || !supabase) {
+      return { error: { message: 'Authentication service not available. Please contact support.' } };
+    }
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -80,10 +114,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
+    if (!isSupabaseAvailable || !supabase) {
+      // For fallback mode, just clear local state
+      setUser(null);
+      setSession(null);
+      return;
+    }
+
     await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
+    if (!isSupabaseAvailable || !supabase) {
+      return { error: { message: 'Password reset service not available. Please contact support.' } };
+    }
+
     try {
       const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -104,5 +149,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     resetPassword,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
