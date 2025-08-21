@@ -1,8 +1,10 @@
 interface VoiceOptions {
   voiceId?: string;
   model?: string;
-  stability?: number;
-  similarityBoost?: number;
+  voiceSettings?: {
+    stability: number;
+    similarity_boost: number;
+  };
 }
 
 interface Voice {
@@ -24,20 +26,30 @@ export const VOICES: Voice[] = [
 class VoiceService {
   private supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   private supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  private isSupabaseAvailable = false;
   private currentAudio: HTMLAudioElement | null = null;
 
-  async generateSpeech(
-    text: string, 
-    options: VoiceOptions = {}
-  ): Promise<string> {
-    const {
-      voiceId = '9BWtsMINqrJLrRacOk9x', // Default to Aria
-      model = 'eleven_multilingual_v2',
-      stability = 0.5,
-      similarityBoost = 0.8
-    } = options;
+  constructor() {
+    this.isSupabaseAvailable = !!(this.supabaseUrl && this.supabaseAnonKey);
+  }
+
+  async speak(text: string, options: VoiceOptions = {}): Promise<void> {
+    // Stop any currently playing audio
+    this.stop();
+
+    // If Supabase is not available, use browser's built-in TTS as fallback
+    if (!this.isSupabaseAvailable) {
+      return this.speakWithBrowserTTS(text);
+    }
 
     try {
+      const voiceId = options.voiceId || VOICES[0].id;
+      const model = options.model || 'eleven_multilingual_v2';
+      const voiceSettings = options.voiceSettings || {
+        stability: 0.5,
+        similarity_boost: 0.8,
+      };
+
       const response = await fetch(`${this.supabaseUrl}/functions/v1/elevenlabs-tts`, {
         method: 'POST',
         headers: {
@@ -48,51 +60,78 @@ class VoiceService {
           text,
           voiceId,
           model,
-          voiceSettings: {
-            stability,
-            similarity_boost: similarityBoost,
-          }
+          voiceSettings,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`TTS API error: ${response.status}`);
       }
 
       const audioBlob = await response.blob();
-      return URL.createObjectURL(audioBlob);
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      this.currentAudio = new Audio(audioUrl);
+      
+      return new Promise((resolve, reject) => {
+        if (this.currentAudio) {
+          this.currentAudio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            resolve();
+          };
+          this.currentAudio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            // Fallback to browser TTS on error
+            this.speakWithBrowserTTS(text).then(resolve).catch(reject);
+          };
+          this.currentAudio.play().catch(() => {
+            // Fallback to browser TTS if audio play fails
+            this.speakWithBrowserTTS(text).then(resolve).catch(reject);
+          });
+        }
+      });
     } catch (error) {
-      console.error('Error generating speech:', error);
-      throw error;
+      console.error('Error with ElevenLabs TTS, falling back to browser TTS:', error);
+      return this.speakWithBrowserTTS(text);
     }
   }
 
-  async speak(text: string, options: VoiceOptions = {}): Promise<void> {
-    try {
-      // Stop any currently playing audio
-      this.stop();
+  private speakWithBrowserTTS(text: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!('speechSynthesis' in window)) {
+        console.warn('Browser TTS not supported');
+        resolve(); // Don't fail, just resolve silently
+        return;
+      }
 
-      const audioUrl = await this.generateSpeech(text, options);
+      const utterance = new SpeechSynthesisUtterance(text);
       
-      return new Promise((resolve, reject) => {
-        this.currentAudio = new Audio(audioUrl);
-        
-        this.currentAudio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
-          resolve();
-        };
-        
-        this.currentAudio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          reject(new Error('Audio playback failed'));
-        };
-        
-        this.currentAudio.play().catch(reject);
-      });
-    } catch (error) {
-      console.error('Error speaking:', error);
-      throw error;
-    }
+      // Try to find a nice voice
+      const voices = speechSynthesis.getVoices();
+      const preferredVoice = voices.find(voice => 
+        voice.name.includes('Samantha') || 
+        voice.name.includes('Alex') || 
+        voice.name.includes('Daniel') ||
+        voice.name.includes('Zira') ||
+        voice.lang.startsWith('en')
+      );
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      utterance.rate = 0.9;
+      utterance.pitch = 1.0;
+      utterance.volume = 0.8;
+
+      utterance.onend = () => resolve();
+      utterance.onerror = (event) => {
+        console.error('Browser TTS error:', event);
+        resolve(); // Don't fail, just resolve
+      };
+
+      speechSynthesis.speak(utterance);
+    });
   }
 
   stop(): void {
@@ -100,6 +139,11 @@ class VoiceService {
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
       this.currentAudio = null;
+    }
+    
+    // Also stop browser TTS
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
     }
   }
 

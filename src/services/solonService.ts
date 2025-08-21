@@ -22,8 +22,18 @@ interface SolonRequest {
 class SolonService {
   private supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   private supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  private isSupabaseAvailable = false;
+
+  constructor() {
+    this.isSupabaseAvailable = !!(this.supabaseUrl && this.supabaseAnonKey);
+  }
 
   async chat(request: SolonRequest): Promise<SolonResponse> {
+    // If Supabase is not available, return a more contextual fallback response
+    if (!this.isSupabaseAvailable) {
+      return this.getFallbackResponse(request);
+    }
+
     try {
       const response = await fetch(`${this.supabaseUrl}/functions/v1/solon-ai`, {
         method: 'POST',
@@ -42,14 +52,44 @@ class SolonService {
       return data;
     } catch (error) {
       console.error('Error calling Solon AI:', error);
-      
-      // Fallback response
+      return this.getFallbackResponse(request);
+    }
+  }
+
+  private getFallbackResponse(request: SolonRequest): SolonResponse {
+    const { mode, message, memories } = request;
+    
+    // More contextual responses based on the user's message and mode
+    if (mode === 'visitor') {
       return {
-        quote: "I'm here to help preserve your memories.",
-        reflection: "Every story shared becomes part of a lasting legacy.",
-        followUp: "What memory would you like to explore today?"
+        quote: "These memories paint a picture of someone who truly lived.",
+        reflection: "From what has been shared, I see a person who found joy in simple moments and deep connections. The memories speak of someone who valued authenticity and human connection.",
+        followUp: "What aspect of these memories resonates most with you?"
       };
     }
+
+    // User mode - more personal responses
+    const responses = [
+      {
+        quote: "Every memory you share becomes part of your lasting legacy.",
+        reflection: "I can sense there's depth in what you're sharing. These moments - whether joyful or challenging - are the threads that weave the tapestry of who you are.",
+        followUp: "What memory from today would you want to preserve?"
+      },
+      {
+        quote: "Your voice carries the weight of lived experience.",
+        reflection: "The fact that you're here, ready to share and reflect, tells me you understand the value of preserving these precious moments. Each story adds another layer to your beautiful complexity.",
+        followUp: "Is there a particular time in your life you've been thinking about lately?"
+      },
+      {
+        quote: "In sharing our stories, we find connection across time.",
+        reflection: "Your willingness to open up and share shows courage. These conversations are bridges - connecting your past self to your future, and potentially touching the hearts of those who matter to you.",
+        followUp: "What would you want your loved ones to know about this moment in your life?"
+      }
+    ];
+
+    // Simple hash of message to pick consistent response
+    const hash = message ? message.length % responses.length : 0;
+    return responses[hash];
   }
 
   // Get memories from mock data (replace with actual data source later)

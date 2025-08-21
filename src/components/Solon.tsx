@@ -74,11 +74,7 @@ const Solon: React.FC<SolonProps> = ({
       await voiceService.speak(text, { voiceId: selectedVoice.id });
     } catch (error) {
       console.error('Error speaking:', error);
-      toast({
-        title: "Voice Error",
-        description: "I couldn't speak right now. Check your connection.",
-        variant: "destructive",
-      });
+      // Don't show error toast in demo mode, voice fallback handles it gracefully
     } finally {
       setIsSpeaking(false);
     }
