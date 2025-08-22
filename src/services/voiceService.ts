@@ -39,17 +39,46 @@ class VoiceService {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+      console.log('Supabase initialization check:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseAnonKey,
+        urlPreview: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'missing'
+      });
+
       if (supabaseUrl && supabaseAnonKey) {
         this.supabase = createClient(supabaseUrl, supabaseAnonKey);
         this.isSupabaseAvailable = true;
-        console.log('Supabase initialized for Voice service');
+        console.log('✅ Supabase initialized successfully for Voice service');
+        
+        // Test the connection
+        this.testSupabaseConnection();
       } else {
-        console.warn('Supabase environment variables not found. Using browser TTS fallback.');
+        console.warn('❌ Supabase environment variables not found:', {
+          VITE_SUPABASE_URL: !!supabaseUrl,
+          VITE_SUPABASE_ANON_KEY: !!supabaseAnonKey
+        });
         this.isSupabaseAvailable = false;
       }
     } catch (error) {
-      console.error('Failed to initialize Supabase:', error);
+      console.error('❌ Failed to initialize Supabase:', error);
       this.isSupabaseAvailable = false;
+    }
+  }
+
+  private async testSupabaseConnection() {
+    try {
+      // Test if we can call the ElevenLabs function
+      const { data, error } = await this.supabase.functions.invoke('elevenlabs-tts', {
+        body: { text: 'test', voiceId: VOICES[0].id }
+      });
+      
+      if (error) {
+        console.warn('⚠️ ElevenLabs function test failed:', error);
+      } else {
+        console.log('✅ ElevenLabs function is accessible');
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not test ElevenLabs function:', error);
     }
   }
 
