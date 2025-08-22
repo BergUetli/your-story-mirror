@@ -39,34 +39,28 @@ class VoiceService {
     try {
       console.log('🧪 Testing ElevenLabs API key and connection...');
       
-      // First test if the API key is accessible with debug function
-      const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-key');
-      
-      if (debugError) {
-        console.error('❌ Debug function failed:', debugError);
-        return;
-      }
-      
-      console.log('🔑 Debug key result:', debugData);
-      
-      if (debugData.hasKey) {
-        console.log('✅ ElevenLabs API key is accessible');
-        
-        // Now test the actual TTS function
-        const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-          body: { text: 'test', voiceId: VOICES[0].id }
-        });
-        
-        if (error) {
-          console.warn('⚠️ ElevenLabs TTS function test failed:', error);
-        } else {
-          console.log('✅ ElevenLabs TTS function is accessible');
+      // Test the actual TTS function with a simple request
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: { 
+          text: 'Testing API key', 
+          voiceId: VOICES[0].id,
+          model: 'eleven_multilingual_v2'
         }
+      });
+      
+      if (error) {
+        console.error('❌ ElevenLabs TTS test failed:', error);
+        console.error('❌ This means the API key is not working or not set correctly');
+        
+        // Test if we can reach the debug function
+        const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-key');
+        console.log('🔍 Debug function result:', { debugData, debugError });
       } else {
-        console.error('❌ ElevenLabs API key not found:', debugData);
+        console.log('✅ ElevenLabs TTS function working correctly!');
+        console.log('✅ API key is properly configured and accessible');
       }
     } catch (error) {
-      console.warn('⚠️ Could not test ElevenLabs function:', error);
+      console.error('⚠️ Could not test ElevenLabs function:', error);
     }
   }
 
@@ -103,10 +97,13 @@ class VoiceService {
 
       console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
       console.log('🔧 Voice settings:', voiceSettings);
+      console.log('📤 Full request body:', requestBody);
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody
       });
+      
+      console.log('📥 ElevenLabs response:', { data: data ? 'Audio data received' : 'No data', error });
 
       if (error) {
         console.error('❌ ElevenLabs TTS error:', error);
