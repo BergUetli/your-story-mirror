@@ -26,59 +26,13 @@ serve(async (req) => {
     console.log('🔍 Request method:', req.method);
     console.log('🔍 Request headers:', Object.fromEntries(req.headers.entries()));
     
-    let requestBody;
-    try {
-      // Try different ways to read the body
-      console.log('🔍 Request content-type:', req.headers.get('content-type'));
-      console.log('🔍 Request method:', req.method);
-      
-      // Check if body exists at all
-      const hasBody = req.body !== null;
-      console.log('🔍 Request has body:', hasBody);
-      
-      if (!hasBody) {
-        console.error('❌ No request body found');
-        return new Response(JSON.stringify({ error: 'No request body' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      
-      // Try reading as JSON directly first
-      try {
-        requestBody = await req.json();
-        console.log('📥 Successfully parsed JSON directly');
-      } catch (directJsonError) {
-        console.log('⚠️ Direct JSON parse failed, trying text first:', directJsonError.message);
-        
-        // Fallback to text then JSON
-        const bodyText = await req.text();
-        console.log('📥 Raw request body as text:', bodyText);
-        console.log('📥 Request body length:', bodyText.length);
-        
-        if (!bodyText || bodyText.trim() === '') {
-          console.error('❌ Empty request body received');
-          return new Response(JSON.stringify({ error: 'Empty request body' }), {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-        
-        requestBody = JSON.parse(bodyText);
-      }
-      
-      console.log('📥 Received TTS request:', { 
-        text: requestBody.text?.substring(0, 50) + '...', 
-        voiceId: requestBody.voiceId,
-        model: requestBody.model 
-      });
-    } catch (jsonError) {
-      console.error('❌ JSON parse error:', jsonError);
-      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    // Read request body
+    const requestBody = await req.json();
+    console.log('📥 Received TTS request:', { 
+      text: requestBody.text?.substring(0, 50) + '...', 
+      voiceId: requestBody.voiceId,
+      model: requestBody.model 
+    });
     
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = requestBody;
     console.log("🗣️ voiceId is:", voiceId);

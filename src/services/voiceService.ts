@@ -137,7 +137,7 @@ class VoiceService {
       const voiceId = options.voiceId || VOICES[0].id;
       const voiceSettings = options.voiceSettings || this.getVoiceSettings(voiceId);
       
-      const requestBody = {
+      const requestPayload = {
         text,
         voiceId,
         model: options.model || 'eleven_turbo_v2_5',
@@ -146,66 +146,43 @@ class VoiceService {
 
       console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
       console.log('🔧 Voice settings:', voiceSettings);
-      console.log('📤 Request body being sent:', JSON.stringify(requestBody));
-      console.log('📤 Request body size:', JSON.stringify(requestBody).length);
+      console.log('📤 Request payload:', requestPayload);
 
-      const response = await supabase.functions.invoke('elevenlabs-tts', {
-        body: requestBody,
+      const response = await fetch('https://ertoivqgzhgimdghtcxs.supabase.co/functions/v1/elevenlabs-tts', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVydG9pdnFnemhnaW1kZ2h0Y3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MjM4MzQsImV4cCI6MjA3MTM5OTgzNH0.5O_koR60UckVBiow0MfWCvA7q30ilamxBxMwgxPWmY4`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVydG9pdnFnemhnaW1kZ2h0Y3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MjM4MzQsImV4cCI6MjA3MTM5OTgzNH0.5O_koR60UckVBiow0MfWCvA7q30ilamxBxMwgxPWmY4'
         },
+        body: JSON.stringify(requestPayload)
       });
 
-      console.log('📡 Supabase function response:', {
-        error: response.error,
-        dataType: typeof response.data,
-        dataSize: response.data instanceof Blob ? response.data.size : (typeof response.data === 'string' ? response.data.length : 'unknown'),
-        dataPreview: typeof response.data === 'string' ? response.data.substring(0, 100) + '...' : 'not string'
-      });
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
 
-      if (response.error) {
-        console.error('❌ ElevenLabs TTS error:', response.error);
-        console.error('❌ Full response:', response);
-        throw response.error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Edge function error:', response.status, errorText);
+        throw new Error(`Edge function returned ${response.status}: ${errorText}`);
       }
 
-      // The response.data should be the binary audio data
-      const audioData = response.data;
+      // Get the base64 audio data
+      const base64Audio = await response.text();
+      console.log('🔍 Received audio data type:', typeof base64Audio);
+      console.log('🔍 Audio data length:', base64Audio.length);
       
-      if (!audioData) {
-        throw new Error('No audio data received');
+      if (!base64Audio || base64Audio.length === 0) {
+        throw new Error('No audio data received from edge function');
       }
 
-      console.log('🔍 Audio data type received:', typeof audioData);
-
-      // Handle the audio response properly - Supabase functions can return binary data in different formats
-      let audioBlob: Blob;
-      
-      if (audioData instanceof Blob) {
-        audioBlob = audioData;
-        console.log('✅ Using audio data as Blob');
-      } else if (audioData instanceof ArrayBuffer) {
-        audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
-        console.log('✅ Converted ArrayBuffer to Blob');
-      } else if (typeof audioData === 'string') {
-        // If data comes as base64 string, decode it
-        console.log('🔄 Converting base64 string to Blob');
-        try {
-          const binaryString = atob(audioData);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-        } catch (e) {
-          console.error('❌ Failed to decode base64 audio data:', e);
-          throw new Error('Invalid audio data format received');
-        }
-      } else {
-        // Handle other formats if needed
-        console.log('🔄 Converting unknown data type to Blob');
-        audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
+      // Convert base64 to blob
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
       
       console.log('🎵 Created audio blob, size:', audioBlob.size, 'bytes');
       
@@ -233,16 +210,9 @@ class VoiceService {
             resolve();
           };
           this.currentAudio.onerror = (e) => {
-            console.error('❌ Audio playback error details:', {
-              error: e,
-              currentTime: this.currentAudio?.currentTime,
-              duration: this.currentAudio?.duration,
-              readyState: this.currentAudio?.readyState,
-              networkState: this.currentAudio?.networkState,
-              src: this.currentAudio?.src
-            });
+            console.error('❌ Audio playback error:', e);
             URL.revokeObjectURL(audioUrl);
-            reject(new Error(`Audio playback failed: ${(e as Event).type || 'unknown error'}`));
+            reject(new Error(`Audio playback failed: ${e instanceof Event ? e.type : 'unknown error'}`));
           };
           this.currentAudio.play().catch(reject);
         }
