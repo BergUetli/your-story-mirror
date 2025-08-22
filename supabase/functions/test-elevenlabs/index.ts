@@ -31,6 +31,7 @@ serve(async (req) => {
     }
 
     // Test a simple API call to ElevenLabs
+    console.log('Making test API call to ElevenLabs...');
     const testResponse = await fetch('https://api.elevenlabs.io/v1/voices', {
       method: 'GET',
       headers: {
@@ -39,6 +40,8 @@ serve(async (req) => {
     });
 
     const responseText = await testResponse.text();
+    console.log('ElevenLabs API response status:', testResponse.status);
+    console.log('ElevenLabs API response:', responseText.substring(0, 200) + '...');
     
     return new Response(JSON.stringify({
       success: true,

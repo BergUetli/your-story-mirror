@@ -36,6 +36,7 @@ serve(async (req) => {
       throw new Error('ElevenLabs API key not configured');
     }
 
+    console.log('Making TTS request to ElevenLabs...');
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -53,8 +54,12 @@ serve(async (req) => {
       }),
     });
 
+    console.log('TTS API response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`ElevenLabs API error: ${response.status}`);
+      const errorText = await response.text();
+      console.log('TTS API error response:', errorText);
+      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
     }
 
     const audioData = await response.arrayBuffer();
