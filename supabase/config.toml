@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.solon-ai]
 verify_jwt = false
+
+[functions.test-elevenlabs]
+verify_jwt = false
