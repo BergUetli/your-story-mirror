@@ -40,6 +40,16 @@ class VoiceService {
     try {
       console.log('🧪 Running comprehensive diagnostic test...');
       
+      // First, test our debug function to check secret access
+      console.log('🔍 Testing secret access...');
+      const { data: debugResults, error: debugError } = await supabase.functions.invoke('debug-secrets');
+      
+      if (debugError) {
+        console.error('❌ Debug secrets test failed:', debugError);
+      } else {
+        console.log('🔐 Secret Debug Results:', debugResults);
+      }
+      
       const { data: testResults, error: testError } = await supabase.functions.invoke('comprehensive-test');
       
       if (testError) {
