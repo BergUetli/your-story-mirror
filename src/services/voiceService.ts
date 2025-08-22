@@ -48,6 +48,14 @@ class VoiceService {
         console.error('❌ Debug secrets test failed:', debugError);
       } else {
         console.log('🔐 Secret Debug Results:', debugResults);
+        
+        // If ElevenLabs key is still not found, there's a secret sync issue
+        if (!debugResults?.elevenLabsKeyFound) {
+          console.warn('🚨 ELEVENLABS_API_KEY not found in edge function environment!');
+          console.warn('📋 Available API-related keys:', debugResults?.allApiKeys || 'none');
+          console.warn('🔧 This suggests a secret synchronization issue between Supabase dashboard and edge functions');
+          console.warn('💡 Try: 1) Wait 2-3 minutes for sync 2) Re-add the secret 3) Check secret name matches exactly');
+        }
       }
       
       const { data: testResults, error: testError } = await supabase.functions.invoke('comprehensive-test');
