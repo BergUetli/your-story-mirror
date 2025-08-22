@@ -25,6 +25,13 @@ serve(async (req) => {
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = await req.json();
     
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    
+    console.log('ElevenLabs API Key check:', {
+      hasKey: !!ELEVENLABS_API_KEY,
+      keyLength: ELEVENLABS_API_KEY?.length || 0,
+      keyPrefix: ELEVENLABS_API_KEY ? ELEVENLABS_API_KEY.substring(0, 10) + '...' : 'none'
+    });
+    
     if (!ELEVENLABS_API_KEY) {
       throw new Error('ElevenLabs API key not configured');
     }
