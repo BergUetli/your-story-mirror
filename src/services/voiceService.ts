@@ -29,6 +29,7 @@ export const VOICES: Voice[] = [
 
 class VoiceService {
   private currentAudio: HTMLAudioElement | null = null;
+  private elevenLabsEnabled: boolean = false;
 
   constructor() {
     console.log('✅ VoiceService initialized with Supabase client');
@@ -36,8 +37,54 @@ class VoiceService {
   }
 
   private async testSupabaseConnection() {
-    console.log('🎤 VoiceService ready - using browser TTS for now');
-    console.log('ℹ️ ElevenLabs integration temporarily disabled due to secrets deployment issue');
+    try {
+      console.log('🧪 Running comprehensive diagnostic test...');
+      
+      const { data: testResults, error: testError } = await supabase.functions.invoke('comprehensive-test');
+      
+      if (testError) {
+        console.error('❌ Comprehensive test failed:', testError);
+        console.log('ℹ️ Falling back to browser TTS');
+        return;
+      }
+
+      console.log('📊 Comprehensive Test Results:');
+      console.log(`✅ Passed: ${testResults.passed}/${testResults.totalTests} tests`);
+      
+      if (testResults.failed > 0) {
+        console.log('❌ Failed tests:');
+        testResults.results.filter(r => !r.success).forEach(result => {
+          console.log(`  - ${result.step}: ${result.error}`);
+        });
+      }
+
+      // Log detailed results for debugging
+      testResults.results.forEach(result => {
+        if (result.success) {
+          console.log(`✅ ${result.step}:`, result.data);
+        } else {
+          console.error(`❌ ${result.step}:`, result.error);
+        }
+      });
+
+      // Determine if ElevenLabs is working
+      const elevenLabsWorking = testResults.results
+        .filter(r => r.step.includes('ElevenLabs') || r.step.includes('TTS'))
+        .every(r => r.success);
+
+      if (elevenLabsWorking) {
+        console.log('🎉 ElevenLabs fully functional! Re-enabling TTS...');
+        this.elevenLabsEnabled = true;
+      } else {
+        console.log('⚠️ ElevenLabs issues detected. Using browser TTS fallback.');
+        this.elevenLabsEnabled = false;
+      }
+      
+    } catch (error) {
+      console.error('💥 Could not run comprehensive test:', error);
+      console.log('ℹ️ Defaulting to browser TTS');
+      this.elevenLabsEnabled = false;
+    }
   }
 
   private getVoiceSettings(voiceId: string) {
@@ -60,8 +107,70 @@ class VoiceService {
     // Stop any currently playing audio
     this.stop();
 
-    console.log('🎤 Using browser TTS (ElevenLabs temporarily disabled)');
-    return this.speakWithBrowserTTS(text);
+    // Use ElevenLabs if enabled, otherwise browser TTS
+    if (this.elevenLabsEnabled) {
+      console.log('🎤 Using ElevenLabs TTS');
+      return this.speakWithElevenLabs(text, options);
+    } else {
+      console.log('🎤 Using browser TTS');
+      return this.speakWithBrowserTTS(text);
+    }
+  }
+
+  private async speakWithElevenLabs(text: string, options: VoiceOptions = {}): Promise<void> {
+    try {
+      const voiceId = options.voiceId || VOICES[0].id;
+      const voiceSettings = options.voiceSettings || this.getVoiceSettings(voiceId);
+      
+      const requestBody = {
+        text,
+        voiceId,
+        model: options.model || 'eleven_turbo_v2_5',
+        voiceSettings
+      };
+
+      console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
+      console.log('🔧 Voice settings:', voiceSettings);
+
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: requestBody
+      });
+
+      if (error) {
+        console.error('❌ ElevenLabs TTS error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No audio data received');
+      }
+
+      // Handle the audio response
+      const audioBlob = data instanceof Blob ? data : new Blob([data], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      this.currentAudio = new Audio(audioUrl);
+      
+      console.log('✅ Playing ElevenLabs audio');
+      
+      return new Promise((resolve, reject) => {
+        if (this.currentAudio) {
+          this.currentAudio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            console.log('🎤 ElevenLabs audio finished');
+            resolve();
+          };
+          this.currentAudio.onerror = (e) => {
+            console.error('❌ Audio playback error:', e);
+            URL.revokeObjectURL(audioUrl);
+            reject(e);
+          };
+          this.currentAudio.play().catch(reject);
+        }
+      });
+    } catch (error) {
+      console.error('❌ ElevenLabs TTS failed, falling back to browser TTS:', error);
+      return this.speakWithBrowserTTS(text);
+    }
   }
 
   private speakWithBrowserTTS(text: string): Promise<void> {
