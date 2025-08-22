@@ -163,7 +163,7 @@
 
   /* Floating animation for special elements */
   .gentle-float {
-    animation: gentle-float 6s ease-in-out infinite;
+    animation: gentle-float 8s ease-in-out infinite;
   }
 
   @keyframes gentle-float {
@@ -171,7 +171,7 @@
       transform: translateY(0px);
     }
     50% {
-      transform: translateY(-10px);
+      transform: translateY(-6px);
     }
   }
 

@@ -215,63 +215,109 @@ const Solon: React.FC<SolonProps> = ({
       return;
     }
 
-    setIsProcessing(true);
+    // Stop conversation and show save prompt
+    stopConversation();
     
-    try {
-      // Create conversation text from history
-      const conversationText = conversationHistory
-        .map(entry => `${entry.role === 'user' ? 'You' : 'Solon'}: ${entry.content}`)
-        .join('\n\n');
-
-      // Generate title and content from conversation
-      const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
-      const title = firstUserMessage.length > 50 
-        ? firstUserMessage.substring(0, 47) + '...' 
-        : firstUserMessage || 'Memory Conversation';
-
-      // Create a summary from the conversation
-      const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
-      const content = userMessages.length > 1 
-        ? userMessages.join(' ') 
-        : userMessages[0] || 'A conversation with Solon about memories';
-
-      // Save the memory with conversation
-      const savedMemory = await addMemoryFromConversation(
-        title,
-        content,
-        conversationText,
-        'public'
-      );
-
-      if (savedMemory) {
-        toast({
-          title: "Memory Saved",
-          description: "Your conversation has been preserved as a memory.",
-        });
-
-        // Clear conversation and close
-        setConversationHistory([]);
-        setResponse(null);
-        stopConversation();
-        setIsOpen(false);
-        
-        // Speak confirmation
-        await speakResponse("Your memory has been saved. Thank you for sharing with me.");
-      } else {
-        throw new Error('Failed to save memory');
-      }
+    // Ask user if they want to save the memory
+    const shouldSave = await showSaveMemoryPrompt();
+    
+    if (shouldSave) {
+      setIsProcessing(true);
       
-    } catch (error) {
-      console.error('Error saving memory:', error);
-      toast({
-        title: "Save Error",
-        description: "I couldn't save your memory right now. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-      stopConversation();
+      try {
+        // Create conversation text from history
+        const conversationText = conversationHistory
+          .map(entry => `${entry.role === 'user' ? 'You' : 'Solon'}: ${entry.content}`)
+          .join('\n\n');
+
+        // Generate title and content from conversation
+        const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
+        const title = firstUserMessage.length > 50 
+          ? firstUserMessage.substring(0, 47) + '...' 
+          : firstUserMessage || 'Memory Conversation';
+
+        // Create a summary from the conversation
+        const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
+        const content = userMessages.length > 1 
+          ? userMessages.join(' ') 
+          : userMessages[0] || 'A conversation with Solon about memories';
+
+        // Save the memory with conversation
+        const savedMemory = await addMemoryFromConversation(
+          title,
+          content,
+          conversationText,
+          'public'
+        );
+
+        if (savedMemory) {
+          toast({
+            title: "Memory Saved",
+            description: "Your conversation has been preserved as a memory.",
+          });
+
+          // Navigate to timeline with new memory animation
+          window.location.href = `/timeline?newMemory=${savedMemory.id}&animate=true`;
+          
+          // Speak confirmation
+          await speakResponse("Your memory has been saved and added to your timeline.");
+        } else {
+          throw new Error('Failed to save memory');
+        }
+        
+      } catch (error) {
+        console.error('Error saving memory:', error);
+        toast({
+          title: "Save Error",
+          description: "I couldn't save your memory right now. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     }
+    
+    // Clear conversation and close
+    setConversationHistory([]);
+    setResponse(null);
+    setIsOpen(false);
+  };
+
+  const showSaveMemoryPrompt = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const dialog = document.createElement('div');
+      dialog.innerHTML = `
+        <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div class="bg-card p-6 rounded-lg max-w-md w-full border border-border/20 shadow-2xl">
+            <h3 class="text-lg font-semibold mb-4 text-foreground">Save this memory?</h3>
+            <p class="text-muted-foreground mb-6">Would you like to preserve this conversation as a memory in your timeline?</p>
+            <div class="flex gap-3 justify-end">
+              <button id="cancel-save" class="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors">
+                Continue Conversation
+              </button>
+              <button id="confirm-save" class="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
+                Save Memory
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(dialog);
+      
+      const handleSave = () => {
+        document.body.removeChild(dialog);
+        resolve(true);
+      };
+      
+      const handleCancel = () => {
+        document.body.removeChild(dialog);
+        resolve(false);
+      };
+      
+      dialog.querySelector('#confirm-save')?.addEventListener('click', handleSave);
+      dialog.querySelector('#cancel-save')?.addEventListener('click', handleCancel);
+    });
   };
 
   const handleSendMessage = async () => {

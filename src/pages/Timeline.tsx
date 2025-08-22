@@ -1,64 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useMemories } from '@/hooks/useMemories';
+
+// User profile data (in a real app, this would come from user settings)
+const userProfile = {
+  birthDate: '1995-03-15',
+  birthPlace: 'San Francisco, CA',
+  name: 'Your Journey'
+};
 
 // Life events and memories
 const lifeEvents = [
-  { year: 1995, event: 'Birth', type: 'milestone' },
+  { 
+    year: 1995, 
+    event: 'Born', 
+    type: 'milestone',
+    location: userProfile.birthPlace,
+    date: userProfile.birthDate
+  },
   { year: 2013, event: 'High School Graduation', type: 'milestone' },
   { year: 2017, event: 'College Graduation', type: 'milestone' },
   { year: 2019, event: 'First Job', type: 'milestone' },
   { year: 2022, event: 'Marriage', type: 'milestone' },
 ];
 
-const mockMemories = [
-  {
-    id: 1,
-    date: '2024-01-15',
-    year: 2024,
-    title: 'Sunday morning with Mom',
-    preview: 'The smell of pancakes filled the kitchen as Mom hummed her favorite song...',
-  },
-  {
-    id: 2,
-    date: '2024-01-10', 
-    year: 2024,
-    title: 'First day at the new job',
-    preview: 'Walking through those glass doors, I felt a mixture of excitement and nervousness...',
-  },
-  {
-    id: 3,
-    date: '2023-06-08',
-    year: 2023,
-    title: 'Evening walk with Sarah',
-    preview: 'The sunset painted the sky in shades of amber as we talked about our dreams...',
-  },
-  {
-    id: 4,
-    date: '2022-12-05',
-    year: 2022,
-    title: 'Wedding Day',
-    preview: 'The most beautiful day of our lives, surrounded by everyone we love...',
-  },
-  {
-    id: 5,
-    date: '2019-03-15',
-    year: 2019,
-    title: 'First Day at Work',
-    preview: 'Walking into the office, nervous but excited about this new chapter...',
-  }
-];
-
 // Create timeline data combining events and memories
-const createTimelineData = () => {
+const createTimelineData = (actualMemories: any[]) => {
   const currentYear = new Date().getFullYear();
-  const startYear = 1995;
+  const birthYear = new Date(userProfile.birthDate).getFullYear();
   const timelineData = [];
   
-  for (let year = startYear; year <= currentYear; year++) {
+  for (let year = birthYear; year <= currentYear; year++) {
     const yearEvents = lifeEvents.filter(event => event.year === year);
-    const yearMemories = mockMemories.filter(memory => memory.year === year);
+    const yearMemories = actualMemories.filter(memory => {
+      const memoryYear = new Date(memory.created_at || memory.date).getFullYear();
+      return memoryYear === year;
+    });
     
     if (yearEvents.length > 0 || yearMemories.length > 0) {
       timelineData.push({
@@ -75,19 +54,38 @@ const createTimelineData = () => {
 
 const Timeline = () => {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
-  const [animatingMemory, setAnimatingMemory] = useState<number | null>(null);
-  const timelineData = createTimelineData();
+  const [animatingMemory, setAnimatingMemory] = useState<string | null>(null);
+  const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
+  const { memories } = useMemories();
+  const timelineData = createTimelineData(memories);
 
-  // Simulate new memory being added and materialized
+  // Handle new memory materialization animation
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const newMemoryId = urlParams.get('newMemory');
+    const shouldAnimate = urlParams.get('animate') === 'true';
     
-    if (newMemoryId) {
-      setAnimatingMemory(parseInt(newMemoryId));
-      setTimeout(() => setAnimatingMemory(null), 2000);
+    if (newMemoryId && shouldAnimate) {
+      // First expand the year containing the new memory
+      const memory = memories.find(m => m.id === newMemoryId);
+      if (memory) {
+        const memoryYear = new Date(memory.created_at || memory.date).getFullYear();
+        setExpandedYears(prev => new Set([...prev, memoryYear]));
+        
+        // Then start the materialization animation
+        setTimeout(() => {
+          setMaterializingMemory(newMemoryId);
+          
+          // Stop animation after completion
+          setTimeout(() => {
+            setMaterializingMemory(null);
+            // Clean up URL
+            window.history.replaceState({}, '', '/timeline');
+          }, 2000);
+        }, 300);
+      }
     }
-  }, []);
+  }, [memories]);
 
   const toggleYear = (year: number) => {
     const newExpanded = new Set(expandedYears);
@@ -146,8 +144,25 @@ const Timeline = () => {
                     
                     {/* Life Events */}
                     {yearData.events.map((event, eventIndex) => (
-                      <div key={eventIndex} className="text-lg font-medium text-gray-800 mb-1">
-                        {event.event}
+                      <div key={eventIndex} className="space-y-1">
+                        <div className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                          {event.event}
+                          {event.type === 'milestone' && yearData.year === new Date(userProfile.birthDate).getFullYear() && (
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <MapPin className="w-3 h-3" />
+                              {event.location}
+                            </div>
+                          )}
+                        </div>
+                        {event.date && (
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {new Date(event.date).toLocaleDateString('en-US', {
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -158,14 +173,17 @@ const Timeline = () => {
                       {yearData.memories.map((memory) => (
                         <div
                           key={memory.id}
-                          className={`bg-gray-50 p-6 rounded-none border-l-4 border-black max-w-md ${
-                            animatingMemory === memory.id 
-                              ? 'animate-scale-in bg-yellow-50' 
-                              : ''
+                          className={`bg-gray-50 p-6 rounded-none border-l-4 border-black transition-all duration-500 ${
+                            materializingMemory === memory.id 
+                              ? 'animate-materialize bg-memory/10 border-memory shadow-lg' 
+                              : 'max-w-md'
+                          } ${
+                            memory.recipient === 'family' ? 'max-w-lg' :
+                            memory.recipient === 'public' ? 'max-w-xl' : 'max-w-md'
                           }`}
                         >
                           <div className="text-sm text-gray-500 mb-2">
-                            {new Date(memory.date).toLocaleDateString('en-US', {
+                            {new Date(memory.created_at || memory.date).toLocaleDateString('en-US', {
                               month: 'long',
                               day: 'numeric'
                             })}
@@ -174,8 +192,18 @@ const Timeline = () => {
                             {memory.title}
                           </h3>
                           <p className="text-gray-700 leading-relaxed">
-                            {memory.preview}
+                            {memory.content || memory.preview}
                           </p>
+                          {memory.conversation_text && (
+                            <details className="mt-4">
+                              <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                                View conversation with Solon
+                              </summary>
+                              <div className="mt-2 p-3 bg-gray-100 rounded text-sm text-gray-700 whitespace-pre-line">
+                                {memory.conversation_text}
+                              </div>
+                            </details>
+                          )}
                         </div>
                       ))}
                     </div>
