@@ -42,8 +42,8 @@ serve(async (req) => {
       });
     }
     
-    console.log("🗣️ voiceId is:", voiceId);
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = requestBody;
+    console.log("🗣️ voiceId is:", voiceId);
     
     if (!text || !voiceId) {
       console.error('❌ Missing required fields:', { text: !!text, voiceId: !!voiceId });
