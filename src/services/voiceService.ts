@@ -66,11 +66,13 @@ class VoiceService {
     try {
       const requestBody = {
         text,
-        voiceId: options.voiceId || VOICES[0].id,
-        model: options.model || 'eleven_multilingual_v2',
+        voiceId: options.voiceId || VOICES[0].id, // Default to Aria - warm, conversational
+        model: options.model || 'eleven_turbo_v2_5', // Use Turbo v2.5 for better quality and speed
         voiceSettings: options.voiceSettings || {
-          stability: 0.5,
-          similarity_boost: 0.8,
+          stability: 0.71, // Higher stability for more consistent voice
+          similarity_boost: 0.5, // Lower similarity boost for more natural variation
+          style: 0.0, // Neutral style
+          use_speaker_boost: true // Enable speaker boost for clearer audio
         }
       };
 
@@ -82,8 +84,21 @@ class VoiceService {
         throw error;
       }
 
-      // The response should be audio data
-      const audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      // The response should be audio data - handle different response formats
+      let audioBlob;
+      if (data instanceof ArrayBuffer) {
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      } else if (typeof data === 'string') {
+        // Handle base64 encoded audio
+        const binaryString = atob(data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      } else {
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      }
       const audioUrl = URL.createObjectURL(audioBlob);
       
       this.currentAudio = new Audio(audioUrl);
