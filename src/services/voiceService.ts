@@ -151,34 +151,49 @@ class VoiceService {
         return;
       }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Try to find a nice voice
-      const voices = speechSynthesis.getVoices();
-      const preferredVoice = voices.find(voice => 
-        voice.name.includes('Samantha') || 
-        voice.name.includes('Alex') || 
-        voice.name.includes('Daniel') ||
-        voice.name.includes('Zira') ||
-        voice.lang.startsWith('en')
-      );
-      
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
+      // Ensure voices are loaded
+      let voices = speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        speechSynthesis.addEventListener('voiceschanged', () => {
+          voices = speechSynthesis.getVoices();
+          this.createUtterance(text, voices, resolve);
+        });
+      } else {
+        this.createUtterance(text, voices, resolve);
       }
-
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      utterance.volume = 0.8;
-
-      utterance.onend = () => resolve();
-      utterance.onerror = (event) => {
-        console.error('Browser TTS error:', event);
-        resolve(); // Don't fail, just resolve
-      };
-
-      speechSynthesis.speak(utterance);
     });
+  }
+
+  private createUtterance(text: string, voices: SpeechSynthesisVoice[], resolve: () => void): void {
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // Find the best available voice
+    const preferredVoice = voices.find(voice => 
+      voice.name.includes('Google') ||
+      voice.name.includes('Microsoft') ||
+      voice.name.includes('Samantha') || 
+      voice.name.includes('Alex') || 
+      voice.name.includes('Daniel') ||
+      voice.name.includes('Zira') ||
+      (voice.lang.startsWith('en') && voice.localService === false)
+    ) || voices.find(voice => voice.lang.startsWith('en'));
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log('🎤 Using voice:', preferredVoice.name);
+    }
+
+    utterance.rate = 0.85;
+    utterance.pitch = 1.1;
+    utterance.volume = 0.9;
+
+    utterance.onend = () => resolve();
+    utterance.onerror = (event) => {
+      console.error('Browser TTS error:', event);
+      resolve(); // Don't fail, just resolve
+    };
+
+    speechSynthesis.speak(utterance);
   }
 
   stop(): void {

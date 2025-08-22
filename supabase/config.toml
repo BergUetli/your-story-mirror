@@ -1,13 +1,7 @@
 project_id = "ertoivqgzhgimdghtcxs"
 
-[functions.elevenlabs-tts]
+[functions.simple-tts]
 verify_jwt = false
 
 [functions.solon-ai]
-verify_jwt = false
-
-[functions.test-elevenlabs]
-verify_jwt = false
-
-[functions.debug-key]
 verify_jwt = false
