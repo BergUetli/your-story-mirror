@@ -106,10 +106,14 @@ serve(async (req) => {
       const audioBuffer = await response.arrayBuffer();
       console.log('🎵 Audio data size:', audioBuffer.byteLength, 'bytes');
 
-      return new Response(audioBuffer, {
+      // Convert to base64 to ensure proper transmission through Supabase functions
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+      console.log('📦 Converted to base64, length:', base64Audio.length);
+
+      return new Response(base64Audio, {
         headers: {
           ...corsHeaders,
-          'Content-Type': 'audio/mpeg',
+          'Content-Type': 'text/plain',
         },
       });
     } catch (audioError) {

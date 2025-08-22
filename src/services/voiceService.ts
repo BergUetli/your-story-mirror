@@ -149,6 +149,9 @@ class VoiceService {
 
       const response = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       console.log('📡 Supabase function response:', {
@@ -171,7 +174,7 @@ class VoiceService {
 
       console.log('🔍 Audio data type received:', typeof audioData);
 
-      // Handle the audio response properly - Supabase functions return binary data as Blob
+      // Handle the audio response properly - Supabase functions can return binary data in different formats
       let audioBlob: Blob;
       
       if (audioData instanceof Blob) {
@@ -180,6 +183,20 @@ class VoiceService {
       } else if (audioData instanceof ArrayBuffer) {
         audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
         console.log('✅ Converted ArrayBuffer to Blob');
+      } else if (typeof audioData === 'string') {
+        // If data comes as base64 string, decode it
+        console.log('🔄 Converting base64 string to Blob');
+        try {
+          const binaryString = atob(audioData);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+        } catch (e) {
+          console.error('❌ Failed to decode base64 audio data:', e);
+          throw new Error('Invalid audio data format received');
+        }
       } else {
         // Handle other formats if needed
         console.log('🔄 Converting unknown data type to Blob');
