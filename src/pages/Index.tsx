@@ -124,7 +124,7 @@ const Index = () => {
             </p>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
             <Button 
               asChild
               size="lg" 
@@ -134,18 +134,6 @@ const Index = () => {
                 <Heart className="h-5 w-5 mr-2" />
                 Start Your Sanctuary
                 <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
-            </Button>
-            
-            <Button 
-              asChild
-              variant="outline" 
-              size="lg"
-              className="border-gray-300 hover:border-gray-400 hover:bg-gray-50 text-lg px-8 py-6"
-            >
-              <Link to="/dashboard">
-                <Sparkles className="h-5 w-5 mr-2" />
-                Try Demo Mode
               </Link>
             </Button>
           </div>
