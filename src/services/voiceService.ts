@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceOptions {
   voiceId?: string;
@@ -26,49 +26,17 @@ export const VOICES: Voice[] = [
 ];
 
 class VoiceService {
-  private supabase: any = null;
-  private isSupabaseAvailable = false;
   private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
-    this.initializeSupabase();
-  }
-
-  private initializeSupabase() {
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      console.log('Supabase initialization check:', {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseAnonKey,
-        urlPreview: supabaseUrl ? supabaseUrl.substring(0, 20) + '...' : 'missing'
-      });
-
-      if (supabaseUrl && supabaseAnonKey) {
-        this.supabase = createClient(supabaseUrl, supabaseAnonKey);
-        this.isSupabaseAvailable = true;
-        console.log('✅ Supabase initialized successfully for Voice service');
-        
-        // Test the connection
-        this.testSupabaseConnection();
-      } else {
-        console.warn('❌ Supabase environment variables not found:', {
-          VITE_SUPABASE_URL: !!supabaseUrl,
-          VITE_SUPABASE_ANON_KEY: !!supabaseAnonKey
-        });
-        this.isSupabaseAvailable = false;
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize Supabase:', error);
-      this.isSupabaseAvailable = false;
-    }
+    console.log('✅ VoiceService initialized with Supabase client');
+    this.testSupabaseConnection();
   }
 
   private async testSupabaseConnection() {
     try {
       // Test if we can call the ElevenLabs function
-      const { data, error } = await this.supabase.functions.invoke('elevenlabs-tts', {
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
         body: { text: 'test', voiceId: VOICES[0].id }
       });
       
@@ -86,12 +54,6 @@ class VoiceService {
     // Stop any currently playing audio
     this.stop();
 
-    // Try ElevenLabs first if Supabase is available
-    if (!this.isSupabaseAvailable || !this.supabase) {
-      console.warn('Supabase/ElevenLabs not configured, using browser TTS');
-      return this.speakWithBrowserTTS(text);
-    }
-
     try {
       const requestBody = {
         text,
@@ -105,7 +67,9 @@ class VoiceService {
         }
       };
 
-      const { data, error } = await this.supabase.functions.invoke('elevenlabs-tts', {
+      console.log('🎤 Calling ElevenLabs TTS with:', { text: text.substring(0, 50) + '...', voiceId: requestBody.voiceId });
+
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody
       });
 
