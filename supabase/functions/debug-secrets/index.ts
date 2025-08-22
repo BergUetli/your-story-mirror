@@ -30,6 +30,12 @@ serve(async (req) => {
       key.toUpperCase().includes('API')
     );
     
+    // Check the actual values of relevant keys (safely masked)
+    const keyValues = {
+      ELEVENLABS_API_KEY: elevenLabsKey ? elevenLabsKey.substring(0, 8) + '...' + elevenLabsKey.slice(-4) : 'NULL_OR_EMPTY',
+      OPENAI_API_KEY: Deno.env.get('OPENAI_API_KEY') ? 'HAS_VALUE' : 'NULL_OR_EMPTY'
+    };
+    
     const debugInfo = {
       timestamp: new Date().toISOString(),
       totalEnvVars: envKeys.length,
@@ -38,6 +44,7 @@ serve(async (req) => {
       elevenLabsKeyPrefix: elevenLabsKey ? elevenLabsKey.substring(0, 12) + '...' : 'NOT_FOUND',
       allElevenKeys: elevenKeys,
       allApiKeys: apiKeys,
+      keyValues: keyValues,
       relevantEnvKeys: envKeys.filter(key => 
         key.includes('API') || 
         key.includes('ELEVEN') || 
