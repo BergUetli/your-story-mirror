@@ -44,10 +44,7 @@ serve(async (req) => {
       body: JSON.stringify({
         text,
         model_id: model,
-        voice_settings: voiceSettings || {
-          stability: 0.5,
-          similarity_boost: 0.8,
-        }
+        voice_settings: voiceSettings
       }),
     });
 

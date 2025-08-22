@@ -15,14 +15,16 @@ interface Voice {
   description: string;
 }
 
-// Top ElevenLabs voices with their IDs
+// Top ElevenLabs voices with their IDs and distinct characteristics
 export const VOICES: Voice[] = [
   { id: '9BWtsMINqrJLrRacOk9x', name: 'Aria', description: 'Warm, conversational female voice' },
   { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah', description: 'Clear, professional female voice' },
-  { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger', description: 'Mature, authoritative male voice' },
+  { id: 'CwhRBWXzGAHq8TQ4Fs17', name: 'Roger', description: 'Deep, mature male voice' },
   { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam', description: 'Young, friendly male voice' },
   { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', description: 'Gentle, nurturing female voice' },
   { id: 'cgSgspJ2msm6clMCkdW9', name: 'Jessica', description: 'Energetic, youthful female voice' },
+  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie', description: 'British, sophisticated male voice' },
+  { id: 'SAz9YHcvj6GT2YYXdXww', name: 'River', description: 'Calm, meditative unisex voice' },
 ];
 
 class VoiceService {
@@ -68,29 +70,46 @@ class VoiceService {
     }
   }
 
+  private getVoiceSettings(voiceId: string) {
+    // Different voice settings for more distinct character
+    const voiceConfigs: { [key: string]: { stability: number; similarity_boost: number; style?: number; use_speaker_boost?: boolean } } = {
+      '9BWtsMINqrJLrRacOk9x': { stability: 0.45, similarity_boost: 0.75, style: 0.2 }, // Aria - warm, expressive
+      'EXAVITQu4vr4xnSDxMaL': { stability: 0.75, similarity_boost: 0.85, style: 0.0 }, // Sarah - professional, clear
+      'CwhRBWXzGAHq8TQ4Fs17': { stability: 0.85, similarity_boost: 0.65, style: 0.1 }, // Roger - deep, authoritative
+      'TX3LPaxmHKxFdv7VOQHJ': { stability: 0.35, similarity_boost: 0.80, style: 0.4 }, // Liam - young, energetic
+      'XB0fDUnXU5powFXDhCwa': { stability: 0.65, similarity_boost: 0.90, style: 0.0 }, // Charlotte - gentle, stable
+      'cgSgspJ2msm6clMCkdW9': { stability: 0.25, similarity_boost: 0.75, style: 0.5 }, // Jessica - energetic, varied
+      'IKne3meq5aSn9XLyUdCD': { stability: 0.70, similarity_boost: 0.80, style: 0.2 }, // Charlie - British, refined
+      'SAz9YHcvj6GT2YYXdXww': { stability: 0.80, similarity_boost: 0.70, style: 0.1 }, // River - calm, meditative
+    };
+
+    return voiceConfigs[voiceId] || { stability: 0.5, similarity_boost: 0.75, style: 0.2 };
+  }
+
   async speak(text: string, options: VoiceOptions = {}): Promise<void> {
     // Stop any currently playing audio
     this.stop();
 
     try {
+      const voiceId = options.voiceId || VOICES[0].id;
+      const voiceSettings = options.voiceSettings || this.getVoiceSettings(voiceId);
+      
       const requestBody = {
         text,
-        voiceId: options.voiceId || VOICES[0].id, // Default to Aria - warm, conversational
-        model: options.model || 'eleven_turbo_v2_5', // Use Turbo v2.5 for better quality and speed
-        voiceSettings: options.voiceSettings || {
-          stability: 0.71, // Higher stability for more consistent voice
-          similarity_boost: 0.5, // Lower similarity boost for more natural variation
-        }
+        voiceId,
+        model: options.model || 'eleven_multilingual_v2', // Use multilingual for better quality
+        voiceSettings
       };
 
-      console.log('🎤 Calling ElevenLabs TTS with:', { text: text.substring(0, 50) + '...', voiceId: requestBody.voiceId });
+      console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
+      console.log('🔧 Voice settings:', voiceSettings);
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody
       });
 
       if (error) {
-        console.error('❌ Supabase function invoke error:', error);
+        console.error('❌ ElevenLabs TTS error:', error);
         throw error;
       }
 
@@ -99,44 +118,47 @@ class VoiceService {
         throw new Error('No audio data received');
       }
 
-      // The response should be audio data - handle different response formats
-      let audioBlob;
-      if (data instanceof ArrayBuffer) {
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
-      } else if (typeof data === 'string') {
-        // Handle base64 encoded audio
-        const binaryString = atob(data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-      } else {
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
-      }
-      const audioUrl = URL.createObjectURL(audioBlob);
+      // Handle the audio response properly
+      let audioBlob: Blob;
       
+      if (data instanceof Blob) {
+        audioBlob = data;
+      } else if (data instanceof ArrayBuffer) {
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      } else {
+        // The response should be the raw audio data
+        const response = new Response(data);
+        audioBlob = await response.blob();
+      }
+      
+      const audioUrl = URL.createObjectURL(audioBlob);
       this.currentAudio = new Audio(audioUrl);
+      
+      console.log('✅ Playing ElevenLabs audio');
       
       return new Promise((resolve, reject) => {
         if (this.currentAudio) {
           this.currentAudio.onended = () => {
             URL.revokeObjectURL(audioUrl);
+            console.log('🎤 ElevenLabs audio finished');
             resolve();
           };
-          this.currentAudio.onerror = () => {
+          this.currentAudio.onerror = (e) => {
+            console.error('❌ Audio playback error:', e);
             URL.revokeObjectURL(audioUrl);
-            // Fallback to browser TTS on error
+            // Fallback to browser TTS on audio playback error
             this.speakWithBrowserTTS(text).then(resolve).catch(reject);
           };
-          this.currentAudio.play().catch(() => {
+          this.currentAudio.play().catch((error) => {
+            console.error('❌ Audio play failed:', error);
+            URL.revokeObjectURL(audioUrl);
             // Fallback to browser TTS if audio play fails
             this.speakWithBrowserTTS(text).then(resolve).catch(reject);
           });
         }
       });
     } catch (error) {
-      console.error('Error with ElevenLabs TTS, falling back to browser TTS:', error);
+      console.error('❌ ElevenLabs TTS failed, using browser TTS:', error);
       return this.speakWithBrowserTTS(text);
     }
   }

@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import Solon from "./components/Solon";
 import Index from "./pages/Index";
 import Onboarding from "./components/Onboarding";
+import VoiceTest from "./components/VoiceTest";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,13 @@ const AppContent = () => {
         <Route path="/settings" element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        } />
+        <Route path="/voice-test" element={
+          <ProtectedRoute>
+            <div className="min-h-screen bg-background flex items-center justify-center p-6">
+              <VoiceTest />
+            </div>
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
