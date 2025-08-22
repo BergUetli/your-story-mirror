@@ -147,15 +147,21 @@ class VoiceService {
     return new Promise((resolve, reject) => {
       if (!('speechSynthesis' in window)) {
         console.warn('Browser TTS not supported');
-        resolve(); // Don't fail, just resolve silently
+        resolve();
         return;
       }
 
+      console.log('🎤 Starting browser TTS...');
+      
       // Ensure voices are loaded
       let voices = speechSynthesis.getVoices();
+      console.log('🎤 Available voices:', voices.length);
+      
       if (voices.length === 0) {
+        console.log('🎤 Waiting for voices to load...');
         speechSynthesis.addEventListener('voiceschanged', () => {
           voices = speechSynthesis.getVoices();
+          console.log('🎤 Voices loaded:', voices.length);
           this.createUtterance(text, voices, resolve);
         });
       } else {
@@ -165,6 +171,11 @@ class VoiceService {
   }
 
   private createUtterance(text: string, voices: SpeechSynthesisVoice[], resolve: () => void): void {
+    console.log('🎤 All available voices:');
+    voices.forEach((voice, i) => {
+      console.log(`  ${i}: ${voice.name} (${voice.lang}) - Local: ${voice.localService}`);
+    });
+
     const utterance = new SpeechSynthesisUtterance(text);
     
     // Find the best available voice
@@ -176,21 +187,29 @@ class VoiceService {
       voice.name.includes('Daniel') ||
       voice.name.includes('Zira') ||
       (voice.lang.startsWith('en') && voice.localService === false)
-    ) || voices.find(voice => voice.lang.startsWith('en'));
+    ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
     
     if (preferredVoice) {
       utterance.voice = preferredVoice;
-      console.log('🎤 Using voice:', preferredVoice.name);
+      console.log('🎤 Selected voice:', preferredVoice.name, `(${preferredVoice.lang})`);
+    } else {
+      console.log('🎤 Using default voice');
     }
 
+    console.log('🎤 Speech settings - Rate:', 0.85, 'Pitch:', 1.1, 'Volume:', 0.9);
+    
     utterance.rate = 0.85;
     utterance.pitch = 1.1;
     utterance.volume = 0.9;
 
-    utterance.onend = () => resolve();
+    utterance.onstart = () => console.log('🎤 Speech started');
+    utterance.onend = () => {
+      console.log('🎤 Speech ended');
+      resolve();
+    };
     utterance.onerror = (event) => {
-      console.error('Browser TTS error:', event);
-      resolve(); // Don't fail, just resolve
+      console.error('🎤 Browser TTS error:', event);
+      resolve();
     };
 
     speechSynthesis.speak(utterance);
