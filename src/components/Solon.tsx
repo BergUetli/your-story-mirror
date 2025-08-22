@@ -161,10 +161,14 @@ const Solon: React.FC<SolonProps> = ({
   };
 
   const speakResponse = async (text: string) => {
-    if (!voiceEnabled) return;
+    if (!voiceEnabled) {
+      console.log('🔇 Voice disabled, skipping speech');
+      return;
+    }
     
     try {
       setIsSpeaking(true);
+      console.log('🎤 Solon starting to speak:', text.substring(0, 50) + '...');
       
       // Use voice settings from agent config if available
       const voiceOptions = {
@@ -177,10 +181,28 @@ const Solon: React.FC<SolonProps> = ({
       };
       
       console.log('🎤 Using Solon voice settings:', voiceOptions);
+      console.log('🎵 About to call voiceService.speak...');
+      
       await voiceService.speak(text, voiceOptions);
+      console.log('✅ Solon finished speaking successfully');
+      
     } catch (error) {
-      console.error('Error speaking:', error);
+      console.error('❌ Solon speech error:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        voiceEnabled,
+        textLength: text.length
+      });
+      
+      // Show user-friendly error
+      toast({
+        title: "Speech Error",
+        description: "I had trouble speaking. Please check the console for details.",
+        variant: "destructive",
+      });
     } finally {
+      console.log('🏁 Solon speech attempt completed, setting isSpeaking to false');
       setIsSpeaking(false);
     }
   };
