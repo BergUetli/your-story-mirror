@@ -146,6 +146,8 @@ class VoiceService {
 
       console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
       console.log('🔧 Voice settings:', voiceSettings);
+      console.log('📤 Request body being sent:', JSON.stringify(requestBody));
+      console.log('📤 Request body size:', JSON.stringify(requestBody).length);
 
       const response = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody,

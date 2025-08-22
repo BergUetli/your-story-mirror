@@ -28,7 +28,19 @@ serve(async (req) => {
     
     let requestBody;
     try {
-      requestBody = await req.json();
+      const bodyText = await req.text();
+      console.log('📥 Raw request body:', bodyText);
+      console.log('📥 Request body length:', bodyText.length);
+      
+      if (!bodyText || bodyText.trim() === '') {
+        console.error('❌ Empty request body received');
+        return new Response(JSON.stringify({ error: 'Empty request body' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      requestBody = JSON.parse(bodyText);
       console.log('📥 Received TTS request:', { 
         text: requestBody.text?.substring(0, 50) + '...', 
         voiceId: requestBody.voiceId,
