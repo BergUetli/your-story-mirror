@@ -32,6 +32,14 @@ serve(async (req) => {
     
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = requestBody;
     
+    if (!text || !voiceId) {
+      console.error('❌ Missing required fields:', { text: !!text, voiceId: !!voiceId });
+      return new Response(JSON.stringify({ error: 'Missing text or voiceId' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     
     if (!ELEVENLABS_API_KEY) {
@@ -80,22 +88,25 @@ serve(async (req) => {
     }
 
     console.log('✅ ElevenLabs response OK, getting audio data...');
-    const audioArrayBuffer = await response.arrayBuffer();
-    console.log('🎵 Audio data size:', audioArrayBuffer.byteLength, 'bytes');
+    
+    try {
+      const audioBuffer = await response.arrayBuffer();
+      console.log('🎵 Audio data size:', audioBuffer.byteLength, 'bytes');
 
-    // Return the audio data directly as a Response with proper headers
-    return new Response(audioArrayBuffer, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': 'inline',
-        'Cache-Control': 'no-cache',
-      },
-    });
+      return new Response(audioBuffer, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'audio/mpeg',
+        },
+      });
+    } catch (audioError) {
+      console.error('❌ Error processing audio data:', audioError);
+      throw audioError;
+    }
 
   } catch (error) {
     console.error('❌ Error in elevenlabs-tts function:', error);
+    console.error('❌ Error stack:', error.stack);
     return new Response(
       JSON.stringify({ error: error.message, stack: error.stack }),
       { 

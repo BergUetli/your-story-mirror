@@ -134,9 +134,12 @@ class VoiceService {
 
       const response = await supabase.functions.invoke('elevenlabs-tts', {
         body: requestBody,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      });
+
+      console.log('📡 Supabase function response:', {
+        error: response.error,
+        dataType: typeof response.data,
+        dataSize: response.data instanceof Blob ? response.data.size : 'unknown'
       });
 
       if (response.error) {
@@ -152,11 +155,6 @@ class VoiceService {
       }
 
       console.log('🔍 Audio data type received:', typeof audioData);
-      console.log('🔍 Audio data instanceof check:', {
-        isBlob: audioData instanceof Blob,
-        isArrayBuffer: audioData instanceof ArrayBuffer,
-        isUint8Array: audioData instanceof Uint8Array
-      });
 
       // Handle the audio response properly - Supabase functions return binary data as Blob
       let audioBlob: Blob;
@@ -164,9 +162,12 @@ class VoiceService {
       if (audioData instanceof Blob) {
         audioBlob = audioData;
         console.log('✅ Using audio data as Blob');
+      } else if (audioData instanceof ArrayBuffer) {
+        audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
+        console.log('✅ Converted ArrayBuffer to Blob');
       } else {
         // Handle other formats if needed
-        console.log('🔄 Converting audio data to Blob');
+        console.log('🔄 Converting unknown data type to Blob');
         audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       }
       
