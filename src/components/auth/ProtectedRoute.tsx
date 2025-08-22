@@ -57,8 +57,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // TEMPORARILY DISABLED: Allow access without authentication
   // Allow access if user is authenticated OR in demo mode
-  if (user || isDemoMode) {
+  if (true) { // Temporary bypass - always allow access
     return (
       <>
         {isDemoMode && !user && (
