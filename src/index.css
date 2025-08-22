@@ -111,8 +111,7 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-    background: var(--gradient-sanctuary);
+    @apply bg-white text-gray-900 font-sans;
     min-height: 100vh;
   }
 
