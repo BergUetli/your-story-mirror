@@ -157,7 +157,8 @@ class VoiceService {
       console.log('📡 Supabase function response:', {
         error: response.error,
         dataType: typeof response.data,
-        dataSize: response.data instanceof Blob ? response.data.size : 'unknown'
+        dataSize: response.data instanceof Blob ? response.data.size : (typeof response.data === 'string' ? response.data.length : 'unknown'),
+        dataPreview: typeof response.data === 'string' ? response.data.substring(0, 100) + '...' : 'not string'
       });
 
       if (response.error) {
@@ -204,8 +205,20 @@ class VoiceService {
       }
       
       console.log('🎵 Created audio blob, size:', audioBlob.size, 'bytes');
+      
+      if (audioBlob.size === 0) {
+        throw new Error('Audio blob is empty - no valid audio data received');
+      }
+      
       const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('🔗 Created audio URL:', audioUrl);
+      
       this.currentAudio = new Audio(audioUrl);
+      
+      // Add load event listener to check if audio loads properly
+      this.currentAudio.addEventListener('loadstart', () => console.log('🎵 Audio loading started'));
+      this.currentAudio.addEventListener('canplay', () => console.log('✅ Audio can play'));
+      this.currentAudio.addEventListener('error', (e) => console.error('❌ Audio element error:', e));
       
       console.log('✅ Playing ElevenLabs audio');
       
@@ -217,9 +230,16 @@ class VoiceService {
             resolve();
           };
           this.currentAudio.onerror = (e) => {
-            console.error('❌ Audio playback error:', e);
+            console.error('❌ Audio playback error details:', {
+              error: e,
+              currentTime: this.currentAudio?.currentTime,
+              duration: this.currentAudio?.duration,
+              readyState: this.currentAudio?.readyState,
+              networkState: this.currentAudio?.networkState,
+              src: this.currentAudio?.src
+            });
             URL.revokeObjectURL(audioUrl);
-            reject(e);
+            reject(new Error(`Audio playback failed: ${(e as Event).type || 'unknown error'}`));
           };
           this.currentAudio.play().catch(reject);
         }
