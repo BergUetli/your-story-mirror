@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.test-elevenlabs]
 verify_jwt = false
+
+[functions.debug-key]
+verify_jwt = false
