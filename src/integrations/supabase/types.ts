@@ -47,6 +47,103 @@ export type Database = {
         }
         Relationships: []
       }
+      memory_access: {
+        Row: {
+          access_type: string
+          accessed_at: string
+          id: string
+          memory_id: string
+          visitor_id: string
+        }
+        Insert: {
+          access_type?: string
+          accessed_at?: string
+          id?: string
+          memory_id: string
+          visitor_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string
+          id?: string
+          memory_id?: string
+          visitor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_access_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reflections: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          memory_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          memory_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          memory_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reflections_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_capsules: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          release_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          release_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          release_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           age: number | null
@@ -120,6 +217,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      visitors: {
+        Row: {
+          first_visit: string
+          id: string
+          last_visit: string
+          visit_count: number
+          visitor_id: string
+        }
+        Insert: {
+          first_visit?: string
+          id?: string
+          last_visit?: string
+          visit_count?: number
+          visitor_id: string
+        }
+        Update: {
+          first_visit?: string
+          id?: string
+          last_visit?: string
+          visit_count?: number
+          visitor_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

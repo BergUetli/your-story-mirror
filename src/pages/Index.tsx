@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { VoiceTestSimple } from '@/components/VoiceTestSimple';
 import { 
   Sparkles, 
   Heart, 
@@ -94,6 +95,11 @@ const Index = () => {
                   Add New Memory
                 </Link>
               </Button>
+            </div>
+            
+            {/* Development Testing Section */}
+            <div className="mt-12 max-w-md mx-auto">
+              <VoiceTestSimple />
             </div>
           </div>
         </div>
