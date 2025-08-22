@@ -92,7 +92,13 @@ class VoiceService {
       });
 
       if (error) {
+        console.error('❌ Supabase function invoke error:', error);
         throw error;
+      }
+
+      if (!data) {
+        console.error('❌ No audio data received from ElevenLabs');
+        throw new Error('No audio data received');
       }
 
       // The response should be audio data - handle different response formats

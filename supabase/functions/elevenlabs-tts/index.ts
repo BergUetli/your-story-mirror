@@ -26,17 +26,13 @@ serve(async (req) => {
     
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     
-    console.log('ElevenLabs API Key check:', {
-      hasKey: !!ELEVENLABS_API_KEY,
-      keyLength: ELEVENLABS_API_KEY?.length || 0,
-      keyPrefix: ELEVENLABS_API_KEY ? ELEVENLABS_API_KEY.substring(0, 10) + '...' : 'none'
-    });
-    
     if (!ELEVENLABS_API_KEY) {
-      throw new Error('ElevenLabs API key not configured');
+      return new Response(JSON.stringify({ error: 'ElevenLabs API key not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    console.log('Making TTS request to ElevenLabs...');
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -54,12 +50,15 @@ serve(async (req) => {
       }),
     });
 
-    console.log('TTS API response status:', response.status);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.log('TTS API error response:', errorText);
-      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+      return new Response(JSON.stringify({ 
+        error: `ElevenLabs API error: ${response.status}`,
+        details: errorText 
+      }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const audioData = await response.arrayBuffer();
