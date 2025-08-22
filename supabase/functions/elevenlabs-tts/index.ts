@@ -109,18 +109,21 @@ serve(async (req) => {
         throw new Error('Received empty audio buffer from ElevenLabs');
       }
 
-      // Convert to base64 in chunks to prevent stack overflow
-      console.log('🔄 Converting to base64 in chunks...');
-      const chunkSize = 32768; // Process in 32KB chunks
-      let base64Audio = '';
+      // Convert to base64 safely without stack overflow
+      console.log('🔄 Converting to base64...');
       
-      for (let i = 0; i < audioBuffer.byteLength; i += chunkSize) {
-        const chunk = audioBuffer.slice(i, i + chunkSize);
-        const uint8Chunk = new Uint8Array(chunk);
-        const binaryString = Array.from(uint8Chunk, byte => String.fromCharCode(byte)).join('');
-        base64Audio += btoa(binaryString);
+      // Use TextEncoder/TextDecoder approach for large data
+      const uint8Array = new Uint8Array(audioBuffer);
+      let binaryString = '';
+      
+      // Process in chunks but maintain binary integrity
+      const chunkSize = 8192; // Smaller chunks for string building
+      for (let i = 0; i < uint8Array.length; i += chunkSize) {
+        const chunk = uint8Array.slice(i, i + chunkSize);
+        binaryString += String.fromCharCode.apply(null, Array.from(chunk));
       }
       
+      const base64Audio = btoa(binaryString);
       console.log('📦 Converted to base64, length:', base64Audio.length);
 
       if (!base64Audio || base64Audio.length === 0) {
