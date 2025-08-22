@@ -42,6 +42,7 @@ serve(async (req) => {
       });
     }
     
+    console.log("🗣️ voiceId is:", voiceId);
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = requestBody;
     
     if (!text || !voiceId) {
