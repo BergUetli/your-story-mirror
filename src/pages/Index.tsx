@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AuthModal } from '@/components/auth/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Sparkles, 
@@ -17,7 +16,6 @@ import {
 import { Link } from 'react-router-dom';
 
 const Index = () => {
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const { user } = useAuth();
 
   const features = [
@@ -128,13 +126,15 @@ const Index = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              onClick={() => setShowAuthModal(true)}
+              asChild
               size="lg" 
               className="bg-gray-900 hover:bg-gray-800 text-white text-lg px-8 py-6"
             >
-              <Heart className="h-5 w-5 mr-2" />
-              Start Your Sanctuary
-              <ArrowRight className="h-5 w-5 ml-2" />
+              <Link to="/auth">
+                <Heart className="h-5 w-5 mr-2" />
+                Start Your Sanctuary
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Link>
             </Button>
             
             <Button 
@@ -195,12 +195,14 @@ const Index = () => {
           </div>
           
           <Button 
-            onClick={() => setShowAuthModal(true)}
+            asChild
             size="lg" 
             className="bg-gray-900 hover:bg-gray-800 text-white text-lg px-12 py-6"
           >
-            <Heart className="h-5 w-5 mr-2" />
-            Create Your Sanctuary
+            <Link to="/auth">
+              <Heart className="h-5 w-5 mr-2" />
+              Create Your Sanctuary
+            </Link>
           </Button>
           
           <p className="text-sm text-gray-500">
@@ -208,11 +210,6 @@ const Index = () => {
           </p>
         </div>
       </div>
-
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
-      />
     </div>
   );
 };

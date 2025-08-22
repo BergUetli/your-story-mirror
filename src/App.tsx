@@ -9,6 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
 import Timeline from "./pages/Timeline";
 import Settings from "./pages/Settings";
+import Journal from "./pages/Journal";
+import Visitor from "./pages/Visitor";
+import Auth from "./pages/Auth";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
 import Solon from "./components/Solon";
@@ -26,12 +29,20 @@ const App = () => (
           <BrowserRouter>
             <div className="pb-16 md:pb-0">
               <Routes>
-                {/* Public route - landing page */}
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/visitor/:userId" element={<Visitor />} />
+                
                 {/* Protected routes */}
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/journal" element={
+                  <ProtectedRoute>
+                    <Journal />
                   </ProtectedRoute>
                 } />
                 <Route path="/add-memory" element={

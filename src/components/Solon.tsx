@@ -10,6 +10,7 @@ import { voiceService, VOICES, type Voice } from '@/services/voiceService';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
+import solonConfig from '@/agents/solon.json';
 
 interface SolonProps {
   mode?: 'user' | 'visitor';
@@ -164,7 +165,19 @@ const Solon: React.FC<SolonProps> = ({
     
     try {
       setIsSpeaking(true);
-      await voiceService.speak(text, { voiceId: selectedVoice.id });
+      
+      // Use voice settings from agent config if available
+      const voiceOptions = {
+        voiceId: solonConfig.voice?.voiceId || selectedVoice.id,
+        model: solonConfig.voice?.model || 'eleven_turbo_v2_5',
+        voiceSettings: solonConfig.voice?.settings || {
+          stability: 0.71,
+          similarity_boost: 0.5
+        }
+      };
+      
+      console.log('🎤 Using Solon voice settings:', voiceOptions);
+      await voiceService.speak(text, voiceOptions);
     } catch (error) {
       console.error('Error speaking:', error);
     } finally {

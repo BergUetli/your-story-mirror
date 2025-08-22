@@ -80,8 +80,6 @@ class VoiceService {
         voiceSettings: options.voiceSettings || {
           stability: 0.71, // Higher stability for more consistent voice
           similarity_boost: 0.5, // Lower similarity boost for more natural variation
-          style: 0.0, // Neutral style
-          use_speaker_boost: true // Enable speaker boost for clearer audio
         }
       };
 

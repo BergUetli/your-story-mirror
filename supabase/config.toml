@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.solon-ai]
 verify_jwt = false
+
+[functions.elevenlabs-tts]
+verify_jwt = false
+
+[functions.memory-operations]
+verify_jwt = false

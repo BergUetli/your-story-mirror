@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import solonConfig from '@/agents/solon.json';
 
 interface Memory {
   id?: string;
@@ -57,8 +58,17 @@ class SolonService {
     }
 
     try {
+      console.log('🤖 Calling Solon AI with agent config:', {
+        model: solonConfig.model,
+        voice: solonConfig.voice,
+        messagePreview: request.message?.substring(0, 50) + '...'
+      });
+
       const { data, error } = await this.supabase.functions.invoke('solon-ai', {
-        body: request
+        body: {
+          ...request,
+          agentConfig: solonConfig
+        }
       });
 
       if (error) {
