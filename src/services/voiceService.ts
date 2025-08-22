@@ -125,16 +125,19 @@ class VoiceService {
     // Stop any currently playing audio
     this.stop();
 
-    // Use ElevenLabs if enabled, otherwise browser TTS
-    if (this.elevenLabsEnabled) {
-      console.log('🎤 Using ElevenLabs TTS');
+    // Use ElevenLabs if enabled, otherwise browser TTS//Disabled by Rishi on 23 August 2025
+    //if (this.elevenLabsEnabled) {
+     // console.log('🎤 Using ElevenLabs TTS');
+      //return this.speakWithElevenLabs(text, options);
+    //} else {
+      //console.log('🎤 Using browser TTS');
+      //return this.speakWithBrowserTTS(text);
+    //}
+  //}
+//Rishi added the two lines below to force TTS useage
+     console.log('🎤 Forcing ElevenLabs TTS');
       return this.speakWithElevenLabs(text, options);
-    } else {
-      console.log('🎤 Using browser TTS');
-      return this.speakWithBrowserTTS(text);
-    }
-  }
-
+    
   private async speakWithElevenLabs(text: string, options: VoiceOptions = {}): Promise<void> {
     try {
       const voiceId = options.voiceId || VOICES[0].id;
