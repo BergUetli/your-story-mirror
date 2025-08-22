@@ -49,26 +49,41 @@ export type Database = {
       }
       users: {
         Row: {
+          age: number | null
+          birth_date: string | null
+          birth_place: string | null
           created_at: string
+          current_location: string | null
           email: string | null
           id: string
           name: string | null
+          onboarding_completed: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          age?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
           created_at?: string
+          current_location?: string | null
           email?: string | null
           id?: string
           name?: string | null
+          onboarding_completed?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          age?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
           created_at?: string
+          current_location?: string | null
           email?: string | null
           id?: string
           name?: string | null
+          onboarding_completed?: boolean | null
           updated_at?: string
           user_id?: string
         }

@@ -3,34 +3,56 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, MapPin, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
+import { useProfile } from '@/hooks/useProfile';
 
-// User profile data (in a real app, this would come from user settings)
-const userProfile = {
-  birthDate: '1995-03-15',
-  birthPlace: 'San Francisco, CA',
-  name: 'Your Journey'
+// Generate life events based on profile
+const generateLifeEvents = (profile: any) => {
+  if (!profile?.birth_date) return [];
+  
+  const birthYear = new Date(profile.birth_date).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - birthYear;
+  
+  const events = [
+    { 
+      year: birthYear, 
+      event: 'Born', 
+      type: 'milestone',
+      location: profile.birth_place || 'Unknown',
+      date: profile.birth_date
+    }
+  ];
+
+  // Add age-appropriate milestones
+  if (age >= 18) {
+    events.push({ 
+      year: birthYear + 18, 
+      event: 'Came of Age', 
+      type: 'milestone',
+      location: profile.current_location || 'Unknown',
+      date: null
+    });
+  }
+  if (age >= 22) {
+    events.push({ 
+      year: birthYear + 22, 
+      event: 'Early Adulthood', 
+      type: 'milestone',
+      location: profile.current_location || 'Unknown', 
+      date: null
+    });
+  }
+  
+  return events;
 };
 
-// Life events and memories
-const lifeEvents = [
-  { 
-    year: 1995, 
-    event: 'Born', 
-    type: 'milestone',
-    location: userProfile.birthPlace,
-    date: userProfile.birthDate
-  },
-  { year: 2013, event: 'High School Graduation', type: 'milestone' },
-  { year: 2017, event: 'College Graduation', type: 'milestone' },
-  { year: 2019, event: 'First Job', type: 'milestone' },
-  { year: 2022, event: 'Marriage', type: 'milestone' },
-];
-
 // Create timeline data combining events and memories
-const createTimelineData = (actualMemories: any[]) => {
+const createTimelineData = (actualMemories: any[], profile: any) => {
   const currentYear = new Date().getFullYear();
-  const birthYear = new Date(userProfile.birthDate).getFullYear();
+  const birthYear = profile?.birth_date ? new Date(profile.birth_date).getFullYear() : currentYear - 25;
   const timelineData = [];
+  
+  const lifeEvents = generateLifeEvents(profile);
   
   for (let year = birthYear; year <= currentYear; year++) {
     const yearEvents = lifeEvents.filter(event => event.year === year);
@@ -57,33 +79,41 @@ const Timeline = () => {
   const [animatingMemory, setAnimatingMemory] = useState<string | null>(null);
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const { memories } = useMemories();
-  const timelineData = createTimelineData(memories);
+  const { profile } = useProfile();
+  const timelineData = createTimelineData(memories, profile);
 
   // Handle new memory materialization animation
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const newMemoryId = urlParams.get('newMemory');
     const shouldAnimate = urlParams.get('animate') === 'true';
+    const memorySummary = urlParams.get('summary');
     
-    if (newMemoryId && shouldAnimate) {
-      // First expand the year containing the new memory
-      const memory = memories.find(m => m.id === newMemoryId);
-      if (memory) {
-        const memoryYear = new Date(memory.created_at || memory.date).getFullYear();
-        setExpandedYears(prev => new Set([...prev, memoryYear]));
+    if (newMemoryId && shouldAnimate && memorySummary) {
+      // First expand the current year
+      const currentYear = new Date().getFullYear();
+      setExpandedYears(prev => new Set([...prev, currentYear]));
+      
+      // Create a temporary visual effect for the new memory
+      setTimeout(() => {
+        setMaterializingMemory(newMemoryId);
         
-        // Then start the materialization animation
+        // Show the summary appearing effect
+        const summaryElement = document.createElement('div');
+        summaryElement.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary text-white px-6 py-3 rounded-lg shadow-cosmic text-lg font-medium animate-fade-in';
+        summaryElement.textContent = `✨ ${decodeURIComponent(memorySummary)}`;
+        document.body.appendChild(summaryElement);
+        
+        // Remove the summary element after animation
         setTimeout(() => {
-          setMaterializingMemory(newMemoryId);
-          
-          // Stop animation after completion
-          setTimeout(() => {
-            setMaterializingMemory(null);
-            // Clean up URL
-            window.history.replaceState({}, '', '/timeline');
-          }, 2000);
-        }, 300);
-      }
+          if (summaryElement.parentNode) {
+            summaryElement.parentNode.removeChild(summaryElement);
+          }
+          setMaterializingMemory(null);
+          // Clean up URL
+          window.history.replaceState({}, '', '/timeline');
+        }, 2500);
+      }, 300);
     }
   }, [memories]);
 
@@ -147,7 +177,7 @@ const Timeline = () => {
                       <div key={eventIndex} className="space-y-1">
                         <div className="text-lg font-medium text-gray-800 flex items-center gap-2">
                           {event.event}
-                          {event.type === 'milestone' && yearData.year === new Date(userProfile.birthDate).getFullYear() && (
+                          {event.type === 'milestone' && profile?.birth_date && yearData.year === new Date(profile.birth_date).getFullYear() && (
                             <div className="flex items-center gap-1 text-sm text-gray-600">
                               <MapPin className="w-3 h-3" />
                               {event.location}

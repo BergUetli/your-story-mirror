@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute, DemoProvider } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
@@ -16,8 +16,65 @@ import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
 import Solon from "./components/Solon";
 import Index from "./pages/Index";
+import Onboarding from "./components/Onboarding";
 
 const queryClient = new QueryClient();
+
+const AppContent = () => {
+  const { user, needsOnboarding, checkOnboardingStatus } = useAuth();
+  
+  const handleOnboardingComplete = async () => {
+    await checkOnboardingStatus();
+  };
+
+  if (user && needsOnboarding) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+
+  return (
+    <div className="pb-16 md:pb-0">
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/visitor/:userId" element={<Visitor />} />
+        
+        {/* Protected routes */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/journal" element={
+          <ProtectedRoute>
+            <Journal />
+          </ProtectedRoute>
+        } />
+        <Route path="/add-memory" element={
+          <ProtectedRoute>
+            <AddMemory />
+          </ProtectedRoute>
+        } />
+        <Route path="/timeline" element={
+          <ProtectedRoute>
+            <Timeline />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <ProtectedRoute fallback={null}>
+        <Navigation />
+        <Solon />
+      </ProtectedRoute>
+    </div>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -27,47 +84,7 @@ const App = () => (
       <AuthProvider>
         <DemoProvider>
           <BrowserRouter>
-            <div className="pb-16 md:pb-0">
-              <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/visitor/:userId" element={<Visitor />} />
-                
-                {/* Protected routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/journal" element={
-                  <ProtectedRoute>
-                    <Journal />
-                  </ProtectedRoute>
-                } />
-                <Route path="/add-memory" element={
-                  <ProtectedRoute>
-                    <AddMemory />
-                  </ProtectedRoute>
-                } />
-                <Route path="/timeline" element={
-                  <ProtectedRoute>
-                    <Timeline />
-                  </ProtectedRoute>
-                } />
-                <Route path="/settings" element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <ProtectedRoute fallback={null}>
-                <Navigation />
-                <Solon />
-              </ProtectedRoute>
-            </div>
+            <AppContent />
           </BrowserRouter>
         </DemoProvider>
       </AuthProvider>

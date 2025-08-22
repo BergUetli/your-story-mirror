@@ -4,19 +4,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Heart, Plus, Clock, BookOpen, User, LogOut, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import deepBlueGalaxy from '@/assets/deep-blue-galaxy.jpg';
 
 const Dashboard = () => {
   const [memoryCount, setMemoryCount] = useState(7);
-  const [userName, setUserName] = useState('Sarah');
+  const { profile, loading } = useProfile();
+  const { signOut } = useAuth();
   
-  // Simulate loading user data
-  useEffect(() => {
-    // This would typically fetch from your database
-    // For now, we'll use localStorage or default values
-    const storedName = localStorage.getItem('userName') || 'Friend';
-    setUserName(storedName);
-  }, []);
+  const userName = profile?.name || 'Friend';
+  
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <div className="min-h-screen relative">
@@ -41,7 +42,7 @@ const Dashboard = () => {
               <User className="w-4 h-4 mr-2" />
               {userName}
             </Button>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="w-4 h-4" />
             </Button>
             {/* Progressive User Photo */}

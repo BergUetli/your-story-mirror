@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Heart, Send, Upload } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useMemorySound } from '@/hooks/useMemorySound';
 import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
 
 const AddMemory = () => {
@@ -15,6 +16,7 @@ const AddMemory = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { playSuccessSound } = useMemorySound();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,18 +31,27 @@ const AddMemory = () => {
 
     setIsSubmitting(true);
     
-    // Simulate processing - in real app, this would save to database
-    // and process with GPT-4 for reflections
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      // Simulate processing - in real app, this would save to database
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
+      
+      // Create a summary for the timeline (3-4 words)
+      const words = memory.trim().split(' ').slice(0, 4);
+      const summary = words.join(' ') + (memory.trim().split(' ').length > 4 ? '...' : '');
+      
+      // Play the whoosh sound
+      playSuccessSound();
       
       toast({
-        title: "Memory preserved",
+        title: "Memory preserved ✨",
         description: "Your story has been safely captured in your digital sanctuary"
       });
       
-      // In real app, navigate to reflections page with the new memory
-      navigate('/dashboard');
+      // Navigate to timeline with animation parameters
+      setTimeout(() => {
+        navigate(`/timeline?newMemory=temp-${Date.now()}&animate=true&summary=${encodeURIComponent(summary)}`);
+      }, 500);
+      
     } catch (error) {
       toast({
         title: "Something went wrong",
