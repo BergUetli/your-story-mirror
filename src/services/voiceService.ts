@@ -33,7 +33,8 @@ class VoiceService {
 
   constructor() {
     console.log('✅ VoiceService initialized with Supabase client');
-    this.testSupabaseConnection();
+    this.elevenLabsEnabled = true;  // ✅ Force ElevenLabs always
+    //this.testSupabaseConnection(); disabled by Rishi on 23 August 2025, skip this autocheck that resets it. 
   }
 
   private async testSupabaseConnection() {
@@ -124,7 +125,8 @@ class VoiceService {
   async speak(text: string, options: VoiceOptions = {}): Promise<void> {
     // Stop any currently playing audio
     this.stop();
-
+    console.log('🔊 SPEAK() function was called');
+    console.log('🧪 Using speakWithElevenLabs...');
     // Force ElevenLabs TTS usage as requested by Rishi
     console.log('🎤 Forcing ElevenLabs TTS');
     return this.speakWithElevenLabs(text, options);
@@ -218,7 +220,7 @@ class VoiceService {
         resolve();
         return;
       }
-
+      console.log('🚨 This means fallback to browser TTS was triggered');
       console.log('🎤 Starting browser TTS...');
       
       // Ensure voices are loaded
