@@ -25,112 +25,107 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+// Create Supabase client using Lovable's integration
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
+
+let supabase: any = null;
+let isSupabaseAvailable = false;
+
+try {
+  // In Lovable, these should be automatically available when Supabase is connected
+  if (supabaseUrl && supabaseAnonKey && 
+      supabaseUrl !== 'https://placeholder.supabase.co' && 
+      supabaseAnonKey !== 'placeholder-key') {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    isSupabaseAvailable = true;
+    console.log('✅ Supabase client initialized successfully');
+  } else {
+    console.warn('❌ Supabase not properly configured. Please check your Lovable Supabase integration.');
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key:', supabaseAnonKey ? supabaseAnonKey.slice(0, 20) + '...' : 'undefined');
+  }
+} catch (error) {
+  console.error('❌ Failed to create Supabase client:', error);
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [supabase, setSupabase] = useState<any>(null);
-  const [isSupabaseAvailable, setIsSupabaseAvailable] = useState(false);
 
   useEffect(() => {
-    // Initialize Supabase client with error handling
-    const initializeSupabase = () => {
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        
-        console.log('Supabase URL:', supabaseUrl ? 'Found' : 'Missing');
-        console.log('Supabase Key:', supabaseAnonKey ? 'Found' : 'Missing');
-        
-        if (supabaseUrl && supabaseAnonKey) {
-          const client = createClient(supabaseUrl, supabaseAnonKey);
-          setSupabase(client);
-          setIsSupabaseAvailable(true);
-          console.log('Supabase client initialized successfully');
-          return client;
-        } else {
-          console.warn('Supabase environment variables not found. Authentication will use localStorage fallback.');
-          setIsSupabaseAvailable(false);
-          setLoading(false);
-          return null;
-        }
-      } catch (error) {
-        console.error('Failed to initialize Supabase:', error);
-        setIsSupabaseAvailable(false);
-        setLoading(false);
-        return null;
-      }
-    };
+    if (!isSupabaseAvailable || !supabase) {
+      console.warn('⚠️ Supabase not available - this might mean:');
+      console.warn('1. Supabase integration is not properly connected in Lovable');
+      console.warn('2. Authentication is not enabled in your Supabase project');
+      console.warn('3. Environment variables are not properly set');
+      setLoading(false);
+      return;
+    }
 
-    const client = initializeSupabase();
-    
-    // Only set up auth listeners if we have a valid client
-    if (client) {
-      // Get initial session
-      client.auth.getSession().then(({ data: { session } }) => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      console.log('📋 Initial session loaded:', session ? '✅ User logged in' : '❌ No user');
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Auth state changed:', event, session ? '✅ User present' : '❌ No user');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        console.log('Initial session loaded:', session ? 'User logged in' : 'No user');
-      });
+      }
+    );
 
-      // Listen for auth changes
-      const { data: { subscription } } = client.auth.onAuthStateChange(
-        async (event, session) => {
-          console.log('Auth state changed:', event, session ? 'User present' : 'No user');
-          setSession(session);
-          setUser(session?.user ?? null);
-          setLoading(false);
-        }
-      );
-
-      return () => subscription.unsubscribe();
-    } else {
-      setLoading(false);
-    }
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    console.log('SignUp attempt - isSupabaseAvailable:', isSupabaseAvailable, 'supabase:', !!supabase);
+    console.log('🔐 SignUp attempt - isSupabaseAvailable:', isSupabaseAvailable, 'supabase:', !!supabase);
     
     if (!isSupabaseAvailable || !supabase) {
-      console.error('SignUp failed: Authentication service not available');
-      return { error: { message: 'Authentication service not available. Please contact support.' } };
+      console.error('❌ SignUp failed: Authentication service not available');
+      return { error: { message: 'Authentication service not available. Please ensure Supabase is properly connected in your Lovable project settings.' } };
     }
 
     try {
-      console.log('Attempting signUp with Supabase...');
+      console.log('📤 Attempting signUp with Supabase...');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-      console.log('SignUp result:', { data, error });
+      console.log('📥 SignUp result:', { data: !!data, error: error?.message || 'none' });
       return { error };
-    } catch (error) {
-      console.error('SignUp error:', error);
-      return { error };
+    } catch (error: any) {
+      console.error('💥 SignUp error:', error);
+      return { error: { message: error.message || 'Unknown signup error' } };
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('SignIn attempt - isSupabaseAvailable:', isSupabaseAvailable, 'supabase:', !!supabase);
+    console.log('🔐 SignIn attempt - isSupabaseAvailable:', isSupabaseAvailable, 'supabase:', !!supabase);
     
     if (!isSupabaseAvailable || !supabase) {
-      console.error('SignIn failed: Authentication service not available');
-      return { error: { message: 'Authentication service not available. Please contact support.' } };
+      console.error('❌ SignIn failed: Authentication service not available');
+      return { error: { message: 'Authentication service not available. Please ensure Supabase is properly connected in your Lovable project settings.' } };
     }
 
     try {
-      console.log('Attempting signIn with Supabase...');
+      console.log('📤 Attempting signIn with Supabase...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      console.log('SignIn result:', { data, error });
+      console.log('📥 SignIn result:', { data: !!data, error: error?.message || 'none' });
       return { error };
-    } catch (error) {
-      console.error('SignIn error:', error);
-      return { error };
+    } catch (error: any) {
+      console.error('💥 SignIn error:', error);
+      return { error: { message: error.message || 'Unknown signin error' } };
     }
   };
 
@@ -147,7 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     if (!isSupabaseAvailable || !supabase) {
-      return { error: { message: 'Password reset service not available. Please contact support.' } };
+      return { error: { message: 'Password reset service not available. Please ensure Supabase is properly connected.' } };
     }
 
     try {
@@ -155,8 +150,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       return { error };
-    } catch (error) {
-      return { error };
+    } catch (error: any) {
+      return { error: { message: error.message || 'Unknown password reset error' } };
     }
   };
 
