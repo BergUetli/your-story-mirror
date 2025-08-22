@@ -64,6 +64,8 @@ serve(async (req) => {
     }
 
     console.log('🔑 API key found, making request to ElevenLabs...');
+    console.log('🔑 API key length:', ELEVENLABS_API_KEY.length);
+    console.log('🔑 API key starts with:', ELEVENLABS_API_KEY.substring(0, 10) + '...');
     
     const elevenLabsBody = {
       text,
@@ -87,13 +89,18 @@ serve(async (req) => {
     });
 
     console.log('📡 ElevenLabs response status:', response.status);
+    console.log('📡 ElevenLabs response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ ElevenLabs API error:', response.status, errorText);
+      console.error('❌ Request URL was:', `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`);
+      console.error('❌ Request body was:', JSON.stringify(elevenLabsBody));
       return new Response(JSON.stringify({ 
         error: `ElevenLabs API error: ${response.status}`,
-        details: errorText 
+        details: errorText,
+        voiceId: voiceId,
+        model: model
       }), {
         status: response.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -106,9 +113,18 @@ serve(async (req) => {
       const audioBuffer = await response.arrayBuffer();
       console.log('🎵 Audio data size:', audioBuffer.byteLength, 'bytes');
 
+      if (audioBuffer.byteLength === 0) {
+        throw new Error('Received empty audio buffer from ElevenLabs');
+      }
+
       // Convert to base64 to ensure proper transmission through Supabase functions
+      console.log('🔄 Converting to base64...');
       const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
       console.log('📦 Converted to base64, length:', base64Audio.length);
+
+      if (!base64Audio || base64Audio.length === 0) {
+        throw new Error('Base64 conversion failed - empty result');
+      }
 
       return new Response(base64Audio, {
         headers: {
@@ -118,7 +134,15 @@ serve(async (req) => {
       });
     } catch (audioError) {
       console.error('❌ Error processing audio data:', audioError);
-      throw audioError;
+      console.error('❌ Audio error stack:', audioError.stack);
+      return new Response(JSON.stringify({ 
+        error: 'Audio processing failed',
+        details: audioError.message,
+        stack: audioError.stack
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
   } catch (error) {

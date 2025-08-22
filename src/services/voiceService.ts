@@ -163,6 +163,7 @@ class VoiceService {
 
       if (response.error) {
         console.error('❌ ElevenLabs TTS error:', response.error);
+        console.error('❌ Full response:', response);
         throw response.error;
       }
 
