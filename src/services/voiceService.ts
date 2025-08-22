@@ -37,7 +37,16 @@ class VoiceService {
 
   private async testSupabaseConnection() {
     try {
-      console.log('🧪 Testing ElevenLabs API key and connection...');
+      console.log('🧪 Testing ElevenLabs API key access...');
+      
+      // Test the new key access function first
+      const { data: keyTestData, error: keyTestError } = await supabase.functions.invoke('test-key-access');
+      
+      if (keyTestError) {
+        console.error('❌ Key access test failed:', keyTestError);
+      } else {
+        console.log('🔍 Key access test result:', keyTestData);
+      }
       
       // Test the actual TTS function with a simple request
       const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
@@ -50,14 +59,9 @@ class VoiceService {
       
       if (error) {
         console.error('❌ ElevenLabs TTS test failed:', error);
-        console.error('❌ This means the API key is not working or not set correctly');
-        
-        // Test if we can reach the debug function
-        const { data: debugData, error: debugError } = await supabase.functions.invoke('debug-key');
-        console.log('🔍 Debug function result:', { debugData, debugError });
+        console.error('❌ This means there is an issue with the TTS function');
       } else {
         console.log('✅ ElevenLabs TTS function working correctly!');
-        console.log('✅ API key is properly configured and accessible');
       }
     } catch (error) {
       console.error('⚠️ Could not test ElevenLabs function:', error);
