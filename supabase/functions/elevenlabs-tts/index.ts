@@ -23,12 +23,24 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
-    console.log('📥 Received TTS request:', { 
-      text: requestBody.text?.substring(0, 50) + '...', 
-      voiceId: requestBody.voiceId,
-      model: requestBody.model 
-    });
+    console.log('🔍 Request method:', req.method);
+    console.log('🔍 Request headers:', Object.fromEntries(req.headers.entries()));
+    
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('📥 Received TTS request:', { 
+        text: requestBody.text?.substring(0, 50) + '...', 
+        voiceId: requestBody.voiceId,
+        model: requestBody.model 
+      });
+    } catch (jsonError) {
+      console.error('❌ JSON parse error:', jsonError);
+      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     
     const { text, voiceId, model = 'eleven_multilingual_v2', voiceSettings }: TTSRequest = requestBody;
     
