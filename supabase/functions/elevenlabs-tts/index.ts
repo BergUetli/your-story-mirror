@@ -109,9 +109,18 @@ serve(async (req) => {
         throw new Error('Received empty audio buffer from ElevenLabs');
       }
 
-      // Convert to base64 to ensure proper transmission through Supabase functions
-      console.log('🔄 Converting to base64...');
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+      // Convert to base64 in chunks to prevent stack overflow
+      console.log('🔄 Converting to base64 in chunks...');
+      const chunkSize = 32768; // Process in 32KB chunks
+      let base64Audio = '';
+      
+      for (let i = 0; i < audioBuffer.byteLength; i += chunkSize) {
+        const chunk = audioBuffer.slice(i, i + chunkSize);
+        const uint8Chunk = new Uint8Array(chunk);
+        const binaryString = Array.from(uint8Chunk, byte => String.fromCharCode(byte)).join('');
+        base64Audio += btoa(binaryString);
+      }
+      
       console.log('📦 Converted to base64, length:', base64Audio.length);
 
       if (!base64Audio || base64Audio.length === 0) {
