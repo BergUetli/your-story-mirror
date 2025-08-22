@@ -52,7 +52,7 @@ serve(async (req) => {
       });
     }
     
-    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    const ELEVENLABS_API_KEY = "sk_087cf9b28a611cf0a3ab317ec0938fe26c15e9d7941339bf";
     
     if (!ELEVENLABS_API_KEY) {
       console.error('❌ ElevenLabs API key not found');
