@@ -80,14 +80,17 @@ serve(async (req) => {
     }
 
     console.log('✅ ElevenLabs response OK, getting audio data...');
-    const audioData = await response.arrayBuffer();
-    console.log('🎵 Audio data size:', audioData.byteLength, 'bytes');
+    const audioArrayBuffer = await response.arrayBuffer();
+    console.log('🎵 Audio data size:', audioArrayBuffer.byteLength, 'bytes');
 
-    return new Response(audioData, {
+    // Return the audio data directly as a Response with proper headers
+    return new Response(audioArrayBuffer, {
+      status: 200,
       headers: {
         ...corsHeaders,
         'Content-Type': 'audio/mpeg',
-        'Content-Length': audioData.byteLength.toString(),
+        'Content-Disposition': 'inline',
+        'Cache-Control': 'no-cache',
       },
     });
 

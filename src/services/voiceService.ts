@@ -132,32 +132,42 @@ class VoiceService {
       console.log('🎤 Calling ElevenLabs TTS with voice:', VOICES.find(v => v.id === voiceId)?.name || 'Unknown');
       console.log('🔧 Voice settings:', voiceSettings);
 
-      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
-        body: requestBody
+      const response = await supabase.functions.invoke('elevenlabs-tts', {
+        body: requestBody,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (error) {
-        console.error('❌ ElevenLabs TTS error:', error);
-        throw error;
+      if (response.error) {
+        console.error('❌ ElevenLabs TTS error:', response.error);
+        throw response.error;
       }
 
-      if (!data) {
+      // The response.data should be the binary audio data
+      const audioData = response.data;
+      
+      if (!audioData) {
         throw new Error('No audio data received');
       }
 
-      // Handle the audio response properly
+      console.log('🔍 Audio data type received:', typeof audioData);
+      console.log('🔍 Audio data instanceof check:', {
+        isBlob: audioData instanceof Blob,
+        isArrayBuffer: audioData instanceof ArrayBuffer,
+        isUint8Array: audioData instanceof Uint8Array
+      });
+
+      // Handle the audio response properly - Supabase functions return binary data as Blob
       let audioBlob: Blob;
       
-      if (data instanceof Blob) {
-        audioBlob = data;
-      } else if (data instanceof ArrayBuffer) {
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
-      } else if (data instanceof Uint8Array) {
-        audioBlob = new Blob([data.buffer], { type: 'audio/mpeg' });
+      if (audioData instanceof Blob) {
+        audioBlob = audioData;
+        console.log('✅ Using audio data as Blob');
       } else {
-        // Handle raw data or other formats
-        console.log('🔍 Data type received:', typeof data, data);
-        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+        // Handle other formats if needed
+        console.log('🔄 Converting audio data to Blob');
+        audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       }
       
       console.log('🎵 Created audio blob, size:', audioBlob.size, 'bytes');
