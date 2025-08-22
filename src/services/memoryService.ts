@@ -55,7 +55,9 @@ class MemoryService {
   private getMemoriesFromLocalStorage(): MemoryWithConversation[] {
     try {
       const stored = localStorage.getItem('memories');
-      return stored ? JSON.parse(stored) : [];
+      const memories = stored ? JSON.parse(stored) : [];
+      console.log('📖 Loading memories from localStorage:', memories.length, 'memories found');
+      return memories;
     } catch (error) {
       console.error('Error reading from localStorage:', error);
       return [];
@@ -104,9 +106,12 @@ class MemoryService {
       updated_at: new Date().toISOString(),
     };
 
+    console.log('💾 Adding memory to localStorage:', newMemory.title);
     const memories = this.getMemoriesFromLocalStorage();
+    console.log('📊 Current memories count before add:', memories.length);
     const updatedMemories = [newMemory, ...memories];
     this.saveMemoriesToLocalStorage(updatedMemories);
+    console.log('✅ Memory saved to localStorage, new count:', updatedMemories.length);
     
     return newMemory;
   }

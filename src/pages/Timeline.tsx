@@ -78,9 +78,15 @@ const Timeline = () => {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [animatingMemory, setAnimatingMemory] = useState<string | null>(null);
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
-  const { memories } = useMemories();
+  const { memories, loadMemories } = useMemories();
   const { profile } = useProfile();
   const timelineData = createTimelineData(memories, profile);
+
+  // Refresh memories when component mounts or when returning to timeline
+  useEffect(() => {
+    console.log('📅 Timeline mounted, refreshing memories...');
+    loadMemories();
+  }, [loadMemories]);
 
   // Handle new memory materialization animation
   useEffect(() => {

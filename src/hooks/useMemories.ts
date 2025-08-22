@@ -52,12 +52,20 @@ export const useMemories = () => {
   const loadMemories = async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 Loading memories...');
       const data = await memoryService.getMemories();
-      if (data.length === 0) {
-        // If no memories in database, use mock data for demo
+      console.log('📊 Loaded memories count:', data.length);
+      
+      // Always set the loaded memories, even if empty
+      // Don't fallback to mock memories automatically
+      console.log('✅ Setting loaded memories to state');
+      setMemories(data);
+      
+      // Only use mock memories if explicitly no real memories exist
+      // and this is the initial load (not a refresh)
+      if (data.length === 0 && memories.length === 0) {
+        console.log('📝 Using mock memories as initial fallback');
         setMemories(mockMemories);
-      } else {
-        setMemories(data);
       }
     } catch (error) {
       console.error('Error loading memories:', error);
@@ -69,9 +77,21 @@ export const useMemories = () => {
 
   const addMemory = async (memory: Omit<MemoryWithConversation, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('🆕 Adding new memory:', memory.title);
       const newMemory = await memoryService.addMemory(memory);
       if (newMemory) {
-        setMemories(prev => [newMemory, ...prev]);
+        console.log('✅ Memory added successfully, updating state');
+        // If we currently have mock memories, replace them with real memories
+        setMemories(prev => {
+          // Check if current memories are mock memories by checking if first memory has the mock ID
+          const hasMockMemories = prev.length > 0 && prev[0].id === '1';
+          if (hasMockMemories) {
+            console.log('🔄 Replacing mock memories with real memories');
+            return [newMemory];
+          } else {
+            return [newMemory, ...prev];
+          }
+        });
         return newMemory;
       }
     } catch (error) {
