@@ -150,7 +150,7 @@ class VoiceService {
       console.log('📤 Request body size:', JSON.stringify(requestBody).length);
 
       const response = await supabase.functions.invoke('elevenlabs-tts', {
-        body: requestBody,
+        body: JSON.stringify(requestBody),
         headers: {
           'Content-Type': 'application/json',
         },
