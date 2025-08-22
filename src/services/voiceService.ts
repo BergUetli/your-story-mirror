@@ -145,8 +145,22 @@ class VoiceService {
         throw new Error('No audio data received');
       }
 
-      // Handle the audio response
-      const audioBlob = data instanceof Blob ? data : new Blob([data], { type: 'audio/mpeg' });
+      // Handle the audio response properly
+      let audioBlob: Blob;
+      
+      if (data instanceof Blob) {
+        audioBlob = data;
+      } else if (data instanceof ArrayBuffer) {
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      } else if (data instanceof Uint8Array) {
+        audioBlob = new Blob([data.buffer], { type: 'audio/mpeg' });
+      } else {
+        // Handle raw data or other formats
+        console.log('🔍 Data type received:', typeof data, data);
+        audioBlob = new Blob([data], { type: 'audio/mpeg' });
+      }
+      
+      console.log('🎵 Created audio blob, size:', audioBlob.size, 'bytes');
       const audioUrl = URL.createObjectURL(audioBlob);
       this.currentAudio = new Audio(audioUrl);
       
