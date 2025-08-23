@@ -10,6 +10,7 @@ import { voiceService, VOICES, type Voice } from '@/services/voiceService';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import solonConfig from '@/agents/solon.json';
 
 interface SolonProps {
@@ -44,6 +45,7 @@ const Solon: React.FC<SolonProps> = ({
   
   const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { 
     isListening, 
     transcript, 
@@ -72,10 +74,10 @@ const Solon: React.FC<SolonProps> = ({
 
       // Set a new timer for auto-processing
       const timer = setTimeout(() => {
-        if (transcript.trim() && transcript !== lastTranscriptRef.current && !processingRef.current) {
+        if (transcript.trim() && transcript !== lastTranscriptRef.current && !processingRef.current && !isSpeaking) {
           handleAutoProcessMessage(transcript);
         }
-      }, 2000); // Wait 2 seconds of silence before processing
+      }, 3000); // Wait 3 seconds of silence before processing
 
       setSilenceTimer(timer);
     }
@@ -90,12 +92,12 @@ const Solon: React.FC<SolonProps> = ({
   // Auto-restart listening after Solon finishes speaking
   useEffect(() => {
     if (isConversationActive && !isSpeaking && !isLoading && !isListening) {
-      // Small delay to ensure audio has fully stopped
+      // Longer delay to prevent interrupting Solon
       const timer = setTimeout(() => {
-        if (isConversationActive && speechSupported) {
+        if (isConversationActive && speechSupported && !isSpeaking) {
           startListening();
         }
-      }, 500);
+      }, 1000); // Increased delay to 1 second
       
       return () => clearTimeout(timer);
     }
@@ -170,11 +172,11 @@ const Solon: React.FC<SolonProps> = ({
       setIsSpeaking(true);
       console.log('🎤 Solon starting to speak:', text.substring(0, 50) + '...');
       
-      // Use voice settings from agent config if available
+      // Use selected voice from dropdown, not hardcoded config
       const voiceOptions = {
-        voiceId: solonConfig.voice?.voiceId || selectedVoice.id,
-        model: solonConfig.voice?.model || 'eleven_turbo_v2_5',
-        voiceSettings: solonConfig.voice?.settings || {
+        voiceId: selectedVoice.id,
+        model: 'eleven_turbo_v2_5',
+        voiceSettings: {
           stability: 0.71,
           similarity_boost: 0.5
         }
@@ -195,12 +197,14 @@ const Solon: React.FC<SolonProps> = ({
         textLength: text.length
       });
       
-      // Show user-friendly error
-      toast({
-        title: "Speech Error",
-        description: "I had trouble speaking. Please check the console for details.",
-        variant: "destructive",
-      });
+      // Show user-friendly error only for critical errors, not for every voice issue
+      if (!error.message?.includes('401') && !error.message?.includes('unusual_activity')) {
+        toast({
+          title: "Speech Error",
+          description: "I had trouble speaking that response.",
+          variant: "destructive",
+        });
+      }
     } finally {
       console.log('🏁 Solon speech attempt completed, setting isSpeaking to false');
       setIsSpeaking(false);
@@ -225,8 +229,8 @@ const Solon: React.FC<SolonProps> = ({
     
     // Give initial greeting
     const greeting = mode === 'visitor' 
-      ? "Hello, I'm Solon. I'm ready to share the memories that have been entrusted to me. What would you like to know?"
-      : "Hello, I'm Solon. I'm here to listen and help you reflect on your experiences. What's on your mind today?";
+      ? "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?"
+      : "Hi, I'm your AI guide through time. Please share a memory or a thought for the future with me.";
     
     speakResponse(greeting);
   };
@@ -291,8 +295,8 @@ const Solon: React.FC<SolonProps> = ({
             description: "Your conversation has been preserved as a memory.",
           });
 
-          // Navigate to timeline with new memory animation
-          window.location.href = `/timeline?newMemory=${savedMemory.id}&animate=true`;
+          // Navigate to timeline
+          navigate(`/timeline`);
           
           // Speak confirmation
           await speakResponse("Your memory has been saved and added to your timeline.");
