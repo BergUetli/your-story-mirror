@@ -14,7 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      memories: {
+        Row: {
+          created_at: string
+          id: string
+          recipient: string | null
+          tags: string[] | null
+          text: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipient?: string | null
+          tags?: string[] | null
+          text: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipient?: string | null
+          tags?: string[] | null
+          text?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          age: number | null
+          birth_date: string | null
+          birth_place: string | null
+          created_at: string
+          current_location: string | null
+          email: string | null
+          id: string
+          name: string | null
+          onboarding_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          current_location?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          current_location?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          onboarding_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
