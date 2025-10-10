@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useConversation } from '@11labs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +43,11 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
       });
     },
   });
+
+  // Propagate speaking state to parent for orb animation
+  useEffect(() => {
+    onSpeakingChange?.(conversation.isSpeaking);
+  }, [conversation.isSpeaking, onSpeakingChange]);
 
   const startConversation = useCallback(async () => {
     try {
