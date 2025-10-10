@@ -4,10 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail } from 'lucide-react';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import galaxyBackdrop from '@/assets/galaxy-backdrop.jpg';
 
 const Settings = () => {
   const [userName, setUserName] = useState('Sarah');
@@ -41,61 +40,60 @@ const Settings = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat relative p-4 md:p-6"
-      style={{ backgroundImage: `url(${galaxyBackdrop})` }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background/70" />
-      <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center gap-4 pt-6">
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center gap-4">
           <Link to="/dashboard">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to sanctuary
+              Back
             </Button>
           </Link>
         </div>
+      </nav>
 
-        <div className="text-center space-y-4">
-          <User className="w-10 h-10 mx-auto text-accent gentle-float" />
-          <h1 className="text-3xl md:text-4xl font-light text-foreground">
-            Your Sanctuary Settings
+      <div className="max-w-3xl mx-auto px-8 py-16 space-y-12 animate-fade-in">
+        {/* Header */}
+        <div className="space-y-4">
+          <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+            Settings
           </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
-            Customize your experience and manage your privacy preferences.
+          <p className="text-xl text-muted-foreground">
+            Customize your experience and manage your privacy.
           </p>
         </div>
 
         {/* Profile Settings */}
-        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
+        <Card className="modern-card border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground drop-shadow-sm">
-              <User className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <User className="w-5 h-5 text-primary" />
+              </div>
               Profile
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="userName" className="text-foreground">Display name</Label>
+              <Label htmlFor="userName">Display name</Label>
               <Input
                 id="userName"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                className="bg-sanctuary border-muted focus:border-memory transition-colors"
+                className="bg-card border-border"
                 placeholder="What should we call you?"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-foreground">Email address</Label>
+              <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-sanctuary border-muted focus:border-memory transition-colors"
+                className="bg-card border-border"
                 placeholder="your@email.com"
               />
               <p className="text-xs text-muted-foreground">
@@ -105,39 +103,34 @@ const Settings = () => {
 
             <Button 
               onClick={handleSaveProfile}
-              className="w-full bg-primary hover:bg-primary/90"
+              className="bg-primary hover:bg-primary/90 rounded-full"
               disabled={isUpdating}
             >
-              {isUpdating ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin"></div>
-                  Saving...
-                </div>
-              ) : (
-                'Save Profile'
-              )}
+              {isUpdating ? 'Saving...' : 'Save Profile'}
             </Button>
           </CardContent>
         </Card>
 
         {/* Privacy & Notifications */}
-        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
+        <Card className="modern-card border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground drop-shadow-sm">
-              <Shield className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
               Privacy & Preferences
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-card/50">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Email notifications</span>
+                  <span className="font-medium">Email notifications</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Receive gentle reminders and memory insights
+                  Receive reminders and memory insights
                 </p>
               </div>
               <Switch 
@@ -146,14 +139,14 @@ const Settings = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-card/50">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Mic className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium text-foreground">Voice synthesis</span>
+                  <span className="font-medium">Voice synthesis</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Enable voice cloning for audio messages (coming soon)
+                  Enable voice cloning (coming soon)
                 </p>
               </div>
               <Switch 
@@ -167,13 +160,15 @@ const Settings = () => {
         </Card>
 
         {/* Privacy Promise */}
-        <Card className="bg-love/20 border-love/30 backdrop-blur-md shadow-cosmic">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-3">
-              <Heart className="w-6 h-6 text-love flex-shrink-0 mt-1 drop-shadow-sm" />
-              <div className="space-y-2">
-                <h3 className="font-medium text-love-foreground drop-shadow-sm">Our Promise to You</h3>
-                <div className="text-sm text-love-foreground/90 space-y-1">
+        <Card className="modern-card border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
+          <CardContent className="p-8">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Heart className="w-5 h-5 text-primary" />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-xl font-semibold">Our Promise to You</h3>
+                <div className="text-sm text-muted-foreground space-y-2">
                   <p>• Your memories are private and encrypted</p>
                   <p>• We never use your data for AI training</p>
                   <p>• You own your stories, always</p>
@@ -185,18 +180,24 @@ const Settings = () => {
         </Card>
 
         {/* Account Actions */}
-        <Card className="memory-card backdrop-blur-md bg-card/80 border-primary/30 shadow-cosmic">
-          <CardContent className="p-6 space-y-4">
-            <Button variant="outline" className="w-full border-muted text-muted-foreground hover:text-foreground">
+        <Card className="modern-card border-border/50">
+          <CardHeader>
+            <CardTitle>Data & Account</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button variant="outline" className="w-full justify-start border-border hover:bg-card rounded-full">
+              <Download className="w-4 h-4 mr-2" />
               Export my memories
             </Button>
             
-            <Button variant="outline" className="w-full border-muted text-muted-foreground hover:text-foreground">
+            <Button variant="outline" className="w-full justify-start border-border hover:bg-card rounded-full">
+              <Download className="w-4 h-4 mr-2" />
               Download my data
             </Button>
 
-            <div className="pt-4 border-t border-muted">
-              <Button variant="ghost" className="w-full text-destructive hover:text-destructive hover:bg-destructive/10">
+            <div className="pt-4 border-t border-border">
+              <Button variant="ghost" className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full">
+                <Trash2 className="w-4 h-4 mr-2" />
                 Delete my account
               </Button>
               <p className="text-xs text-muted-foreground text-center mt-2">

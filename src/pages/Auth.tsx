@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, Mail, Lock, User, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -88,90 +88,82 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center p-8">
+      <div className="w-full max-w-md space-y-8 animate-fade-in">
         {/* Back to Home */}
         <Link 
           to="/" 
-          className="flex items-center text-sm text-muted-foreground hover:text-primary mb-6"
+          className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home
         </Link>
 
-        <Card className="shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <CardTitle className="text-2xl">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              {isSignUp 
-                ? 'Start preserving your life memories today' 
-                : 'Sign in to access your memories'
-              }
-            </p>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <Card className="modern-card border-border/50">
+          <CardContent className="p-8">
+            <div className="text-center space-y-2 mb-8">
+              <h1 className="text-3xl font-bold">
+                {isSignUp ? 'Create Account' : 'Welcome Back'}
+              </h1>
+              <p className="text-muted-foreground">
+                {isSignUp 
+                  ? 'Start preserving your life memories today' 
+                  : 'Sign in to access your memories'
+                }
+              </p>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
               {isSignUp && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-                    <Input
-                      id="name"
-                      type="text"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="pl-10"
-                      required={isSignUp}
-                      disabled={isLoading}
-                    />
-                  </div>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required={isSignUp}
+                    disabled={isLoading}
+                    className="bg-card border-border"
+                  />
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="bg-card border-border"
+                />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-3 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder={isSignUp ? "Create a password (min. 6 characters)" : "Enter your password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
-                    required
-                    disabled={isLoading}
-                    minLength={6}
-                  />
-                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder={isSignUp ? "Create a password (min. 6 characters)" : "Enter your password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  minLength={6}
+                  className="bg-card border-border"
+                />
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full bg-primary hover:bg-primary/90 rounded-full" 
                 disabled={isLoading}
+                size="lg"
               >
                 {isLoading ? (
                   <>
@@ -199,7 +191,7 @@ const Auth = () => {
             </div>
 
             {isSignUp && (
-              <div className="mt-4 text-xs text-muted-foreground text-center">
+              <div className="mt-6 text-xs text-muted-foreground text-center">
                 By creating an account, you agree to preserve and share your memories 
                 responsibly. We'll help you create a lasting digital legacy.
               </div>

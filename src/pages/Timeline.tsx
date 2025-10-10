@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, MapPin, Calendar } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -76,15 +77,13 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
 
 const Timeline = () => {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
-  const [animatingMemory, setAnimatingMemory] = useState<string | null>(null);
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const { memories, loadMemories } = useMemories();
   const { profile } = useProfile();
   const timelineData = createTimelineData(memories, profile);
 
-  // Refresh memories when component mounts or when returning to timeline
+  // Refresh memories when component mounts
   useEffect(() => {
-    console.log('📅 Timeline mounted, refreshing memories...');
     loadMemories();
   }, [loadMemories]);
 
@@ -96,27 +95,22 @@ const Timeline = () => {
     const memorySummary = urlParams.get('summary');
     
     if (newMemoryId && shouldAnimate && memorySummary) {
-      // First expand the current year
       const currentYear = new Date().getFullYear();
       setExpandedYears(prev => new Set([...prev, currentYear]));
       
-      // Create a temporary visual effect for the new memory
       setTimeout(() => {
         setMaterializingMemory(newMemoryId);
         
-        // Show the summary appearing effect
         const summaryElement = document.createElement('div');
-        summaryElement.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary text-white px-6 py-3 rounded-lg shadow-cosmic text-lg font-medium animate-fade-in';
+        summaryElement.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-primary text-white px-6 py-3 rounded-full shadow-lg text-lg font-medium animate-fade-in';
         summaryElement.textContent = `✨ ${decodeURIComponent(memorySummary)}`;
         document.body.appendChild(summaryElement);
         
-        // Remove the summary element after animation
         setTimeout(() => {
           if (summaryElement.parentNode) {
             summaryElement.parentNode.removeChild(summaryElement);
           }
           setMaterializingMemory(null);
-          // Clean up URL
           window.history.replaceState({}, '', '/timeline');
         }, 2500);
       }, 300);
@@ -134,122 +128,117 @@ const Timeline = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white font-exhibit">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-sm z-10 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center gap-4">
           <Link to="/dashboard">
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-black">
+            <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to sanctuary
+              Back
             </Button>
           </Link>
+          <h1 className="text-2xl font-bold">Timeline</h1>
         </div>
-      </div>
+      </nav>
 
       {/* Main Timeline */}
-      <div className="pt-20 pb-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="relative">
-            
-            {/* Timeline Line */}
-            <div className="absolute left-8 top-0 w-1 bg-black" style={{ height: `${timelineData.length * 200}px` }}>
-              {/* Timeline notches */}
-              {timelineData.map((yearData, index) => (
-                <div
-                  key={yearData.year}
-                  className="absolute w-4 h-4 bg-black rounded-full -left-1.5"
-                  style={{ top: `${index * 200 + 40}px` }}
-                />
-              ))}
-            </div>
+      <div className="max-w-5xl mx-auto px-8 py-16">
+        <div className="relative space-y-24 animate-fade-in">
+          
+          {/* Timeline Line */}
+          <div className="absolute left-6 top-0 w-0.5 bg-border h-full" />
 
-            {/* Timeline Content */}
-            <div className="ml-20 space-y-48">
-              {timelineData.map((yearData, index) => (
-                <div key={yearData.year} className="relative">
+          {/* Timeline Content */}
+          {timelineData.map((yearData, index) => (
+            <div key={yearData.year} className="relative">
+              
+              {/* Year Marker */}
+              <div className="absolute left-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+
+              <div className="ml-20 space-y-6">
+                {/* Year Header */}
+                <div 
+                  className="cursor-pointer group"
+                  onClick={() => toggleYear(yearData.year)}
+                >
+                  <h2 className="text-5xl font-bold mb-3 group-hover:text-primary transition-colors">
+                    {yearData.year}
+                  </h2>
                   
-                  {/* Year Header */}
-                  <div 
-                    className="cursor-pointer group mb-8"
-                    onClick={() => toggleYear(yearData.year)}
-                  >
-                    <h2 className="text-4xl font-bold text-black mb-2 group-hover:text-gray-600 transition-colors">
-                      {yearData.year}
-                    </h2>
-                    
-                    {/* Life Events */}
-                    {yearData.events.map((event, eventIndex) => (
-                      <div key={eventIndex} className="space-y-1">
-                        <div className="text-lg font-medium text-gray-800 flex items-center gap-2">
-                          {event.event}
-                          {event.type === 'milestone' && profile?.birth_date && yearData.year === new Date(profile.birth_date).getFullYear() && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600">
-                              <MapPin className="w-3 h-3" />
-                              {event.location}
-                            </div>
-                          )}
-                        </div>
-                        {event.date && (
-                          <div className="text-sm text-gray-500 flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(event.date).toLocaleDateString('en-US', {
-                              month: 'long',
-                              day: 'numeric'
-                            })}
+                  {/* Life Events */}
+                  {yearData.events.map((event, eventIndex) => (
+                    <div key={eventIndex} className="space-y-2 mb-4">
+                      <div className="text-xl font-semibold text-foreground flex items-center gap-3">
+                        {event.event}
+                        {event.type === 'milestone' && event.location && (
+                          <div className="flex items-center gap-2 text-base text-muted-foreground">
+                            <MapPin className="w-4 h-4" />
+                            {event.location}
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                      {event.date && (
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(event.date).toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
 
-                  {/* Expanded Year Content */}
-                  {expandedYears.has(yearData.year) && (
-                    <div className="space-y-6 animate-fade-in">
-                      {yearData.memories.map((memory) => (
-                        <div
-                          key={memory.id}
-                          className={`bg-gray-50 p-6 rounded-none border-l-4 border-black transition-all duration-500 ${
-                            materializingMemory === memory.id 
-                              ? 'animate-materialize bg-memory/10 border-memory shadow-lg' 
-                              : 'max-w-md'
-                          } ${
-                            memory.recipient === 'family' ? 'max-w-lg' :
-                            memory.recipient === 'public' ? 'max-w-xl' : 'max-w-md'
-                          }`}
-                        >
-                          <div className="text-sm text-gray-500 mb-2">
+                {/* Expanded Year Content */}
+                {expandedYears.has(yearData.year) && (
+                  <div className="space-y-4 animate-scale-in">
+                    {yearData.memories.map((memory) => (
+                      <Card
+                        key={memory.id}
+                        className={`modern-card border-border/50 transition-all duration-500 ${
+                          materializingMemory === memory.id 
+                            ? 'border-primary shadow-lg shadow-primary/10' 
+                            : ''
+                        }`}
+                      >
+                        <CardContent className="p-6 space-y-3">
+                          <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <Calendar className="w-3 h-3" />
                             {new Date(memory.created_at || memory.date).toLocaleDateString('en-US', {
                               month: 'long',
                               day: 'numeric'
                             })}
                           </div>
-                          <h3 className="text-xl font-semibold text-black mb-3">
+                          <h3 className="text-2xl font-semibold">
                             {memory.title}
                           </h3>
-                          <p className="text-gray-700 leading-relaxed">
+                          <p className="text-muted-foreground leading-relaxed">
                             {memory.content || memory.preview}
                           </p>
                           {memory.conversation_text && (
                             <details className="mt-4">
-                              <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800">
+                              <summary className="text-sm text-primary cursor-pointer hover:underline">
                                 View conversation with Solon
                               </summary>
-                              <div className="mt-2 p-3 bg-gray-100 rounded text-sm text-gray-700 whitespace-pre-line">
+                              <div className="mt-3 p-4 bg-card rounded-lg text-sm text-muted-foreground whitespace-pre-line border border-border/50">
                                 {memory.conversation_text}
                               </div>
                             </details>
                           )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
 
-                </div>
-              ))}
+              </div>
             </div>
+          ))}
 
-          </div>
         </div>
       </div>
     </div>
