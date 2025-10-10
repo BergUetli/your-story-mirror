@@ -1,1 +1,4 @@
 project_id = "gulydhhzwlltkxbfnclu"
+
+[functions.elevenlabs-agent-token]
+verify_jwt = false
