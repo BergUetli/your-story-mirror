@@ -33,19 +33,12 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
     },
     onMessage: (message) => {
       console.log('📨 Message received:', message);
-      
-      // Track when agent is speaking
-      if (message.type === 'agent_response_start') {
-        onSpeakingChange?.(true);
-      } else if (message.type === 'agent_response_end') {
-        onSpeakingChange?.(false);
-      }
     },
     onError: (error) => {
       console.error('❌ Conversation error:', error);
       toast({
         title: "Error",
-        description: error.message || "An error occurred",
+        description: typeof error === 'string' ? error : "An error occurred",
         variant: "destructive",
       });
     },
