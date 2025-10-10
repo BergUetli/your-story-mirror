@@ -90,26 +90,33 @@ const Index = () => {
                   View My Memories
                 </Link>
               </Button>
-              
-              <Button asChild variant="outline" size="lg" className="border-gray-300 hover:border-gray-400 hover:bg-gray-50">
-                <Link to="/add-memory">
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Add New Memory
-                </Link>
-              </Button>
             </div>
             
-            {/* ElevenLabs Voice Agent */}
-            <div className="mt-12 max-w-md mx-auto">
-              <ElevenLabsVoiceAgent 
-                agentId="agent_3201k6n4rrz8e2wrkf9tv372y0w4"
-                onSpeakingChange={setAgentSpeaking}
-              />
-              {agentSpeaking && (
-                <p className="text-sm text-muted-foreground mt-4 text-center animate-pulse">
-                  Agent is speaking...
-                </p>
-              )}
+            {/* ElevenLabs Voice Agent - Main Memory Creation Interface */}
+            <div className="mt-12 max-w-2xl mx-auto">
+              <Card className="bg-white border-gray-200 shadow-xl">
+                <CardContent className="p-8">
+                  <div className="text-center space-y-4 mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">Talk with Solon</h2>
+                    <p className="text-gray-600">
+                      Start a conversation with your AI memory companion. Solon will help you preserve your stories through natural conversation.
+                    </p>
+                  </div>
+                  
+                  <ElevenLabsVoiceAgent 
+                    agentId="agent_3201k6n4rrz8e2wrkf9tv372y0w4"
+                    onSpeakingChange={setAgentSpeaking}
+                  />
+                  
+                  {agentSpeaking && (
+                    <div className="mt-4 text-center">
+                      <p className="text-sm text-gray-600 animate-pulse">
+                        🎙️ Solon is speaking...
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>

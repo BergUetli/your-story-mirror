@@ -118,10 +118,10 @@ const Dashboard = () => {
           </Card>
 
           {/* Action Buttons */}
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
+          <div className="grid md:grid-cols-2 gap-8 mt-12">
             
-            {/* Add New Memory */}
-            <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-primary/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
+            {/* Add New Memory - Deactivated, use Solon instead */}
+            {/* <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-primary/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
               <Link to="/add-memory">
                 <CardContent className="p-8 text-center space-y-6">
                   <div className="w-20 h-20 bg-gradient-to-br from-memory/30 to-primary/20 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform duration-300 border border-memory/40 shadow-starlight">
@@ -133,7 +133,7 @@ const Dashboard = () => {
                   </p>
                 </CardContent>
               </Link>
-            </Card>
+            </Card> */}
 
             {/* View Reflections */}
             <Card className="memory-card group cursor-pointer bg-card/80 backdrop-blur-md border-primary/30 hover:bg-accent/10 transition-all duration-300 shadow-cosmic hover:shadow-starlight">
