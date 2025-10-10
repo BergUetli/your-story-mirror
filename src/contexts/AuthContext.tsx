@@ -29,31 +29,23 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  // TEMP: Mock user for testing - bypassing authentication
+  const mockUser = {
+    id: 'test-user-123',
+    email: 'test@example.com',
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: new Date().toISOString()
+  } as User;
+
+  const [user, setUser] = useState<User | null>(mockUser);
+  const [session, setSession] = useState<Session | null>({ user: mockUser } as Session);
+  const [loading, setLoading] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      console.log('📋 Initial session loaded:', session ? '✅ User logged in' : '❌ No user');
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session ? '✅ User present' : '❌ No user');
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    console.log('🧪 TESTING MODE: Authentication bypassed');
   }, []);
 
   const signUp = async (email: string, password: string) => {

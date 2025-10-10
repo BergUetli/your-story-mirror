@@ -16,7 +16,6 @@ import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
-import Solon from "./components/Solon";
 import Index from "./pages/Index";
 import Onboarding from "./components/Onboarding";
 import VoiceTest from "./components/VoiceTest";
@@ -82,7 +81,6 @@ const AppContent = () => {
       </Routes>
       <ProtectedRoute fallback={null}>
         <Navigation />
-        <Solon />
       </ProtectedRoute>
     </div>
   );
