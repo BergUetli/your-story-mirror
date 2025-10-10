@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { VoiceTestSimple } from '@/components/VoiceTestSimple';
+import { ElevenLabsVoiceAgent } from '@/components/ElevenLabsVoiceAgent';
 import { 
   Sparkles, 
   Heart, 
@@ -18,6 +19,7 @@ import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { user } = useAuth();
+  const [agentSpeaking, setAgentSpeaking] = useState(false);
 
   const features = [
     {
@@ -97,9 +99,17 @@ const Index = () => {
               </Button>
             </div>
             
-            {/* Development Testing Section */}
+            {/* ElevenLabs Voice Agent */}
             <div className="mt-12 max-w-md mx-auto">
-              <VoiceTestSimple />
+              <ElevenLabsVoiceAgent 
+                agentId="agent_3201k6n4rrz8e2wrkf9tv372y0w4"
+                onSpeakingChange={setAgentSpeaking}
+              />
+              {agentSpeaking && (
+                <p className="text-sm text-muted-foreground mt-4 text-center animate-pulse">
+                  Agent is speaking...
+                </p>
+              )}
             </div>
           </div>
         </div>
