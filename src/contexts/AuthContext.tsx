@@ -45,7 +45,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false); // Skip onboarding for testing
 
   useEffect(() => {
-    console.log('🧪 TESTING MODE: Authentication and onboarding bypassed');
+  console.log('🧪 TESTING MODE: Authentication and onboarding bypassed');
+  console.log('👤 Mock user created:', mockUser.id);
   }, []);
 
   const signUp = async (email: string, password: string) => {

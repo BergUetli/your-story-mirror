@@ -18,6 +18,8 @@ const Index = () => {
   const { user } = useAuth();
   const [agentSpeaking, setAgentSpeaking] = useState(false);
 
+  console.log('🏠 Index page rendering, user:', user ? 'authenticated (test mode)' : 'not authenticated');
+
   const features = [
     {
       icon: Heart,
