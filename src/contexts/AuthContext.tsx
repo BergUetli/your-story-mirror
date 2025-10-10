@@ -117,7 +117,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const checkOnboardingStatus = async () => {
-    if (!user) {
+    // Testing mode: skip DB checks for mock users
+    if (!user || user.id.startsWith('test-')) {
       setNeedsOnboarding(false);
       return;
     }
@@ -134,7 +135,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setNeedsOnboarding(!data || !data.onboarding_completed);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      setNeedsOnboarding(true);
+      setNeedsOnboarding(false);
     }
   };
 

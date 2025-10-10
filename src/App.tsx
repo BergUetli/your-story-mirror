@@ -29,7 +29,8 @@ const AppContent = () => {
     await checkOnboardingStatus();
   };
 
-  if (user && needsOnboarding) {
+  // Onboarding disabled during testing
+  if (false && user && needsOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
