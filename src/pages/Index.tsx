@@ -114,6 +114,12 @@ const Index = () => {
           <div className="text-2xl font-bold">You, Remembered</div>
           <div className="flex gap-4">
             <Button variant="ghost" asChild>
+              <Link to="/about">About</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/how-it-works">How It Works</Link>
+            </Button>
+            <Button variant="ghost" asChild>
               <Link to="/auth">Sign in</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
@@ -134,11 +140,15 @@ const Index = () => {
               Digital Memory Sanctuary
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-tight">
-              Build better
-              <br />
-              memories, faster
-            </h1>
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-tight">
+            Life is short.
+            <br />
+            Make your story
+            <br />
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              last forever
+            </span>
+          </h1>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
               Preserve your voice, stories, and values. Create a lasting legacy.
