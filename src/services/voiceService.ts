@@ -148,29 +148,26 @@ class VoiceService {
       console.log('🔧 Voice settings:', voiceSettings);
       console.log('📤 Request payload:', requestPayload);
 
-      const response = await fetch('https://ertoivqgzhgimdghtcxs.supabase.co/functions/v1/elevenlabs-tts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVydG9pdnFnemhnaW1kZ2h0Y3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MjM4MzQsImV4cCI6MjA3MTM5OTgzNH0.5O_koR60UckVBiow0MfWCvA7q30ilamxBxMwgxPWmY4`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVydG9pdnFnemhnaW1kZ2h0Y3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4MjM4MzQsImV4cCI6MjA3MTM5OTgzNH0.5O_koR60UckVBiow0MfWCvA7q30ilamxBxMwgxPWmY4'
-        },
-        body: JSON.stringify(requestPayload)
+      // Call our Supabase edge function (auto-uses the correct project via the Supabase client)
+      const { data, error } = await supabase.functions.invoke('elevenlabs-tts', {
+        body: requestPayload,
       });
 
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Edge function error:', response.status, errorText);
-        throw new Error(`Edge function returned ${response.status}: ${errorText}`);
+      if (error) {
+        console.error('❌ Edge function error:', error);
+        throw new Error(typeof error === 'string' ? error : 'Edge function call failed');
       }
 
-      // Get the base64 audio data
-      const base64Audio = await response.text();
+      // Get the base64 audio data (function may return text or JSON)
+      let base64Audio: string | undefined;
+      if (typeof data === 'string') {
+        base64Audio = data;
+      } else if (data && typeof data === 'object' && 'audioContent' in data) {
+        base64Audio = (data as any).audioContent;
+      }
+
       console.log('🔍 Received audio data type:', typeof base64Audio);
-      console.log('🔍 Audio data length:', base64Audio.length);
+      console.log('🔍 Audio data length:', base64Audio?.length ?? 0);
       
       if (!base64Audio || base64Audio.length === 0) {
         throw new Error('No audio data received from edge function');
