@@ -1,18 +1,18 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AnimatedOrb } from '@/components/AnimatedOrb';
 import { 
-  Sparkles, 
   Heart, 
   Clock, 
   Shield, 
   ArrowRight,
   Users,
   Lock,
-  Loader2
+  Sparkles
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -22,6 +22,41 @@ const Index = () => {
   const [isConnecting, setIsConnecting] = useState(false);
 
   const conversation = useConversation({
+    clientTools: {
+      // This function will be called by the ElevenLabs agent when user shares a memory
+      save_memory: async (parameters: { title: string; content: string; tags?: string[] }) => {
+        try {
+          console.log('💾 Saving memory:', parameters);
+          
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('Not authenticated');
+
+          const { error } = await supabase.from('memories').insert({
+            user_id: user.id,
+            title: parameters.title,
+            text: parameters.content,
+            tags: parameters.tags || []
+          });
+
+          if (error) throw error;
+
+          toast({
+            title: "Memory saved",
+            description: parameters.title,
+          });
+
+          return "Memory saved successfully";
+        } catch (error) {
+          console.error('Failed to save memory:', error);
+          toast({
+            title: "Failed to save memory",
+            description: error instanceof Error ? error.message : "Unknown error",
+            variant: "destructive",
+          });
+          return "Failed to save memory";
+        }
+      }
+    },
     onConnect: () => {
       console.log('✅ Connected to ElevenLabs');
       toast({
@@ -125,27 +160,19 @@ const Index = () => {
               <button
                 onClick={isConnected ? endConversation : startConversation}
                 disabled={isConnecting}
-                className="relative group cursor-pointer focus:outline-none"
+                className="relative group cursor-pointer focus:outline-none transition-transform hover:scale-105"
                 aria-label={isConnected ? "End conversation" : "Start conversation"}
               >
-                {/* Main orb */}
-                <div className={`w-40 h-40 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-all duration-500 ${
-                  isSpeaking ? 'scale-110 shadow-[0_0_60px_rgba(168,85,247,0.6)]' : isConnected ? 'shadow-[0_0_40px_rgba(168,85,247,0.4)]' : 'group-hover:scale-105 shadow-[0_0_30px_rgba(168,85,247,0.3)]'
-                }`}>
-                  {isConnecting ? (
-                    <Loader2 className="h-16 w-16 text-white animate-spin" />
-                  ) : (
-                    <Sparkles className="h-16 w-16 text-white" />
-                  )}
-                </div>
-                
-                {/* Animated glowing rings when active */}
-                {isConnected && (
-                  <>
-                    <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-ping" />
-                    <div className="absolute -inset-4 rounded-full border border-primary/30 animate-ping" style={{ animationDelay: '150ms' }} />
-                    <div className="absolute -inset-8 rounded-full border border-primary/20 animate-ping" style={{ animationDelay: '300ms' }} />
-                  </>
+                {isConnecting ? (
+                  <div className="w-40 h-40 flex items-center justify-center">
+                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+                  </div>
+                ) : (
+                  <AnimatedOrb 
+                    isActive={isConnected}
+                    isSpeaking={isSpeaking}
+                    size={160}
+                  />
                 )}
               </button>
 
