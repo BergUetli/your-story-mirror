@@ -108,6 +108,17 @@ const Index = () => {
       
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
+      // Fetch user memories for context
+      const { data: memoriesData } = await supabase
+        .from('memories')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      const memoryContext = memoriesData && memoriesData.length > 0
+        ? memoriesData.map(m => `Memory: "${m.text || m.title}"`).join('\n')
+        : 'No memories yet. Help the user create their first memory.';
+
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
       });
@@ -115,10 +126,17 @@ const Index = () => {
       if (error) throw error;
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
-      console.log('Starting session...');
+      console.log('Starting session with memory context...');
       await Promise.race([
         conversation.startSession({
-          signedUrl: data.signed_url
+          signedUrl: data.signed_url,
+          overrides: {
+            agent: {
+              prompt: {
+                prompt: `You are Solon, a warm AI memory companion helping users preserve their life stories. You have access to their memories:\n\n${memoryContext}\n\nUse the save_memory tool to save new memories when users share stories. Ask thoughtful questions to help them explore and preserve meaningful moments.`
+              }
+            }
+          }
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
       ]);
@@ -136,8 +154,15 @@ const Index = () => {
   }, [conversation, toast]);
 
   const endConversation = useCallback(async () => {
-    await conversation.endSession();
-  }, [conversation]);
+    try {
+      console.log('👋 Ending conversation...');
+      await conversation.endSession();
+      setConversationMessages([]);
+      toast({ title: 'Conversation ended', description: 'Your session has ended' });
+    } catch (error) {
+      console.error('Error ending conversation:', error);
+    }
+  }, [conversation, toast]);
 
   const isConnected = conversation.status === 'connected';
   const isSpeaking = conversation.isSpeaking;
