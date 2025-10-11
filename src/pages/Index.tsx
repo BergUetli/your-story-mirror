@@ -20,6 +20,7 @@ const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
+  const noEndBeforeRef = useRef(0);
 
   const conversation = useConversation({
     clientTools: {
@@ -59,6 +60,7 @@ const Index = () => {
     },
     onConnect: () => {
       console.log('✅ Connected to ElevenLabs');
+      noEndBeforeRef.current = Date.now() + 2000; // 2s cooldown to prevent accidental immediate end
       toast({
         title: "Connected",
         description: "Start speaking naturally",
@@ -153,6 +155,10 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
     const now = Date.now();
     if (now - lastClickRef.current < 700) {
       console.log('⏱️ Ignored rapid orb tap');
+      return;
+    }
+    if (isConnected && now < noEndBeforeRef.current) {
+      console.log('🛡️ Prevented immediate disconnect (cooldown)');
       return;
     }
     lastClickRef.current = now;
