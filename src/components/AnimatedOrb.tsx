@@ -13,7 +13,7 @@ export const AnimatedOrb: React.FC<AnimatedOrbProps> = ({
 }) => {
   return (
     <div 
-      className="relative flex items-center justify-center"
+      className="relative flex items-center justify-center pointer-events-none"
       style={{ width: size, height: size }}
     >
       {/* Core orb with metallic gradient */}

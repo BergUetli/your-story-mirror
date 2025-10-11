@@ -219,7 +219,7 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                 <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
                 
                 <button
-                  onClick={handleOrbPress}
+                  onPointerDown={handleOrbPress}
                   disabled={isConnecting}
                   className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
                   style={{
@@ -228,7 +228,7 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                   aria-label={isConnected ? "End conversation" : "Start conversation"}
                 >
                   {/* Metallic ring around orb */}
-                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm" 
+                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm pointer-events-none" 
                        style={{
                          boxShadow: '0 0 80px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(255, 255, 255, 0.05)'
                        }} />
