@@ -165,25 +165,22 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
       console.log('⏱️ Ignored rapid orb tap');
       return;
     }
-    if (isConnected && now < noEndBeforeRef.current) {
-      console.log('🛡️ Prevented immediate disconnect (cooldown)');
+
+    // Orb now only STARTS the session. It will not end it.
+    if (isConnected) {
+      console.log('ℹ️ Orb press ignored while connected (use End button)');
       return;
     }
 
     lastClickRef.current = now;
     isTogglingRef.current = true;
     try {
-      if (isConnected) {
-        console.log('🔻 Ending session by user press');
-        await endConversation();
-      } else {
-        console.log('🔺 Starting session by user press');
-        await startConversation();
-      }
+      console.log('🔺 Starting session by orb press');
+      await startConversation();
     } finally {
       setTimeout(() => { isTogglingRef.current = false; }, 400);
     }
-  }, [isConnected, startConversation, endConversation]);
+  }, [isConnected, startConversation]);
 
   const features = [
     {
@@ -278,9 +275,17 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                   </p>
                 </div>
                 {isConnected && (
-                  <p className="text-sm text-blue-300/60">
-                    Click orb to end conversation
-                  </p>
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-sm text-blue-300/60">Connected</p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => endConversation()}
+                      className="rounded-full"
+                    >
+                      End Conversation
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
