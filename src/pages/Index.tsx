@@ -21,6 +21,7 @@ const Index = () => {
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
   const noEndBeforeRef = useRef(0);
+  const isTogglingRef = useRef(false);
 
   const conversation = useConversation({
     clientTools: {
@@ -68,6 +69,7 @@ const Index = () => {
     },
     onDisconnect: () => {
       console.log('👋 Disconnected');
+      toast({ title: "Disconnected", description: "Voice session ended" });
     },
     onError: (error) => {
       console.error('❌ Error:', error);
@@ -153,6 +155,12 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
   const lastClickRef = useRef(0);
   const handleOrbPress = useCallback(async () => {
     const now = Date.now();
+
+    if (isTogglingRef.current) {
+      console.log('⏳ Toggle in progress, ignoring press');
+      return;
+    }
+
     if (now - lastClickRef.current < 700) {
       console.log('⏱️ Ignored rapid orb tap');
       return;
@@ -161,11 +169,19 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
       console.log('🛡️ Prevented immediate disconnect (cooldown)');
       return;
     }
+
     lastClickRef.current = now;
-    if (isConnected) {
-      await endConversation();
-    } else {
-      await startConversation();
+    isTogglingRef.current = true;
+    try {
+      if (isConnected) {
+        console.log('🔻 Ending session by user press');
+        await endConversation();
+      } else {
+        console.log('🔺 Starting session by user press');
+        await startConversation();
+      }
+    } finally {
+      setTimeout(() => { isTogglingRef.current = false; }, 400);
     }
   }, [isConnected, startConversation, endConversation]);
 
@@ -218,15 +234,18 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                 {/* Metallic glow backdrop */}
                 <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
                 
-                <button
-                  onPointerDown={handleOrbPress}
-                  disabled={isConnecting}
-                  className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
-                  style={{
-                    filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.4))'
-                  }}
-                  aria-label={isConnected ? "End conversation" : "Start conversation"}
-                >
+                  <button
+                    type="button"
+                    onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOrbPress(); }}
+                    onPointerUp={(e) => e.preventDefault()}
+                    onClick={(e) => e.preventDefault()}
+                    disabled={isConnecting}
+                    className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
+                    style={{
+                      filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.4))'
+                    }}
+                    aria-label={isConnected ? "End conversation" : "Start conversation"}
+                  >
                   {/* Metallic ring around orb */}
                   <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm pointer-events-none" 
                        style={{
