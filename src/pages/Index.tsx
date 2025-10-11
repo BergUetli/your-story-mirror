@@ -70,8 +70,40 @@ const Index = () => {
 
   const [conversationMessages, setConversationMessages] = useState<Array<{role: string, text: string}>>([]);
 
+  const retrieveMemoryTool = useCallback(async (parameters: { query: string }) => {
+    try {
+      console.log('🔍 Solin0 requesting memory:', parameters.query);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 'Not authenticated';
+      
+      const { data: memories } = await supabase
+        .from('memories')
+        .select('*')
+        .eq('user_id', user.id)
+        .or(`title.ilike.%${parameters.query}%,text.ilike.%${parameters.query}%`)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (memories && memories.length > 0) {
+        const result = memories.map(m => 
+          `Memory from ${new Date(m.created_at).toLocaleDateString()}: ${m.title || ''} - ${m.text || ''}`
+        ).join('\n\n');
+        console.log('✅ Found memories:', result);
+        return result;
+      }
+      
+      return 'No specific memories found for that query.';
+    } catch (error) {
+      console.error('Error retrieving memory:', error);
+      return 'Unable to retrieve memories at this time.';
+    }
+  }, []);
+
   const conversationOptionsRef = useRef({
-    clientTools: { save_memory: saveMemoryTool },
+    clientTools: { 
+      save_memory: saveMemoryTool,
+      retrieve_memory: retrieveMemoryTool 
+    },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
     onError: onErrorCb,
@@ -115,8 +147,11 @@ const Index = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
+      // Create a summary of key facts instead of all memories
       const memoryContext = memoriesData && memoriesData.length > 0
-        ? memoriesData.map(m => `Memory: "${m.text || m.title}"`).join('\n')
+        ? `You have access to ${memoriesData.length} saved memories. Key themes include topics like: ${
+            [...new Set(memoriesData.flatMap(m => m.tags || []))].slice(0, 5).join(', ') || 'various life experiences'
+          }. Use the retrieve_memory tool to search for specific memories when the user mentions topics or asks questions about their past.`
         : 'No memories yet. Help the user create their first memory.';
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
@@ -133,7 +168,7 @@ const Index = () => {
           overrides: {
             agent: {
               prompt: {
-                prompt: `You are Solon, a warm AI memory companion helping users preserve their life stories. You have access to their memories:\n\n${memoryContext}\n\nUse the save_memory tool to save new memories when users share stories. Ask thoughtful questions to help them explore and preserve meaningful moments.`
+                prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. ${memoryContext}\n\nWhen users mention specific topics, events, or ask about their past, use the retrieve_memory tool to search for relevant memories (e.g., retrieve_memory with query "vacation" or "2020"). Use the save_memory tool to save new memories when users share stories. Ask thoughtful, open-ended questions to help them explore meaningful moments.`
               }
             }
           }
@@ -278,28 +313,35 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Right Side - Conversation Transcript */}
-          <div className="flex-1 max-w-2xl h-[80vh] bg-card/50 backdrop-blur-xl rounded-2xl border border-border/50 p-6 flex flex-col">
-            <h2 className="text-xl font-semibold mb-4">Conversation</h2>
-            <div className="flex-1 overflow-y-auto space-y-4">
+          {/* Right Side - Live Conversation Transcript */}
+          <div className="flex-1 max-w-2xl h-[80vh] bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-xl rounded-2xl border border-primary/20 shadow-2xl p-8 flex flex-col overflow-hidden">
+            <div className="mb-6">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent animate-pulse">
+                Live Conversation
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">Real-time transcript with Solin0</p>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
               {conversationMessages.length === 0 ? (
-                <p className="text-muted-foreground text-center mt-8">
-                  Start a conversation to see the transcript here
-                </p>
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-muted-foreground text-lg text-center">
+                    Start a conversation to see the live transcript appear here...
+                  </p>
+                </div>
               ) : (
                 conversationMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded-lg ${
+                    className={`p-6 rounded-2xl transform transition-all duration-300 hover:scale-[1.02] ${
                       msg.role === 'user'
-                        ? 'bg-primary/10 ml-8 text-right'
-                        : 'bg-muted mr-8'
+                        ? 'bg-gradient-to-br from-primary/30 to-primary/10 border-l-4 border-primary shadow-lg ml-8'
+                        : 'bg-gradient-to-br from-blue-500/20 to-blue-400/10 border-l-4 border-blue-400 shadow-lg mr-8'
                     }`}
                   >
-                    <p className="text-sm font-medium mb-1">
-                      {msg.role === 'user' ? 'You' : 'Solon'}
+                    <p className="text-base font-bold mb-2 flex items-center gap-2">
+                      {msg.role === 'user' ? '🎤 You' : '🤖 Solin0'}
                     </p>
-                    <p className="text-sm">{msg.text}</p>
+                    <p className="text-lg leading-relaxed text-foreground">{msg.text}</p>
                   </div>
                 ))
               )}
