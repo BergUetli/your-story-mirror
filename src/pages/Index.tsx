@@ -73,6 +73,7 @@ const Index = () => {
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
     onError: onErrorCb,
+    onMessage: (message: unknown) => console.log('🗣️ ElevenLabs message:', message),
   }), [saveMemoryTool, onConnectCb, onDisconnectCb, onErrorCb]);
 
   const conversation = useConversation(conversationOptions);
@@ -231,17 +232,12 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                 {/* Metallic glow backdrop */}
                 <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
                 
-                  <button
-                    type="button"
-                    onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleOrbPress(); }}
-                    onPointerUp={(e) => e.preventDefault()}
-                    onClick={(e) => e.preventDefault()}
-                    disabled={isConnecting}
-                    className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
+                  <div
+                    className="relative group cursor-default focus:outline-none transition-all duration-300 hover:scale-105"
                     style={{
                       filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.4))'
                     }}
-                    aria-label={isConnected ? "End conversation" : "Start conversation"}
+                    aria-hidden="true"
                   >
                   {/* Metallic ring around orb */}
                   <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm pointer-events-none" 
@@ -261,7 +257,7 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                       size={192}
                     />
                   )}
-                </button>
+                </div>
               </div>
 
               {/* Status text with metallic effect */}
@@ -274,7 +270,7 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                     {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is listening...' : 'Connected') : 'Click to begin your memory journey'}
                   </p>
                 </div>
-                {isConnected && (
+                {isConnected ? (
                   <div className="flex flex-col items-center gap-2">
                     <p className="text-sm text-blue-300/60">Connected</p>
                     <Button
@@ -284,6 +280,17 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                       className="rounded-full"
                     >
                       End Conversation
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center pt-2">
+                    <Button
+                      size="sm"
+                      onClick={() => startConversation()}
+                      disabled={isConnecting}
+                      className="rounded-full"
+                    >
+                      {isConnecting ? 'Connecting…' : 'Start Conversation'}
                     </Button>
                   </div>
                 )}
