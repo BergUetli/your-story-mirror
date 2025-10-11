@@ -150,9 +150,16 @@ const Index = () => {
               </button>
 
               {/* Status text */}
-              <p className="text-sm text-muted-foreground">
-                {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Listening...' : 'Speak naturally') : 'Click to begin'}
-              </p>
+              <div className="text-center space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Listening...' : 'Connected') : 'Click to begin'}
+                </p>
+                {isConnected && (
+                  <p className="text-xs text-muted-foreground/60">
+                    Click orb to end
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Quick Action Button */}
