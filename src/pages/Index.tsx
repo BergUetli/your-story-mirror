@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { ElevenLabsVoiceAgent } from '@/components/ElevenLabsVoiceAgent';
+import { useConversation } from '@11labs/react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Sparkles, 
   Heart, 
@@ -10,15 +11,74 @@ import {
   Shield, 
   ArrowRight,
   Users,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { user } = useAuth();
-  const [agentSpeaking, setAgentSpeaking] = useState(false);
+  const { toast } = useToast();
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  console.log('🏠 Index page rendering, user:', user ? 'authenticated (test mode)' : 'not authenticated');
+  const conversation = useConversation({
+    onConnect: () => {
+      console.log('✅ Connected to ElevenLabs');
+      toast({
+        title: "Connected",
+        description: "Start speaking naturally",
+      });
+    },
+    onDisconnect: () => {
+      console.log('👋 Disconnected');
+    },
+    onError: (error) => {
+      console.error('❌ Error:', error);
+      toast({
+        title: "Connection failed",
+        description: typeof error === 'string' ? error : "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const startConversation = useCallback(async () => {
+    try {
+      setIsConnecting(true);
+      
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
+        body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
+      });
+
+      if (error) throw error;
+      if (!data?.signed_url) throw new Error('Failed to get signed URL');
+
+      console.log('Starting session...');
+      await Promise.race([
+        conversation.startSession({ signedUrl: data.signed_url }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
+      ]);
+      
+    } catch (error) {
+      console.error('Failed to start:', error);
+      toast({
+        title: "Failed to connect",
+        description: error instanceof Error ? error.message : "Could not start",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [conversation, toast]);
+
+  const endConversation = useCallback(async () => {
+    await conversation.endSession();
+  }, [conversation]);
+
+  const isConnected = conversation.status === 'connected';
+  const isSpeaking = conversation.isSpeaking;
 
   const features = [
     {
@@ -60,38 +120,40 @@ const Index = () => {
         <div className="h-full flex flex-col items-center justify-center p-8">
           <div className="max-w-3xl w-full space-y-12 animate-fade-in">
             
-            {/* Glowing Solon Orb */}
-            <div className="flex justify-center">
-              <div className="relative">
+            {/* Interactive Solon Orb */}
+            <div className="flex flex-col items-center gap-8">
+              <button
+                onClick={isConnected ? endConversation : startConversation}
+                disabled={isConnecting}
+                className="relative group cursor-pointer focus:outline-none"
+                aria-label={isConnected ? "End conversation" : "Start conversation"}
+              >
                 {/* Main orb */}
-                <div className={`w-32 h-32 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-all duration-300 ${
-                  agentSpeaking ? 'scale-110' : ''
+                <div className={`w-40 h-40 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-all duration-500 ${
+                  isSpeaking ? 'scale-110 shadow-[0_0_60px_rgba(168,85,247,0.6)]' : isConnected ? 'shadow-[0_0_40px_rgba(168,85,247,0.4)]' : 'group-hover:scale-105 shadow-[0_0_30px_rgba(168,85,247,0.3)]'
                 }`}>
-                  <Sparkles className="h-12 w-12 text-white" />
+                  {isConnecting ? (
+                    <Loader2 className="h-16 w-16 text-white animate-spin" />
+                  ) : (
+                    <Sparkles className="h-16 w-16 text-white" />
+                  )}
                 </div>
                 
-                {/* Glowing rings */}
-                <div className={`absolute inset-0 rounded-full border-2 border-primary/50 ${
-                  agentSpeaking ? 'animate-ping' : ''
-                }`} />
-                <div className={`absolute -inset-4 rounded-full border border-primary/30 ${
-                  agentSpeaking ? 'animate-ping animation-delay-150' : ''
-                }`} />
-                <div className={`absolute -inset-8 rounded-full border border-primary/20 ${
-                  agentSpeaking ? 'animate-ping animation-delay-300' : ''
-                }`} />
-              </div>
+                {/* Animated glowing rings when active */}
+                {isConnected && (
+                  <>
+                    <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-ping" />
+                    <div className="absolute -inset-4 rounded-full border border-primary/30 animate-ping" style={{ animationDelay: '150ms' }} />
+                    <div className="absolute -inset-8 rounded-full border border-primary/20 animate-ping" style={{ animationDelay: '300ms' }} />
+                  </>
+                )}
+              </button>
+
+              {/* Status text */}
+              <p className="text-sm text-muted-foreground">
+                {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Listening...' : 'Speak naturally') : 'Click to begin'}
+              </p>
             </div>
-            
-            {/* Voice Agent Interface */}
-            <Card className="modern-card border-border/50">
-              <CardContent className="p-8">
-                <ElevenLabsVoiceAgent 
-                  agentId="agent_3201k6n4rrz8e2wrkf9tv372y0w4"
-                  onSpeakingChange={setAgentSpeaking}
-                />
-              </CardContent>
-            </Card>
 
             {/* Quick Action Button */}
             <div className="flex justify-center">
