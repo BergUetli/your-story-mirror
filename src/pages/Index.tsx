@@ -265,7 +265,10 @@ const Index = () => {
     }
   ];
 
-  if (user) {
+  // Always show Solon interface since auth is disabled
+  const shouldShowSolon = user || true;
+
+  if (shouldShowSolon) {
     return (
       <div className="min-h-screen bg-background overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-900/50 to-background" />
@@ -365,15 +368,6 @@ const Index = () => {
             <Button variant="ghost" asChild>
               <Link to="/how-it-works">How It Works</Link>
             </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/auth">Sign in</Link>
-            </Button>
-            <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
-              <Link to="/auth">
-                Get started
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
           </div>
         </div>
       </nav>
@@ -403,14 +397,13 @@ const Index = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              asChild
               size="lg" 
+              onClick={startConversation}
+              disabled={isConnecting || isConnected}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-full"
             >
-              <Link to="/auth">
-                Start for free
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
+              {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start for free'}
+              <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
           </div>
 
