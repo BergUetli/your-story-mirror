@@ -68,15 +68,14 @@ const Index = () => {
     });
   }, [toast]);
 
-  const conversationOptions = useMemo(() => ({
-    clientTools: { save_memory: saveMemoryTool },
+  const conversationOptionsRef = useRef({
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
     onError: onErrorCb,
     onMessage: (message: unknown) => console.log('🗣️ ElevenLabs message:', message),
-  }), [saveMemoryTool, onConnectCb, onDisconnectCb, onErrorCb]);
+  });
 
-  const conversation = useConversation(conversationOptions);
+  const conversation = useConversation(conversationOptionsRef.current);
 
   useEffect(() => {
     console.log('🛰️ Conversation status:', conversation.status, 'speaking:', conversation.isSpeaking);
@@ -88,26 +87,6 @@ const Index = () => {
       
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Fetch user's existing memories for context
-      const { data: userData } = await supabase.auth.getUser();
-      let memoryContext = "";
-      
-      if (userData?.user?.id) {
-        const { data: memories } = await supabase
-          .from('memories')
-          .select('title, text, tags, created_at')
-          .eq('user_id', userData.user.id)
-          .order('created_at', { ascending: false })
-          .limit(20);
-
-        if (memories && memories.length > 0) {
-          memoryContext = "\n\nPrevious memories from this user:\n" + 
-            memories.map(m => 
-              `- ${m.title} (${new Date(m.created_at).toLocaleDateString()}): ${m.text.substring(0, 150)}${m.text.length > 150 ? '...' : ''}`
-            ).join('\n');
-        }
-      }
-
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
       });
@@ -115,21 +94,10 @@ const Index = () => {
       if (error) throw error;
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
-      console.log('Starting session with memory context...');
+      console.log('Starting session...');
       await Promise.race([
-        conversation.startSession({ 
-          signedUrl: data.signed_url,
-          overrides: {
-            agent: {
-              prompt: {
-                prompt: `You are Solon, an empathetic AI biographer helping users preserve their life memories. 
-                
-When users share meaningful memories, experiences, or stories, call the save_memory function to preserve them. Be thoughtful about what constitutes a memory worth saving.
-
-Keep your responses warm, conversational, and concise. Ask open-ended questions to help users explore their memories deeply.${memoryContext}`
-              }
-            }
-          }
+        conversation.startSession({
+          signedUrl: data.signed_url
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
       ]);
