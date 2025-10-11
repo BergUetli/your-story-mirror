@@ -18,15 +18,15 @@ export const AnimatedOrb: React.FC<AnimatedOrbProps> = ({
     >
       {/* Core orb */}
       <div 
-        className={`absolute inset-0 rounded-full bg-gradient-to-br from-primary via-accent to-purple-600 transition-all duration-500 ${
+        className={`absolute inset-0 rounded-full bg-gradient-to-br from-primary via-accent to-blue-700 transition-all duration-500 ${
           isSpeaking ? 'scale-110' : isActive ? 'scale-105' : ''
         }`}
         style={{
           boxShadow: isSpeaking 
-            ? '0 0 60px rgba(168,85,247,0.8), 0 0 120px rgba(168,85,247,0.4)' 
+            ? '0 0 60px rgba(37,99,235,0.8), 0 0 120px rgba(37,99,235,0.4)' 
             : isActive 
-            ? '0 0 40px rgba(168,85,247,0.6)' 
-            : '0 0 20px rgba(168,85,247,0.3)'
+            ? '0 0 40px rgba(37,99,235,0.6)' 
+            : '0 0 20px rgba(37,99,235,0.3)'
         }}
       />
 
@@ -45,9 +45,9 @@ export const AnimatedOrb: React.FC<AnimatedOrbProps> = ({
             style={{ animationDuration: '2.5s', animationDelay: '0.3s' }}
           />
           
-          {/* Layer 3 - Pink */}
+          {/* Layer 3 - Teal */}
           <div 
-            className="absolute inset-0 rounded-full bg-pink-500/20 animate-ping"
+            className="absolute inset-0 rounded-full bg-teal-500/20 animate-ping"
             style={{ animationDuration: '3s', animationDelay: '0.6s' }}
           />
 
