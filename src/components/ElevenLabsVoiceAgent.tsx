@@ -74,7 +74,14 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
       // Start the conversation with the signed URL
       console.log('Starting ElevenLabs session with signed URL:', data.signed_url?.slice(0, 48) + '...');
       await Promise.race([
-        conversation.startSession({ signedUrl: data.signed_url }),
+        conversation.startSession({
+          signedUrl: data.signed_url,
+          overrides: {
+            agent: {
+              firstMessage: "Hi, I’m Solon. I’m ready when you are."
+            }
+          }
+        }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
       ]);
       

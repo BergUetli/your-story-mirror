@@ -129,7 +129,8 @@ const Index = () => {
             agent: {
               prompt: {
                 prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`
-              }
+              },
+              firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
             }
           }
         }),
