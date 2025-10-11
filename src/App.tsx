@@ -11,7 +11,7 @@ import Timeline from "./pages/Timeline";
 import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
-import Auth from "./pages/Auth";
+
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Navigation from "./components/Navigation";
@@ -39,7 +39,6 @@ const AppContent = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<Auth />} />
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
