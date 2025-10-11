@@ -15,7 +15,7 @@ const About = () => {
               <Link to="/how-it-works">How It Works</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
-              <Link to="/auth">Get started</Link>
+              <Link to="/">Get started</Link>
             </Button>
           </div>
         </div>
@@ -282,7 +282,7 @@ const About = () => {
           size="lg" 
           className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
         >
-          <Link to="/auth">
+          <Link to="/">
             Start Your Sanctuary
           </Link>
         </Button>

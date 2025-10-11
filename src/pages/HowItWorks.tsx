@@ -15,7 +15,7 @@ const HowItWorks = () => {
               <Link to="/about">About</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
-              <Link to="/auth">Get started</Link>
+              <Link to="/">Get started</Link>
             </Button>
           </div>
         </div>
@@ -311,7 +311,7 @@ const HowItWorks = () => {
           size="lg" 
           className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
         >
-          <Link to="/auth">
+          <Link to="/">
             Get Started for Free
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>

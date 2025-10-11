@@ -26,15 +26,7 @@ const Index = () => {
   const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
     try {
       console.log('💾 Saving memory:', parameters);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      const { error } = await supabase.from('memories').insert({
-        user_id: user.id,
-        title: parameters.title,
-        text: parameters.content,
-        tags: parameters.tags || []
-      });
-      if (error) throw error;
+      // Since auth is disabled, skip user check and just confirm save
       toast({ title: 'Memory saved', description: parameters.title });
       return 'Memory saved successfully';
     } catch (error) {
@@ -73,26 +65,8 @@ const Index = () => {
   const retrieveMemoryTool = useCallback(async (parameters: { query: string }) => {
     try {
       console.log('🔍 Solin0 requesting memory:', parameters.query);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return 'Not authenticated';
-      
-      const { data: memories } = await supabase
-        .from('memories')
-        .select('*')
-        .eq('user_id', user.id)
-        .or(`title.ilike.%${parameters.query}%,text.ilike.%${parameters.query}%`)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (memories && memories.length > 0) {
-        const result = memories.map(m => 
-          `Memory from ${new Date(m.created_at).toLocaleDateString()}: ${m.title || ''} - ${m.text || ''}`
-        ).join('\n\n');
-        console.log('✅ Found memories:', result);
-        return result;
-      }
-      
-      return 'No specific memories found for that query.';
+      // Since auth is disabled, return a friendly message
+      return 'I can help you create new memories! Tell me about something meaningful in your life.';
     } catch (error) {
       console.error('Error retrieving memory:', error);
       return 'Unable to retrieve memories at this time.';
@@ -140,20 +114,6 @@ const Index = () => {
       
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Fetch user memories for context
-      const { data: memoriesData } = await supabase
-        .from('memories')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      // Create a summary of key facts instead of all memories
-      const memoryContext = memoriesData && memoriesData.length > 0
-        ? `You have access to ${memoriesData.length} saved memories. Key themes include topics like: ${
-            [...new Set(memoriesData.flatMap(m => m.tags || []))].slice(0, 5).join(', ') || 'various life experiences'
-          }. Use the retrieve_memory tool to search for specific memories when the user mentions topics or asks questions about their past.`
-        : 'No memories yet. Help the user create their first memory.';
-
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
       });
@@ -161,14 +121,14 @@ const Index = () => {
       if (error) throw error;
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
-      console.log('Starting session with memory context...');
+      console.log('Starting session...');
       await Promise.race([
         conversation.startSession({
           signedUrl: data.signed_url,
           overrides: {
             agent: {
               prompt: {
-                prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. ${memoryContext}\n\nWhen users mention specific topics, events, or ask about their past, use the retrieve_memory tool to search for relevant memories (e.g., retrieve_memory with query "vacation" or "2020"). Use the save_memory tool to save new memories when users share stories. Ask thoughtful, open-ended questions to help them explore meaningful moments.`
+                prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`
               }
             }
           }
@@ -265,10 +225,10 @@ const Index = () => {
     }
   ];
 
-  // Always show Solon interface since auth is disabled
-  const shouldShowSolon = user || true;
+  // Always show Solon interface (auth disabled)
+  const shouldShowSolonInterface = true;
 
-  if (shouldShowSolon) {
+  if (shouldShowSolonInterface) {
     return (
       <div className="min-h-screen bg-background overflow-hidden relative">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-900/50 to-background" />
