@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
@@ -23,63 +23,63 @@ const Index = () => {
   const noEndBeforeRef = useRef(0);
   const isTogglingRef = useRef(false);
 
-  const conversation = useConversation({
-    clientTools: {
-      // This function will be called by the ElevenLabs agent when user shares a memory
-      save_memory: async (parameters: { title: string; content: string; tags?: string[] }) => {
-        try {
-          console.log('💾 Saving memory:', parameters);
-          
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) throw new Error('Not authenticated');
-
-          const { error } = await supabase.from('memories').insert({
-            user_id: user.id,
-            title: parameters.title,
-            text: parameters.content,
-            tags: parameters.tags || []
-          });
-
-          if (error) throw error;
-
-          toast({
-            title: "Memory saved",
-            description: parameters.title,
-          });
-
-          return "Memory saved successfully";
-        } catch (error) {
-          console.error('Failed to save memory:', error);
-          toast({
-            title: "Failed to save memory",
-            description: error instanceof Error ? error.message : "Unknown error",
-            variant: "destructive",
-          });
-          return "Failed to save memory";
-        }
-      }
-    },
-    onConnect: () => {
-      console.log('✅ Connected to ElevenLabs');
-      noEndBeforeRef.current = Date.now() + 2000; // 2s cooldown to prevent accidental immediate end
-      toast({
-        title: "Connected",
-        description: "Start speaking naturally",
+  const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
+    try {
+      console.log('💾 Saving memory:', parameters);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await supabase.from('memories').insert({
+        user_id: user.id,
+        title: parameters.title,
+        text: parameters.content,
+        tags: parameters.tags || []
       });
-    },
-    onDisconnect: () => {
-      console.log('👋 Disconnected');
-      toast({ title: "Disconnected", description: "Voice session ended" });
-    },
-    onError: (error) => {
-      console.error('❌ Error:', error);
+      if (error) throw error;
+      toast({ title: 'Memory saved', description: parameters.title });
+      return 'Memory saved successfully';
+    } catch (error) {
+      console.error('Failed to save memory:', error);
       toast({
-        title: "Connection failed",
-        description: typeof error === 'string' ? error : "Please try again",
-        variant: "destructive",
+        title: 'Failed to save memory',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       });
-    },
-  });
+      return 'Failed to save memory';
+    }
+  }, [toast]);
+
+  const onConnectCb = useCallback(() => {
+    console.log('✅ Connected to ElevenLabs');
+    noEndBeforeRef.current = Date.now() + 2000;
+    toast({ title: 'Connected', description: 'Start speaking naturally' });
+  }, [toast]);
+
+  const onDisconnectCb = useCallback(() => {
+    console.log('👋 Disconnected');
+    toast({ title: 'Disconnected', description: 'Voice session ended' });
+  }, [toast]);
+
+  const onErrorCb = useCallback((error: unknown) => {
+    console.error('❌ Error:', error);
+    toast({
+      title: 'Connection failed',
+      description: typeof error === 'string' ? error : 'Please try again',
+      variant: 'destructive',
+    });
+  }, [toast]);
+
+  const conversationOptions = useMemo(() => ({
+    clientTools: { save_memory: saveMemoryTool },
+    onConnect: onConnectCb,
+    onDisconnect: onDisconnectCb,
+    onError: onErrorCb,
+  }), [saveMemoryTool, onConnectCb, onDisconnectCb, onErrorCb]);
+
+  const conversation = useConversation(conversationOptions);
+
+  useEffect(() => {
+    console.log('🛰️ Conversation status:', conversation.status, 'speaking:', conversation.isSpeaking);
+  }, [conversation.status, conversation.isSpeaking]);
 
   const startConversation = useCallback(async () => {
     try {
