@@ -42,6 +42,7 @@ const AppContent = () => {
         <Route path="/about" element={<About />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
+        <Route path="/auth" element={<Navigate to="/" replace />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
