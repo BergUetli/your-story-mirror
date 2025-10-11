@@ -68,11 +68,32 @@ const Index = () => {
     });
   }, [toast]);
 
+  const [conversationMessages, setConversationMessages] = useState<Array<{role: string, text: string}>>([]);
+
   const conversationOptionsRef = useRef({
+    clientTools: { save_memory: saveMemoryTool },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
     onError: onErrorCb,
-    onMessage: (message: unknown) => console.log('🗣️ ElevenLabs message:', message),
+    onMessage: (message: unknown) => {
+      console.log('🗣️ ElevenLabs message:', message);
+      if (typeof message === 'object' && message !== null) {
+        const msg = message as any;
+        if (msg.type === 'response.audio_transcript.delta' && msg.delta) {
+          setConversationMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === 'ai') {
+              return [...prev.slice(0, -1), { role: 'ai', text: last.text + msg.delta }];
+            }
+            return [...prev, { role: 'ai', text: msg.delta }];
+          });
+        } else if (msg.source === 'user' && msg.message) {
+          setConversationMessages(prev => [...prev, { role: 'user', text: msg.message }]);
+        } else if (msg.source === 'ai' && msg.message) {
+          setConversationMessages(prev => [...prev, { role: 'ai', text: msg.message }]);
+        }
+      }
+    },
   });
 
   const conversation = useConversation(conversationOptionsRef.current);
@@ -187,96 +208,76 @@ const Index = () => {
   if (user) {
     return (
       <div className="min-h-screen bg-background overflow-hidden relative">
-        {/* Metallic background effect */}
         <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-900/50 to-background" />
         
-        {/* Single Screen Layout for Authenticated Users */}
-        <div className="relative h-screen flex flex-col items-center justify-center p-8">
-          <div className="max-w-4xl w-full space-y-16 animate-fade-in">
+        <div className="relative h-screen flex items-center justify-center p-8 gap-8">
+          {/* Left Side - Solon Orb */}
+          <div className="flex-1 max-w-2xl space-y-12 animate-fade-in">
             
-            {/* Interactive Solon Orb with Metallic Container */}
-            <div className="flex flex-col items-center gap-10">
+            <div className="flex flex-col items-center gap-8">
               <div className="relative">
-                {/* Metallic glow backdrop */}
                 <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
-                
-                  <div
-                    className="relative group cursor-default focus:outline-none transition-all duration-300 hover:scale-105"
-                    style={{
-                      filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.4))'
-                    }}
-                    aria-hidden="true"
-                  >
-                  {/* Metallic ring around orb */}
-                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm pointer-events-none" 
-                       style={{
-                         boxShadow: '0 0 80px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(255, 255, 255, 0.05)'
-                       }} />
-                  
+                <div className="relative">
+                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm" />
                   {isConnecting ? (
-                    <div className="w-48 h-48 flex items-center justify-center relative">
-                      <Sparkles className="h-20 w-20 text-blue-400 animate-pulse" 
-                                 style={{ filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))' }} />
+                    <div className="w-40 h-40 flex items-center justify-center">
+                      <Sparkles className="h-16 w-16 text-blue-400 animate-pulse" />
                     </div>
                   ) : (
-                    <AnimatedOrb 
-                      isActive={isConnected}
-                      isSpeaking={isSpeaking}
-                      size={192}
-                    />
+                    <AnimatedOrb isActive={isConnected} isSpeaking={isSpeaking} size={160} />
                   )}
                 </div>
               </div>
 
-              {/* Status text with metallic effect */}
-              <div className="text-center space-y-2 relative">
-                <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-950/50 via-blue-900/50 to-blue-950/50 border border-blue-500/20"
-                     style={{
-                       boxShadow: '0 4px 24px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                     }}>
-                  <p className="text-base font-medium text-blue-200">
-                    {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is listening...' : 'Connected') : 'Click to begin your memory journey'}
-                  </p>
-                </div>
+              <div className="text-center space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening') : 'Start a conversation'}
+                </p>
                 {isConnected ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-sm text-blue-300/60">Connected</p>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => endConversation()}
-                      className="rounded-full"
-                    >
-                      End Conversation
-                    </Button>
-                  </div>
+                  <Button variant="destructive" size="sm" onClick={endConversation} className="rounded-full">
+                    End Conversation
+                  </Button>
                 ) : (
-                  <div className="flex items-center justify-center pt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => startConversation()}
-                      disabled={isConnecting}
-                      className="rounded-full"
-                    >
-                      {isConnecting ? 'Connecting…' : 'Start Conversation'}
-                    </Button>
-                  </div>
+                  <Button size="sm" onClick={startConversation} disabled={isConnecting} className="rounded-full">
+                    {isConnecting ? 'Connecting...' : 'Start'}
+                  </Button>
                 )}
               </div>
             </div>
 
-            {/* Quick Action Button with metallic style */}
-            <div className="flex justify-center">
-              <Button asChild size="lg" 
-                      className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 text-white rounded-full px-8 py-6 font-medium transition-all duration-300"
-                      style={{
-                        boxShadow: '0 8px 32px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
-                      }}>
-                <Link to="/dashboard">
-                  View Dashboard
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </Link>
-              </Button>
+            <Button asChild size="lg" className="rounded-full">
+              <Link to="/dashboard">
+                View Dashboard
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Right Side - Conversation Transcript */}
+          <div className="flex-1 max-w-2xl h-[80vh] bg-card/50 backdrop-blur-xl rounded-2xl border border-border/50 p-6 flex flex-col">
+            <h2 className="text-xl font-semibold mb-4">Conversation</h2>
+            <div className="flex-1 overflow-y-auto space-y-4">
+              {conversationMessages.length === 0 ? (
+                <p className="text-muted-foreground text-center mt-8">
+                  Start a conversation to see the transcript here
+                </p>
+              ) : (
+                conversationMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg ${
+                      msg.role === 'user'
+                        ? 'bg-primary/10 ml-8 text-right'
+                        : 'bg-muted mr-8'
+                    }`}
+                  >
+                    <p className="text-sm font-medium mb-1">
+                      {msg.role === 'user' ? 'You' : 'Solon'}
+                    </p>
+                    <p className="text-sm">{msg.text}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

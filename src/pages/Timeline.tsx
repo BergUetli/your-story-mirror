@@ -217,7 +217,7 @@ const Timeline = () => {
                             {memory.title}
                           </h3>
                           <p className="text-muted-foreground leading-relaxed">
-                            {memory.content || memory.preview}
+                            {memory.text}
                           </p>
                           {memory.conversation_text && (
                             <details className="mt-4">
