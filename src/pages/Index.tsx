@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
@@ -148,6 +148,21 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
   const isConnected = conversation.status === 'connected';
   const isSpeaking = conversation.isSpeaking;
 
+  const lastClickRef = useRef(0);
+  const handleOrbPress = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastClickRef.current < 700) {
+      console.log('⏱️ Ignored rapid orb tap');
+      return;
+    }
+    lastClickRef.current = now;
+    if (isConnected) {
+      await endConversation();
+    } else {
+      await startConversation();
+    }
+  }, [isConnected, startConversation, endConversation]);
+
   const features = [
     {
       icon: Heart,
@@ -198,7 +213,7 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
                 <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
                 
                 <button
-                  onClick={isConnected ? endConversation : startConversation}
+                  onClick={handleOrbPress}
                   disabled={isConnecting}
                   className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
                   style={{
