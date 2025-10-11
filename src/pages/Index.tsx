@@ -183,51 +183,78 @@ Keep your responses warm, conversational, and concise. Ask open-ended questions 
 
   if (user) {
     return (
-      <div className="h-screen bg-background overflow-hidden">
+      <div className="min-h-screen bg-background overflow-hidden relative">
+        {/* Metallic background effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-900/50 to-background" />
+        
         {/* Single Screen Layout for Authenticated Users */}
-        <div className="h-full flex flex-col items-center justify-center p-8">
-          <div className="max-w-3xl w-full space-y-12 animate-fade-in">
+        <div className="relative h-screen flex flex-col items-center justify-center p-8">
+          <div className="max-w-4xl w-full space-y-16 animate-fade-in">
             
-            {/* Interactive Solon Orb */}
-            <div className="flex flex-col items-center gap-8">
-              <button
-                onClick={isConnected ? endConversation : startConversation}
-                disabled={isConnecting}
-                className="relative group cursor-pointer focus:outline-none transition-transform hover:scale-105"
-                aria-label={isConnected ? "End conversation" : "Start conversation"}
-              >
-                {isConnecting ? (
-                  <div className="w-40 h-40 flex items-center justify-center">
-                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
-                  </div>
-                ) : (
-                  <AnimatedOrb 
-                    isActive={isConnected}
-                    isSpeaking={isSpeaking}
-                    size={160}
-                  />
-                )}
-              </button>
+            {/* Interactive Solon Orb with Metallic Container */}
+            <div className="flex flex-col items-center gap-10">
+              <div className="relative">
+                {/* Metallic glow backdrop */}
+                <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
+                
+                <button
+                  onClick={isConnected ? endConversation : startConversation}
+                  disabled={isConnecting}
+                  className="relative group cursor-pointer focus:outline-none transition-all duration-300 hover:scale-105"
+                  style={{
+                    filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.4))'
+                  }}
+                  aria-label={isConnected ? "End conversation" : "Start conversation"}
+                >
+                  {/* Metallic ring around orb */}
+                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm" 
+                       style={{
+                         boxShadow: '0 0 80px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(255, 255, 255, 0.05)'
+                       }} />
+                  
+                  {isConnecting ? (
+                    <div className="w-48 h-48 flex items-center justify-center relative">
+                      <Sparkles className="h-20 w-20 text-blue-400 animate-pulse" 
+                                 style={{ filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.8))' }} />
+                    </div>
+                  ) : (
+                    <AnimatedOrb 
+                      isActive={isConnected}
+                      isSpeaking={isSpeaking}
+                      size={192}
+                    />
+                  )}
+                </button>
+              </div>
 
-              {/* Status text */}
-              <div className="text-center space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Listening...' : 'Connected') : 'Click to begin'}
-                </p>
+              {/* Status text with metallic effect */}
+              <div className="text-center space-y-2 relative">
+                <div className="inline-block px-6 py-2 rounded-full bg-gradient-to-r from-blue-950/50 via-blue-900/50 to-blue-950/50 border border-blue-500/20"
+                     style={{
+                       boxShadow: '0 4px 24px rgba(59, 130, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                     }}>
+                  <p className="text-base font-medium text-blue-200">
+                    {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is listening...' : 'Connected') : 'Click to begin your memory journey'}
+                  </p>
+                </div>
                 {isConnected && (
-                  <p className="text-xs text-muted-foreground/60">
-                    Click orb to end
+                  <p className="text-sm text-blue-300/60">
+                    Click orb to end conversation
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Quick Action Button */}
+            {/* Quick Action Button with metallic style */}
             <div className="flex justify-center">
-              <Button asChild size="lg" variant="ghost" className="text-muted-foreground hover:text-foreground rounded-full">
+              <Button asChild size="lg" 
+                      className="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 hover:from-blue-500 hover:via-blue-400 hover:to-blue-500 text-white rounded-full px-8 py-6 font-medium transition-all duration-300"
+                      style={{
+                        boxShadow: '0 8px 32px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }}>
                 <Link to="/dashboard">
                   View Dashboard
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <ArrowRight className="h-5 w-5 ml-2" />
                 </Link>
               </Button>
             </div>

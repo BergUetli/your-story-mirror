@@ -37,9 +37,11 @@
 
     --radius: 0.75rem;
 
-    /* Modern gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 80% 45%), hsl(210 80% 55%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 7%), hsl(0 0% 10%));
+    /* Metallic gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 80% 55%), hsl(210 90% 65%), hsl(220 80% 55%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 12%), hsl(220 20% 18%), hsl(0 0% 12%));
+    --gradient-metallic: linear-gradient(135deg, hsl(220 40% 30%), hsl(220 60% 50%), hsl(220 40% 30%));
+    --shadow-metallic: 0 8px 32px rgba(37, 99, 235, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   }
 }
 
