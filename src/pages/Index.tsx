@@ -138,6 +138,50 @@ const Index = () => {
     }
   }, [user]);
 
+  // Build memory context for agent instructions
+  const [agentInstructions, setAgentInstructions] = useState<string>('');
+
+  useEffect(() => {
+    const buildInstructions = async () => {
+      const basePrompt = `You are Solon, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
+
+1. save_memory: Use this to save new memories when users share stories. Include title, content, and optionally tags, date, and location.
+2. retrieve_memory: Use this to search through the user's existing memories when they ask about past conversations or want to recall something.
+
+When users ask about previous conversations or memories, use the retrieve_memory tool to search for relevant information. You DO have access to their past memories through this tool.
+
+Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
+
+      if (!user?.id) {
+        setAgentInstructions(basePrompt);
+        return;
+      }
+
+      try {
+        const { data: mems, error: memErr } = await supabase
+          .from('memories')
+          .select('title,text,created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (!memErr && mems && mems.length) {
+          const clip = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 120);
+          const ctxItems = mems.map(m => `${m.title} — ${clip(m.text)}`).join(' | ');
+          const memoryContext = ctxItems.slice(0, 800);
+          setAgentInstructions(`${basePrompt}\n\nRecent memories you can reference: ${memoryContext}\n\nWhen users ask about their memories, use the retrieve_memory tool to get more details.`);
+        } else {
+          setAgentInstructions(basePrompt);
+        }
+      } catch (e) {
+        console.warn('⚠️ Failed to build memory context:', e);
+        setAgentInstructions(basePrompt);
+      }
+    };
+
+    buildInstructions();
+  }, [user?.id]);
+
   const conversationOptionsRef = useRef({
     clientTools: { 
       save_memory: saveMemoryTool,
@@ -203,29 +247,8 @@ const Index = () => {
       if (error) throw error;
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
-      console.log('Starting session...');
-      // Prepare compact memory context to avoid large payload timeouts
-      const basePrompt = `You are Solon, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`;
-      let finalPrompt = basePrompt;
-      try {
-        if (user?.id) {
-          const { data: mems, error: memErr } = await supabase
-            .from('memories')
-            .select('title,text,created_at')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
-            .limit(5);
-          if (!memErr && mems && mems.length) {
-            const clip = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 120);
-            const ctxItems = mems.map(m => `${m.title} — ${clip(m.text)}`).join(' | ');
-            const memoryContext = ctxItems.slice(0, 1000);
-            finalPrompt = `${basePrompt}\nContext (recent user memories): ${memoryContext}`;
-          }
-        }
-      } catch (e) {
-        console.warn('⚠️ Failed to build memory context, proceeding without it:', e);
-      }
-
+      console.log('Starting session with memory context...');
+      
       // Use a cancellable timeout to avoid unhandled rejection after connect
       let timeoutId: number | undefined;
       const timeoutPromise = new Promise((_, reject) => {
@@ -234,6 +257,14 @@ const Index = () => {
 
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: agentInstructions,
+            },
+            firstMessage: "Hello! I'm Solon, your AI companion for preserving life stories. I can help you capture and recall your precious memories. What would you like to talk about today?",
+          },
+        },
       });
 
       await Promise.race([startPromise, timeoutPromise]);
