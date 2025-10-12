@@ -208,19 +208,19 @@ const Index = () => {
 
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
-        overrides: {
-          agent: {
-            prompt: { prompt: finalPrompt },
-            firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
-          },
-          tts: { voiceId: "9BWtsMINqrJLrRacOk9x" }
-        }
       });
-
-      try { await conversation.setVolume({ volume: 1 }); } catch { /* ignore */ }
 
       await Promise.race([startPromise, timeoutPromise]);
       if (timeoutId) clearTimeout(timeoutId);
+      
+      // Set volume after session starts
+      console.log('✅ Session started successfully, setting volume...');
+      try { 
+        await conversation.setVolume({ volume: 1 }); 
+        console.log('✅ Volume set to 1');
+      } catch (e) { 
+        console.warn('⚠️ setVolume failed (safe to ignore):', e);
+      }
       
     } catch (error) {
       console.error('Failed to start:', error);
