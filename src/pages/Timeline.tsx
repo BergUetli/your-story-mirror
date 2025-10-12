@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut } from 'lucide-react';
@@ -83,6 +83,11 @@ const Timeline = () => {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
   const timelineData = createTimelineData(memories, profile);
@@ -144,6 +149,62 @@ const Timeline = () => {
     setExpandedYears(newExpanded);
   };
 
+  // Mouse wheel zoom
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      
+      const delta = e.deltaY * -0.001;
+      const newZoom = Math.min(Math.max(zoomLevel + delta, 0.5), 2);
+      
+      if (newZoom !== zoomLevel) {
+        // Calculate zoom center based on mouse position
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Adjust pan to zoom towards mouse position
+        const zoomRatio = newZoom / zoomLevel;
+        const newPanX = mouseX - (mouseX - panOffset.x) * zoomRatio;
+        const newPanY = mouseY - (mouseY - panOffset.y) * zoomRatio;
+        
+        setZoomLevel(newZoom);
+        setPanOffset({ x: newPanX, y: newPanY });
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [zoomLevel, panOffset]);
+
+  // Mouse drag to pan
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0) { // Left mouse button
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
   const handleZoomIn = () => {
     setZoomLevel(prev => Math.min(prev + 0.2, 2));
   };
@@ -154,6 +215,7 @@ const Timeline = () => {
 
   const handleResetZoom = () => {
     setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   return (
@@ -208,14 +270,24 @@ const Timeline = () => {
         </div>
       </nav>
 
-      {/* Main Timeline */}
+      {/* Main Timeline Container */}
       <div 
-        className="max-w-5xl mx-auto px-8 py-16 transition-all duration-500 ease-out origin-top"
-        style={{ 
-          transform: `scale(${zoomLevel})`,
-          transformOrigin: 'top center'
-        }}
+        ref={containerRef}
+        className="relative overflow-hidden"
+        style={{ height: 'calc(100vh - 60px)' }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
+        <div
+          className="max-w-5xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
+          style={{ 
+            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+            transformOrigin: '0 0',
+            cursor: isDragging ? 'grabbing' : 'grab'
+          }}
+        >
         {profileLoading || isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground animate-pulse">Loading your timeline...</div>
@@ -390,6 +462,7 @@ const Timeline = () => {
             })}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
