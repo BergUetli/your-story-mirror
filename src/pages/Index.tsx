@@ -47,7 +47,7 @@ const Index = () => {
     console.log('✅ Connected to ElevenLabs');
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
-    didRetryRef.current = false;
+    // Do NOT reset didRetryRef here to avoid reconnect loops
     toast({ title: 'Connected', description: 'Start speaking naturally' });
   }, [toast]);
 
@@ -155,6 +155,20 @@ const Index = () => {
       setIsConnecting(true);
       
       await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Proactively unlock audio on mobile/desktop to avoid autoplay policies blocking TTS
+      try {
+        const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          await ctx.resume();
+          await new Promise(r => setTimeout(r, 10));
+          await ctx.close();
+        }
+      } catch (e) {
+        console.warn('⚠️ AudioContext unlock failed (safe to ignore):', e);
+      }
+
 
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
