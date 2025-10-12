@@ -6,10 +6,6 @@ import { cn } from '@/lib/utils';
 const Navigation = () => {
   const location = useLocation();
   
-  // Hide navigation on homepage (Solon interface)
-  if (location.pathname === '/') {
-    return null;
-  }
   
   const leftNavItems = [
     { path: '/about', icon: Info, label: 'About' },
@@ -47,7 +43,7 @@ const Navigation = () => {
 
             {/* Center - Logo */}
             <Link to="/" className="text-xl font-light tracking-wide hover:text-primary transition-colors">
-              Solon One
+              Solin One
             </Link>
             
             {/* Right - Control Panel */}
