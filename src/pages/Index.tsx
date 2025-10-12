@@ -24,7 +24,7 @@ const Index = () => {
   const isTogglingRef = useRef(false);
   const lastConnectedAtRef = useRef(0);
   const didRetryRef = useRef(false);
-  const startWithAgentIdRef = useRef<() => void>();
+  const startConversationRef = useRef<(isRetry?: boolean) => Promise<void>>();
 
   const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
     try {
@@ -52,13 +52,16 @@ const Index = () => {
   }, [toast]);
 
   const onDisconnectCb = useCallback(() => {
-    console.log('👋 Disconnected');
-    const justConnected = Date.now() - lastConnectedAtRef.current < 2000;
+    const elapsed = Date.now() - lastConnectedAtRef.current;
+    console.log('👋 Disconnected after', elapsed, 'ms');
+    
+    const justConnected = elapsed < 3000;
     if (justConnected && !didRetryRef.current) {
-      console.log('⚠️ Early disconnect detected, retrying with direct agentId...');
+      console.log('⚠️ Early disconnect detected, retrying with fresh signed URL...');
       didRetryRef.current = true;
-      // Fire and forget; UI already shows disconnected. We'll reconnect silently.
-      startWithAgentIdRef.current?.();
+      setTimeout(() => {
+        startConversationRef.current?.(true);
+      }, 500);
       return;
     }
     toast({ title: 'Disconnected', description: 'Voice session ended' });
