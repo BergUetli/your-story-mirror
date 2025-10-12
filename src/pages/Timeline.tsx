@@ -6,15 +6,13 @@ import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
 
-// Generate life events based on profile
+// Generate only birth event from profile
 const generateLifeEvents = (profile: any) => {
   if (!profile?.birth_date) return [];
   
   const birthYear = new Date(profile.birth_date).getFullYear();
-  const currentYear = new Date().getFullYear();
-  const age = currentYear - birthYear;
   
-  const events = [
+  return [
     { 
       year: birthYear, 
       event: 'Born', 
@@ -23,31 +21,9 @@ const generateLifeEvents = (profile: any) => {
       date: profile.birth_date
     }
   ];
-
-  // Add age-appropriate milestones
-  if (age >= 18) {
-    events.push({ 
-      year: birthYear + 18, 
-      event: 'Came of Age', 
-      type: 'milestone',
-      location: profile.current_location || 'Unknown',
-      date: null
-    });
-  }
-  if (age >= 22) {
-    events.push({ 
-      year: birthYear + 22, 
-      event: 'Early Adulthood', 
-      type: 'milestone',
-      location: profile.current_location || 'Unknown', 
-      date: null
-    });
-  }
-  
-  return events;
 };
 
-// Create timeline data combining events and memories
+// Create timeline data combining birth event and memories
 const createTimelineData = (actualMemories: any[], profile: any) => {
   const currentYear = new Date().getFullYear();
   const birthYear = profile?.birth_date ? new Date(profile.birth_date).getFullYear() : currentYear - 25;
@@ -55,19 +31,24 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   
   const lifeEvents = generateLifeEvents(profile);
   
+  // Build timeline from birth year to current year
   for (let year = birthYear; year <= currentYear; year++) {
     const yearEvents = lifeEvents.filter(event => event.year === year);
     const yearMemories = actualMemories.filter(memory => {
-      const memoryYear = new Date(memory.created_at || memory.date).getFullYear();
+      // Use memory_date if available, otherwise fall back to created_at
+      const dateToUse = memory.memory_date || memory.created_at || memory.date;
+      const memoryYear = new Date(dateToUse).getFullYear();
       return memoryYear === year;
     });
     
-    if (yearEvents.length > 0 || yearMemories.length > 0) {
+    // Only include years that have content (birth event, memories, or current year)
+    if (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear) {
       timelineData.push({
         year,
         events: yearEvents,
         memories: yearMemories,
-        hasContent: true
+        hasContent: yearEvents.length > 0 || yearMemories.length > 0,
+        isCurrentYear: year === currentYear
       });
     }
   }
@@ -164,11 +145,14 @@ const Timeline = () => {
                   className="cursor-pointer group"
                   onClick={() => toggleYear(yearData.year)}
                 >
-                  <h2 className="text-5xl font-bold mb-3 group-hover:text-primary transition-colors">
+                  <h2 className="text-5xl font-bold mb-3 group-hover:text-primary transition-colors flex items-center gap-3">
                     {yearData.year}
+                    {yearData.isCurrentYear && (
+                      <span className="text-lg text-primary font-normal">(Today)</span>
+                    )}
                   </h2>
                   
-                  {/* Life Events */}
+                  {/* Life Events (Birth) */}
                   {yearData.events.map((event, eventIndex) => (
                     <div key={eventIndex} className="space-y-2 mb-4">
                       <div className="text-xl font-semibold text-foreground flex items-center gap-3">
@@ -191,6 +175,13 @@ const Timeline = () => {
                       )}
                     </div>
                   ))}
+                  
+                  {/* Show message for current year if no memories yet */}
+                  {yearData.isCurrentYear && yearData.memories.length === 0 && yearData.events.length === 0 && (
+                    <p className="text-sm text-muted-foreground italic">
+                      Start recording memories to fill your timeline...
+                    </p>
+                  )}
                 </div>
 
                 {/* Expanded Year Content */}
@@ -208,10 +199,18 @@ const Timeline = () => {
                         <CardContent className="p-6 space-y-3">
                           <div className="text-sm text-muted-foreground flex items-center gap-2">
                             <Calendar className="w-3 h-3" />
-                            {new Date(memory.created_at || memory.date).toLocaleDateString('en-US', {
+                            {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
                               month: 'long',
-                              day: 'numeric'
+                              day: 'numeric',
+                              year: 'numeric'
                             })}
+                            {memory.memory_location && (
+                              <>
+                                <span className="mx-1">•</span>
+                                <MapPin className="w-3 h-3" />
+                                {memory.memory_location}
+                              </>
+                            )}
                           </div>
                           <h3 className="text-2xl font-semibold">
                             {memory.title}

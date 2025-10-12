@@ -26,7 +26,13 @@ const Index = () => {
   const didRetryRef = useRef(false);
   const startConversationRef = useRef<(isRetry?: boolean) => Promise<void>>();
 
-  const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
+  const saveMemoryTool = useCallback(async (parameters: { 
+    title: string; 
+    content: string; 
+    tags?: string[];
+    memory_date?: string;
+    memory_location?: string;
+  }) => {
     try {
       console.log('💾 Saving memory:', parameters);
       
@@ -40,6 +46,8 @@ const Index = () => {
           title: parameters.title,
           text: parameters.content,
           tags: parameters.tags ?? [],
+          memory_date: parameters.memory_date || null,
+          memory_location: parameters.memory_location || null,
         }])
         .select()
         .single();

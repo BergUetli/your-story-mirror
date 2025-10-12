@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          memory_date: string | null
+          memory_location: string | null
           recipient: string | null
           tags: string[] | null
           text: string
@@ -28,6 +30,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          memory_date?: string | null
+          memory_location?: string | null
           recipient?: string | null
           tags?: string[] | null
           text: string
@@ -38,6 +42,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          memory_date?: string | null
+          memory_location?: string | null
           recipient?: string | null
           tags?: string[] | null
           text?: string
