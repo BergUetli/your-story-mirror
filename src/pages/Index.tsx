@@ -143,34 +143,8 @@ const Index = () => {
 
   const conversation = useConversation(conversationOptionsRef.current);
 
-  // Fallback: start by agentId if signed URL session drops immediately
-  useEffect(() => {
-    startWithAgentIdRef.current = async () => {
-      try {
-        let timeoutId: number | undefined;
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = window.setTimeout(() => reject(new Error('AgentID connect timed out')), 20000);
-        });
+  // Removed agentId fallback; we only use signedUrl sessions to match SDK types.
 
-        const startPromise = conversation.startSession({
-          agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
-          overrides: {
-            agent: {
-              firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
-            },
-            tts: { voiceId: '9BWtsMINqrJLrRacOk9x' }
-          }
-        });
-
-        await Promise.race([startPromise, timeoutPromise]);
-        if (timeoutId) clearTimeout(timeoutId);
-        try { await conversation.setVolume({ volume: 1 }); } catch {}
-      } catch (e) {
-        console.error('Fallback agentId start failed:', e);
-      }
-    };
-    return () => { startWithAgentIdRef.current = undefined; };
-  }, [conversation]);
 
   useEffect(() => {
     console.log('🛰️ Conversation status:', conversation.status, 'speaking:', conversation.isSpeaking);
@@ -244,7 +218,13 @@ const Index = () => {
     } finally {
       setIsConnecting(false);
     }
-  }, [conversation, toast]);
+  }, [conversation, toast, user?.id]);
+
+  // Keep a stable ref to startConversation so callbacks can call it without re-creating deps
+  useEffect(() => {
+    startConversationRef.current = startConversation;
+    return () => { startConversationRef.current = undefined; };
+  }, [startConversation]);
 
   const endConversation = useCallback(async () => {
     try {
@@ -256,6 +236,11 @@ const Index = () => {
       console.error('Error ending conversation:', error);
     }
   }, [conversation, toast]);
+
+  useEffect(() => {
+    startConversationRef.current = startConversation;
+    return () => { startConversationRef.current = undefined; };
+  }, [startConversation]);
 
   const isConnected = conversation.status === 'connected';
   const isSpeaking = conversation.isSpeaking;
