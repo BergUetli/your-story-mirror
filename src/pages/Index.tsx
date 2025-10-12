@@ -64,14 +64,37 @@ const Index = () => {
 
   const retrieveMemoryTool = useCallback(async (parameters: { query: string }) => {
     try {
-      console.log('🔍 Solin0 requesting memory:', parameters.query);
-      // Since auth is disabled, return a friendly message
-      return 'I can help you create new memories! Tell me about something meaningful in your life.';
+      const q = parameters?.query?.trim() ?? '';
+      console.log('🔍 Solon requesting memory:', q);
+      if (!user?.id) return 'No user session; unable to access memories.';
+
+      // Simple keyword search across title and text; optimized by recent indexes
+      const escaped = q.replace(/%/g, '%25').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const orFilter = `title.ilike.%${escaped}%,text.ilike.%${escaped}%`;
+      const { data, error } = await supabase
+        .from('memories')
+        .select('id,title,text,created_at')
+        .eq('user_id', user.id)
+        .or(orFilter)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error('Supabase retrieve error:', error);
+        return 'Error retrieving memories.';
+      }
+      if (!data || data.length === 0) return 'No matching memories found.';
+
+      const summarize = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 160);
+      const result = data
+        .map((m, i) => `${i + 1}. ${m.title} — ${summarize(m.text)} (${new Date(m.created_at as string).toLocaleDateString()})`)
+        .join(' | ');
+      return `Matches: ${result}`;
     } catch (error) {
       console.error('Error retrieving memory:', error);
       return 'Unable to retrieve memories at this time.';
     }
-  }, []);
+  }, [user]);
 
   const conversationOptionsRef = useRef({
     clientTools: { 
@@ -122,6 +145,28 @@ const Index = () => {
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
       console.log('Starting session...');
+      // Prepare compact memory context to avoid large payload timeouts
+      const basePrompt = `You are Solon, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`;
+      let finalPrompt = basePrompt;
+      try {
+        if (user?.id) {
+          const { data: mems, error: memErr } = await supabase
+            .from('memories')
+            .select('title,text,created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (!memErr && mems && mems.length) {
+            const clip = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 120);
+            const ctxItems = mems.map(m => `${m.title} — ${clip(m.text)}`).join(' | ');
+            const memoryContext = ctxItems.slice(0, 1000);
+            finalPrompt = `${basePrompt}\nContext (recent user memories): ${memoryContext}`;
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Failed to build memory context, proceeding without it:', e);
+      }
+
       // Use a cancellable timeout to avoid unhandled rejection after connect
       let timeoutId: number | undefined;
       const timeoutPromise = new Promise((_, reject) => {
@@ -132,9 +177,7 @@ const Index = () => {
         signedUrl: data.signed_url,
         overrides: {
           agent: {
-            prompt: {
-              prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`
-            },
+            prompt: { prompt: finalPrompt },
             firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
           }
         }
