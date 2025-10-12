@@ -29,11 +29,35 @@ const Index = () => {
   const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
     try {
       console.log('💾 Saving memory:', parameters);
-      // Since auth is disabled, skip user check and just confirm save
+      
+      if (!user?.id) {
+        console.warn('⚠️ No user session, cannot save memory');
+        toast({ 
+          title: 'Cannot save memory', 
+          description: 'Please log in to save memories',
+          variant: 'destructive' 
+        });
+        return 'User not authenticated';
+      }
+
+      const { data, error } = await supabase
+        .from('memories')
+        .insert([{
+          user_id: user.id,
+          title: parameters.title,
+          text: parameters.content,
+          tags: parameters.tags ?? [],
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      console.log('✅ Memory saved to database:', data);
       toast({ title: 'Memory saved', description: parameters.title });
       return 'Memory saved successfully';
     } catch (error) {
-      console.error('Failed to save memory:', error);
+      console.error('❌ Failed to save memory:', error);
       toast({
         title: 'Failed to save memory',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -41,7 +65,7 @@ const Index = () => {
       });
       return 'Failed to save memory';
     }
-  }, [toast]);
+  }, [user?.id, toast]);
 
   const onConnectCb = useCallback(() => {
     console.log('✅ Connected to ElevenLabs');
