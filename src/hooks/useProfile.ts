@@ -16,6 +16,21 @@ interface UserProfile {
   updated_at: string;
 }
 
+// Mock profile for testing when not authenticated
+const mockProfile: UserProfile = {
+  id: 'mock-id',
+  user_id: 'mock-user-id',
+  name: 'Demo User',
+  email: 'demo@example.com',
+  age: 35,
+  birth_date: '1990-03-15',
+  birth_place: 'San Francisco, CA',
+  current_location: 'New York, NY',
+  onboarding_completed: true,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+};
+
 export const useProfile = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +39,8 @@ export const useProfile = () => {
 
   const fetchProfile = async () => {
     if (!user) {
+      // Use mock profile when not authenticated for demo purposes
+      setProfile(mockProfile);
       setLoading(false);
       return;
     }
