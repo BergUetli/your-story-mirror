@@ -354,35 +354,41 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-white overflow-hidden relative">
         
-        <div className="relative h-screen flex items-center justify-center p-8 gap-8">
+        <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-8 lg:px-16 py-16 gap-12 lg:gap-16">
           {/* Left Side - Solon Orb */}
-          <div className="flex-1 max-w-2xl space-y-12 animate-fade-in">
+          <div className="flex-1 max-w-xl flex flex-col items-center justify-center space-y-8 animate-fade-in">
             
             <div className="flex flex-col items-center gap-8">
               <div className="relative">
-                <div className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500 rounded-full transform scale-150" />
-                <div className="relative">
-                  <div className="absolute -inset-4 rounded-full bg-gradient-to-br from-blue-400/20 via-blue-600/30 to-blue-400/20 blur-sm" />
-                  {isConnecting ? (
-                    <div className="w-40 h-40 flex items-center justify-center">
-                      <Sparkles className="h-16 w-16 text-blue-400 animate-pulse" />
-                    </div>
-                  ) : (
-                    <AnimatedOrb isActive={isConnected} isSpeaking={isSpeaking} size={160} />
-                  )}
-                </div>
+                {isConnecting ? (
+                  <div className="w-48 h-48 flex items-center justify-center">
+                    <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+                  </div>
+                ) : (
+                  <AnimatedOrb isActive={isConnected} isSpeaking={isSpeaking} size={200} />
+                )}
               </div>
 
-              <div className="text-center space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening') : 'Start a conversation'}
+              <div className="text-center space-y-4">
+                <p className="text-base text-muted-foreground font-light">
+                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening...') : 'Start a conversation'}
                 </p>
                 {isConnected ? (
-                  <Button variant="destructive" size="sm" onClick={endConversation} className="rounded-full">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={endConversation} 
+                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all"
+                  >
                     End Conversation
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={startConversation} disabled={isConnecting} className="rounded-full">
+                  <Button 
+                    size="lg" 
+                    onClick={startConversation} 
+                    disabled={isConnecting} 
+                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-8 shadow-soft"
+                  >
                     {isConnecting ? 'Connecting...' : 'Start'}
                   </Button>
                 )}
@@ -391,37 +397,37 @@ const Index = () => {
           </div>
 
           {/* Right Side - Live Conversation Transcript - Matrix Terminal Style */}
-          <div className="flex-1 max-w-2xl h-[80vh] bg-black rounded-2xl border-2 border-green-500/30 shadow-2xl shadow-green-500/20 p-6 flex flex-col overflow-hidden font-mono">
+          <div className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-black rounded-xl border-2 border-green-500/40 shadow-2xl shadow-green-500/20 p-6 flex flex-col overflow-hidden font-mono">
             <div className="mb-4 border-b border-green-500/30 pb-3">
-              <h2 className="text-lg font-bold text-green-400 tracking-wider animate-pulse">
-                &gt; LIVE TRANSCRIPT_
+              <h2 className="text-base font-bold text-green-400 tracking-wider">
+                &gt; LIVE_TRANSCRIPT
               </h2>
-              <p className="text-xs text-green-500/70 mt-1">Real-time stream with Solon</p>
+              <p className="text-xs text-green-500/60 mt-1">Real-time conversation with Solon</p>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-green-500/30 scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-green-500/30 scrollbar-track-transparent">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-green-500/50 text-sm text-center animate-pulse">
-                    &gt; Awaiting input..._
+                    &gt; awaiting_input..._
                   </p>
                 </div>
               ) : (
                 conversationMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`text-xs leading-relaxed ${
+                    className={`text-sm leading-relaxed ${
                       msg.role === 'user'
-                        ? 'text-green-300 pl-4 border-l-2 border-green-400/50'
-                        : 'text-green-400 pl-4 border-l-2 border-green-500/30'
+                        ? 'text-green-300 pl-3 border-l-2 border-green-400/60'
+                        : 'text-green-400 pl-3 border-l-2 border-green-500/40'
                     }`}
                   >
-                    <div className="text-green-500/70 mb-1 text-[10px] uppercase tracking-wide">
-                      {msg.role === 'user' ? '> USER:' : '> SOLON:'}
+                    <div className="text-green-500/70 mb-1.5 text-[11px] uppercase tracking-wide font-semibold">
+                      {msg.role === 'user' ? '> user:' : '> solon:'}
                     </div>
                     <div className="whitespace-pre-wrap break-words">
                       {msg.text}
                       {idx === conversationMessages.length - 1 && (
-                        <span className="inline-block w-2 h-3 bg-green-400 ml-1 animate-pulse" />
+                        <span className="inline-block w-2 h-3.5 bg-green-400 ml-1 animate-pulse" />
                       )}
                     </div>
                   </div>

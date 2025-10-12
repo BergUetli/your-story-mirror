@@ -6,42 +6,43 @@
 
 @layer base {
   :root {
-    /* Modern dark theme - Framer inspired */
-    --background: 0 0% 3%;           /* Pure black background */
-    --foreground: 0 0% 98%;          /* Clean white text */
+    /* Scandinavian-inspired design system */
+    --background: 0 0% 100%;         /* Pure white background */
+    --foreground: 0 0% 20%;          /* Charcoal grey text */
     
-    --card: 0 0% 7%;                 /* Subtle dark cards */
-    --card-foreground: 0 0% 98%;
+    --card: 220 15% 96%;             /* Soft off-white cards */
+    --card-foreground: 0 0% 20%;
 
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 20%;
 
-    --primary: 220 80% 45%;          /* Navy blue accent */
-    --primary-foreground: 0 0% 98%;
+    --primary: 210 60% 55%;          /* Soft blue accent */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 14%;           /* Darker gray for contrast */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 92%;           /* Light grey for contrast */
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 60%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 50%;
 
-    --accent: 220 80% 45%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 210 50% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 220 80% 45%;
+    --border: 0 0% 88%;
+    --input: 0 0% 92%;
+    --ring: 210 60% 55%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Metallic gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 80% 55%), hsl(210 90% 65%), hsl(220 80% 55%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 12%), hsl(220 20% 18%), hsl(0 0% 12%));
-    --gradient-metallic: linear-gradient(135deg, hsl(220 40% 30%), hsl(220 60% 50%), hsl(220 40% 30%));
-    --shadow-metallic: 0 8px 32px rgba(37, 99, 235, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    /* Scandinavian gradients - soft and subtle */
+    --gradient-orb: radial-gradient(circle, hsl(210 70% 45%), hsl(210 60% 60%), hsl(210 50% 70%));
+    --gradient-orb-glow: radial-gradient(circle, hsl(210 70% 55% / 0.4), transparent 70%);
+    --gradient-card: linear-gradient(135deg, hsl(220 15% 15% / 0.85), hsl(220 20% 20% / 0.85));
+    --shadow-soft: 0 4px 24px hsl(210 60% 55% / 0.15);
+    --shadow-elevated: 0 8px 32px hsl(210 60% 55% / 0.2);
   }
 }
 
@@ -74,15 +75,22 @@
 }
 
 @layer components {
-  /* Modern card styles */
+  /* Modern card styles - Scandinavian aesthetic */
   .modern-card {
     @apply transition-all duration-300 ease-out;
-    @apply hover:border-primary/50;
-    background: var(--gradient-card);
+    @apply bg-white border border-border;
   }
 
   .modern-card:hover {
-    @apply shadow-lg shadow-primary/5;
+    box-shadow: var(--shadow-soft);
+    @apply border-primary/30;
+  }
+
+  /* Timeline card styles */
+  .timeline-card {
+    background: var(--gradient-card);
+    backdrop-filter: blur(12px);
+    @apply rounded-lg border border-white/10;
   }
 
   /* Smooth fade animations */

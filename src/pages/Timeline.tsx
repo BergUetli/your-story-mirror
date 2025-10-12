@@ -145,15 +145,15 @@ const Timeline = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex items-center gap-4">
+      <nav className="border-b border-border bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center gap-4">
           <Link to="/dashboard">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold">Timeline</h1>
+          <h1 className="text-xl font-semibold">Timeline</h1>
         </div>
       </nav>
 
@@ -169,41 +169,38 @@ const Timeline = () => {
             <p className="text-sm text-muted-foreground">Start recording memories to see them appear here</p>
           </div>
         ) : (
-          <div className="relative space-y-16 animate-fade-in">
-            {/* Timeline Line */}
-            <div className="absolute left-6 top-0 w-0.5 bg-border h-full" />
+          <div className="relative space-y-20 animate-fade-in">
+            {/* Timeline Line with dots */}
+            <div className="absolute left-8 top-0 w-px bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10 h-full" />
 
             {/* Timeline Content */}
             {timelineData.map((yearData) => {
               const isMajorYear = yearData.significance === 'major';
-              const yearSize = isMajorYear ? 'text-5xl' : 'text-3xl';
-              const markerSize = isMajorYear ? 'w-16 h-16' : 'w-10 h-10';
-              const iconSize = isMajorYear ? 'w-8 h-8' : 'w-5 h-5';
-              const spacing = isMajorYear ? 'mb-8' : 'mb-4';
+              const yearSize = isMajorYear ? 'text-5xl' : 'text-4xl';
+              const markerSize = isMajorYear ? 'w-5 h-5' : 'w-3 h-3';
+              const spacing = isMajorYear ? 'mb-10' : 'mb-6';
               
               return (
-                <div key={yearData.year} className={`relative ${isMajorYear ? 'my-24' : 'my-12'}`}>
-                  {/* Year Marker - Size based on significance */}
-                  <div className={`absolute left-0 ${markerSize} rounded-full ${
+                <div key={yearData.year} className={`relative ${isMajorYear ? 'my-28' : 'my-16'}`}>
+                  {/* Year Marker - Minimalist dot */}
+                  <div className={`absolute left-[26px] top-2 ${markerSize} rounded-full ${
                     isMajorYear 
-                      ? 'bg-primary shadow-lg shadow-primary/30 scale-110' 
-                      : 'bg-primary/70'
-                  } flex items-center justify-center transition-all duration-300`}>
-                    <Clock className={`${iconSize} text-white`} />
-                  </div>
+                      ? 'bg-primary shadow-lg shadow-primary/40' 
+                      : 'bg-primary/60 shadow-md shadow-primary/20'
+                  } transition-all duration-300`} />
 
-                  <div className="ml-20 space-y-6">
+                  <div className="ml-24 space-y-8">
                     {/* Year Header */}
                     <div 
                       className="cursor-pointer group"
                       onClick={() => toggleYear(yearData.year)}
                     >
-                      <h2 className={`${yearSize} font-bold ${spacing} group-hover:text-primary transition-colors flex items-center gap-3 ${
-                        isMajorYear ? 'animate-scale-in' : ''
+                      <h2 className={`${yearSize} font-light ${spacing} text-foreground group-hover:text-primary transition-colors flex items-center gap-4 ${
+                        isMajorYear ? 'animate-scale-in font-normal' : ''
                       }`}>
                         {yearData.year}
                         {yearData.isCurrentYear && (
-                          <span className="text-base text-primary font-normal bg-primary/10 px-3 py-1 rounded-full">
+                          <span className="text-sm text-primary font-medium bg-primary/10 px-4 py-1.5 rounded-full">
                             Today
                           </span>
                         )}
@@ -211,18 +208,18 @@ const Timeline = () => {
                       
                       {/* Life Events (Birth) - Always prominent */}
                       {yearData.events.map((event, eventIndex) => (
-                        <div key={eventIndex} className="space-y-2 mb-6 animate-fade-in">
-                          <div className="text-2xl font-bold text-foreground flex items-center gap-3">
+                        <div key={eventIndex} className="space-y-3 mb-8 animate-fade-in">
+                          <div className="text-3xl font-light text-foreground flex items-center gap-4">
                             {event.event}
                             {event.location && (
-                              <div className="flex items-center gap-2 text-lg text-muted-foreground">
+                              <div className="flex items-center gap-2 text-xl text-muted-foreground">
                                 <MapPin className="w-5 h-5" />
                                 {event.location}
                               </div>
                             )}
                           </div>
                           {event.date && (
-                            <div className="text-sm text-muted-foreground flex items-center gap-2">
+                            <div className="text-sm text-muted-foreground flex items-center gap-2 font-light">
                               <Calendar className="w-4 h-4" />
                               {new Date(event.date).toLocaleDateString('en-US', {
                                 month: 'long',
@@ -235,7 +232,7 @@ const Timeline = () => {
                       
                       {/* Show message for current year if no memories yet */}
                       {yearData.isCurrentYear && yearData.memories.length === 0 && yearData.events.length === 0 && (
-                        <p className="text-sm text-muted-foreground italic animate-pulse">
+                        <p className="text-sm text-muted-foreground italic animate-pulse font-light">
                           Start recording memories to fill your timeline...
                         </p>
                       )}
@@ -243,23 +240,28 @@ const Timeline = () => {
 
                     {/* Expanded Year Content */}
                     {expandedYears.has(yearData.year) && yearData.memories.length > 0 && (
-                      <div className="space-y-4 animate-scale-in">
+                      <div className="space-y-6 animate-scale-in">
                         {yearData.memories.map((memory) => {
                           const isMajorMemory = memory.significance === 'major';
                           return (
                             <Card
                               key={memory.id}
-                              className={`modern-card transition-all duration-500 ${
+                              className={`timeline-card transition-all duration-500 ${
                                 materializingMemory === memory.id 
-                                  ? 'border-primary shadow-lg shadow-primary/10 scale-105' 
+                                  ? 'border-primary/40 scale-105' 
                                   : isMajorMemory
-                                    ? 'border-primary/50 shadow-md hover:shadow-lg hover:scale-102'
-                                    : 'border-border/30 hover:border-border/50'
+                                    ? 'border-white/20 hover:border-white/30'
+                                    : 'border-white/10 hover:border-white/20'
                               }`}
+                              style={{
+                                boxShadow: materializingMemory === memory.id 
+                                  ? 'var(--shadow-elevated)' 
+                                  : 'var(--shadow-soft)'
+                              }}
                             >
-                              <CardContent className={`${isMajorMemory ? 'p-8' : 'p-6'} space-y-3`}>
-                                <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
-                                  <Calendar className="w-3 h-3" />
+                              <CardContent className={`${isMajorMemory ? 'p-10' : 'p-8'} space-y-4`}>
+                                <div className="text-sm text-white/60 flex items-center gap-3 flex-wrap font-light">
+                                  <Calendar className="w-4 h-4" />
                                   {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
                                     month: 'long',
                                     day: 'numeric',
@@ -268,23 +270,23 @@ const Timeline = () => {
                                   {memory.memory_location && (
                                     <>
                                       <span className="mx-1">•</span>
-                                      <MapPin className="w-3 h-3" />
+                                      <MapPin className="w-4 h-4" />
                                       {memory.memory_location}
                                     </>
                                   )}
                                 </div>
-                                <h3 className={`${isMajorMemory ? 'text-3xl' : 'text-xl'} font-semibold`}>
+                                <h3 className={`${isMajorMemory ? 'text-3xl' : 'text-2xl'} font-light text-white`}>
                                   {memory.title}
                                 </h3>
-                                <p className={`text-muted-foreground leading-relaxed ${isMajorMemory ? 'text-base' : 'text-sm'}`}>
+                                <p className={`text-white/80 leading-relaxed ${isMajorMemory ? 'text-lg' : 'text-base'} font-light`}>
                                   {memory.text}
                                 </p>
                                 {memory.conversation_text && (
-                                  <details className="mt-4">
-                                    <summary className="text-sm text-primary cursor-pointer hover:underline">
+                                  <details className="mt-6">
+                                    <summary className="text-sm text-primary cursor-pointer hover:underline font-light">
                                       View conversation with Solon
                                     </summary>
-                                    <div className="mt-3 p-4 bg-card rounded-lg text-sm text-muted-foreground whitespace-pre-line border border-border/50">
+                                    <div className="mt-4 p-5 bg-black/20 rounded-lg text-sm text-white/70 whitespace-pre-line border border-white/10 font-light">
                                       {memory.conversation_text}
                                     </div>
                                   </details>
