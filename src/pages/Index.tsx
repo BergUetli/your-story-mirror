@@ -390,35 +390,40 @@ const Index = () => {
             </Button>
           </div>
 
-          {/* Right Side - Live Conversation Transcript */}
-          <div className="flex-1 max-w-2xl h-[80vh] bg-gradient-to-br from-card/60 to-card/40 backdrop-blur-xl rounded-2xl border border-primary/20 shadow-2xl p-8 flex flex-col overflow-hidden">
-            <div className="mb-6">
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary via-blue-400 to-primary bg-clip-text text-transparent animate-pulse">
-                Live Conversation
+          {/* Right Side - Live Conversation Transcript - Matrix Terminal Style */}
+          <div className="flex-1 max-w-2xl h-[80vh] bg-black rounded-2xl border-2 border-green-500/30 shadow-2xl shadow-green-500/20 p-6 flex flex-col overflow-hidden font-mono">
+            <div className="mb-4 border-b border-green-500/30 pb-3">
+              <h2 className="text-lg font-bold text-green-400 tracking-wider animate-pulse">
+                &gt; LIVE TRANSCRIPT_
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">Real-time transcript with Solin0</p>
+              <p className="text-xs text-green-500/70 mt-1">Real-time stream with Solon</p>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-green-500/30 scrollbar-track-transparent">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-muted-foreground text-lg text-center">
-                    Start a conversation to see the live transcript appear here...
+                  <p className="text-green-500/50 text-sm text-center animate-pulse">
+                    &gt; Awaiting input..._
                   </p>
                 </div>
               ) : (
                 conversationMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`p-6 rounded-2xl transform transition-all duration-300 hover:scale-[1.02] ${
+                    className={`text-xs leading-relaxed ${
                       msg.role === 'user'
-                        ? 'bg-gradient-to-br from-primary/30 to-primary/10 border-l-4 border-primary shadow-lg ml-8'
-                        : 'bg-gradient-to-br from-blue-500/20 to-blue-400/10 border-l-4 border-blue-400 shadow-lg mr-8'
+                        ? 'text-green-300 pl-4 border-l-2 border-green-400/50'
+                        : 'text-green-400 pl-4 border-l-2 border-green-500/30'
                     }`}
                   >
-                    <p className="text-base font-bold mb-2 flex items-center gap-2">
-                      {msg.role === 'user' ? '🎤 You' : '🤖 Solin0'}
-                    </p>
-                    <p className="text-lg leading-relaxed text-foreground">{msg.text}</p>
+                    <div className="text-green-500/70 mb-1 text-[10px] uppercase tracking-wide">
+                      {msg.role === 'user' ? '> USER:' : '> SOLON:'}
+                    </div>
+                    <div className="whitespace-pre-wrap break-words">
+                      {msg.text}
+                      {idx === conversationMessages.length - 1 && (
+                        <span className="inline-block w-2 h-3 bg-green-400 ml-1 animate-pulse" />
+                      )}
+                    </div>
                   </div>
                 ))
               )}
