@@ -22,6 +22,9 @@ const Index = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const noEndBeforeRef = useRef(0);
   const isTogglingRef = useRef(false);
+  const lastConnectedAtRef = useRef(0);
+  const didRetryRef = useRef(false);
+  const startWithAgentIdRef = useRef<() => void>();
 
   const saveMemoryTool = useCallback(async (parameters: { title: string; content: string; tags?: string[] }) => {
     try {
@@ -43,11 +46,21 @@ const Index = () => {
   const onConnectCb = useCallback(() => {
     console.log('✅ Connected to ElevenLabs');
     noEndBeforeRef.current = Date.now() + 2000;
+    lastConnectedAtRef.current = Date.now();
+    didRetryRef.current = false;
     toast({ title: 'Connected', description: 'Start speaking naturally' });
   }, [toast]);
 
   const onDisconnectCb = useCallback(() => {
     console.log('👋 Disconnected');
+    const justConnected = Date.now() - lastConnectedAtRef.current < 2000;
+    if (justConnected && !didRetryRef.current) {
+      console.log('⚠️ Early disconnect detected, retrying with direct agentId...');
+      didRetryRef.current = true;
+      // Fire and forget; UI already shows disconnected. We'll reconnect silently.
+      startWithAgentIdRef.current?.();
+      return;
+    }
     toast({ title: 'Disconnected', description: 'Voice session ended' });
   }, [toast]);
 
@@ -127,6 +140,35 @@ const Index = () => {
 
   const conversation = useConversation(conversationOptionsRef.current);
 
+  // Fallback: start by agentId if signed URL session drops immediately
+  useEffect(() => {
+    startWithAgentIdRef.current = async () => {
+      try {
+        let timeoutId: number | undefined;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = window.setTimeout(() => reject(new Error('AgentID connect timed out')), 20000);
+        });
+
+        const startPromise = conversation.startSession({
+          agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
+          overrides: {
+            agent: {
+              firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
+            },
+            tts: { voiceId: '9BWtsMINqrJLrRacOk9x' }
+          }
+        });
+
+        await Promise.race([startPromise, timeoutPromise]);
+        if (timeoutId) clearTimeout(timeoutId);
+        try { await conversation.setVolume({ volume: 1 }); } catch {}
+      } catch (e) {
+        console.error('Fallback agentId start failed:', e);
+      }
+    };
+    return () => { startWithAgentIdRef.current = undefined; };
+  }, [conversation]);
+
   useEffect(() => {
     console.log('🛰️ Conversation status:', conversation.status, 'speaking:', conversation.isSpeaking);
   }, [conversation.status, conversation.isSpeaking]);
@@ -179,9 +221,12 @@ const Index = () => {
           agent: {
             prompt: { prompt: finalPrompt },
             firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
-          }
+          },
+          tts: { voiceId: "9BWtsMINqrJLrRacOk9x" }
         }
       });
+
+      try { await conversation.setVolume({ volume: 1 }); } catch { /* ignore */ }
 
       await Promise.race([startPromise, timeoutPromise]);
       if (timeoutId) clearTimeout(timeoutId);

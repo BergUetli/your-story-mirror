@@ -84,7 +84,8 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
         overrides: {
           agent: {
             firstMessage: "Hi, I’m Solon. I’m ready when you are."
-          }
+          },
+          tts: { voiceId: "9BWtsMINqrJLrRacOk9x" }
         }
       });
 
