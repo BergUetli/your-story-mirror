@@ -289,7 +289,7 @@ Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
     } finally {
       setIsConnecting(false);
     }
-  }, [conversation, toast, user?.id]);
+  }, [conversation, toast, agentInstructions]);
 
   // Keep a stable ref to startConversation so callbacks can call it without re-creating deps
   useEffect(() => {
