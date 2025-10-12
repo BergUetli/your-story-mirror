@@ -30,20 +30,13 @@ const Index = () => {
     try {
       console.log('💾 Saving memory:', parameters);
       
-      if (!user?.id) {
-        console.warn('⚠️ No user session, cannot save memory');
-        toast({ 
-          title: 'Cannot save memory', 
-          description: 'Please log in to save memories',
-          variant: 'destructive' 
-        });
-        return 'User not authenticated';
-      }
+      // Use placeholder UUID for testing without auth
+      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
 
       const { data, error } = await supabase
         .from('memories')
         .insert([{
-          user_id: user.id,
+          user_id: userId,
           title: parameters.title,
           text: parameters.content,
           tags: parameters.tags ?? [],
