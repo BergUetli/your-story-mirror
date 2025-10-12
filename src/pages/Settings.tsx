@@ -40,7 +40,7 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-8 py-6 flex items-center gap-4">

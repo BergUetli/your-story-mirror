@@ -352,8 +352,7 @@ const Index = () => {
 
   if (shouldShowSolonInterface) {
     return (
-      <div className="min-h-screen bg-background overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-slate-900/50 to-background" />
+      <div className="min-h-screen bg-white overflow-hidden relative">
         
         <div className="relative h-screen flex items-center justify-center p-8 gap-8">
           {/* Left Side - Solon Orb */}
@@ -436,7 +435,7 @@ const Index = () => {
   }
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
+    <div className="h-screen bg-white overflow-hidden">
       {/* Navigation */}
       <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
         <div className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
