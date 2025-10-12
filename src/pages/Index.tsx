@@ -122,20 +122,26 @@ const Index = () => {
       if (!data?.signed_url) throw new Error('Failed to get signed URL');
 
       console.log('Starting session...');
-      await Promise.race([
-        conversation.startSession({
-          signedUrl: data.signed_url,
-          overrides: {
-            agent: {
-              prompt: {
-                prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`
-              },
-              firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
-            }
+      // Use a cancellable timeout to avoid unhandled rejection after connect
+      let timeoutId: number | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('Connection timed out')), 20000);
+      });
+
+      const startPromise = conversation.startSession({
+        signedUrl: data.signed_url,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: `You are Solin0, a warm AI voice companion helping users preserve their life stories. Ask thoughtful, open-ended questions to help them explore meaningful moments. Use the save_memory tool to save new memories when users share stories.`
+            },
+            firstMessage: "Hi, I’m Solon. I’m here to help you preserve a memory—what would you like to talk about today?"
           }
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
-      ]);
+        }
+      });
+
+      await Promise.race([startPromise, timeoutPromise]);
+      if (timeoutId) clearTimeout(timeoutId);
       
     } catch (error) {
       console.error('Failed to start:', error);

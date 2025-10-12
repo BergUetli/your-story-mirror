@@ -73,17 +73,23 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
 
       // Start the conversation with the signed URL
       console.log('Starting ElevenLabs session with signed URL:', data.signed_url?.slice(0, 48) + '...');
-      await Promise.race([
-        conversation.startSession({
-          signedUrl: data.signed_url,
-          overrides: {
-            agent: {
-              firstMessage: "Hi, I’m Solon. I’m ready when you are."
-            }
+       // Use a cancellable timeout to avoid unhandled rejection after connect
+      let timeoutId: number | undefined;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error('Connection timed out')), 20000);
+      });
+
+      const startPromise = conversation.startSession({
+        signedUrl: data.signed_url,
+        overrides: {
+          agent: {
+            firstMessage: "Hi, I’m Solon. I’m ready when you are."
           }
-        }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out')), 12000))
-      ]);
+        }
+      });
+
+      await Promise.race([startPromise, timeoutPromise]);
+      if (timeoutId) clearTimeout(timeoutId);
       
     } catch (error) {
       console.error('Failed to start conversation:', error);
