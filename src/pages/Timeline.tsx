@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, MapPin, Calendar, Clock } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -81,6 +82,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
 const Timeline = () => {
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
   const timelineData = createTimelineData(memories, profile);
@@ -142,23 +144,78 @@ const Timeline = () => {
     setExpandedYears(newExpanded);
   };
 
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 2));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className="border-b border-border bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center gap-4">
-          <Link to="/dashboard">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-xl font-semibold">Timeline</h1>
+          </div>
+          
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              className="font-light"
+            >
+              <ZoomOut className="w-4 h-4" />
             </Button>
-          </Link>
-          <h1 className="text-xl font-semibold">Timeline</h1>
+            <span className="text-sm text-muted-foreground font-light min-w-[60px] text-center">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 2}
+              className="font-light"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            {zoomLevel !== 1 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetZoom}
+                className="font-light"
+              >
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
       </nav>
 
       {/* Main Timeline */}
-      <div className="max-w-5xl mx-auto px-8 py-16">
+      <div 
+        className="max-w-5xl mx-auto px-8 py-16 transition-all duration-500 ease-out origin-top"
+        style={{ 
+          transform: `scale(${zoomLevel})`,
+          transformOrigin: 'top center'
+        }}
+      >
         {profileLoading || isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground animate-pulse">Loading your timeline...</div>
@@ -281,6 +338,36 @@ const Timeline = () => {
                                 <p className={`text-white/80 leading-relaxed ${isMajorMemory ? 'text-lg' : 'text-base'} font-light`}>
                                   {memory.text}
                                 </p>
+                                
+                                {/* Memory Images */}
+                                {memory.image_urls && memory.image_urls.length > 0 && (
+                                  <div className={`grid gap-3 mt-4 ${
+                                    memory.image_urls.length === 1 ? 'grid-cols-1' : 
+                                    memory.image_urls.length === 2 ? 'grid-cols-2' : 
+                                    'grid-cols-2 sm:grid-cols-3'
+                                  }`}>
+                                    {memory.image_urls.map((url, imgIdx) => {
+                                      const publicUrl = supabase.storage
+                                        .from('memory-images')
+                                        .getPublicUrl(url).data.publicUrl;
+                                      
+                                      return (
+                                        <div 
+                                          key={imgIdx} 
+                                          className="relative group cursor-pointer overflow-hidden rounded-lg border border-white/20"
+                                        >
+                                          <img
+                                            src={publicUrl}
+                                            alt={`Memory image ${imgIdx + 1}`}
+                                            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                                            loading="lazy"
+                                          />
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                
                                 {memory.conversation_text && (
                                   <details className="mt-6">
                                     <summary className="text-sm text-primary cursor-pointer hover:underline font-light">

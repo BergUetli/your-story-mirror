@@ -48,6 +48,7 @@ const Index = () => {
           tags: parameters.tags ?? [],
           memory_date: parameters.memory_date || null,
           memory_location: parameters.memory_location || null,
+          image_urls: [], // No images from voice conversation
         }])
         .select()
         .single();

@@ -8,6 +8,7 @@ const Navigation = () => {
   
   const navItems = [
     { path: '/', label: 'Home' },
+    { path: '/add-memory', label: 'Add Memory' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
