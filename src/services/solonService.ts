@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import solonConfig from '@/agents/solon.json';
 
 interface Memory {
@@ -24,31 +24,9 @@ interface SolonRequest {
 }
 
 class SolonService {
-  private supabase: any = null;
-  private isSupabaseAvailable = false;
-
-  constructor() {
-    this.initializeSupabase();
-  }
-
-  private initializeSupabase() {
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-      if (supabaseUrl && supabaseAnonKey) {
-        this.supabase = createClient(supabaseUrl, supabaseAnonKey);
-        this.isSupabaseAvailable = true;
-        console.log('Supabase initialized for Solon service');
-      } else {
-        console.warn('Supabase environment variables not found. Using fallback responses.');
-        this.isSupabaseAvailable = false;
-      }
-    } catch (error) {
-      console.error('Failed to initialize Supabase:', error);
-      this.isSupabaseAvailable = false;
-    }
-  }
+  // Use shared Supabase client instead of creating a new one
+  private supabase = supabase;
+  private isSupabaseAvailable = true;
 
   async chat(request: SolonRequest): Promise<SolonResponse> {
     // Try to use the real Supabase function first

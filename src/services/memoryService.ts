@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import type { Memory } from './solonService';
 
 interface MemoryWithConversation extends Memory {
@@ -8,30 +8,9 @@ interface MemoryWithConversation extends Memory {
 }
 
 class MemoryService {
-  private supabase: any = null;
-  private isSupabaseAvailable = false;
-
-  constructor() {
-    this.initializeSupabase();
-  }
-
-  private initializeSupabase() {
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (supabaseUrl && supabaseAnonKey) {
-        this.supabase = createClient(supabaseUrl, supabaseAnonKey);
-        this.isSupabaseAvailable = true;
-      } else {
-        console.warn('Supabase environment variables not found. Using localStorage fallback.');
-        this.isSupabaseAvailable = false;
-      }
-    } catch (error) {
-      console.error('Failed to initialize Supabase:', error);
-      this.isSupabaseAvailable = false;
-    }
-  }
+  // Use shared Supabase client instead of creating a new one
+  private supabase = supabase;
+  private isSupabaseAvailable = true;
 
   async getMemories(): Promise<MemoryWithConversation[]> {
     if (!this.isSupabaseAvailable) {
@@ -45,7 +24,13 @@ class MemoryService {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Map database schema (text) to interface schema (content)
+      return (data || []).map((mem: any) => ({
+        ...mem,
+        content: mem.text,
+        date: mem.created_at
+      }));
     } catch (error) {
       console.error('Error fetching memories from Supabase, falling back to localStorage:', error);
       return this.getMemoriesFromLocalStorage();
@@ -78,20 +63,30 @@ class MemoryService {
     }
 
     try {
+      // Get current user or use placeholder for testing
+      const { data: { user } } = await this.supabase.auth.getUser();
+      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+      
       const { data, error } = await this.supabase
         .from('memories')
         .insert([{
+          user_id: userId,
           title: memory.title,
-          content: memory.content,
-          date: memory.date,
+          text: memory.content, // Map content -> text for database
           recipient: memory.recipient || 'public',
-          conversation_text: memory.conversation_text || null
+          tags: []
         }])
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Map database schema back to interface schema
+      return {
+        ...data,
+        content: data.text,
+        date: data.created_at
+      };
     } catch (error) {
       console.error('Error adding memory to Supabase, falling back to localStorage:', error);
       return this.addMemoryToLocalStorage(memory);
@@ -122,10 +117,18 @@ class MemoryService {
     }
 
     try {
+      // Map interface fields to database fields
+      const dbUpdates: any = { ...updates };
+      if (updates.content !== undefined) {
+        dbUpdates.text = updates.content;
+        delete dbUpdates.content;
+      }
+      delete dbUpdates.date; // date is read-only (created_at)
+      
       const { data, error } = await this.supabase
         .from('memories')
         .update({
-          ...updates,
+          ...dbUpdates,
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -133,7 +136,13 @@ class MemoryService {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      // Map back to interface schema
+      return {
+        ...data,
+        content: data.text,
+        date: data.created_at
+      };
     } catch (error) {
       console.error('Error updating memory in Supabase, falling back to localStorage:', error);
       return this.updateMemoryInLocalStorage(id, updates);
@@ -198,11 +207,17 @@ class MemoryService {
       const { data, error } = await this.supabase
         .from('memories')
         .select('*')
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%,conversation_text.ilike.%${query}%`)
+        .or(`title.ilike.%${query}%,text.ilike.%${query}%`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Map database schema to interface schema
+      return (data || []).map((mem: any) => ({
+        ...mem,
+        content: mem.text,
+        date: mem.created_at
+      }));
     } catch (error) {
       console.error('Error searching memories in Supabase, falling back to localStorage:', error);
       return this.searchMemoriesInLocalStorage(query);

@@ -40,9 +40,10 @@ serve(async (req) => {
 
     console.log('🔑 Generating signed URL for agent:', agentId);
 
-    // Request signed URL from ElevenLabs
+    // Request signed URL from ElevenLabs with extended inactivity timeout
+    // Default is 20s; we extend to 180s to handle natural pauses in conversation
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}&inactivity_timeout=180`,
       {
         method: 'GET',
         headers: {
