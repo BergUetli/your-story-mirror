@@ -87,10 +87,21 @@ const Timeline = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
+  const zoomLevelRef = useRef(1);
+  const panOffsetRef = useRef({ x: 0, y: 0 });
   
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
   const timelineData = createTimelineData(memories, profile);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
 
   // Refresh memories when component mounts
   useEffect(() => {
@@ -149,27 +160,32 @@ const Timeline = () => {
     setExpandedYears(newExpanded);
   };
 
-  // Mouse wheel zoom
+  // Mouse wheel zoom (only with Ctrl key held)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
+      // Only zoom if Ctrl key is pressed, otherwise allow normal scroll
+      if (!e.ctrlKey) return;
+      
       e.preventDefault();
       
       const delta = e.deltaY * -0.001;
-      const newZoom = Math.min(Math.max(zoomLevel + delta, 0.5), 2);
+      const currentZoom = zoomLevelRef.current;
+      const currentPan = panOffsetRef.current;
+      const newZoom = Math.min(Math.max(currentZoom + delta, 0.5), 2);
       
-      if (newZoom !== zoomLevel) {
+      if (newZoom !== currentZoom) {
         // Calculate zoom center based on mouse position
         const rect = container.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
         
         // Adjust pan to zoom towards mouse position
-        const zoomRatio = newZoom / zoomLevel;
-        const newPanX = mouseX - (mouseX - panOffset.x) * zoomRatio;
-        const newPanY = mouseY - (mouseY - panOffset.y) * zoomRatio;
+        const zoomRatio = newZoom / currentZoom;
+        const newPanX = mouseX - (mouseX - currentPan.x) * zoomRatio;
+        const newPanY = mouseY - (mouseY - currentPan.y) * zoomRatio;
         
         setZoomLevel(newZoom);
         setPanOffset({ x: newPanX, y: newPanY });
@@ -178,11 +194,12 @@ const Timeline = () => {
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [zoomLevel, panOffset]);
+  }, []); // Empty deps array - we use refs to avoid infinite loop
 
-  // Mouse drag to pan
+  // Mouse drag to pan (only with Space key held)
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0) { // Left mouse button
+    if (e.button === 0 && e.shiftKey) { // Left mouse + Shift key
+      e.preventDefault();
       setIsDragging(true);
       setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
     }
@@ -190,6 +207,7 @@ const Timeline = () => {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
+      e.preventDefault();
       setPanOffset({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y
@@ -235,6 +253,9 @@ const Timeline = () => {
           
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-light mr-2">
+              Ctrl+Wheel to zoom • Shift+Drag to pan
+            </span>
             <Button
               variant="outline"
               size="sm"
@@ -256,7 +277,7 @@ const Timeline = () => {
             >
               <ZoomIn className="w-4 h-4" />
             </Button>
-            {zoomLevel !== 1 && (
+            {(zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -273,7 +294,7 @@ const Timeline = () => {
       {/* Main Timeline Container */}
       <div 
         ref={containerRef}
-        className="relative overflow-hidden"
+        className="relative overflow-auto"
         style={{ height: 'calc(100vh - 60px)' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -285,7 +306,8 @@ const Timeline = () => {
           style={{ 
             transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
             transformOrigin: '0 0',
-            cursor: isDragging ? 'grabbing' : 'grab'
+            cursor: isDragging ? 'grabbing' : 'default',
+            userSelect: isDragging ? 'none' : 'auto'
           }}
         >
         {profileLoading || isLoading ? (
