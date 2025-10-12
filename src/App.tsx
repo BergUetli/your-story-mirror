@@ -36,6 +36,7 @@ const AppContent = () => {
 
   return (
     <div className="pb-16 md:pb-0">
+      <Navigation />
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<Index />} />
@@ -80,9 +81,6 @@ const AppContent = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <ProtectedRoute fallback={null}>
-        <Navigation />
-      </ProtectedRoute>
     </div>
   );
 };

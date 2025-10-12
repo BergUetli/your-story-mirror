@@ -7,11 +7,13 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
 export const AddMemoryForm: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -85,6 +87,11 @@ export const AddMemoryForm: React.FC = () => {
         tags: '',
       });
       setImages([]);
+
+      // Navigate to timeline to see the new memory
+      setTimeout(() => {
+        navigate('/timeline');
+      }, 500);
     } catch (error) {
       console.error('Error saving memory:', error);
       toast({

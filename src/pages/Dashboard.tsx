@@ -19,19 +19,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold">You, Remembered</Link>
-          <div className="flex items-center gap-4">
-            <span className="text-muted-foreground">{userName}</span>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-8 py-24">
         <div className="space-y-16 animate-fade-in">

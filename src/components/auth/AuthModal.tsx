@@ -53,7 +53,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       });
     } else {
       toast({
-        title: "Welcome to You, Remembered!",
+        title: "Welcome to Solon One!",
         description: "Please check your email to verify your account.",
       });
       onClose();

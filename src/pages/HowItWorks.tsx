@@ -6,21 +6,6 @@ import { Link } from 'react-router-dom';
 const HowItWorks = () => {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold">You, Remembered</Link>
-          <div className="flex gap-4">
-            <Button variant="ghost" asChild>
-              <Link to="/about">About</Link>
-            </Button>
-            <Button asChild className="bg-primary hover:bg-primary/90 rounded-full">
-              <Link to="/">Get started</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <div className="max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in">
         <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">

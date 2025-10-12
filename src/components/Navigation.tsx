@@ -1,17 +1,25 @@
 import { Button } from '@/components/ui/button';
-import { Home, Clock, Info, HelpCircle } from 'lucide-react';
+import { Home, Clock, Info, HelpCircle, Plus } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const Navigation = () => {
   const location = useLocation();
   
-  const navItems = [
-    { path: '/', label: 'Home' },
-    { path: '/add-memory', label: 'Add Memory' },
-    { path: '/timeline', icon: Clock, label: 'Timeline' },
+  // Hide navigation on homepage (Solon interface)
+  if (location.pathname === '/') {
+    return null;
+  }
+  
+  const leftNavItems = [
     { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
+  ];
+
+  const rightNavItems = [
+    { path: '/', icon: Home, label: 'Home' },
+    { path: '/add-memory', icon: Plus, label: 'Add Memory' },
+    { path: '/timeline', icon: Clock, label: 'Timeline' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -22,20 +30,36 @@ const Navigation = () => {
       <div className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-border z-40">
         <div className="max-w-7xl mx-auto px-8">
           <div className="flex justify-between items-center h-14">
-            {/* Logo */}
-            <Link to="/" className="text-xl font-light tracking-wide hover:text-primary transition-colors">
-              You, Remembered
-            </Link>
-            
-            {/* Desktop Nav Items */}
+            {/* Left - Info Pages */}
             <div className="flex items-center gap-2">
-              {navItems.slice(1).map(({ path, label }) => (
+              {leftNavItems.map(({ path, label }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
                     className="font-light"
                   >
+                    {label}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+
+            {/* Center - Logo */}
+            <Link to="/" className="text-xl font-light tracking-wide hover:text-primary transition-colors">
+              Solon One
+            </Link>
+            
+            {/* Right - Control Panel */}
+            <div className="flex items-center gap-2">
+              {rightNavItems.map(({ path, icon: Icon, label }) => (
+                <Link key={path} to={path}>
+                  <Button
+                    variant={isActive(path) ? 'default' : 'ghost'}
+                    size="sm"
+                    className="font-light flex items-center gap-2"
+                  >
+                    <Icon className="w-4 h-4" />
                     {label}
                   </Button>
                 </Link>
@@ -48,7 +72,7 @@ const Navigation = () => {
       {/* Mobile Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-border md:hidden z-40">
         <div className="flex justify-around items-center py-2 px-4 max-w-md mx-auto">
-          {navItems.map(({ path, icon: Icon, label }) => (
+          {[...leftNavItems, ...rightNavItems].map(({ path, icon: Icon, label }) => (
             <Link key={path} to={path}>
               <Button
                 variant="ghost"
