@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Heart, Home, Plus, Clock, Settings, BookOpen } from 'lucide-react';
+import { Heart, Home, Plus, Clock, Settings, BookOpen, Info, HelpCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { UserProfile } from '@/components/UserProfile';
@@ -12,6 +12,8 @@ const Navigation = () => {
     { path: '/journal', icon: BookOpen, label: 'Journal' },
     { path: '/add-memory', icon: Plus, label: 'Add Memory' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
+    { path: '/about', icon: Info, label: 'About' },
+    { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
     { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 

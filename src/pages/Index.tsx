@@ -389,13 +389,6 @@ const Index = () => {
                 )}
               </div>
             </div>
-
-            <Button asChild size="lg" className="rounded-full">
-              <Link to="/dashboard">
-                View Dashboard
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Link>
-            </Button>
           </div>
 
           {/* Right Side - Live Conversation Transcript - Matrix Terminal Style */}
