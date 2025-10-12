@@ -88,7 +88,7 @@ const Timeline = () => {
   // Refresh memories when component mounts
   useEffect(() => {
     loadMemories();
-  }, [loadMemories]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Auto-expand years with major events on initial load
   useEffect(() => {
