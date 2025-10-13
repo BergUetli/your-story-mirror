@@ -26,10 +26,22 @@ interface ThemeConnection {
   to: string;
 }
 
+// Classic life themes with associated keywords
+const LIFE_THEMES = {
+  'Love & Relationships': ['love', 'relationship', 'marriage', 'wedding', 'partner', 'dating', 'romance', 'family', 'friendship', 'together'],
+  'Career & Professional': ['work', 'job', 'career', 'professional', 'promotion', 'business', 'office', 'project', 'meeting', 'colleague'],
+  'Achievements & Success': ['achievement', 'success', 'accomplished', 'won', 'award', 'graduated', 'diploma', 'certificate', 'milestone', 'proud'],
+  'Struggles & Challenges': ['struggle', 'challenge', 'difficult', 'hard', 'problem', 'issue', 'obstacle', 'setback', 'tough', 'overcome'],
+  'Growth & Learning': ['learn', 'growth', 'develop', 'education', 'course', 'training', 'skill', 'knowledge', 'study', 'improve'],
+  'Travel & Adventure': ['travel', 'trip', 'vacation', 'journey', 'adventure', 'explore', 'visit', 'destination', 'abroad', 'flight'],
+  'Health & Wellness': ['health', 'fitness', 'exercise', 'wellness', 'medical', 'doctor', 'hospital', 'recovery', 'healing', 'therapy'],
+  'Creativity & Hobbies': ['creative', 'hobby', 'art', 'music', 'painting', 'writing', 'craft', 'project', 'passion', 'interest'],
+};
+
 const StoryMap = ({ memories, profile }: StoryMapProps) => {
   const [narrative, setNarrative] = useState<LifeNarrative | null>(null);
-  const [availableThemes, setAvailableThemes] = useState<string[]>([]);
-  const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const availableThemes = Object.keys(LIFE_THEMES);
+  const [selectedTheme, setSelectedTheme] = useState<string>(availableThemes[0]);
   const [themeNodes, setThemeNodes] = useState<ThemeNode[]>([]);
   const [themeConnections, setThemeConnections] = useState<ThemeConnection[]>([]);
 
@@ -119,29 +131,6 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       milestones: milestoneSentences,
       closing,
     });
-
-    // Extract all unique themes from memories
-    const themeSet = new Set<string>();
-    memories.forEach((memory: any) => {
-      const tags = memory.tags || [];
-      tags.forEach((tag: string) => themeSet.add(tag));
-      
-      // Also extract people's names from titles/text (simple word extraction)
-      const text = (memory.title + ' ' + (memory.text || '')).toLowerCase();
-      const words = text.split(/\s+/);
-      words.forEach((word) => {
-        // Capitalize proper nouns (names typically start with capital)
-        if (word.length > 2 && /^[A-Z]/.test(memory.title.split(/\s+/).find((w: string) => w.toLowerCase() === word) || '')) {
-          themeSet.add(word.charAt(0).toUpperCase() + word.slice(1));
-        }
-      });
-    });
-
-    const themes = Array.from(themeSet).sort();
-    setAvailableThemes(themes);
-    if (themes.length > 0 && !selectedTheme) {
-      setSelectedTheme(themes[0]);
-    }
   }, [memories, profile]);
 
   // Generate knowledge graph when theme is selected
@@ -152,13 +141,19 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       return;
     }
 
-    // Find all memories related to the selected theme
+    // Get keywords for the selected theme
+    const keywords = LIFE_THEMES[selectedTheme as keyof typeof LIFE_THEMES] || [];
+
+    // Find all memories related to the selected theme based on keywords
     const relatedMemories = memories.filter((memory: any) => {
-      const tags = memory.tags || [];
-      if (tags.includes(selectedTheme)) return true;
-      
       const text = (memory.title + ' ' + (memory.text || '')).toLowerCase();
-      return text.includes(selectedTheme.toLowerCase());
+      const tags = (memory.tags || []).map((t: string) => t.toLowerCase());
+      
+      // Check if any keyword matches the memory text or tags
+      return keywords.some(keyword => 
+        text.includes(keyword.toLowerCase()) || 
+        tags.some((tag: string) => tag.includes(keyword.toLowerCase()))
+      );
     }).sort((a: any, b: any) => {
       const dateA = new Date(a.memory_date || a.created_at);
       const dateB = new Date(b.memory_date || b.created_at);
