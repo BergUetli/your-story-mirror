@@ -157,11 +157,22 @@ For complex operations that don't require instant response:
 - user_id (uuid, indexed)
 - title (text)
 - text (text)
+- memory_date (date, nullable) - User-provided date (YYYY-MM-DD, YYYY-MM, or YYYY)
+- memory_location (text, nullable) - Where the memory took place
 - tags (text[], GIN indexed)
 - recipient (text, nullable)
+- image_urls (text[], nullable) - Array of storage paths for memory images
 - created_at (timestamp, indexed)
 - updated_at (timestamp)
 ```
+
+**Date Handling:**
+- Users can provide dates in multiple formats:
+  - Specific date: `YYYY-MM-DD` (e.g., "2024-06-15")
+  - Month only: `YYYY-MM` (e.g., "2024-06")
+  - Year only: `YYYY` (e.g., "2024")
+- If no date is provided, the memory is stored in the database but won't appear on the timeline
+- Memories without valid dates can still be searched and retrieved via other methods
 
 **Indexes for performance:**
 - `idx_memories_user_id` - Fast user-specific queries
@@ -177,13 +188,19 @@ For complex operations that don't require instant response:
 - name (text)
 - email (text)
 - age (integer)
-- birth_date (text)
-- birth_place (text)
+- birth_date (text) - Required for timeline (YYYY-MM-DD format)
+- birth_place (text) - Required, shown on timeline with birth event
 - current_location (text)
 - onboarding_completed (boolean)
 - created_at (timestamp)
 - updated_at (timestamp)
 ```
+
+**Timeline Display:**
+- Birth date and birth place are always shown as the first event on the timeline
+- Current date is always shown as the last marker with a "Today" badge
+- Each memory on the timeline displays its date and location (if provided)
+- Demo user has pre-populated data (born December 1, 1980 in San Francisco, CA)
 
 All tables have RLS policies ensuring users can only access their own data.
 

@@ -51,9 +51,14 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   for (let year = birthYear; year <= currentYear; year++) {
     const yearEvents = lifeEvents.filter(event => event.year === year);
     const yearMemories = actualMemories.filter(memory => {
-      // Use memory_date if available, otherwise fall back to created_at
+      // Only include memories with valid dates - if no date, memory won't appear on timeline
       const dateToUse = memory.memory_date || memory.created_at || memory.date;
-      const memoryYear = new Date(dateToUse).getFullYear();
+      if (!dateToUse) return false;
+      
+      const parsedDate = new Date(dateToUse);
+      if (isNaN(parsedDate.getTime())) return false;
+      
+      const memoryYear = parsedDate.getFullYear();
       return memoryYear === year;
     }).map(memory => ({
       ...memory,
