@@ -99,10 +99,10 @@ const Index = () => {
           user_id: userId,
           title,
           text: content,
-          tags: parameters.tags ?? [],
+          tags: Array.isArray(parameters.tags) && parameters.tags.length > 0 ? parameters.tags : null,
           memory_date: formattedDate,
-          memory_location: parameters.memory_location || null,
-          image_urls: [], // No images from voice conversation
+          memory_location: parameters.memory_location?.trim?.() || null,
+          image_urls: null,
         }])
         .select()
         .single();
@@ -151,7 +151,8 @@ const Index = () => {
         stack: error instanceof Error ? error.stack : undefined
       });
       
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      const errObj = (typeof error === 'object' && error) ? (error as any) : null;
+      const errorMsg = errObj?.message || errObj?.error_description || errObj?.hint || JSON.stringify(errObj) || 'Unknown error';
       
       toast({
         title: 'Failed to save memory',
