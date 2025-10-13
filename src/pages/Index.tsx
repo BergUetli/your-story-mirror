@@ -23,7 +23,7 @@ const Index = () => {
   const noEndBeforeRef = useRef(0);
   const isTogglingRef = useRef(false);
   const lastConnectedAtRef = useRef(0);
-  const didRetryRef = useRef(false);
+  const retryCountRef = useRef(0);
   const startConversationRef = useRef<(isRetry?: boolean) => Promise<void>>();
 
   const saveMemoryTool = useCallback(async (parameters: { 
@@ -73,7 +73,7 @@ const Index = () => {
     console.log('✅ Connected to ElevenLabs');
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
-    // Do NOT reset didRetryRef here to avoid reconnect loops
+    retryCountRef.current = 0; // reset retries on a successful connect
     toast({ title: 'Connected', description: 'Start speaking naturally' });
   }, [toast]);
 
@@ -82,12 +82,13 @@ const Index = () => {
     console.log('👋 Disconnected after', elapsed, 'ms');
     
     const justConnected = elapsed < 3000;
-    if (justConnected && !didRetryRef.current) {
-      console.log('⚠️ Early disconnect detected, retrying with fresh signed URL...');
-      didRetryRef.current = true;
+    if (justConnected && retryCountRef.current < 3) {
+      retryCountRef.current += 1;
+      const delay = 400 * retryCountRef.current;
+      console.log(`⚠️ Early disconnect detected, retry #${retryCountRef.current} in ${delay}ms...`);
       setTimeout(() => {
         startConversationRef.current?.(true);
-      }, 500);
+      }, delay);
       return;
     }
     toast({ title: 'Disconnected', description: 'Voice session ended' });
@@ -269,8 +270,7 @@ Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
           agent: {
             prompt: {
               prompt: agentInstructions,
-            },
-            firstMessage: "Hello! I'm Solon, your AI companion for preserving life stories. I can help you capture and recall your precious memories. What would you like to talk about today?",
+            }
           },
         },
       });
