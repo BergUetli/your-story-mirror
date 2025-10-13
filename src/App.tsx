@@ -8,6 +8,7 @@ import { ProtectedRoute, DemoProvider } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
 import Timeline from "./pages/Timeline";
+import Reconstruction from "./pages/Reconstruction";
 import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
@@ -64,6 +65,11 @@ const AppContent = () => {
         <Route path="/timeline" element={
           <ProtectedRoute>
             <Timeline />
+          </ProtectedRoute>
+        } />
+        <Route path="/reconstruction" element={
+          <ProtectedRoute>
+            <Reconstruction />
           </ProtectedRoute>
         } />
         <Route path="/settings" element={
