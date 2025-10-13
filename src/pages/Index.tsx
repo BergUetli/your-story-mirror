@@ -45,24 +45,39 @@ const Index = () => {
       }
       
       // Parse and format memory_date to handle various formats
-      let formattedDate = null;
+      let formattedDate: string | null = null;
       if (parameters.memory_date) {
         const dateStr = parameters.memory_date.trim();
-        // Handle year-only format (e.g., "1983")
-        if (/^\d{4}$/.test(dateStr)) {
+        // 1) YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          formattedDate = dateStr;
+        }
+        // 2) YYYY-MM
+        else if (/^(\d{4})-(\d{1,2})$/.test(dateStr)) {
+          const [, y, m] = dateStr.match(/^(\d{4})-(\d{1,2})$/)!;
+          formattedDate = `${y}-${m.padStart(2, '0')}-01`;
+        }
+        // 3) YYYY
+        else if (/^\d{4}$/.test(dateStr)) {
           formattedDate = `${dateStr}-01-01`;
         } 
-        // Handle full date formats
-        else if (dateStr) {
+        // 4) Any natural date string
+        else {
           try {
             const parsed = new Date(dateStr);
             if (!isNaN(parsed.getTime())) {
               formattedDate = parsed.toISOString().split('T')[0];
             }
-          } catch (e) {
-            console.warn('Could not parse date:', dateStr);
+          } catch (_) { /* ignore */ }
+
+          // 5) As a last resort, extract a 4-digit year inside the string
+          if (!formattedDate) {
+            const yr = dateStr.match(/\b(\d{4})\b/);
+            if (yr) formattedDate = `${yr[1]}-01-01`;
           }
         }
+
+        console.log('🗓️ Parsed memory_date ->', { input: dateStr, formattedDate });
       }
       
       // Use placeholder UUID for testing without auth
