@@ -100,19 +100,34 @@ const Index = () => {
       if (error) throw error;
 
       console.log('✅ Memory saved to database:', data);
+      
+      // Return success message with memory ID so agent can confirm
+      const memoryId = data?.id;
+      const memoryTitle = data?.title || parameters.title;
+      
       toast({ 
         title: 'Memory saved', 
-        description: `"${parameters.title}" - Check your Timeline to see it!` 
+        description: `"${memoryTitle}" has been preserved. View it on your Timeline!`,
       });
-      return 'Memory saved successfully';
+      
+      // Navigate to timeline with animation after a short delay
+      setTimeout(() => {
+        window.location.href = `/timeline?newMemory=${memoryId}&animate=true&summary=${encodeURIComponent(memoryTitle)}`;
+      }, 2000);
+      
+      return `Memory "${memoryTitle}" saved successfully. The user will be redirected to their Timeline to see it.`;
     } catch (error) {
       console.error('❌ Failed to save memory:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      
       toast({
         title: 'Failed to save memory',
-        description: error instanceof Error ? error.message : 'Unknown error',
+        description: errorMsg,
         variant: 'destructive',
       });
-      return 'Failed to save memory';
+      
+      return `Failed to save memory: ${errorMsg}. Please try again or ask the user to provide the date in a different format.`;
     }
   }, [user?.id, toast]);
 
