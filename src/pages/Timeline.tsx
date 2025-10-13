@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -98,6 +99,7 @@ const Timeline = () => {
   const { toast } = useToast();
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
+  const [selectedMemory, setSelectedMemory] = useState<any | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -358,11 +360,11 @@ const Timeline = () => {
   };
 
   const handleEditMemory = (memoryId: string) => {
-    // TODO: Implement edit functionality - could open a modal or navigate to edit page
-    toast({
-      title: 'Edit coming soon',
-      description: 'Memory editing will be available in a future update.',
-    });
+    // Open the memory detail dialog (which will eventually support editing)
+    const memory = timelineMemories.find(m => m.id === memoryId);
+    if (memory) {
+      setSelectedMemory(memory);
+    }
   };
 
   const handleZoomIn = () => {
@@ -549,7 +551,7 @@ const Timeline = () => {
                           return (
                             <Card
                               key={memory.id}
-                              className={`timeline-card transition-all duration-500 ${
+                              className={`timeline-card transition-all duration-500 cursor-pointer ${
                                 materializingMemory === memory.id 
                                   ? 'border-primary/40 scale-105' 
                                   : isMajorMemory
@@ -561,8 +563,9 @@ const Timeline = () => {
                                   ? 'var(--shadow-elevated)' 
                                   : 'var(--shadow-soft)'
                               }}
+                              onClick={() => setSelectedMemory(memory)}
                             >
-                              <CardContent className="p-4 space-y-3">
+                              <CardContent className="p-4">
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1 min-w-0">
                                     <div className="text-xs text-white/60 flex items-center gap-2 flex-wrap font-light mb-2">
@@ -582,12 +585,9 @@ const Timeline = () => {
                                         </>
                                       )}
                                     </div>
-                                    <h3 className="text-base font-light text-white mb-1.5 line-clamp-2">
+                                    <h3 className="text-base font-light text-white line-clamp-2">
                                       {memory.title}
                                     </h3>
-                                    <p className="text-sm text-white/80 leading-relaxed font-light line-clamp-3">
-                                      {memory.text}
-                                    </p>
                                   </div>
                                   
                                   <div className="flex gap-1 flex-shrink-0">
@@ -599,7 +599,7 @@ const Timeline = () => {
                                         e.stopPropagation();
                                         handleEditMemory(memory.id);
                                       }}
-                                      title="Edit memory"
+                                      title="View details"
                                     >
                                       <Edit className="w-3.5 h-3.5" />
                                     </Button>
@@ -617,46 +617,6 @@ const Timeline = () => {
                                     </Button>
                                   </div>
                                 </div>
-                                
-                                {/* Memory Images */}
-                                {memory.image_urls && memory.image_urls.length > 0 && (
-                                  <div className={`grid gap-2 ${
-                                    memory.image_urls.length === 1 ? 'grid-cols-1' : 
-                                    memory.image_urls.length === 2 ? 'grid-cols-2' : 
-                                    'grid-cols-2 sm:grid-cols-3'
-                                  }`}>
-                                    {memory.image_urls.map((url, imgIdx) => {
-                                      const publicUrl = supabase.storage
-                                        .from('memory-images')
-                                        .getPublicUrl(url).data.publicUrl;
-                                      
-                                      return (
-                                        <div 
-                                          key={imgIdx} 
-                                          className="relative group cursor-pointer overflow-hidden rounded border border-white/20"
-                                        >
-                                          <img
-                                            src={publicUrl}
-                                            alt={`Memory image ${imgIdx + 1}`}
-                                            className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-110"
-                                            loading="lazy"
-                                          />
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                                
-                                {memory.conversation_text && (
-                                  <details className="mt-3">
-                                    <summary className="text-xs text-primary cursor-pointer hover:underline font-light">
-                                      View conversation
-                                    </summary>
-                                    <div className="mt-2 p-3 bg-black/20 rounded text-xs text-white/70 whitespace-pre-line border border-white/10 font-light line-clamp-6">
-                                      {memory.conversation_text}
-                                    </div>
-                                  </details>
-                                )}
                               </CardContent>
                             </Card>
                           );
@@ -671,6 +631,16 @@ const Timeline = () => {
         )}
         </div>
       </div>
+
+      {/* Memory Detail Dialog */}
+      {selectedMemory && (
+        <MemoryDetailDialog
+          memory={selectedMemory}
+          open={!!selectedMemory}
+          onOpenChange={(open) => !open && setSelectedMemory(null)}
+          onUpdate={fetchTimelineData}
+        />
+      )}
     </div>
   );
 };
