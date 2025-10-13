@@ -30,10 +30,9 @@ const Reconstruction = () => {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    toast.success("Solon is drawing what you described…");
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       const styleGuidance = {
         pencil_sketch: "pencil sketch, graphite, nostalgic lighting, 4:3 aspect ratio, soft shadows, memory reconstruction, emotional tone",
         charcoal: "charcoal drawing, dramatic contrast, textured paper, memory scene, emotional depth, 4:3 aspect ratio",
@@ -42,35 +41,45 @@ const Reconstruction = () => {
       };
 
       const payload = {
-        userId: user?.id || "demo-user",
         memoryPrompt,
         style,
         guidance: styleGuidance[style as keyof typeof styleGuidance]
       };
 
-      // For now, simulate API call - replace with actual endpoint later
-      toast.success("Solon is drawing what you described…");
+      const { data, error } = await supabase.functions.invoke('generate-memory-sketch', {
+        body: payload
+      });
+
+      if (error) {
+        console.error('Error calling function:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        console.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
+      const imageUrl = data.imageUrl;
       
-      // Simulate image generation (replace with actual API call)
-      setTimeout(() => {
-        setGeneratedImage("https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=800&auto=format&fit=crop");
-        setGeneratedPrompt(memoryPrompt);
-        setGeneratedTime(new Date().toLocaleString());
-        toast.success("Your memory has been sketched.");
-        setIsGenerating(false);
-        
-        // Add to recent reconstructions
-        const newReconstruction: RecentReconstruction = {
-          id: Date.now().toString(),
-          imageUrl: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=800&auto=format&fit=crop",
-          prompt: memoryPrompt,
-          timestamp: new Date().toLocaleString()
-        };
-        setRecentReconstructions(prev => [newReconstruction, ...prev].slice(0, 4));
-      }, 3000);
+      setGeneratedImage(imageUrl);
+      setGeneratedPrompt(memoryPrompt);
+      setGeneratedTime(new Date().toLocaleString());
+      toast.success("Your memory has been sketched.");
+      
+      // Add to recent reconstructions
+      const newReconstruction: RecentReconstruction = {
+        id: Date.now().toString(),
+        imageUrl,
+        prompt: memoryPrompt,
+        timestamp: new Date().toLocaleString()
+      };
+      setRecentReconstructions(prev => [newReconstruction, ...prev].slice(0, 4));
       
     } catch (error) {
+      console.error('Generation error:', error);
       toast.error("Could not reconstruct this memory right now. Try again later.");
+    } finally {
       setIsGenerating(false);
     }
   };
