@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImageUpload } from '@/components/ImageUpload';
+import { TagsInput } from '@/components/TagsInput';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -20,8 +21,8 @@ export const AddMemoryForm: React.FC = () => {
     text: '',
     memory_date: '',
     memory_location: '',
-    tags: '',
   });
+  const [tags, setTags] = useState<string[]>([]);
   const [images, setImages] = useState<File[]>([]);
 
   const uploadImages = async (userId: string): Promise<string[]> => {
@@ -67,7 +68,7 @@ export const AddMemoryForm: React.FC = () => {
           text: formData.text,
           memory_date: formData.memory_date || null,
           memory_location: formData.memory_location || null,
-          tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+          tags: tags.length > 0 ? tags : null,
           image_urls: imageUrls,
         }]);
 
@@ -84,8 +85,8 @@ export const AddMemoryForm: React.FC = () => {
         text: '',
         memory_date: '',
         memory_location: '',
-        tags: '',
       });
+      setTags([]);
       setImages([]);
 
       // Navigate to timeline to see the new memory
@@ -112,7 +113,7 @@ export const AddMemoryForm: React.FC = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="title" className="text-sm font-light text-foreground">
+            <label htmlFor="title" className="text-sm font-medium text-foreground">
               Title *
             </label>
             <Input
@@ -121,12 +122,12 @@ export const AddMemoryForm: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               placeholder="Give your memory a title"
-              className="font-light"
+              className="font-light placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="text" className="text-sm font-light text-foreground">
+            <label htmlFor="text" className="text-sm font-medium text-foreground">
               Memory *
             </label>
             <Textarea
@@ -136,13 +137,13 @@ export const AddMemoryForm: React.FC = () => {
               required
               placeholder="Describe your memory in detail..."
               rows={6}
-              className="font-light resize-none"
+              className="font-light resize-none placeholder:text-muted-foreground"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label htmlFor="memory_date" className="text-sm font-light text-foreground">
+              <label htmlFor="memory_date" className="text-sm font-medium text-foreground">
                 Date
               </label>
               <Input
@@ -152,10 +153,11 @@ export const AddMemoryForm: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, memory_date: e.target.value })}
                 className="font-light"
               />
+              <p className="text-xs text-muted-foreground">Format: DD/MM/YYYY</p>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="memory_location" className="text-sm font-light text-foreground">
+              <label htmlFor="memory_location" className="text-sm font-medium text-foreground">
                 Location
               </label>
               <Input
@@ -163,21 +165,19 @@ export const AddMemoryForm: React.FC = () => {
                 value={formData.memory_location}
                 onChange={(e) => setFormData({ ...formData, memory_location: e.target.value })}
                 placeholder="Where did this happen?"
-                className="font-light"
+                className="font-light placeholder:text-muted-foreground"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="tags" className="text-sm font-light text-foreground">
+            <label htmlFor="tags" className="text-sm font-medium text-foreground">
               Tags
             </label>
-            <Input
-              id="tags"
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="family, travel, milestone (comma-separated)"
-              className="font-light"
+            <TagsInput
+              tags={tags}
+              onTagsChange={setTags}
+              placeholder="family, travel, milestone..."
             />
           </div>
 
@@ -190,26 +190,26 @@ export const AddMemoryForm: React.FC = () => {
           <div className="flex justify-end gap-3">
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               onClick={() => {
                 setFormData({
                   title: '',
                   text: '',
                   memory_date: '',
                   memory_location: '',
-                  tags: '',
                 });
+                setTags([]);
                 setImages([]);
               }}
               disabled={isSubmitting}
-              className="font-light"
+              className="font-medium"
             >
               Clear
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="font-light"
+              className="font-semibold bg-primary hover:bg-primary/90"
             >
               {isSubmitting ? (
                 <>

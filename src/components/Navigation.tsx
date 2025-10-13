@@ -33,7 +33,10 @@ const Navigation = () => {
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
-                    className="font-light"
+                    className={cn(
+                      "font-light",
+                      isActive(path) && "border-b-2 border-primary rounded-b-none"
+                    )}
                   >
                     {label}
                   </Button>
@@ -53,7 +56,10 @@ const Navigation = () => {
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
-                    className="font-light flex items-center gap-2"
+                    className={cn(
+                      "font-light flex items-center gap-2",
+                      isActive(path) && "border-b-2 border-primary rounded-b-none"
+                    )}
                   >
                     <Icon className="w-4 h-4" />
                     {label}

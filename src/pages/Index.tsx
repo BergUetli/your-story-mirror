@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AnimatedOrb } from '@/components/AnimatedOrb';
+import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { 
   Heart, 
   Clock, 
@@ -509,20 +509,27 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                     <Sparkles className="h-16 w-16 text-primary animate-pulse" />
                   </div>
                 ) : (
-                  <AnimatedOrb isActive={isConnected} isSpeaking={isSpeaking} size={200} />
+                  <ModernVoiceAgent 
+                    isActive={isConnected} 
+                    isSpeaking={isSpeaking}
+                    onClick={handleOrbPress}
+                  />
                 )}
               </div>
 
               <div className="text-center space-y-4">
-                <p className="text-base text-muted-foreground font-light">
-                  {isConnecting ? 'Connecting...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening...') : 'Start a conversation'}
+                <p className="text-lg font-medium text-foreground">
+                  {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
+                </p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  {!isConnected && 'Click the microphone to start a natural conversation with Solon'}
                 </p>
                 {isConnected ? (
                   <Button 
                     variant="outline" 
                     size="lg" 
                     onClick={endConversation} 
-                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all"
+                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all font-medium"
                   >
                     End Conversation
                   </Button>
@@ -531,48 +538,54 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                     size="lg" 
                     onClick={startConversation} 
                     disabled={isConnecting} 
-                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-8 shadow-soft"
+                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
-                    {isConnecting ? 'Connecting...' : 'Start'}
+                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
                   </Button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Side - Live Conversation Transcript - Matrix Terminal Style */}
-          <div className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-black rounded-xl border-2 border-green-500/40 shadow-2xl shadow-green-500/20 p-6 flex flex-col overflow-hidden font-mono">
-            <div className="mb-4 border-b border-green-500/30 pb-3">
-              <h2 className="text-base font-bold text-green-400 tracking-wider">
-                &gt; LIVE_TRANSCRIPT
+          {/* Right Side - Live Conversation Transcript - Modern Chat Style */}
+          <div className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-gradient-to-br from-white to-card rounded-2xl border border-border shadow-elevated p-6 flex flex-col overflow-hidden">
+            <div className="mb-6 pb-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-foreground">
+                Live Transcript
               </h2>
-              <p className="text-xs text-green-500/60 mt-1">Real-time conversation with Solon</p>
+              <p className="text-sm text-muted-foreground mt-1">Real-time conversation with Solon</p>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-green-500/30 scrollbar-track-transparent">
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-green-500/50 text-sm text-center animate-pulse">
-                    &gt; awaiting_input..._
+                  <p className="text-muted-foreground text-sm text-center">
+                    Your conversation will appear here...
                   </p>
                 </div>
               ) : (
                 conversationMessages.map((msg, idx) => (
                   <div
                     key={idx}
-                    className={`text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'text-green-300 pl-3 border-l-2 border-green-400/60'
-                        : 'text-green-400 pl-3 border-l-2 border-green-500/40'
-                    }`}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className="text-green-500/70 mb-1.5 text-[11px] uppercase tracking-wide font-semibold">
-                      {msg.role === 'user' ? '> user:' : '> solon:'}
-                    </div>
-                    <div className="whitespace-pre-wrap break-words">
-                      {msg.text}
-                      {idx === conversationMessages.length - 1 && (
-                        <span className="inline-block w-2 h-3.5 bg-green-400 ml-1 animate-pulse" />
-                      )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                        msg.role === 'user'
+                          ? 'bg-primary text-white rounded-br-md'
+                          : 'bg-card border border-border text-foreground rounded-bl-md'
+                      }`}
+                    >
+                      <div className={`text-xs font-medium mb-1 ${
+                        msg.role === 'user' ? 'text-white/70' : 'text-muted-foreground'
+                      }`}>
+                        {msg.role === 'user' ? 'You' : 'Solon'}
+                      </div>
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {msg.text}
+                        {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
+                          <span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))

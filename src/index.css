@@ -6,26 +6,26 @@
 
 @layer base {
   :root {
-    /* Scandinavian-inspired design system */
+    /* Modern, warm design system with enhanced contrast */
     --background: 0 0% 100%;         /* Pure white background */
-    --foreground: 0 0% 20%;          /* Charcoal grey text */
+    --foreground: 0 0% 15%;          /* Darker charcoal for better contrast */
     
-    --card: 220 15% 96%;             /* Soft off-white cards */
-    --card-foreground: 0 0% 20%;
+    --card: 220 15% 97%;             /* Soft off-white cards */
+    --card-foreground: 0 0% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 0 0% 15%;
 
-    --primary: 210 60% 55%;          /* Soft blue accent */
+    --primary: 210 65% 50%;          /* Vibrant blue accent */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 92%;           /* Light grey for contrast */
-    --secondary-foreground: 0 0% 20%;
+    --secondary-foreground: 0 0% 15%;
 
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 50%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 35%;    /* Darker for WCAG AA compliance */
 
-    --accent: 210 50% 60%;
+    --accent: 210 55% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 55%;
@@ -33,16 +33,18 @@
 
     --border: 0 0% 88%;
     --input: 0 0% 92%;
-    --ring: 210 60% 55%;
+    --ring: 210 65% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;               /* Slightly more rounded for warmth */
 
-    /* Scandinavian gradients - soft and subtle */
+    /* Modern gradients with warmth */
+    --gradient-ring: conic-gradient(from 0deg, hsl(210 70% 50%), hsl(220 60% 55%), hsl(210 70% 50%));
     --gradient-orb: radial-gradient(circle, hsl(210 70% 45%), hsl(210 60% 60%), hsl(210 50% 70%));
     --gradient-orb-glow: radial-gradient(circle, hsl(210 70% 55% / 0.4), transparent 70%);
-    --gradient-card: linear-gradient(135deg, hsl(220 15% 15% / 0.85), hsl(220 20% 20% / 0.85));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 15% 98%));
     --shadow-soft: 0 4px 24px hsl(210 60% 55% / 0.15);
     --shadow-elevated: 0 8px 32px hsl(210 60% 55% / 0.2);
+    --shadow-glow: 0 0 40px hsl(210 70% 55% / 0.3);
   }
 }
 
