@@ -20,6 +20,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [uploading, setUploading] = useState(false);
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   // Load artifacts when dialog opens
   const loadArtifacts = async () => {
@@ -229,19 +230,44 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
             {/* Artifacts List */}
             {artifacts.length > 0 && (
-              <div className="space-y-2">
-                {artifacts.map((artifact) => (
-                  <div
-                    key={artifact.id}
-                    className="flex items-center gap-3 p-2 bg-muted/50 rounded-lg"
-                  >
-                    {getArtifactIcon(artifact.artifact_type)}
-                    <span className="text-sm flex-1 truncate">{artifact.file_name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {(artifact.file_size / 1024).toFixed(1)} KB
-                    </span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {artifacts.map((artifact) => {
+                  const publicUrl = supabase.storage
+                    .from('memory-images')
+                    .getPublicUrl(artifact.storage_path).data.publicUrl;
+
+                  if (artifact.artifact_type === 'image') {
+                    return (
+                      <div
+                        key={artifact.id}
+                        className="relative aspect-square cursor-pointer group"
+                        onClick={() => setEnlargedImage(publicUrl)}
+                      >
+                        <img
+                          src={publicUrl}
+                          alt={artifact.file_name}
+                          className="w-full h-full object-cover rounded-lg transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-colors" />
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={artifact.id}
+                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                    >
+                      {getArtifactIcon(artifact.artifact_type)}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm block truncate">{artifact.file_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {(artifact.file_size / 1024).toFixed(1)} KB
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -259,6 +285,27 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
           )}
         </div>
       </DialogContent>
+
+      {/* Image Enlargement Dialog */}
+      <Dialog open={!!enlargedImage} onOpenChange={() => setEnlargedImage(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <div className="relative">
+            <img
+              src={enlargedImage || ''}
+              alt="Enlarged view"
+              className="w-full h-auto"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setEnlargedImage(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
