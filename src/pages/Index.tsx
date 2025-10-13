@@ -600,7 +600,6 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                 ))
               )}
             </div>
-            </div>
           </div>
         </div>
       </div>
