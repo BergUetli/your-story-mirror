@@ -7,8 +7,8 @@
 @layer base {
   :root {
     /* Modern, warm design system with enhanced contrast */
-    --background: 0 0% 100%;         /* Pure white background */
-    --foreground: 0 0% 15%;          /* Darker charcoal for better contrast */
+    --background: 0 0% 97.6%;        /* Light warm grey (#F9F9F9) */
+    --foreground: 0 0% 13%;          /* Charcoal (#222) for headings */
     
     --card: 220 15% 97%;             /* Soft off-white cards */
     --card-foreground: 0 0% 15%;
@@ -23,7 +23,7 @@
     --secondary-foreground: 0 0% 15%;
 
     --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 35%;    /* Darker for WCAG AA compliance */
+    --muted-foreground: 0 0% 33%;    /* Mid-grey (#555) for body text */
 
     --accent: 210 55% 55%;
     --accent-foreground: 0 0% 100%;
@@ -31,20 +31,24 @@
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 88%;
+    --border: 0 0% 0%;               /* Black borders (#000) */
     --input: 0 0% 92%;
     --ring: 210 65% 50%;
+    
+    --section-border: 0 0% 0%;       /* Thin elegant black borders */
 
-    --radius: 0.75rem;               /* Slightly more rounded for warmth */
+    --radius: 0.5rem;                /* 8-10px rounded corners */
 
     /* Modern gradients with warmth */
     --gradient-ring: conic-gradient(from 0deg, hsl(210 70% 50%), hsl(220 60% 55%), hsl(210 70% 50%));
     --gradient-orb: radial-gradient(circle, hsl(210 70% 45%), hsl(210 60% 60%), hsl(210 50% 70%));
     --gradient-orb-glow: radial-gradient(circle, hsl(210 70% 55% / 0.4), transparent 70%);
     --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(220 15% 98%));
+    --gradient-panel: linear-gradient(180deg, hsl(0 0% 96%), hsl(0 0% 100%));  /* Soft depth gradient */
     --shadow-soft: 0 4px 24px hsl(210 60% 55% / 0.15);
     --shadow-elevated: 0 8px 32px hsl(210 60% 55% / 0.2);
     --shadow-glow: 0 0 40px hsl(210 70% 55% / 0.3);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);  /* Subtle inner shadow */
   }
 }
 
@@ -77,15 +81,16 @@
 }
 
 @layer components {
-  /* Modern card styles - Scandinavian aesthetic */
+  /* Modern card styles - Structured and cinematic */
   .modern-card {
     @apply transition-all duration-300 ease-out;
-    @apply bg-white border border-border;
+    @apply bg-white border-[1.5px] rounded-lg;
+    border-color: hsl(var(--section-border));
   }
 
   .modern-card:hover {
     box-shadow: var(--shadow-soft);
-    @apply border-primary/30;
+    transform: scale(1.02);
   }
 
   /* Timeline card styles */

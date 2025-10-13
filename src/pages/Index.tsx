@@ -496,13 +496,19 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
 
   if (shouldShowSolonInterface) {
     return (
-      <div className="min-h-screen bg-white overflow-hidden relative">
+      <div className="min-h-screen bg-background overflow-hidden relative">
         
-        <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-8 lg:px-16 py-16 gap-12 lg:gap-16">
-          {/* Left Side - Solon Orb */}
-          <div className="flex-1 max-w-xl flex flex-col items-center justify-center space-y-8 animate-fade-in">
+        <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
+          {/* Left Side - Solon Orb - Framed with gradient panel */}
+          <div 
+            className="flex-1 max-w-xl flex flex-col items-center justify-center space-y-6 animate-fade-in p-8 rounded-lg border-[1.5px]"
+            style={{ 
+              borderColor: 'hsl(var(--section-border))',
+              background: 'var(--gradient-panel)'
+            }}
+          >
             
-            <div className="flex flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-6">
               <div className="relative">
                 {isConnecting ? (
                   <div className="w-48 h-48 flex items-center justify-center">
@@ -517,8 +523,8 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                 )}
               </div>
 
-              <div className="text-center space-y-4">
-                <p className="text-lg font-medium text-foreground">
+              <div className="text-center space-y-3">
+                <p className="text-base font-semibold text-foreground">
                   {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
                 </p>
                 <p className="text-sm text-muted-foreground max-w-md">
@@ -529,7 +535,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                     variant="outline" 
                     size="lg" 
                     onClick={endConversation} 
-                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all font-medium"
+                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all hover:scale-105 font-semibold"
                   >
                     End Conversation
                   </Button>
@@ -538,7 +544,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                     size="lg" 
                     onClick={startConversation} 
                     disabled={isConnecting} 
-                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-10 py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-10 py-5 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
                   >
                     {isConnecting ? 'Connecting...' : 'Start Conversation'}
                   </Button>
@@ -547,15 +553,18 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
             </div>
           </div>
 
-          {/* Right Side - Live Conversation Transcript - Modern Chat Style */}
-          <div className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-gradient-to-br from-white to-card rounded-2xl border border-border shadow-elevated p-6 flex flex-col overflow-hidden">
-            <div className="mb-6 pb-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-foreground">
+          {/* Right Side - Live Conversation Transcript - Bordered with modern chat */}
+          <div 
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-white rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden"
+            style={{ borderColor: 'hsl(var(--section-border))' }}
+          >
+            <div className="mb-4 pb-3 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
+              <h2 className="text-lg font-bold text-foreground">
                 Live Transcript
               </h2>
               <p className="text-sm text-muted-foreground mt-1">Real-time conversation with Solon</p>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-muted-foreground text-sm text-center">
@@ -569,14 +578,14 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                      className={`max-w-[85%] rounded-lg px-4 py-2.5 transition-all hover:scale-[1.02] ${
                         msg.role === 'user'
                           ? 'bg-primary text-white rounded-br-md'
-                          : 'bg-card border border-border text-foreground rounded-bl-md'
+                          : 'bg-muted text-foreground rounded-bl-md'
                       }`}
                     >
-                      <div className={`text-xs font-medium mb-1 ${
-                        msg.role === 'user' ? 'text-white/70' : 'text-muted-foreground'
+                      <div className={`text-xs font-bold mb-1 ${
+                        msg.role === 'user' ? 'text-white/70' : 'opacity-70'
                       }`}>
                         {msg.role === 'user' ? 'You' : 'Solon'}
                       </div>
@@ -591,6 +600,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                 ))
               )}
             </div>
+            </div>
           </div>
         </div>
       </div>
@@ -598,10 +608,10 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
   }
 
   return (
-    <div className="h-screen bg-white overflow-hidden">
+    <div className="h-screen bg-background overflow-hidden">
       {/* Navigation */}
-      <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
-        <div className="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
+      <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent border-b-[1.5px]" style={{ borderColor: 'hsl(var(--section-border))' }}>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="text-2xl font-bold">You, Remembered</div>
           <div className="flex gap-4">
             <Button variant="ghost" asChild>
@@ -615,14 +625,14 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
       </nav>
 
       {/* Single Screen Hero */}
-      <div className="h-full flex items-center justify-center px-8">
-        <div className="max-w-5xl w-full text-center space-y-8 animate-fade-in">
-          <div className="space-y-6">
-            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+      <div className="h-full flex items-center justify-center px-6">
+        <div className="max-w-5xl w-full text-center space-y-6 animate-fade-in">
+          <div className="space-y-4">
+            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
               Digital Memory Sanctuary
             </div>
             
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight leading-tight">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight text-foreground">
             Life is short.
             <br />
             Make your story
@@ -632,7 +642,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
             </span>
           </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
               Preserve your voice, stories, and values. Create a lasting legacy.
             </p>
           </div>
@@ -642,7 +652,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
               size="lg" 
               onClick={startConversation}
               disabled={isConnecting || isConnected}
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-full"
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
             >
               {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start for free'}
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -650,9 +660,13 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
           </div>
 
           {/* Feature Pills */}
-          <div className="flex flex-wrap gap-3 justify-center pt-4">
+          <div className="flex flex-wrap gap-2 justify-center pt-3">
             {features.slice(0, 4).map((feature, index) => (
-              <div key={index} className="px-4 py-2 rounded-full bg-card border border-border/50 text-sm text-muted-foreground flex items-center gap-2">
+              <div 
+                key={index} 
+                className="px-4 py-2 rounded-full bg-card text-sm text-muted-foreground flex items-center gap-2 border-[1.5px]"
+                style={{ borderColor: 'hsl(var(--section-border))' }}
+              >
                 <feature.icon className="h-4 w-4" />
                 {feature.title}
               </div>

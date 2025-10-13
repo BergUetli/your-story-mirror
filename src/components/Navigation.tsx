@@ -23,9 +23,9 @@ const Navigation = () => {
   return (
     <>
       {/* Desktop Navigation */}
-      <div className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-border z-40">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="flex justify-between items-center h-14">
+      <div className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-[1.5px] z-40" style={{ borderColor: 'hsl(var(--section-border))' }}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex justify-between items-center h-12">
             {/* Left - Info Pages */}
             <div className="flex items-center gap-2">
               {leftNavItems.map(({ path, label }) => (
@@ -34,9 +34,10 @@ const Navigation = () => {
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
                     className={cn(
-                      "font-light",
-                      isActive(path) && "border-b-2 border-primary rounded-b-none"
+                      "font-semibold transition-all duration-200 hover:scale-105",
+                      isActive(path) && "border-b-2 rounded-b-none"
                     )}
+                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                   >
                     {label}
                   </Button>
@@ -57,9 +58,10 @@ const Navigation = () => {
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
                     className={cn(
-                      "font-light flex items-center gap-2",
-                      isActive(path) && "border-b-2 border-primary rounded-b-none"
+                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
+                      isActive(path) && "border-b-2 rounded-b-none"
                     )}
+                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -95,7 +97,7 @@ const Navigation = () => {
       </div>
       
       {/* Spacer for desktop navigation */}
-      <div className="hidden md:block h-14"></div>
+      <div className="hidden md:block h-12"></div>
     </>
   );
 };

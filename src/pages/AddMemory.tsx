@@ -6,10 +6,10 @@ import { AddMemoryForm } from '@/components/AddMemoryForm';
 
 const AddMemory = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b border-border bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-8 py-4 flex items-center gap-4">
+      <nav className="border-b-[1.5px] border-section-border bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-4">
           <Link to="/">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -21,8 +21,10 @@ const AddMemory = () => {
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-8 py-12">
-        <AddMemoryForm />
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="modern-card p-6">
+          <AddMemoryForm />
+        </div>
       </div>
     </div>
   );

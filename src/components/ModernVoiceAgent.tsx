@@ -19,6 +19,11 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
       className="relative w-48 h-48 flex items-center justify-center group"
       aria-label="Start voice conversation"
     >
+      {/* Dark circular outline for anchoring */}
+      <div 
+        className="absolute inset-0 rounded-full border-2 border-[#333] opacity-30"
+      />
+      
       {/* Outer glow ring */}
       <div 
         className={`absolute inset-0 rounded-full transition-all duration-700 ${
@@ -41,11 +46,14 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
         }}
       />
 
-      {/* Inner white background */}
+      {/* Inner white background with subtle inner shadow */}
       <div 
         className={`absolute inset-8 rounded-full bg-white transition-all duration-300 ${
           isSpeaking ? 'shadow-[0_0_40px_rgba(59,130,246,0.5)]' : ''
         }`}
+        style={{
+          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.06)',
+        }}
       />
 
       {/* Microphone icon */}
