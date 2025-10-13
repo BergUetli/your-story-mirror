@@ -10,8 +10,13 @@ const corsHeaders = {
 
 type OrchestratorRequest = {
   userId: string;
-  message: string;
+  message?: string;
+  action?: 'get_timeline' | 'manage_elevenlabs_session' | 'chat';
   limit?: number;
+  sessionParams?: {
+    agentId?: string;
+    action?: 'start' | 'end' | 'status';
+  };
 };
 
 // Helper – build Supabase admin client
@@ -82,6 +87,69 @@ async function summarizeMemories(items: Array<{ title: string; preview: string }
   return { summary: content };
 }
 
+// Timeline handler - optimized to fetch only essential data
+async function getTimelineData(userId: string) {
+  const supabase = getSupabaseAdmin();
+  
+  // Fetch memories with only essential fields (no image_urls for performance)
+  const { data: memories, error: memError } = await supabase
+    .from("memories")
+    .select("id,title,text,created_at,memory_date,memory_location,tags")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  
+  if (memError) throw memError;
+
+  // Fetch user profile for birth date
+  const { data: profile, error: profError } = await supabase
+    .from("users")
+    .select("birth_date,birth_place")
+    .eq("user_id", userId)
+    .maybeSingle();
+  
+  if (profError) console.warn("Profile fetch warning:", profError);
+
+  return {
+    memories: memories ?? [],
+    profile: profile ?? null,
+  };
+}
+
+// ElevenLabs session manager
+async function manageElevenLabsSession(action: string, agentId?: string) {
+  const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+  if (!ELEVENLABS_API_KEY) throw new Error("ELEVENLABS_API_KEY not configured");
+
+  if (action === "start" && agentId) {
+    console.log("🔑 Orchestrator: Generating ElevenLabs signed URL for agent:", agentId);
+    
+    // Request signed URL with extended inactivity timeout
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}&inactivity_timeout=180`,
+      {
+        method: "GET",
+        headers: { "xi-api-key": ELEVENLABS_API_KEY },
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ ElevenLabs API error:", response.status, errorText);
+      throw new Error(`ElevenLabs API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("✅ Orchestrator: Signed URL generated successfully");
+    return data;
+  }
+
+  if (action === "status") {
+    return { status: "ready", message: "ElevenLabs service available" };
+  }
+
+  return { status: "unknown_action" };
+}
+
 // Define tool schema for GPT function calling
 const tools = [
   {
@@ -145,9 +213,41 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userId, message, limit }: OrchestratorRequest = await req.json();
-    if (!userId || !message) {
-      return new Response(JSON.stringify({ error: "userId and message are required" }), {
+    const { userId, message, action, limit, sessionParams }: OrchestratorRequest = await req.json();
+    
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "userId is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle timeline data request
+    if (action === "get_timeline") {
+      console.log("📊 Orchestrator: Fetching timeline data for user:", userId);
+      const timelineData = await getTimelineData(userId);
+      return new Response(
+        JSON.stringify(timelineData),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Handle ElevenLabs session management
+    if (action === "manage_elevenlabs_session" && sessionParams) {
+      console.log("🎙️ Orchestrator: Managing ElevenLabs session:", sessionParams.action);
+      const result = await manageElevenLabsSession(
+        sessionParams.action || "status",
+        sessionParams.agentId
+      );
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Default chat/memory orchestration
+    if (!message) {
+      return new Response(JSON.stringify({ error: "message is required for chat action" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

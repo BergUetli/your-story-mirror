@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      artifacts: {
+        Row: {
+          artifact_type: string
+          created_at: string
+          file_name: string | null
+          file_size: number | null
+          id: string
+          metadata: Json | null
+          mime_type: string | null
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          artifact_type: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          artifact_type?: string
+          created_at?: string
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           created_at: string
@@ -55,6 +91,39 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      memory_artifacts: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          memory_id: string
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          memory_id: string
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          memory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_artifacts_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_artifacts_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       users: {
         Row: {

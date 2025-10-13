@@ -239,13 +239,21 @@ Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
         console.warn('⚠️ AudioContext unlock failed (safe to ignore):', e);
       }
 
-
-      const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
-        body: { agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4' }
+      // Use orchestrator to manage ElevenLabs session
+      console.log('🎙️ Requesting ElevenLabs session via Orchestrator...');
+      const { data, error } = await supabase.functions.invoke('orchestrator', {
+        body: { 
+          userId: user?.id || '00000000-0000-0000-0000-000000000000',
+          action: 'manage_elevenlabs_session',
+          sessionParams: {
+            agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
+            action: 'start'
+          }
+        }
       });
 
       if (error) throw error;
-      if (!data?.signed_url) throw new Error('Failed to get signed URL');
+      if (!data?.signed_url) throw new Error('Failed to get signed URL from Orchestrator');
 
       console.log('Starting session with memory context...');
       

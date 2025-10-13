@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Detect significant events based on keywords
@@ -80,6 +81,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
 };
 
 const Timeline = () => {
+  const { user } = useAuth();
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -92,7 +94,43 @@ const Timeline = () => {
   
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
-  const timelineData = createTimelineData(memories, profile);
+  
+  // Fetch timeline data through orchestrator for optimized performance
+  const [timelineMemories, setTimelineMemories] = useState<any[]>([]);
+  const [timelineProfile, setTimelineProfile] = useState<any>(null);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTimelineData = async () => {
+      if (!user?.id) {
+        setTimelineLoading(false);
+        return;
+      }
+
+      try {
+        setTimelineLoading(true);
+        const { data, error } = await supabase.functions.invoke('orchestrator', {
+          body: {
+            userId: user.id,
+            action: 'get_timeline'
+          }
+        });
+
+        if (error) throw error;
+        
+        setTimelineMemories(data.memories || []);
+        setTimelineProfile(data.profile || null);
+      } catch (error) {
+        console.error('Failed to fetch timeline data:', error);
+      } finally {
+        setTimelineLoading(false);
+      }
+    };
+
+    fetchTimelineData();
+  }, [user?.id]);
+
+  const timelineData = createTimelineData(timelineMemories, timelineProfile);
 
   // Keep refs in sync with state
   useEffect(() => {
