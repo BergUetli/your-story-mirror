@@ -73,7 +73,8 @@ const Index = () => {
     console.log('✅ Connected to ElevenLabs');
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
-    retryCountRef.current = 0; // reset retries on a successful connect
+    // Do not reset retryCountRef here; only reset after a stable connection duration
+    // retryCountRef will be reset in onDisconnect if the session lasted long enough
     toast({ title: 'Connected', description: 'Start speaking naturally' });
   }, [toast]);
 
@@ -82,20 +83,31 @@ const Index = () => {
     console.log('👋 Disconnected after', elapsed, 'ms');
     
     const justConnected = elapsed < 3000;
-    if (justConnected && retryCountRef.current < 3) {
-      retryCountRef.current += 1;
-      const delay = 400 * retryCountRef.current;
-      console.log(`⚠️ Early disconnect detected, retry #${retryCountRef.current} in ${delay}ms...`);
-      setTimeout(() => {
-        startConversationRef.current?.(true);
-      }, delay);
-      return;
+
+    if (justConnected) {
+      if (retryCountRef.current < 3) {
+        retryCountRef.current += 1;
+        const delay = 400 * retryCountRef.current;
+        console.log(`⚠️ Early disconnect detected, retry #${retryCountRef.current} in ${delay}ms...`);
+        setTimeout(() => startConversationRef.current?.(true), delay);
+        return;
+      } else {
+        console.warn('⛔ Max early-disconnect retries reached. Not retrying automatically.');
+        toast({
+          title: 'Connection unstable',
+          description: 'Auto-retry stopped after multiple attempts. Check mic permissions and try again.',
+          variant: 'destructive',
+        });
+      }
+    } else if (elapsed >= 8000) {
+      // Stable session: reset retry counter
+      retryCountRef.current = 0;
     }
+
     toast({ title: 'Disconnected', description: 'Voice session ended' });
   }, [toast]);
 
   const onErrorCb = useCallback((error: unknown) => {
-    console.error('❌ Error:', error);
     toast({
       title: 'Connection failed',
       description: typeof error === 'string' ? error : 'Please try again',
