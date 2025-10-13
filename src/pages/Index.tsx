@@ -123,28 +123,16 @@ const Index = () => {
       toast({ 
         title: 'Memory saved', 
         description: `"${memoryTitle}" has been preserved. View it on your Timeline!`,
+        duration: 5000,
       });
-      
-      // Navigate to timeline with animation after a short delay
-      logHandoff('7️⃣ SCHEDULING NAVIGATION', { 
-        target: '/timeline', 
-        memoryId, 
-        delay: '2000ms' 
-      });
-      
-      setTimeout(() => {
-        logHandoff('8️⃣ EXECUTING NAVIGATION', { 
-          url: `/timeline?newMemory=${memoryId}&animate=true` 
-        });
-        window.location.href = `/timeline?newMemory=${memoryId}&animate=true&summary=${encodeURIComponent(memoryTitle)}`;
-      }, 2000);
       
       logHandoff('✅ HANDOFF COMPLETE', { 
         status: 'success',
-        agentResponse: `Memory "${memoryTitle}" saved successfully` 
+        agentResponse: `Memory "${memoryTitle}" saved successfully`,
+        note: 'No auto-navigation - user can continue conversation'
       });
       
-      return `Memory "${memoryTitle}" saved successfully. The user will be redirected to their Timeline to see it.`;
+      return `Memory "${memoryTitle}" saved successfully! You can continue sharing stories, or the user can visit their Timeline to see it.`;
     } catch (error) {
       logHandoff('❌ HANDOFF FAILED', { 
         error: error instanceof Error ? error.message : 'Unknown error',

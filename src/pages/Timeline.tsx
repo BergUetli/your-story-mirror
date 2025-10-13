@@ -41,11 +41,17 @@ const generateLifeEvents = (profile: any) => {
 
 // Create timeline data combining birth event and memories
 const createTimelineData = (actualMemories: any[], profile: any) => {
+  console.log('🔄 Timeline: Creating timeline data', { 
+    memoriesCount: actualMemories?.length || 0, 
+    profile: profile ? { birth_date: profile.birth_date, birth_place: profile.birth_place } : 'NO PROFILE'
+  });
+  
   const currentYear = new Date().getFullYear();
   const birthYear = profile?.birth_date ? new Date(profile.birth_date).getFullYear() : currentYear - 25;
   const timelineData = [];
   
   const lifeEvents = generateLifeEvents(profile);
+  console.log('📅 Timeline: Generated life events', lifeEvents);
   
   // Build timeline from birth year to current year
   for (let year = birthYear; year <= currentYear; year++) {
@@ -82,6 +88,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     }
   }
   
+  console.log('✅ Timeline: Created', timelineData.length, 'year entries');
   return timelineData;
 };
 
@@ -106,24 +113,41 @@ const Timeline = () => {
   const [timelineLoading, setTimelineLoading] = useState(true);
 
   const fetchTimelineData = async () => {
-    if (!user?.id) {
-      setTimelineLoading(false);
-      return;
-    }
+    const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+    
+    console.log('🔄 Timeline: Fetching data for user', userId);
 
     try {
       setTimelineLoading(true);
-      const { data, error } = await supabase.functions.invoke('orchestrator', {
-        body: {
-          userId: user.id,
-          action: 'get_timeline'
-        }
-      });
-
-      if (error) throw error;
       
-      setTimelineMemories(data.memories || []);
-      setTimelineProfile(data.profile || null);
+      // Fetch memories directly from Supabase
+      const { data: memories, error: memoriesError } = await supabase
+        .from('memories')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (memoriesError) {
+        console.error('Failed to fetch memories:', memoriesError);
+        throw memoriesError;
+      }
+
+      // Fetch profile directly from Supabase
+      const { data: profiles, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Failed to fetch profile:', profileError);
+        throw profileError;
+      }
+
+      console.log('✅ Timeline: Fetched', memories?.length || 0, 'memories and profile', profiles);
+      
+      setTimelineMemories(memories || []);
+      setTimelineProfile(profiles || null);
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {
@@ -135,11 +159,12 @@ const Timeline = () => {
     fetchTimelineData();
   }, [user?.id]);
 
-  // Poll for updates every 10 seconds when on timeline page
+  // Poll for updates every 5 seconds when on timeline page (more frequent for testing)
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log('🔄 Timeline: Auto-refresh triggered');
       fetchTimelineData();
-    }, 10000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [user?.id]);
