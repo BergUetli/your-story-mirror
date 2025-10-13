@@ -247,13 +247,6 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
 
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: agentInstructions,
-            }
-          },
-        },
       });
 
       await Promise.race([startPromise, timeoutPromise]);
