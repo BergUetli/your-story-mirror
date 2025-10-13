@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface StoryMapProps {
   memories: any[];
   profile: any;
-}
-
-interface Milestone {
-  label: string;
-  date: string;
-  position: number;
 }
 
 interface LifeNarrative {
@@ -18,9 +13,25 @@ interface LifeNarrative {
   closing: string;
 }
 
+interface ThemeNode {
+  id: string;
+  title: string;
+  year: number;
+  x: number;
+  y: number;
+}
+
+interface ThemeConnection {
+  from: string;
+  to: string;
+}
+
 const StoryMap = ({ memories, profile }: StoryMapProps) => {
   const [narrative, setNarrative] = useState<LifeNarrative | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [availableThemes, setAvailableThemes] = useState<string[]>([]);
+  const [selectedTheme, setSelectedTheme] = useState<string>('');
+  const [themeNodes, setThemeNodes] = useState<ThemeNode[]>([]);
+  const [themeConnections, setThemeConnections] = useState<ThemeConnection[]>([]);
 
   // Generate life narrative
   useEffect(() => {
@@ -109,30 +120,88 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       closing,
     });
 
-    // Timeline milestones for visual
-    const sortedMemories = [...memories].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-    const newMilestones: Milestone[] = [];
-    
-    if (sortedMemories.length > 0) {
-      newMilestones.push({
-        label: 'First Recording',
-        date: new Date(sortedMemories[0].created_at).toLocaleDateString(),
-        position: 0,
+    // Extract all unique themes from memories
+    const themeSet = new Set<string>();
+    memories.forEach((memory: any) => {
+      const tags = memory.tags || [];
+      tags.forEach((tag: string) => themeSet.add(tag));
+      
+      // Also extract people's names from titles/text (simple word extraction)
+      const text = (memory.title + ' ' + (memory.text || '')).toLowerCase();
+      const words = text.split(/\s+/);
+      words.forEach((word) => {
+        // Capitalize proper nouns (names typically start with capital)
+        if (word.length > 2 && /^[A-Z]/.test(memory.title.split(/\s+/).find((w: string) => w.toLowerCase() === word) || '')) {
+          themeSet.add(word.charAt(0).toUpperCase() + word.slice(1));
+        }
       });
-    }
+    });
 
-    if (sortedMemories.length > 0) {
-      newMilestones.push({
-        label: 'Latest Memory',
-        date: new Date(sortedMemories[sortedMemories.length - 1].created_at).toLocaleDateString(),
-        position: 100,
-      });
+    const themes = Array.from(themeSet).sort();
+    setAvailableThemes(themes);
+    if (themes.length > 0 && !selectedTheme) {
+      setSelectedTheme(themes[0]);
     }
-
-    setMilestones(newMilestones);
   }, [memories, profile]);
+
+  // Generate knowledge graph when theme is selected
+  useEffect(() => {
+    if (!selectedTheme || memories.length === 0) {
+      setThemeNodes([]);
+      setThemeConnections([]);
+      return;
+    }
+
+    // Find all memories related to the selected theme
+    const relatedMemories = memories.filter((memory: any) => {
+      const tags = memory.tags || [];
+      if (tags.includes(selectedTheme)) return true;
+      
+      const text = (memory.title + ' ' + (memory.text || '')).toLowerCase();
+      return text.includes(selectedTheme.toLowerCase());
+    }).sort((a: any, b: any) => {
+      const dateA = new Date(a.memory_date || a.created_at);
+      const dateB = new Date(b.memory_date || b.created_at);
+      return dateA.getTime() - dateB.getTime();
+    });
+
+    if (relatedMemories.length === 0) {
+      setThemeNodes([]);
+      setThemeConnections([]);
+      return;
+    }
+
+    // Create nodes positioned in a flowing timeline
+    const nodes: ThemeNode[] = relatedMemories.map((memory: any, index: number) => {
+      const year = new Date(memory.memory_date || memory.created_at).getFullYear();
+      const totalNodes = relatedMemories.length;
+      
+      // Position nodes in a flowing pattern (sine wave)
+      const xProgress = index / Math.max(totalNodes - 1, 1);
+      const x = 50 + xProgress * 400; // Spread across width
+      const y = 100 + Math.sin(xProgress * Math.PI * 2) * 40; // Sine wave pattern
+      
+      return {
+        id: memory.id,
+        title: memory.title,
+        year,
+        x,
+        y,
+      };
+    });
+
+    // Create connections between consecutive memories
+    const connections: ThemeConnection[] = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      connections.push({
+        from: nodes[i].id,
+        to: nodes[i + 1].id,
+      });
+    }
+
+    setThemeNodes(nodes);
+    setThemeConnections(connections);
+  }, [selectedTheme, memories]);
 
 
   if (!narrative) {
@@ -184,29 +253,114 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
           </p>
         </div>
 
-        {/* Milestone Timeline */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-foreground">Key Milestones</h4>
-          <div className="relative h-20 bg-white/50 rounded-lg border-[1.5px] border-black/20 p-4">
-            {/* Timeline line */}
-            <div className="absolute top-1/2 left-4 right-4 h-px bg-black/20" />
+        {/* Theme Explorer */}
+        {availableThemes.length > 0 && (
+          <div className="space-y-4">
+            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
             
-            {/* Milestone markers */}
-            {milestones.map((milestone, index) => (
-              <div
-                key={index}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${20 + (milestone.position / 100) * 60}%`, top: '50%' }}
-              >
-                <div className="w-3 h-3 rounded-full bg-primary border-2 border-white shadow-sm" />
-                <div className="absolute top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                  <div className="text-[10px] font-semibold text-foreground">{milestone.label}</div>
-                  <div className="text-[9px] text-muted-foreground">{milestone.date}</div>
-                </div>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-foreground">Explore Your Themes</h4>
+              <Select value={selectedTheme} onValueChange={setSelectedTheme}>
+                <SelectTrigger className="w-full bg-white border-[1.5px] border-black/20">
+                  <SelectValue placeholder="Select a theme to explore" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-[1.5px] border-black z-50">
+                  {availableThemes.map((theme) => (
+                    <SelectItem key={theme} value={theme}>
+                      {theme}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Knowledge Graph Visualization */}
+            {themeNodes.length > 0 && (
+              <div className="relative h-48 bg-white/50 rounded-lg border-[1.5px] border-black/20 p-4 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet">
+                  {/* Draw connections */}
+                  {themeConnections.map((conn, index) => {
+                    const fromNode = themeNodes.find(n => n.id === conn.from);
+                    const toNode = themeNodes.find(n => n.id === conn.to);
+                    if (!fromNode || !toNode) return null;
+                    
+                    return (
+                      <line
+                        key={index}
+                        x1={fromNode.x}
+                        y1={fromNode.y}
+                        x2={toNode.x}
+                        y2={toNode.y}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="1.5"
+                        strokeOpacity="0.3"
+                      />
+                    );
+                  })}
+                  
+                  {/* Draw nodes */}
+                  {themeNodes.map((node, index) => (
+                    <g key={node.id}>
+                      <circle
+                        cx={node.x}
+                        cy={node.y}
+                        r="8"
+                        fill="hsl(var(--primary))"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="transition-all hover:r-10 cursor-pointer"
+                      />
+                      <text
+                        x={node.x}
+                        y={node.y - 15}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="hsl(var(--foreground))"
+                        className="pointer-events-none"
+                      >
+                        {node.year}
+                      </text>
+                      {index === 0 && (
+                        <text
+                          x={node.x}
+                          y={node.y + 25}
+                          textAnchor="middle"
+                          fontSize="9"
+                          fill="hsl(var(--muted-foreground))"
+                          className="pointer-events-none"
+                        >
+                          First
+                        </text>
+                      )}
+                      {index === themeNodes.length - 1 && (
+                        <text
+                          x={node.x}
+                          y={node.y + 25}
+                          textAnchor="middle"
+                          fontSize="9"
+                          fill="hsl(var(--muted-foreground))"
+                          className="pointer-events-none"
+                        >
+                          Latest
+                        </text>
+                      )}
+                    </g>
+                  ))}
+                </svg>
+                
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  {themeNodes.length} {themeNodes.length === 1 ? 'memory' : 'memories'} connected by "{selectedTheme}"
+                </p>
               </div>
-            ))}
+            )}
+            
+            {themeNodes.length === 0 && selectedTheme && (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No memories found for "{selectedTheme}"
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
         {/* Caption */}
         <p className="text-xs text-muted-foreground text-center mt-6 italic">
