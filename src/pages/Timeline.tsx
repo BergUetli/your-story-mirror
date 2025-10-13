@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -94,6 +95,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
 
 const Timeline = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -325,6 +327,44 @@ const Timeline = () => {
     setIsDragging(false);
   };
 
+  const handleDeleteMemory = async (memoryId: string, memoryTitle: string) => {
+    if (!confirm(`Delete "${memoryTitle}"? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('memories')
+        .delete()
+        .eq('id', memoryId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Memory deleted',
+        description: `"${memoryTitle}" has been removed from your timeline.`,
+      });
+
+      // Refresh timeline data
+      await fetchTimelineData();
+    } catch (error) {
+      console.error('Failed to delete memory:', error);
+      toast({
+        title: 'Failed to delete memory',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleEditMemory = (memoryId: string) => {
+    // TODO: Implement edit functionality - could open a modal or navigate to edit page
+    toast({
+      title: 'Edit coming soon',
+      description: 'Memory editing will be available in a future update.',
+    });
+  };
+
   const handleZoomIn = () => {
     setZoomLevel(prev => Math.min(prev + 0.2, 2));
   };
@@ -432,19 +472,19 @@ const Timeline = () => {
             <p className="text-sm text-muted-foreground">Start recording memories to see them appear here</p>
           </div>
         ) : (
-          <div className="relative space-y-20 animate-fade-in">
+          <div className="relative space-y-8 animate-fade-in">
             {/* Timeline Line with dots */}
             <div className="absolute left-8 top-0 w-px bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10 h-full" />
 
             {/* Timeline Content */}
             {timelineData.map((yearData) => {
               const isMajorYear = yearData.significance === 'major';
-              const yearSize = isMajorYear ? 'text-5xl' : 'text-4xl';
-              const markerSize = isMajorYear ? 'w-5 h-5' : 'w-3 h-3';
-              const spacing = isMajorYear ? 'mb-10' : 'mb-6';
+              const yearSize = isMajorYear ? 'text-3xl' : 'text-2xl';
+              const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
+              const spacing = isMajorYear ? 'mb-6' : 'mb-4';
               
               return (
-                <div key={yearData.year} className={`relative ${isMajorYear ? 'my-28' : 'my-16'}`}>
+                <div key={yearData.year} className={`relative ${isMajorYear ? 'my-12' : 'my-8'}`}>
                   {/* Year Marker - Minimalist dot */}
                   <div className={`absolute left-[26px] top-2 ${markerSize} rounded-full ${
                     isMajorYear 
@@ -452,7 +492,7 @@ const Timeline = () => {
                       : 'bg-primary/60 shadow-md shadow-primary/20'
                   } transition-all duration-300`} />
 
-                  <div className="ml-24 space-y-8">
+                  <div className="ml-24 space-y-4">
                     {/* Year Header */}
                     <div 
                       className="cursor-pointer group"
@@ -471,19 +511,19 @@ const Timeline = () => {
                       
                       {/* Life Events (Birth) - Always prominent */}
                       {yearData.events.map((event, eventIndex) => (
-                        <div key={eventIndex} className="space-y-3 mb-8 animate-fade-in">
-                          <div className="text-3xl font-light text-foreground flex items-center gap-4">
+                        <div key={eventIndex} className="space-y-2 mb-4 animate-fade-in">
+                          <div className="text-2xl font-light text-foreground flex items-center gap-3">
                             {event.event}
                             {event.location && (
-                              <div className="flex items-center gap-2 text-xl text-muted-foreground">
-                                <MapPin className="w-5 h-5" />
+                              <div className="flex items-center gap-2 text-base text-muted-foreground">
+                                <MapPin className="w-4 h-4" />
                                 {event.location}
                               </div>
                             )}
                           </div>
                           {event.date && (
-                            <div className="text-sm text-muted-foreground flex items-center gap-2 font-light">
-                              <Calendar className="w-4 h-4" />
+                            <div className="text-xs text-muted-foreground flex items-center gap-2 font-light">
+                              <Calendar className="w-3 h-3" />
                               {new Date(event.date).toLocaleDateString('en-US', {
                                 month: 'long',
                                 day: 'numeric'
@@ -503,7 +543,7 @@ const Timeline = () => {
 
                     {/* Expanded Year Content */}
                     {expandedYears.has(yearData.year) && yearData.memories.length > 0 && (
-                      <div className="space-y-6 animate-scale-in">
+                      <div className="space-y-3 animate-scale-in">
                         {yearData.memories.map((memory) => {
                           const isMajorMemory = memory.significance === 'major';
                           return (
@@ -522,32 +562,65 @@ const Timeline = () => {
                                   : 'var(--shadow-soft)'
                               }}
                             >
-                              <CardContent className={`${isMajorMemory ? 'p-10' : 'p-8'} space-y-4`}>
-                                <div className="text-sm text-white/60 flex items-center gap-3 flex-wrap font-light">
-                                  <Calendar className="w-4 h-4" />
-                                  {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  })}
-                                  {memory.memory_location && (
-                                    <>
-                                      <span className="mx-1">•</span>
-                                      <MapPin className="w-4 h-4" />
-                                      {memory.memory_location}
-                                    </>
-                                  )}
+                              <CardContent className="p-4 space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs text-white/60 flex items-center gap-2 flex-wrap font-light mb-2">
+                                      <Calendar className="w-3 h-3 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          year: 'numeric'
+                                        })}
+                                      </span>
+                                      {memory.memory_location && (
+                                        <>
+                                          <span className="mx-1">•</span>
+                                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                                          <span className="truncate">{memory.memory_location}</span>
+                                        </>
+                                      )}
+                                    </div>
+                                    <h3 className="text-base font-light text-white mb-1.5 line-clamp-2">
+                                      {memory.title}
+                                    </h3>
+                                    <p className="text-sm text-white/80 leading-relaxed font-light line-clamp-3">
+                                      {memory.text}
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditMemory(memory.id);
+                                      }}
+                                      title="Edit memory"
+                                    >
+                                      <Edit className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-white/60 hover:text-red-400 hover:bg-red-400/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteMemory(memory.id, memory.title);
+                                      }}
+                                      title="Delete memory"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </div>
                                 </div>
-                                <h3 className={`${isMajorMemory ? 'text-3xl' : 'text-2xl'} font-light text-white`}>
-                                  {memory.title}
-                                </h3>
-                                <p className={`text-white/80 leading-relaxed ${isMajorMemory ? 'text-lg' : 'text-base'} font-light`}>
-                                  {memory.text}
-                                </p>
                                 
                                 {/* Memory Images */}
                                 {memory.image_urls && memory.image_urls.length > 0 && (
-                                  <div className={`grid gap-3 mt-4 ${
+                                  <div className={`grid gap-2 ${
                                     memory.image_urls.length === 1 ? 'grid-cols-1' : 
                                     memory.image_urls.length === 2 ? 'grid-cols-2' : 
                                     'grid-cols-2 sm:grid-cols-3'
@@ -560,12 +633,12 @@ const Timeline = () => {
                                       return (
                                         <div 
                                           key={imgIdx} 
-                                          className="relative group cursor-pointer overflow-hidden rounded-lg border border-white/20"
+                                          className="relative group cursor-pointer overflow-hidden rounded border border-white/20"
                                         >
                                           <img
                                             src={publicUrl}
                                             alt={`Memory image ${imgIdx + 1}`}
-                                            className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                                            className="w-full h-24 object-cover transition-transform duration-300 group-hover:scale-110"
                                             loading="lazy"
                                           />
                                         </div>
@@ -575,11 +648,11 @@ const Timeline = () => {
                                 )}
                                 
                                 {memory.conversation_text && (
-                                  <details className="mt-6">
-                                    <summary className="text-sm text-primary cursor-pointer hover:underline font-light">
-                                      View conversation with Solon
+                                  <details className="mt-3">
+                                    <summary className="text-xs text-primary cursor-pointer hover:underline font-light">
+                                      View conversation
                                     </summary>
-                                    <div className="mt-4 p-5 bg-black/20 rounded-lg text-sm text-white/70 whitespace-pre-line border border-white/10 font-light">
+                                    <div className="mt-2 p-3 bg-black/20 rounded text-xs text-white/70 whitespace-pre-line border border-white/10 font-light line-clamp-6">
                                       {memory.conversation_text}
                                     </div>
                                   </details>
