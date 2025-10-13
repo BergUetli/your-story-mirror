@@ -1,16 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Calendar, MapPin, Heart } from 'lucide-react';
 
 interface StoryMapProps {
   memories: any[];
   profile: any;
-}
-
-interface ThemeNode {
-  theme: string;
-  count: number;
-  color: string;
-  angle: number;
 }
 
 interface Milestone {
@@ -19,16 +13,37 @@ interface Milestone {
   position: number;
 }
 
-const StoryMap = ({ memories, profile }: StoryMapProps) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [themeNodes, setThemeNodes] = useState<ThemeNode[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [insight, setInsight] = useState<string>('');
-  const animationFrameRef = useRef<number>();
+interface LifeSummary {
+  age: number | null;
+  yearsRecorded: number;
+  totalMemories: number;
+  topThemes: string[];
+  recentActivity: string;
+  journeyPhase: string;
+}
 
-  // Extract themes from memories
+const StoryMap = ({ memories, profile }: StoryMapProps) => {
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
+
+  // Calculate life summary and extract themes
   useEffect(() => {
-    if (!memories || memories.length === 0) return;
+    if (!memories || memories.length === 0) {
+      setLifeSummary(null);
+      return;
+    }
+
+    // Calculate age
+    let age: number | null = null;
+    if (profile?.birth_date) {
+      const birthDate = new Date(profile.birth_date);
+      const today = new Date();
+      age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+    }
 
     // Count memory themes/tags
     const themeCount: Record<string, number> = {};
@@ -39,24 +54,49 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       });
     });
 
-    // Get top 5 themes
+    // Get top 3 themes
     const topThemes = Object.entries(themeCount)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([theme, count], index) => ({
-        theme,
-        count,
-        color: ['#93C5FD', '#FCD34D', '#E5E7EB', '#A5B4FC', '#F9A8D4'][index % 5],
-        angle: (index * (Math.PI * 2)) / 5,
-      }));
+      .slice(0, 3)
+      .map(([theme]) => theme);
 
-    setThemeNodes(topThemes);
-
-    // Generate milestones
+    // Calculate years recorded
     const sortedMemories = [...memories].sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
+    const firstMemory = sortedMemories[0];
+    const yearsRecorded = firstMemory 
+      ? new Date().getFullYear() - new Date(firstMemory.created_at).getFullYear() + 1
+      : 1;
 
+    // Recent activity
+    const recentCount = memories.filter(
+      (m) => new Date(m.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    ).length;
+    const recentActivity = recentCount > 0 
+      ? `${recentCount} ${recentCount === 1 ? 'memory' : 'memories'} this month`
+      : 'No recent memories';
+
+    // Journey phase (poetic description based on age and memory count)
+    let journeyPhase = 'Beginning to preserve your story';
+    if (memories.length > 50) {
+      journeyPhase = 'Building a rich archive of experiences';
+    } else if (memories.length > 20) {
+      journeyPhase = 'Capturing meaningful moments';
+    } else if (memories.length > 5) {
+      journeyPhase = 'Growing your collection';
+    }
+
+    setLifeSummary({
+      age,
+      yearsRecorded,
+      totalMemories: memories.length,
+      topThemes,
+      recentActivity,
+      journeyPhase,
+    });
+
+    // Generate milestones
     const newMilestones: Milestone[] = [];
     
     if (sortedMemories.length > 0) {
@@ -85,138 +125,92 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
     }
 
     setMilestones(newMilestones);
+  }, [memories, profile]);
 
-    // Generate insight
-    const recentCount = memories.filter(
-      (m) => new Date(m.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    ).length;
-    
-    if (topThemes.length > 0) {
-      setInsight(
-        `This month's ${recentCount} memories orbit around ${topThemes[0].theme.toLowerCase()} and connection.`
-      );
-    } else {
-      setInsight('Each memory you add creates a new constellation in your story.');
-    }
-  }, [memories]);
 
-  // Animate orbital visualization
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || themeNodes.length === 0) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let time = 0;
-
-    const animate = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-      ctx.scale(dpr, dpr);
-
-      const width = canvas.offsetWidth;
-      const height = canvas.offsetHeight;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const orbitRadius = Math.min(width, height) * 0.3;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, width, height);
-
-      // Draw orbit circle
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, orbitRadius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Draw central "You" node
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, 30, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = '#000000';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('You', centerX, centerY);
-
-      // Draw orbiting theme nodes
-      themeNodes.forEach((node, index) => {
-        const angle = node.angle + time * 0.0005 + (index * Math.PI * 2) / themeNodes.length;
-        const x = centerX + Math.cos(angle) * orbitRadius;
-        const y = centerY + Math.sin(angle) * orbitRadius;
-
-        // Draw glow
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 25);
-        gradient.addColorStop(0, node.color);
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x, y, 25, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw node circle
-        ctx.fillStyle = node.color;
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(x, y, 20, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Draw theme label
-        ctx.fillStyle = '#000000';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(node.theme, x, y - 35);
-      });
-
-      time += 16;
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [themeNodes]);
-
-  if (memories.length === 0) {
+  if (memories.length === 0 || !lifeSummary) {
     return (
       <Card className="h-full modern-card border-[1.5px] border-black p-8 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white animate-fade-in">
         <h3 className="text-2xl font-semibold text-foreground mb-4">Your Living Archive</h3>
         <p className="text-muted-foreground text-center max-w-sm">
-          Start adding memories to see your story map come to life
+          Start adding memories to see your life summary
         </p>
       </Card>
     );
   }
 
   return (
-    <Card className="h-full modern-card border-[1.5px] border-black p-8 bg-gradient-to-br from-gray-50 to-white animate-fade-in shadow-elegant overflow-hidden">
-      <div className="flex flex-col h-full">
+    <Card className="h-full modern-card border-[1.5px] border-black p-8 bg-gradient-to-br from-gray-50 to-white animate-fade-in shadow-elegant overflow-auto">
+      <div className="flex flex-col h-full space-y-8">
         {/* Title */}
-        <h3 className="text-2xl font-semibold text-foreground mb-2">Your Living Archive</h3>
-        <p className="text-sm text-muted-foreground mb-6 italic">{insight}</p>
+        <div>
+          <h3 className="text-2xl font-semibold text-foreground mb-2">Where You Are</h3>
+          <p className="text-sm text-muted-foreground italic">{lifeSummary.journeyPhase}</p>
+        </div>
 
-        {/* Orbital Visualization */}
-        <div className="flex-1 min-h-[300px] mb-6">
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full"
-            style={{ maxHeight: '350px' }}
-          />
+        {/* Life Summary Stats */}
+        <div className="space-y-4">
+          {lifeSummary.age && (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Your Journey</p>
+                <p className="text-base text-muted-foreground">
+                  {lifeSummary.age} years of life
+                  {profile?.birth_place && ` • Born in ${profile.birth_place}`}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Heart className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Memories Preserved</p>
+              <p className="text-base text-muted-foreground">
+                {lifeSummary.totalMemories} {lifeSummary.totalMemories === 1 ? 'memory' : 'memories'} across {lifeSummary.yearsRecorded} {lifeSummary.yearsRecorded === 1 ? 'year' : 'years'}
+              </p>
+            </div>
+          </div>
+
+          {profile?.current_location && (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MapPin className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Current Location</p>
+                <p className="text-base text-muted-foreground">{profile.current_location}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Top Themes */}
+        {lifeSummary.topThemes.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">Your Story Themes</h4>
+            <div className="flex flex-wrap gap-2">
+              {lifeSummary.topThemes.map((theme, index) => (
+                <span
+                  key={index}
+                  className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full border border-primary/20"
+                >
+                  {theme}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Activity */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold text-foreground">Recent Activity</h4>
+          <p className="text-base text-muted-foreground">{lifeSummary.recentActivity}</p>
         </div>
 
         {/* Milestone Timeline */}
