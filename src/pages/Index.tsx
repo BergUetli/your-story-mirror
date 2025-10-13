@@ -263,8 +263,8 @@ Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
         timeoutId = window.setTimeout(() => reject(new Error('Connection timed out')), 20000);
       });
 
-      const startPromise = (conversation as any).startSession({
-        url: data.signed_url,
+      const startPromise = conversation.startSession({
+        signedUrl: data.signed_url,
         overrides: {
           agent: {
             prompt: {
