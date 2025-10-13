@@ -66,25 +66,21 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       }
     }
 
-    // Opening paragraph - birth and origin
+    // Opening paragraph - birth and origin (biographical style)
     let opening = '';
-    const name = profile.name || 'Your';
+    const name = profile.name || 'This person';
+    const possessive = name === 'This person' ? 'their' : `${name}'s`;
+    const pronoun = name === 'This person' ? 'they' : name;
     
     if (profile.birth_date && profile.birth_place) {
-      opening = `${name === 'Your' ? 'Your story' : `${name}'s story`} began in ${birthYear} in ${profile.birth_place}. `;
-      if (age) {
-        opening += `Now ${age} years into this journey, `;
-      }
+      opening = `Born in ${birthYear} in ${profile.birth_place}, ${possessive} journey began like all great stories—with possibility.`;
     } else if (profile.birth_date) {
-      opening = `${name === 'Your' ? 'Your story' : `${name}'s story`} began in ${birthYear}. `;
-      if (age) {
-        opening += `${age} years of experiences and growth, `;
-      }
+      opening = `The year was ${birthYear}. ${possessive} story had just begun.`;
+    } else if (profile.birth_place) {
+      opening = `${profile.birth_place} was where it all started—a beginning that would unfold into something remarkable.`;
     } else {
-      opening = `${name === 'Your' ? 'Your' : `${name}'s`} journey unfolds with each passing day. `;
+      opening = `Every life is a story waiting to be told. This one is still being written.`;
     }
-    
-    opening += `every moment leading to where ${name === 'Your' ? 'you are' : 'they are'} today.`;
 
     // Extract major milestones from memories
     const majorKeywords = [
@@ -106,24 +102,31 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       })
       .slice(0, 5); // Top 5 major events
 
-    const milestoneSentences = milestoneMemories.map((memory: any) => {
+    // Create flowing narrative sentences from milestones
+    const milestoneSentences = milestoneMemories.map((memory: any, index: number) => {
       const year = new Date(memory.memory_date || memory.created_at).getFullYear();
       const location = memory.memory_location ? ` in ${memory.memory_location}` : '';
-      return `In ${year}, ${memory.title.toLowerCase()}${location}—a defining moment in this journey.`;
+      const title = memory.title;
+      
+      // Vary sentence structure for natural flow
+      const patterns = [
+        `${year} marked a turning point${location}—${title.toLowerCase()}.`,
+        `Then came ${year}${location}, when ${title.toLowerCase()}.`,
+        `In ${year}${location}, ${title.toLowerCase()}—a chapter that would shape everything to come.`,
+        `${year}${location}: ${title}.`,
+      ];
+      
+      return patterns[index % patterns.length];
     });
 
-    // Closing - forward-looking and encouraging
-    const totalMemories = memories.length;
+    // Closing - biographical, forward-looking (only if we have milestones)
     let closing = '';
     
-    if (totalMemories > 50) {
-      closing = `With over ${totalMemories} memories preserved, this archive tells a story of resilience, growth, and endless possibility. The best chapters are still being written.`;
-    } else if (totalMemories > 20) {
-      closing = `${totalMemories} precious memories captured so far, each one a stepping stone toward something greater. The journey continues, full of promise and potential.`;
-    } else if (totalMemories > 5) {
-      closing = `${totalMemories} moments preserved and counting. Each memory is proof of progress, a marker on the path to extraordinary things ahead.`;
+    if (milestoneSentences.length > 0) {
+      closing = `The story continues to unfold, each day adding new depth to a life lived with intention and purpose.`;
     } else {
-      closing = `Every great story starts with a single moment. Yours is just beginning, and the horizon is limitless.`;
+      // If not enough significant memories, keep it brief
+      closing = `A life in motion, with chapters yet to be written.`;
     }
 
     setNarrative({
