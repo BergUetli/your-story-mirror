@@ -204,8 +204,8 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
 
   if (!narrative) {
     return (
-      <Card className="h-full modern-card border-[1.5px] border-black p-8 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white animate-fade-in">
-        <h3 className="text-2xl font-semibold text-foreground mb-4">Your Story</h3>
+      <Card className="h-full modern-card border border-border p-8 flex flex-col items-center justify-center bg-card animate-fade-in shadow-soft">
+        <h3 className="text-2xl font-semibold text-card-foreground mb-4">Your Story</h3>
         <p className="text-muted-foreground text-center max-w-sm">
           Complete your profile and add memories to see your journey
         </p>
@@ -214,17 +214,17 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
   }
 
   return (
-    <Card className="h-full modern-card border-[1.5px] border-black p-8 bg-gradient-to-br from-gray-50 to-white animate-fade-in shadow-elegant overflow-auto">
+    <Card className="h-full modern-card border border-border p-8 bg-card animate-fade-in shadow-soft overflow-auto">
       <div className="flex flex-col space-y-8">
         {/* Title */}
         <div>
-          <h3 className="text-3xl font-semibold text-foreground mb-2">Your Story So Far</h3>
+          <h3 className="text-3xl font-semibold text-card-foreground mb-2">Your Story So Far</h3>
           <p className="text-sm text-muted-foreground italic">A journey of growth and possibility</p>
         </div>
 
         {/* Opening - Birth & Beginning */}
         <div className="space-y-4">
-          <p className="text-base leading-relaxed text-foreground">
+          <p className="text-base leading-relaxed text-card-foreground">
             {narrative.opening}
           </p>
         </div>
@@ -232,21 +232,21 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
         {/* Major Milestones */}
         {narrative.milestones.length > 0 && (
           <div className="space-y-4">
-            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
             <div className="space-y-3">
               {narrative.milestones.map((milestone, index) => (
-                <p key={index} className="text-base leading-relaxed text-foreground pl-4 border-l-2 border-primary/30">
+                <p key={index} className="text-base leading-relaxed text-card-foreground pl-4 border-l-2 border-primary/50">
                   {milestone}
                 </p>
               ))}
             </div>
-            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
           </div>
         )}
 
         {/* Closing - Forward Looking */}
         <div className="space-y-4">
-          <p className="text-base leading-relaxed text-foreground font-medium">
+          <p className="text-base leading-relaxed text-card-foreground font-medium">
             {narrative.closing}
           </p>
         </div>
@@ -254,15 +254,15 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
         {/* Theme Explorer */}
         {availableThemes.length > 0 && (
           <div className="space-y-4">
-            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent" />
             
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-foreground">Explore Your Themes</h4>
+              <h4 className="text-sm font-semibold text-card-foreground">Explore Your Themes</h4>
               <Select value={selectedTheme} onValueChange={setSelectedTheme}>
-                <SelectTrigger className="w-full bg-white border-[1.5px] border-black/20">
+                <SelectTrigger className="w-full bg-background border border-input">
                   <SelectValue placeholder="Select a theme to explore" />
                 </SelectTrigger>
-                <SelectContent className="bg-white border-[1.5px] border-black z-50">
+                <SelectContent className="bg-popover border border-border z-50">
                   {availableThemes.map((theme) => (
                     <SelectItem key={theme} value={theme}>
                       {theme}
@@ -274,7 +274,7 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
 
             {/* Knowledge Graph Visualization */}
             {themeNodes.length > 0 && (
-              <div className="relative h-48 bg-white/50 rounded-lg border-[1.5px] border-black/20 p-4 overflow-hidden">
+              <div className="relative h-48 bg-muted/30 rounded-lg border border-border p-4 overflow-hidden">
                 <svg className="w-full h-full" viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet">
                   {/* Draw connections */}
                   {themeConnections.map((conn, index) => {
@@ -313,7 +313,7 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
                         y={node.y - 15}
                         textAnchor="middle"
                         fontSize="10"
-                        fill="hsl(var(--foreground))"
+                        fill="hsl(var(--card-foreground))"
                         className="pointer-events-none"
                       >
                         {node.year}
