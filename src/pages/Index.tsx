@@ -128,22 +128,28 @@ const Index = () => {
 
   const [conversationMessages, setConversationMessages] = useState<Array<{role: string, text: string}>>([]);
 
-  const retrieveMemoryTool = useCallback(async (parameters: { query: string }) => {
+  const retrieveMemoryTool = useCallback(async (parameters: { query?: string; limit?: number }) => {
     try {
       const q = parameters?.query?.trim() ?? '';
-      console.log('🔍 Solon searching memories:', q);
+      const maxResults = parameters?.limit ?? 5;
+      console.log('🔍 Solon searching memories:', q, 'limit:', maxResults);
       if (!user?.id) return 'No user session; unable to access memories.';
 
-      // Keyword search across title and text
-      const escaped = q.replace(/%/g, '%25').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      const orFilter = `title.ilike.%${escaped}%,text.ilike.%${escaped}%`;
-      const { data, error } = await supabase
+      let query = supabase
         .from('memories')
         .select('id,title,created_at')
         .eq('user_id', user.id)
-        .or(orFilter)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(maxResults);
+
+      // Only apply search filter if query is provided
+      if (q) {
+        const escaped = q.replace(/%/g, '%25').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        const orFilter = `title.ilike.%${escaped}%,text.ilike.%${escaped}%`;
+        query = query.or(orFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Supabase retrieve error:', error);
