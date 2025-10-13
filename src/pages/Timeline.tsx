@@ -180,10 +180,22 @@ const Timeline = () => {
     const memorySummary = urlParams.get('summary');
     
     if (newMemoryId && shouldAnimate && memorySummary) {
+      const handoffId = `timeline-${Date.now()}`;
+      const timestamp = new Date().toISOString();
+      
+      console.log(`🔄 [${handoffId}] HANDOFF: 9️⃣ TIMELINE RECEIVED @ ${timestamp}`, {
+        memoryId: newMemoryId,
+        animate: shouldAnimate,
+        summary: memorySummary
+      });
+      
       const currentYear = new Date().getFullYear();
       setExpandedYears(prev => new Set([...prev, currentYear]));
       
+      console.log(`🔄 [${handoffId}] HANDOFF: 🔟 EXPANDING YEAR`, { year: currentYear });
+      
       setTimeout(() => {
+        console.log(`🔄 [${handoffId}] HANDOFF: 1️⃣1️⃣ STARTING ANIMATION`, { memoryId: newMemoryId });
         setMaterializingMemory(newMemoryId);
         
         const summaryElement = document.createElement('div');
@@ -191,11 +203,24 @@ const Timeline = () => {
         summaryElement.textContent = `✨ ${decodeURIComponent(memorySummary)}`;
         document.body.appendChild(summaryElement);
         
+        console.log(`🔄 [${handoffId}] HANDOFF: 1️⃣2️⃣ BANNER DISPLAYED`, { 
+          text: summaryElement.textContent 
+        });
+        
         setTimeout(() => {
+          console.log(`🔄 [${handoffId}] HANDOFF: 1️⃣3️⃣ ANIMATION COMPLETE`, { 
+            memoryId: newMemoryId,
+            duration: '3000ms'
+          });
+          
           if (summaryElement.parentNode) {
             summaryElement.parentNode.removeChild(summaryElement);
           }
           setMaterializingMemory(null);
+          
+          console.log(`🔄 [${handoffId}] HANDOFF: ✅ TIMELINE HANDOFF COMPLETE`, {
+            status: 'Memory successfully materialized on timeline'
+          });
           window.history.replaceState({}, '', '/timeline');
         }, 2500);
       }, 300);

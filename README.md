@@ -287,6 +287,16 @@ git push origin feature/your-feature-name
 
 ## 🐛 Debugging
 
+### Handoff Diagnostics
+
+Every memory save operation is tracked with unique handoff IDs. See [HANDOFF_DIAGNOSTICS.md](./HANDOFF_DIAGNOSTICS.md) for:
+- Complete handoff stage documentation
+- Console log format and filtering
+- Failure point identification
+- Testing checklist
+
+**Quick Debug**: Open browser console and filter by "HANDOFF" to track memory save operations through all 13+ stages.
+
 ### Voice Agent Issues
 
 **Session disconnects quickly:**

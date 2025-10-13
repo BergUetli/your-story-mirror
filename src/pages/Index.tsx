@@ -33,16 +33,24 @@ const Index = () => {
     memory_date?: string;
     memory_location?: string;
   }) => {
+    const handoffId = `handoff-${Date.now()}`;
+    const logHandoff = (stage: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      console.log(`🔄 [${handoffId}] HANDOFF: ${stage} @ ${timestamp}`, data || '');
+    };
+
     try {
-      console.log('💾 Saving memory:', parameters);
+      logHandoff('1️⃣ RECEIVED', { source: 'ElevenLabs voice agent', parameters });
 
       // Validate required fields from tool call
       const title = parameters?.title?.trim();
       const content = parameters?.content?.trim();
       if (!title || !content) {
-        console.warn('❗ Missing required fields for memory:', { title, hasContent: !!content });
+        logHandoff('❌ VALIDATION FAILED', { title, hasContent: !!content });
         return 'Missing required fields: title and content. Please ask the user to provide both before saving.';
       }
+      
+      logHandoff('2️⃣ VALIDATED', { title, contentLength: content.length });
       
       // Parse and format memory_date to handle various formats
       let formattedDate: string | null = null;
@@ -77,11 +85,13 @@ const Index = () => {
           }
         }
 
-        console.log('🗓️ Parsed memory_date ->', { input: dateStr, formattedDate });
+        logHandoff('3️⃣ DATE PARSED', { input: dateStr, formatted: formattedDate });
       }
       
       // Use placeholder UUID for testing without auth
       const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+      
+      logHandoff('4️⃣ SUBMITTING TO DATABASE', { userId, title, hasDate: !!formattedDate });
 
       const { data, error } = await supabase
         .from('memories')
@@ -97,13 +107,18 @@ const Index = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        logHandoff('❌ DATABASE ERROR', { error: error.message, code: error.code });
+        throw error;
+      }
 
-      console.log('✅ Memory saved to database:', data);
+      logHandoff('5️⃣ DATABASE COMMITTED', { memoryId: data.id, title: data.title });
       
       // Return success message with memory ID so agent can confirm
       const memoryId = data?.id;
       const memoryTitle = data?.title || parameters.title;
+      
+      logHandoff('6️⃣ SHOWING USER FEEDBACK', { memoryId, memoryTitle });
       
       toast({ 
         title: 'Memory saved', 
@@ -111,15 +126,32 @@ const Index = () => {
       });
       
       // Navigate to timeline with animation after a short delay
+      logHandoff('7️⃣ SCHEDULING NAVIGATION', { 
+        target: '/timeline', 
+        memoryId, 
+        delay: '2000ms' 
+      });
+      
       setTimeout(() => {
+        logHandoff('8️⃣ EXECUTING NAVIGATION', { 
+          url: `/timeline?newMemory=${memoryId}&animate=true` 
+        });
         window.location.href = `/timeline?newMemory=${memoryId}&animate=true&summary=${encodeURIComponent(memoryTitle)}`;
       }, 2000);
       
+      logHandoff('✅ HANDOFF COMPLETE', { 
+        status: 'success',
+        agentResponse: `Memory "${memoryTitle}" saved successfully` 
+      });
+      
       return `Memory "${memoryTitle}" saved successfully. The user will be redirected to their Timeline to see it.`;
     } catch (error) {
-      console.error('❌ Failed to save memory:', error);
+      logHandoff('❌ HANDOFF FAILED', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Full error details:', JSON.stringify(error, null, 2));
       
       toast({
         title: 'Failed to save memory',
@@ -132,7 +164,12 @@ const Index = () => {
   }, [user?.id, toast]);
 
   const onConnectCb = useCallback(() => {
-    console.log('✅ Connected to ElevenLabs');
+    const timestamp = new Date().toISOString();
+    console.log(`🔌 CONNECTION HANDOFF: ✅ CONNECTED @ ${timestamp}`, {
+      status: 'ElevenLabs voice agent connected',
+      retryCount: retryCountRef.current
+    });
+    
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
     // Do not reset retryCountRef here; only reset after a stable connection duration
@@ -142,7 +179,13 @@ const Index = () => {
 
   const onDisconnectCb = useCallback(() => {
     const elapsed = Date.now() - lastConnectedAtRef.current;
-    console.log('👋 Disconnected after', elapsed, 'ms');
+    const timestamp = new Date().toISOString();
+    
+    console.log(`🔌 CONNECTION HANDOFF: 👋 DISCONNECTED @ ${timestamp}`, {
+      status: 'ElevenLabs voice agent disconnected',
+      sessionDuration: `${elapsed}ms`,
+      retryCount: retryCountRef.current
+    });
     
     const justConnected = elapsed < 3000;
 
