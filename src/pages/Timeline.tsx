@@ -514,19 +514,54 @@ const Timeline = () => {
             </Link>
           </div>
         ) : (
-          <div className="relative space-y-8 animate-fade-in">
-            {/* Timeline Line with dots */}
-            <div className="absolute left-8 top-0 w-px bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10 h-full" />
+          <div 
+            className="relative animate-fade-in"
+            style={{
+              minHeight: (() => {
+                const birthYear = timelineProfile?.birth_date 
+                  ? new Date(timelineProfile.birth_date).getFullYear() 
+                  : timelineData[0]?.year || new Date().getFullYear();
+                const currentYear = new Date().getFullYear();
+                const totalYears = currentYear - birthYear;
+                return `${totalYears * 80 + 200}px`; // Add padding
+              })()
+            }}
+          >
+            {(() => {
+              // Calculate total span and proportional positions
+              const birthYear = timelineProfile?.birth_date 
+                ? new Date(timelineProfile.birth_date).getFullYear() 
+                : timelineData[0]?.year || new Date().getFullYear();
+              const currentYear = new Date().getFullYear();
+              const totalYears = currentYear - birthYear;
+              const pixelsPerYear = 80; // Base spacing per year
+              const totalHeight = totalYears * pixelsPerYear;
 
-            {/* Timeline Content */}
-            {timelineData.map((yearData) => {
-              const isMajorYear = yearData.significance === 'major';
-              const yearSize = isMajorYear ? 'text-3xl' : 'text-2xl';
-              const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
-              const spacing = isMajorYear ? 'mb-6' : 'mb-4';
-              
               return (
-                <div key={yearData.year} className={`relative ${isMajorYear ? 'my-12' : 'my-8'}`}>
+                <>
+                  {/* Timeline Line - full height based on total years */}
+                  <div 
+                    className="absolute left-8 top-0 w-px bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10"
+                    style={{ height: `${totalHeight}px` }}
+                  />
+
+                  {/* Timeline Content with proportional spacing */}
+                  {timelineData.map((yearData) => {
+                    const isMajorYear = yearData.significance === 'major';
+                    const yearSize = isMajorYear ? 'text-3xl' : 'text-2xl';
+                    const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
+                    const spacing = isMajorYear ? 'mb-6' : 'mb-4';
+                    
+                    // Calculate position from birth year
+                    const yearsFromBirth = yearData.year - birthYear;
+                    const topPosition = yearsFromBirth * pixelsPerYear;
+                    
+                    return (
+                      <div 
+                        key={yearData.year} 
+                        className="absolute left-0 right-0"
+                        style={{ top: `${topPosition}px` }}
+                      >
                   {/* Year Marker - Minimalist dot */}
                   <div className={`absolute left-[26px] top-2 ${markerSize} rounded-full ${
                     isMajorYear 
@@ -674,9 +709,12 @@ const Timeline = () => {
                       </div>
                     )}
                   </div>
-                </div>
+                      </div>
+                    );
+                  })}
+                </>
               );
-            })}
+            })()}
           </div>
         )}
           </div>
