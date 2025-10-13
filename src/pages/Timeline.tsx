@@ -563,13 +563,18 @@ const Timeline = () => {
                         key={yearData.year} 
                         className="absolute left-0 right-0"
                         style={{ top: `${topPosition}px` }}
-                      >
-                  {/* Year Marker - Minimalist dot */}
-                  <div className={`absolute left-[26px] top-2 ${markerSize} rounded-full ${
-                    isMajorYear 
-                      ? 'bg-primary shadow-lg shadow-primary/40' 
-                      : 'bg-primary/60 shadow-md shadow-primary/20'
-                  } transition-all duration-300`} />
+                       >
+                   {/* Year Marker - Centered on timeline */}
+                   <div 
+                     className={`absolute top-2 ${markerSize} rounded-full ${
+                       isMajorYear 
+                         ? 'bg-black shadow-lg' 
+                         : 'bg-black/80 shadow-md'
+                     } transition-all duration-300`}
+                     style={{
+                       left: isMajorYear ? '26px' : '28px' // Center on 4px line
+                     }}
+                   />
 
                   <div className="ml-24 space-y-4">
                     {/* Year Header */}
