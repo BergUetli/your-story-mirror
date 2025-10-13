@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface MemoryDetailDialogProps {
   memory: any;
@@ -14,6 +15,8 @@ interface MemoryDetailDialogProps {
 
 export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: MemoryDetailDialogProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const userIdFolder = user?.id || '00000000-0000-0000-0000-000000000000';
   const [uploading, setUploading] = useState(false);
   const [artifacts, setArtifacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,7 +73,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
         // Upload to storage
         const fileExt = file.name.split('.').pop();
-        const fileName = `${memory.id}/${Date.now()}.${fileExt}`;
+        const fileName = `${userIdFolder}/${memory.id}/${Date.now()}.${fileExt}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('memory-images')
           .upload(fileName, file);
