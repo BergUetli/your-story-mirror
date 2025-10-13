@@ -33,6 +33,7 @@ serve(async (req) => {
     console.log('Full prompt:', fullPrompt);
 
     // Call OpenAI image generation API
+    // Note: gpt-image-1 always returns base64, doesn't support response_format parameter
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -44,8 +45,7 @@ serve(async (req) => {
         prompt: fullPrompt,
         n: 1,
         size: '1024x1024',
-        quality: 'high',
-        response_format: 'url'
+        quality: 'high'
       }),
     });
 
@@ -56,9 +56,11 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageUrl = data.data[0].url;
+    // gpt-image-1 returns base64 encoded images
+    const base64Image = data.data[0].b64_json;
+    const imageUrl = `data:image/png;base64,${base64Image}`;
 
-    console.log('Generated image URL:', imageUrl);
+    console.log('Generated image (base64 length):', base64Image.length);
 
     return new Response(
       JSON.stringify({ imageUrl }),
