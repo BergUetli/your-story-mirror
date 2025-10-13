@@ -577,10 +577,10 @@ const Timeline = () => {
                               }}
                               onClick={() => setSelectedMemory(memory)}
                             >
-                              <CardContent className="p-4">
+                              <CardContent className="p-3">
                                 <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs text-white/60 flex items-center gap-2 flex-wrap font-light mb-2">
+                                  <div className="flex-1 min-w-0 space-y-2">
+                                    <div className="text-xs text-white/60 flex items-center gap-2 flex-wrap font-light">
                                       <Calendar className="w-3 h-3 flex-shrink-0" />
                                       <span className="truncate">
                                         {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
@@ -597,35 +597,57 @@ const Timeline = () => {
                                         </>
                                       )}
                                     </div>
-                                    <h3 className="text-base font-light text-white line-clamp-2">
+                                    <h3 className="text-sm font-medium text-white line-clamp-1">
                                       {memory.title}
                                     </h3>
+                                    {memory.text && (
+                                      <p className="text-xs text-white/70 line-clamp-2 font-light leading-relaxed">
+                                        {memory.text}
+                                      </p>
+                                    )}
+                                    {memory.tags && memory.tags.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {memory.tags.slice(0, 3).map((tag: string, idx: number) => (
+                                          <span
+                                            key={idx}
+                                            className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-light"
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                        {memory.tags.length > 3 && (
+                                          <span className="text-[10px] px-2 py-0.5 text-white/60">
+                                            +{memory.tags.length - 3}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                   </div>
                                   
-                                  <div className="flex gap-1 flex-shrink-0">
+                                  <div className="flex gap-1 flex-shrink-0 self-start">
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-7 w-7 text-white/60 hover:text-white hover:bg-white/10"
+                                      className="h-6 w-6 text-white/60 hover:text-white hover:bg-white/10"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleEditMemory(memory.id);
                                       }}
                                       title="View details"
                                     >
-                                      <Edit className="w-3.5 h-3.5" />
+                                      <Edit className="w-3 h-3" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-7 w-7 text-white/60 hover:text-red-400 hover:bg-red-400/10"
+                                      className="h-6 w-6 text-white/60 hover:text-red-400 hover:bg-red-400/10"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteMemory(memory.id, memory.title);
                                       }}
                                       title="Delete memory"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-3 h-3" />
                                     </Button>
                                   </div>
                                 </div>
