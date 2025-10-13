@@ -44,6 +44,27 @@ const Index = () => {
         return 'Missing required fields: title and content. Please ask the user to provide both before saving.';
       }
       
+      // Parse and format memory_date to handle various formats
+      let formattedDate = null;
+      if (parameters.memory_date) {
+        const dateStr = parameters.memory_date.trim();
+        // Handle year-only format (e.g., "1983")
+        if (/^\d{4}$/.test(dateStr)) {
+          formattedDate = `${dateStr}-01-01`;
+        } 
+        // Handle full date formats
+        else if (dateStr) {
+          try {
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) {
+              formattedDate = parsed.toISOString().split('T')[0];
+            }
+          } catch (e) {
+            console.warn('Could not parse date:', dateStr);
+          }
+        }
+      }
+      
       // Use placeholder UUID for testing without auth
       const userId = user?.id || '00000000-0000-0000-0000-000000000000';
 
@@ -54,7 +75,7 @@ const Index = () => {
           title,
           text: content,
           tags: parameters.tags ?? [],
-          memory_date: parameters.memory_date || null,
+          memory_date: formattedDate,
           memory_location: parameters.memory_location || null,
           image_urls: [], // No images from voice conversation
         }])
