@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Calendar, MapPin, Heart } from 'lucide-react';
 
 interface StoryMapProps {
   memories: any[];
@@ -13,30 +12,29 @@ interface Milestone {
   position: number;
 }
 
-interface LifeSummary {
-  age: number | null;
-  yearsRecorded: number;
-  totalMemories: number;
-  topThemes: string[];
-  recentActivity: string;
-  journeyPhase: string;
+interface LifeNarrative {
+  opening: string;
+  milestones: string[];
+  closing: string;
 }
 
 const StoryMap = ({ memories, profile }: StoryMapProps) => {
+  const [narrative, setNarrative] = useState<LifeNarrative | null>(null);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [lifeSummary, setLifeSummary] = useState<LifeSummary | null>(null);
 
-  // Calculate life summary and extract themes
+  // Generate life narrative
   useEffect(() => {
-    if (!memories || memories.length === 0) {
-      setLifeSummary(null);
+    if (!profile) {
+      setNarrative(null);
       return;
     }
 
     // Calculate age
     let age: number | null = null;
+    let birthYear = '';
     if (profile?.birth_date) {
       const birthDate = new Date(profile.birth_date);
+      birthYear = birthDate.getFullYear().toString();
       const today = new Date();
       age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -45,58 +43,76 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       }
     }
 
-    // Count memory themes/tags
-    const themeCount: Record<string, number> = {};
-    memories.forEach((memory) => {
-      const tags = memory.tags || [];
-      tags.forEach((tag: string) => {
-        themeCount[tag] = (themeCount[tag] || 0) + 1;
-      });
+    // Opening paragraph - birth and origin
+    let opening = '';
+    const name = profile.name || 'Your';
+    
+    if (profile.birth_date && profile.birth_place) {
+      opening = `${name === 'Your' ? 'Your story' : `${name}'s story`} began in ${birthYear} in ${profile.birth_place}. `;
+      if (age) {
+        opening += `Now ${age} years into this journey, `;
+      }
+    } else if (profile.birth_date) {
+      opening = `${name === 'Your' ? 'Your story' : `${name}'s story`} began in ${birthYear}. `;
+      if (age) {
+        opening += `${age} years of experiences and growth, `;
+      }
+    } else {
+      opening = `${name === 'Your' ? 'Your' : `${name}'s`} journey unfolds with each passing day. `;
+    }
+    
+    opening += `every moment leading to where ${name === 'Your' ? 'you are' : 'they are'} today.`;
+
+    // Extract major milestones from memories
+    const majorKeywords = [
+      'graduated', 'graduation', 'married', 'marriage', 'wedding',
+      'born', 'birth', 'child', 'baby', 
+      'college', 'university', 'degree', 'moved', 'new job', 'promoted',
+      'promotion', 'started', 'founded'
+    ];
+
+    const milestoneMemories = memories
+      .filter((memory: any) => {
+        const text = (memory.title + ' ' + (memory.text || '')).toLowerCase();
+        return majorKeywords.some(keyword => text.includes(keyword));
+      })
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.memory_date || a.created_at);
+        const dateB = new Date(b.memory_date || b.created_at);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 5); // Top 5 major events
+
+    const milestoneSentences = milestoneMemories.map((memory: any) => {
+      const year = new Date(memory.memory_date || memory.created_at).getFullYear();
+      const location = memory.memory_location ? ` in ${memory.memory_location}` : '';
+      return `In ${year}, ${memory.title.toLowerCase()}${location}—a defining moment in this journey.`;
     });
 
-    // Get top 3 themes
-    const topThemes = Object.entries(themeCount)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([theme]) => theme);
+    // Closing - forward-looking and encouraging
+    const totalMemories = memories.length;
+    let closing = '';
+    
+    if (totalMemories > 50) {
+      closing = `With over ${totalMemories} memories preserved, this archive tells a story of resilience, growth, and endless possibility. The best chapters are still being written.`;
+    } else if (totalMemories > 20) {
+      closing = `${totalMemories} precious memories captured so far, each one a stepping stone toward something greater. The journey continues, full of promise and potential.`;
+    } else if (totalMemories > 5) {
+      closing = `${totalMemories} moments preserved and counting. Each memory is proof of progress, a marker on the path to extraordinary things ahead.`;
+    } else {
+      closing = `Every great story starts with a single moment. Yours is just beginning, and the horizon is limitless.`;
+    }
 
-    // Calculate years recorded
+    setNarrative({
+      opening,
+      milestones: milestoneSentences,
+      closing,
+    });
+
+    // Timeline milestones for visual
     const sortedMemories = [...memories].sort(
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
-    const firstMemory = sortedMemories[0];
-    const yearsRecorded = firstMemory 
-      ? new Date().getFullYear() - new Date(firstMemory.created_at).getFullYear() + 1
-      : 1;
-
-    // Recent activity
-    const recentCount = memories.filter(
-      (m) => new Date(m.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    ).length;
-    const recentActivity = recentCount > 0 
-      ? `${recentCount} ${recentCount === 1 ? 'memory' : 'memories'} this month`
-      : 'No recent memories';
-
-    // Journey phase (poetic description based on age and memory count)
-    let journeyPhase = 'Beginning to preserve your story';
-    if (memories.length > 50) {
-      journeyPhase = 'Building a rich archive of experiences';
-    } else if (memories.length > 20) {
-      journeyPhase = 'Capturing meaningful moments';
-    } else if (memories.length > 5) {
-      journeyPhase = 'Growing your collection';
-    }
-
-    setLifeSummary({
-      age,
-      yearsRecorded,
-      totalMemories: memories.length,
-      topThemes,
-      recentActivity,
-      journeyPhase,
-    });
-
-    // Generate milestones
     const newMilestones: Milestone[] = [];
     
     if (sortedMemories.length > 0) {
@@ -107,18 +123,9 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
       });
     }
 
-    if (sortedMemories.length > 2) {
-      const midIndex = Math.floor(sortedMemories.length / 2);
-      newMilestones.push({
-        label: 'Milestone Memory',
-        date: new Date(sortedMemories[midIndex].created_at).toLocaleDateString(),
-        position: 50,
-      });
-    }
-
     if (sortedMemories.length > 0) {
       newMilestones.push({
-        label: 'Recent Upload',
+        label: 'Latest Memory',
         date: new Date(sortedMemories[sortedMemories.length - 1].created_at).toLocaleDateString(),
         position: 100,
       });
@@ -128,12 +135,12 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
   }, [memories, profile]);
 
 
-  if (memories.length === 0 || !lifeSummary) {
+  if (!narrative) {
     return (
       <Card className="h-full modern-card border-[1.5px] border-black p-8 flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-white animate-fade-in">
-        <h3 className="text-2xl font-semibold text-foreground mb-4">Your Living Archive</h3>
+        <h3 className="text-2xl font-semibold text-foreground mb-4">Your Story</h3>
         <p className="text-muted-foreground text-center max-w-sm">
-          Start adding memories to see your life summary
+          Complete your profile and add memories to see your journey
         </p>
       </Card>
     );
@@ -141,76 +148,40 @@ const StoryMap = ({ memories, profile }: StoryMapProps) => {
 
   return (
     <Card className="h-full modern-card border-[1.5px] border-black p-8 bg-gradient-to-br from-gray-50 to-white animate-fade-in shadow-elegant overflow-auto">
-      <div className="flex flex-col h-full space-y-8">
+      <div className="flex flex-col space-y-8">
         {/* Title */}
         <div>
-          <h3 className="text-2xl font-semibold text-foreground mb-2">Where You Are</h3>
-          <p className="text-sm text-muted-foreground italic">{lifeSummary.journeyPhase}</p>
+          <h3 className="text-3xl font-semibold text-foreground mb-2">Your Story So Far</h3>
+          <p className="text-sm text-muted-foreground italic">A journey of growth and possibility</p>
         </div>
 
-        {/* Life Summary Stats */}
+        {/* Opening - Birth & Beginning */}
         <div className="space-y-4">
-          {lifeSummary.age && (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Calendar className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Your Journey</p>
-                <p className="text-base text-muted-foreground">
-                  {lifeSummary.age} years of life
-                  {profile?.birth_place && ` • Born in ${profile.birth_place}`}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Heart className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Memories Preserved</p>
-              <p className="text-base text-muted-foreground">
-                {lifeSummary.totalMemories} {lifeSummary.totalMemories === 1 ? 'memory' : 'memories'} across {lifeSummary.yearsRecorded} {lifeSummary.yearsRecorded === 1 ? 'year' : 'years'}
-              </p>
-            </div>
-          </div>
-
-          {profile?.current_location && (
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <MapPin className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Current Location</p>
-                <p className="text-base text-muted-foreground">{profile.current_location}</p>
-              </div>
-            </div>
-          )}
+          <p className="text-base leading-relaxed text-foreground">
+            {narrative.opening}
+          </p>
         </div>
 
-        {/* Top Themes */}
-        {lifeSummary.topThemes.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-foreground">Your Story Themes</h4>
-            <div className="flex flex-wrap gap-2">
-              {lifeSummary.topThemes.map((theme, index) => (
-                <span
-                  key={index}
-                  className="px-3 py-1.5 bg-primary/10 text-primary text-sm rounded-full border border-primary/20"
-                >
-                  {theme}
-                </span>
+        {/* Major Milestones */}
+        {narrative.milestones.length > 0 && (
+          <div className="space-y-4">
+            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            <div className="space-y-3">
+              {narrative.milestones.map((milestone, index) => (
+                <p key={index} className="text-base leading-relaxed text-foreground pl-4 border-l-2 border-primary/30">
+                  {milestone}
+                </p>
               ))}
             </div>
+            <div className="h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
           </div>
         )}
 
-        {/* Recent Activity */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-semibold text-foreground">Recent Activity</h4>
-          <p className="text-base text-muted-foreground">{lifeSummary.recentActivity}</p>
+        {/* Closing - Forward Looking */}
+        <div className="space-y-4">
+          <p className="text-base leading-relaxed text-foreground font-medium">
+            {narrative.closing}
+          </p>
         </div>
 
         {/* Milestone Timeline */}
