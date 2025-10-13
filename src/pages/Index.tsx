@@ -56,7 +56,10 @@ const Index = () => {
       if (error) throw error;
 
       console.log('✅ Memory saved to database:', data);
-      toast({ title: 'Memory saved', description: parameters.title });
+      toast({ 
+        title: 'Memory saved', 
+        description: `"${parameters.title}" - Check your Timeline to see it!` 
+      });
       return 'Memory saved successfully';
     } catch (error) {
       console.error('❌ Failed to save memory:', error);
@@ -278,6 +281,13 @@ Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
 
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: agentInstructions,
+            }
+          },
+        },
       });
 
       await Promise.race([startPromise, timeoutPromise]);

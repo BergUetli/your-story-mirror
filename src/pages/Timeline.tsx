@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -100,34 +100,43 @@ const Timeline = () => {
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
 
+  const fetchTimelineData = async () => {
+    if (!user?.id) {
+      setTimelineLoading(false);
+      return;
+    }
+
+    try {
+      setTimelineLoading(true);
+      const { data, error } = await supabase.functions.invoke('orchestrator', {
+        body: {
+          userId: user.id,
+          action: 'get_timeline'
+        }
+      });
+
+      if (error) throw error;
+      
+      setTimelineMemories(data.memories || []);
+      setTimelineProfile(data.profile || null);
+    } catch (error) {
+      console.error('Failed to fetch timeline data:', error);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchTimelineData = async () => {
-      if (!user?.id) {
-        setTimelineLoading(false);
-        return;
-      }
-
-      try {
-        setTimelineLoading(true);
-        const { data, error } = await supabase.functions.invoke('orchestrator', {
-          body: {
-            userId: user.id,
-            action: 'get_timeline'
-          }
-        });
-
-        if (error) throw error;
-        
-        setTimelineMemories(data.memories || []);
-        setTimelineProfile(data.profile || null);
-      } catch (error) {
-        console.error('Failed to fetch timeline data:', error);
-      } finally {
-        setTimelineLoading(false);
-      }
-    };
-
     fetchTimelineData();
+  }, [user?.id]);
+
+  // Poll for updates every 10 seconds when on timeline page
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchTimelineData();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   const timelineData = createTimelineData(timelineMemories, timelineProfile);
@@ -291,6 +300,16 @@ const Timeline = () => {
           
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchTimelineData}
+              disabled={timelineLoading}
+              className="font-light"
+              title="Refresh timeline"
+            >
+              <RefreshCw className={`w-4 h-4 ${timelineLoading ? 'animate-spin' : ''}`} />
+            </Button>
             <span className="text-xs text-muted-foreground font-light mr-2">
               Ctrl+Wheel to zoom • Shift+Drag to pan
             </span>
