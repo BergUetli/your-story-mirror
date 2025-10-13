@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Heart, Clock, User } from 'lucide-react';
 import databaseMemoryService, { DatabaseMemory } from '@/services/databaseMemoryService';
-import Solon from '@/components/Solon';
+import Solin from '@/components/Solin';
 
 const Visitor = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -137,8 +137,8 @@ const Visitor = () => {
         ))}
       </div>
 
-      {/* Floating Solon companion for visitor mode */}
-      <Solon 
+      {/* Floating Solin companion for visitor mode */}
+      <Solin 
         mode="visitor" 
         visitorPermissions={['public']}
         defaultView="chat"

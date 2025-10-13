@@ -5,21 +5,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, MicOff, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { solonService, type SolonResponse, type Memory } from '@/services/solonService';
+import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import solonConfig from '@/agents/solon.json';
+import solinConfig from '@/agents/solin.json';
 
-interface SolonProps {
+interface SolinProps {
   mode?: 'user' | 'visitor';
   visitorPermissions?: string[];
   defaultView?: 'chat' | 'voice';
 }
 
-const Solon: React.FC<SolonProps> = ({ 
+const Solin: React.FC<SolinProps> = ({ 
   mode = 'user', 
   visitorPermissions = ['public'],
   defaultView = 'voice'
@@ -29,10 +29,10 @@ const Solon: React.FC<SolonProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [message, setMessage] = useState('');
-  const [response, setResponse] = useState<SolonResponse | null>(null);
+  const [response, setResponse] = useState<SolinResponse | null>(null);
   const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solon', content: string}>>([]);
+  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solin', content: string}>>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isConversationActive, setIsConversationActive] = useState(false);
   const [lastResponseTime, setLastResponseTime] = useState<number>(0);
@@ -89,10 +89,10 @@ const Solon: React.FC<SolonProps> = ({
     };
   }, [transcript, isConversationActive, isLoading, isSpeaking]);
 
-  // Auto-restart listening after Solon finishes speaking
+  // Auto-restart listening after Solin finishes speaking
   useEffect(() => {
     if (isConversationActive && !isSpeaking && !isLoading && !isListening) {
-      // Longer delay to prevent interrupting Solon
+      // Longer delay to prevent interrupting Solin
       const timer = setTimeout(() => {
         if (isConversationActive && speechSupported && !isSpeaking) {
           startListening();
@@ -110,7 +110,7 @@ const Solon: React.FC<SolonProps> = ({
     lastTranscriptRef.current = userMessage;
     
     // Check for end conversation command
-    const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solon', 'stop conversation'];
+    const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solin', 'stop conversation'];
     const isEndCommand = endCommands.some(cmd => 
       userMessage.toLowerCase().includes(cmd.toLowerCase())
     );
@@ -132,7 +132,7 @@ const Solon: React.FC<SolonProps> = ({
       const relevantMemories = getRelevantMemories();
       
       // Create more dynamic responses in demo mode
-      const solonResponse = await solonService.chat({
+      const solinResponse = await solinService.chat({
         mode,
         message: userMessage,
         memories: relevantMemories,
@@ -140,11 +140,11 @@ const Solon: React.FC<SolonProps> = ({
         conversationHistory: newHistory, // Pass conversation context
       });
       
-      setResponse(solonResponse);
+      setResponse(solinResponse);
       setLastResponseTime(Date.now());
       
-      // Add Solon's response to conversation history
-      const updatedHistory = [...newHistory, { role: 'solon' as const, content: solonResponse.reflection }];
+      // Add Solin's response to conversation history
+      const updatedHistory = [...newHistory, { role: 'solin' as const, content: solinResponse.reflection }];
       setConversationHistory(updatedHistory);
       
       // Reset transcript after processing
@@ -152,7 +152,7 @@ const Solon: React.FC<SolonProps> = ({
       setTranscriptBuffer('');
       
       // Speak the response
-      await speakResponse(solonResponse.reflection);
+      await speakResponse(solinResponse.reflection);
       
     } catch (error) {
       console.error('Conversation error:', error);
@@ -170,7 +170,7 @@ const Solon: React.FC<SolonProps> = ({
     
     try {
       setIsSpeaking(true);
-      console.log('🎤 Solon starting to speak:', text.substring(0, 50) + '...');
+      console.log('🎤 Solin starting to speak:', text.substring(0, 50) + '...');
       
       // Use selected voice from dropdown, not hardcoded config
       const voiceOptions = {
@@ -182,14 +182,14 @@ const Solon: React.FC<SolonProps> = ({
         }
       };
       
-      console.log('🎤 Using Solon voice settings:', voiceOptions);
+      console.log('🎤 Using Solin voice settings:', voiceOptions);
       console.log('🎵 About to call voiceService.speak...');
       
       await voiceService.speak(text, voiceOptions);
-      console.log('✅ Solon finished speaking successfully');
+      console.log('✅ Solin finished speaking successfully');
       
     } catch (error) {
-      console.error('❌ Solon speech error:', error);
+      console.error('❌ Solin speech error:', error);
       console.error('❌ Error details:', {
         message: error.message,
         stack: error.stack,
@@ -206,7 +206,7 @@ const Solon: React.FC<SolonProps> = ({
         });
       }
     } finally {
-      console.log('🏁 Solon speech attempt completed, setting isSpeaking to false');
+      console.log('🏁 Solin speech attempt completed, setting isSpeaking to false');
       setIsSpeaking(false);
     }
   };
@@ -266,7 +266,7 @@ const Solon: React.FC<SolonProps> = ({
       try {
         // Create conversation text from history
         const conversationText = conversationHistory
-          .map(entry => `${entry.role === 'user' ? 'You' : 'Solon'}: ${entry.content}`)
+          .map(entry => `${entry.role === 'user' ? 'You' : 'Solin'}: ${entry.content}`)
           .join('\n\n');
 
         // Generate title and content from conversation
@@ -279,7 +279,7 @@ const Solon: React.FC<SolonProps> = ({
         const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
         const content = userMessages.length > 1 
           ? userMessages.join(' ') 
-          : userMessages[0] || 'A conversation with Solon about memories';
+          : userMessages[0] || 'A conversation with Solin about memories';
 
         // Save the memory with conversation
         const savedMemory = await addMemoryFromConversation(
@@ -388,9 +388,9 @@ const Solon: React.FC<SolonProps> = ({
 
   const getGreeting = () => {
     if (mode === 'visitor') {
-      return "I'm Solon, the memory keeper for this sanctuary. I can share the stories that have been entrusted to me.";
+      return "I'm Solin, the memory keeper for this sanctuary. I can share the stories that have been entrusted to me.";
     }
-    return "Hello, I'm Solon, your memory companion. I'm here to help you reflect on your experiences and preserve what matters most.";
+    return "Hello, I'm Solin, your memory companion. I'm here to help you reflect on your experiences and preserve what matters most.";
   };
 
   // Get conversation status text
@@ -410,7 +410,7 @@ const Solon: React.FC<SolonProps> = ({
 
   return (
     <>
-      {/* Floating Solon Button */}
+      {/* Floating Solin Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -426,7 +426,7 @@ const Solon: React.FC<SolonProps> = ({
         <Sparkles className="h-6 w-6 text-white" />
       </Button>
 
-      {/* Solon Chat Interface */}
+      {/* Solin Chat Interface */}
       {isOpen && (
         <Card className={cn(
           "fixed inset-4 md:bottom-20 md:right-4 md:left-auto md:top-auto md:w-96 md:max-h-[600px] z-50",
@@ -442,7 +442,7 @@ const Solon: React.FC<SolonProps> = ({
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Solon</h3>
+                <h3 className="font-semibold text-foreground">Solin</h3>
                 <p className="text-xs text-muted-foreground">
                   {mode === 'visitor' ? 'Memory Keeper' : 'Your Companion'}
                   {isConversationActive && ' • Active'}
@@ -543,7 +543,7 @@ const Solon: React.FC<SolonProps> = ({
                         {/* Instructions */}
                         {!isConversationActive && conversationHistory.length === 0 && (
                           <div className="text-sm text-muted-foreground max-w-sm">
-                            Click the circle to start a natural conversation with Solon. 
+                            Click the circle to start a natural conversation with Solin. 
                             I'll listen and respond automatically.
                           </div>
                         )}
@@ -693,4 +693,4 @@ const Solon: React.FC<SolonProps> = ({
   );
 };
 
-export default Solon;
+export default Solin;

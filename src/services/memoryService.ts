@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { Memory } from './solonService';
+import type { Memory } from './solinService';
 
 interface MemoryWithConversation extends Memory {
   conversation_text?: string;

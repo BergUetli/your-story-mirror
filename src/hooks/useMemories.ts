@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { memoryService, type MemoryWithConversation } from '@/services/memoryService';
-import type { Memory } from '@/services/solonService';
+import type { Memory } from '@/services/solinService';
 
 // Mock memories for fallback
 const mockMemories: MemoryWithConversation[] = [

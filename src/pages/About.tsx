@@ -23,7 +23,7 @@ const About = () => {
         </h1>
         
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          Solon One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
+          Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
         </p>
       </div>
 
@@ -103,7 +103,7 @@ const About = () => {
 
         <div className="text-center mt-12">
           <p className="text-xl text-primary font-semibold">
-            Solon One is the real-world continuation of these visions—not fiction, but technology with purpose.
+            Solin One is the real-world continuation of these visions—not fiction, but technology with purpose.
           </p>
         </div>
       </div>

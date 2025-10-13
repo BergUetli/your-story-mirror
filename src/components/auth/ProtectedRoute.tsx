@@ -119,7 +119,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               Welcome to Your Memory Sanctuary
             </h1>
             <p className="text-muted-foreground">
-              Sign in to access your personal collection of memories and conversations with Solon.
+              Sign in to access your personal collection of memories and conversations with Solin.
             </p>
           </div>
           

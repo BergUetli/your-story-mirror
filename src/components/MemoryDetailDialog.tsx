@@ -247,7 +247,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
           {memory.conversation_text && (
             <details className="border-t pt-4">
               <summary className="text-sm font-medium cursor-pointer hover:text-primary">
-                View conversation with Solon
+                View conversation with Solin
               </summary>
               <div className="mt-3 p-4 bg-muted/50 rounded-lg text-sm whitespace-pre-line">
                 {memory.conversation_text}

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import solonConfig from '@/agents/solon.json';
+import solinConfig from '@/agents/solin.json';
 
 interface Memory {
   id?: string;
@@ -9,26 +9,26 @@ interface Memory {
   recipient?: string;
 }
 
-interface SolonResponse {
+interface SolinResponse {
   quote: string;
   reflection: string;
   followUp: string;
 }
 
-interface SolonRequest {
+interface SolinRequest {
   mode: 'user' | 'visitor';
   message?: string;
   memories: Memory[];
   visitorPermissions?: string[];
-  conversationHistory?: Array<{role: 'user' | 'solon', content: string}>;
+  conversationHistory?: Array<{role: 'user' | 'solin', content: string}>;
 }
 
-class SolonService {
+class SolinService {
   // Use shared Supabase client instead of creating a new one
   private supabase = supabase;
   private isSupabaseAvailable = true;
 
-  async chat(request: SolonRequest): Promise<SolonResponse> {
+  async chat(request: SolinRequest): Promise<SolinResponse> {
     // Try to use the real Supabase function first
     if (!this.isSupabaseAvailable || !this.supabase) {
       console.warn('Supabase not configured, using fallback responses');
@@ -36,16 +36,16 @@ class SolonService {
     }
 
     try {
-      console.log('🤖 Calling Solon AI with agent config:', {
-        model: solonConfig.model,
-        voice: solonConfig.voice,
+      console.log('🤖 Calling Solin AI with agent config:', {
+        model: solinConfig.model,
+        voice: solinConfig.voice,
         messagePreview: request.message?.substring(0, 50) + '...'
       });
 
-      const { data, error } = await this.supabase.functions.invoke('solon-ai', {
+      const { data, error } = await this.supabase.functions.invoke('solin-ai', {
         body: {
           ...request,
-          agentConfig: solonConfig
+          agentConfig: solinConfig
         }
       });
 
@@ -53,14 +53,14 @@ class SolonService {
         throw error;
       }
 
-      return data as SolonResponse;
+      return data as SolinResponse;
     } catch (error) {
-      console.error('Error calling Solon AI:', error);
+      console.error('Error calling Solin AI:', error);
       return this.getFallbackResponse(request);
     }
   }
 
-  private getFallbackResponse(request: SolonRequest): SolonResponse {
+  private getFallbackResponse(request: SolinRequest): SolinResponse {
     const { mode, message, memories, conversationHistory = [] } = request;
     
     // Analyze the user's message for more contextual responses
@@ -172,5 +172,5 @@ class SolonService {
   }
 }
 
-export const solonService = new SolonService();
-export type { Memory, SolonResponse };
+export const solinService = new SolinService();
+export type { Memory, SolinResponse };

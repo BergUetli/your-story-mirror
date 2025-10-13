@@ -215,7 +215,7 @@ const Index = () => {
     try {
       const q = parameters?.query?.trim() ?? '';
       const maxResults = parameters?.limit ?? 5;
-      console.log('🔍 Solon searching memories:', q, 'limit:', maxResults);
+      console.log('🔍 Solin searching memories:', q, 'limit:', maxResults);
       if (!user?.id) return 'No user session; unable to access memories.';
 
       let query = supabase
@@ -254,7 +254,7 @@ const Index = () => {
   const getMemoryDetailsTool = useCallback(async (parameters: { memory_id: string }) => {
     try {
       const memoryId = parameters?.memory_id?.trim();
-      console.log('📖 Solon requesting details for memory:', memoryId);
+      console.log('📖 Solin requesting details for memory:', memoryId);
       if (!user?.id) return 'No user session; unable to access memory details.';
       if (!memoryId) return 'Memory ID is required.';
 
@@ -284,7 +284,7 @@ const Index = () => {
   }, [user]);
 
   // Static agent instructions - no memory context to avoid filling context window
-  const agentInstructions = `You are Solon, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
+  const agentInstructions = `You are Solin, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
 
 1. save_memory: Use this to save new memories when users share stories. Include title, content, and optionally tags, date, and location.
 2. retrieve_memory: Use this to search through the user's existing memories when they ask about past conversations or want to recall something.
@@ -487,19 +487,19 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
     {
       icon: Sparkles,
       title: 'AI Companion',
-      description: 'Solon helps reflect on memories and guide conversations.',
+      description: 'Solin helps reflect on memories and guide conversations.',
     }
   ];
 
-  // Always show Solon interface (auth disabled)
-  const shouldShowSolonInterface = true;
+  // Always show Solin interface (auth disabled)
+  const shouldShowSolinInterface = true;
 
-  if (shouldShowSolonInterface) {
+  if (shouldShowSolinInterface) {
     return (
       <div className="min-h-screen bg-background overflow-hidden relative">
         
         <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
-          {/* Left Side - Solon Orb - Framed with gradient panel */}
+          {/* Left Side - Solin Orb - Framed with gradient panel */}
           <div 
             className="flex-1 max-w-xl flex flex-col items-center justify-center space-y-6 animate-fade-in p-8 rounded-lg border-[1.5px]"
             style={{ 
@@ -525,10 +525,10 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
 
               <div className="text-center space-y-3">
                 <p className="text-base font-semibold text-foreground">
-                  {isConnecting ? 'Connecting to Solon...' : isConnected ? (isSpeaking ? 'Solon is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
+                  {isConnecting ? 'Connecting to Solin...' : isConnected ? (isSpeaking ? 'Solin is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
                 </p>
                 <p className="text-sm text-muted-foreground max-w-md">
-                  {!isConnected && 'Click the microphone to start a natural conversation with Solon'}
+                  {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
                 </p>
                 {isConnected ? (
                   <Button 
@@ -562,7 +562,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
               <h2 className="text-lg font-bold text-foreground">
                 Live Transcript
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">Real-time conversation with Solon</p>
+              <p className="text-sm text-muted-foreground mt-1">Real-time conversation with Solin</p>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-2">
               {conversationMessages.length === 0 ? (
@@ -587,7 +587,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                       <div className={`text-xs font-bold mb-1 ${
                         msg.role === 'user' ? 'text-white/70' : 'opacity-70'
                       }`}>
-                        {msg.role === 'user' ? 'You' : 'Solon'}
+                        {msg.role === 'user' ? 'You' : 'Solin'}
                       </div>
                       <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {msg.text}

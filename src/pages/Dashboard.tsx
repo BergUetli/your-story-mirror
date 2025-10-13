@@ -53,7 +53,7 @@ const Dashboard = () => {
 
           {/* Action Cards */}
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Talk to Solon */}
+            {/* Talk to Solin */}
             <Link to="/">
               <Card className="modern-card border-border/50 h-full group cursor-pointer">
                 <CardContent className="p-10 space-y-6">
@@ -62,7 +62,7 @@ const Dashboard = () => {
                   </div>
                   <div className="space-y-2">
                     <h3 className="text-2xl font-semibold flex items-center justify-between">
-                      Talk to Solon
+                      Talk to Solin
                       <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                     </h3>
                     <p className="text-muted-foreground">

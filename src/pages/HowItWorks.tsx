@@ -30,9 +30,9 @@ const HowItWorks = () => {
             <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
               Step 1
             </div>
-            <h2 className="text-5xl font-bold">Talk to Solon</h2>
+            <h2 className="text-5xl font-bold">Talk to Solin</h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
-              Start a natural conversation with Solon, your AI companion. Share stories, memories, life lessons, and wisdom. No forms, no typing—just speak naturally as if talking to a trusted friend.
+              Start a natural conversation with Solin, your AI companion. Share stories, memories, life lessons, and wisdom. No forms, no typing—just speak naturally as if talking to a trusted friend.
             </p>
             <div className="pt-4">
               <div className="flex items-start gap-4 p-4 rounded-xl bg-card/50">
@@ -40,7 +40,7 @@ const HowItWorks = () => {
                 <div>
                   <h4 className="font-semibold mb-2">Voice-First Experience</h4>
                   <p className="text-sm text-muted-foreground">
-                    Solon listens and responds in real-time, guiding you through meaningful conversations that capture your authentic voice and personality.
+                    Solin listens and responds in real-time, guiding you through meaningful conversations that capture your authentic voice and personality.
                   </p>
                 </div>
               </div>
