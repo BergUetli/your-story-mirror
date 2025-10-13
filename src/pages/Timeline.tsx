@@ -563,12 +563,10 @@ const Timeline = () => {
                           return (
                             <Card
                               key={memory.id}
-                              className={`timeline-card transition-all duration-500 cursor-pointer ${
+                              className={`timeline-card transition-all duration-500 cursor-pointer border ${
                                 materializingMemory === memory.id 
-                                  ? 'border-primary/40 scale-105' 
-                                  : isMajorMemory
-                                    ? 'border-white/20 hover:border-white/30'
-                                    : 'border-white/10 hover:border-white/20'
+                                  ? 'border-primary scale-105' 
+                                  : 'border-border hover:border-primary/50'
                               }`}
                               style={{
                                 boxShadow: materializingMemory === memory.id 
@@ -577,10 +575,10 @@ const Timeline = () => {
                               }}
                               onClick={() => setSelectedMemory(memory)}
                             >
-                              <CardContent className="p-3">
+                              <CardContent className="p-3 bg-card">
                                 <div className="flex items-start justify-between gap-3">
                                   <div className="flex-1 min-w-0 space-y-2">
-                                    <div className="text-xs text-white/60 flex items-center gap-2 flex-wrap font-light">
+                                    <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap font-light">
                                       <Calendar className="w-3 h-3 flex-shrink-0" />
                                       <span className="truncate">
                                         {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
@@ -597,26 +595,21 @@ const Timeline = () => {
                                         </>
                                       )}
                                     </div>
-                                    <h3 className="text-sm font-medium text-white line-clamp-1">
+                                    <h3 className="text-sm font-medium text-card-foreground">
                                       {memory.title}
                                     </h3>
-                                    {memory.text && (
-                                      <p className="text-xs text-white/70 line-clamp-2 font-light leading-relaxed">
-                                        {memory.text}
-                                      </p>
-                                    )}
                                     {memory.tags && memory.tags.length > 0 && (
-                                      <div className="flex flex-wrap gap-1 mt-1">
+                                      <div className="flex flex-wrap gap-1">
                                         {memory.tags.slice(0, 3).map((tag: string, idx: number) => (
                                           <span
                                             key={idx}
-                                            className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-white/80 font-light"
+                                            className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-light"
                                           >
                                             {tag}
                                           </span>
                                         ))}
                                         {memory.tags.length > 3 && (
-                                          <span className="text-[10px] px-2 py-0.5 text-white/60">
+                                          <span className="text-[10px] px-2 py-0.5 text-muted-foreground">
                                             +{memory.tags.length - 3}
                                           </span>
                                         )}
@@ -628,7 +621,7 @@ const Timeline = () => {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6 text-white/60 hover:text-white hover:bg-white/10"
+                                      className="h-6 w-6 text-muted-foreground hover:text-card-foreground hover:bg-muted"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleEditMemory(memory.id);
@@ -640,7 +633,7 @@ const Timeline = () => {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6 text-white/60 hover:text-red-400 hover:bg-red-400/10"
+                                      className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         handleDeleteMemory(memory.id, memory.title);
