@@ -126,16 +126,16 @@ const Index = () => {
       console.log('🔍 Solon requesting memory:', q);
       if (!user?.id) return 'No user session; unable to access memories.';
 
-      // Simple keyword search across title and text; optimized by recent indexes
+      // Simple keyword search across title only for efficiency
       const escaped = q.replace(/%/g, '%25').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const orFilter = `title.ilike.%${escaped}%,text.ilike.%${escaped}%`;
       const { data, error } = await supabase
         .from('memories')
-        .select('id,title,text,created_at')
+        .select('id,title,created_at')
         .eq('user_id', user.id)
         .or(orFilter)
         .order('created_at', { ascending: false })
-        .limit(3);
+        .limit(2);
 
       if (error) {
         console.error('Supabase retrieve error:', error);
@@ -143,60 +143,26 @@ const Index = () => {
       }
       if (!data || data.length === 0) return 'No matching memories found.';
 
-      const summarize = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 160);
+      // Return only titles and dates - details only if user asks
       const result = data
-        .map((m, i) => `${i + 1}. ${m.title} — ${summarize(m.text)} (${new Date(m.created_at as string).toLocaleDateString()})`)
-        .join(' | ');
-      return `Matches: ${result}`;
+        .map((m, i) => `${i + 1}. "${m.title}" (${new Date(m.created_at as string).toLocaleDateString()})`)
+        .join(', ');
+      return `Found ${data.length} memories: ${result}. Ask user if they want details about any.`;
     } catch (error) {
       console.error('Error retrieving memory:', error);
       return 'Unable to retrieve memories at this time.';
     }
   }, [user]);
 
-  // Build memory context for agent instructions
-  const [agentInstructions, setAgentInstructions] = useState<string>('');
-
-  useEffect(() => {
-    const buildInstructions = async () => {
-      const basePrompt = `You are Solon, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
+  // Static agent instructions - no memory context to avoid filling context window
+  const agentInstructions = `You are Solon, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
 
 1. save_memory: Use this to save new memories when users share stories. Include title, content, and optionally tags, date, and location.
 2. retrieve_memory: Use this to search through the user's existing memories when they ask about past conversations or want to recall something.
 
-When users ask about previous conversations or memories, use the retrieve_memory tool to search for relevant information. You DO have access to their past memories through this tool.
+IMPORTANT: When users ask about memories, use retrieve_memory - it returns only titles. If the user wants details about a specific memory, tell them you'll add a detail retrieval feature soon, but for now you can help them create new memories.
 
-Ask thoughtful, open-ended questions to help them explore meaningful moments.`;
-
-      if (!user?.id) {
-        setAgentInstructions(basePrompt);
-        return;
-      }
-
-      try {
-        const { data: mems, error: memErr } = await supabase
-          .from('memories')
-          .select('title,text,created_at')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (!memErr && mems && mems.length) {
-          const clip = (s: string) => (s || '').replace(/\s+/g, ' ').slice(0, 120);
-          const ctxItems = mems.map(m => `${m.title} — ${clip(m.text)}`).join(' | ');
-          const memoryContext = ctxItems.slice(0, 800);
-          setAgentInstructions(`${basePrompt}\n\nRecent memories you can reference: ${memoryContext}\n\nWhen users ask about their memories, use the retrieve_memory tool to get more details.`);
-        } else {
-          setAgentInstructions(basePrompt);
-        }
-      } catch (e) {
-        console.warn('⚠️ Failed to build memory context:', e);
-        setAgentInstructions(basePrompt);
-      }
-    };
-
-    buildInstructions();
-  }, [user?.id]);
+Keep responses brief and conversational. Ask one thoughtful, open-ended question at a time to help them explore meaningful moments.`;
 
   const conversationOptionsRef = useRef({
     clientTools: { 
