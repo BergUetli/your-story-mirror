@@ -116,6 +116,7 @@ const Timeline = () => {
   const [timelineMemories, setTimelineMemories] = useState<any[]>([]);
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
+  const [memoryArtifacts, setMemoryArtifacts] = useState<Record<string, any>>({});
 
   const fetchTimelineData = async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000';
@@ -153,6 +154,33 @@ const Timeline = () => {
       
       setTimelineMemories(memories || []);
       setTimelineProfile(profiles || null);
+
+      // Fetch artifacts for all memories
+      if (memories && memories.length > 0) {
+        const artifactsMap: Record<string, any> = {};
+        
+        for (const memory of memories) {
+          const { data: artifactLinks } = await supabase
+            .from('memory_artifacts')
+            .select(`
+              artifact_id,
+              artifacts (
+                id,
+                artifact_type,
+                storage_path,
+                file_name
+              )
+            `)
+            .eq('memory_id', memory.id)
+            .limit(1);
+          
+          if (artifactLinks && artifactLinks.length > 0 && artifactLinks[0].artifacts) {
+            artifactsMap[memory.id] = artifactLinks[0].artifacts;
+          }
+        }
+        
+        setMemoryArtifacts(artifactsMap);
+      }
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {
@@ -576,7 +604,20 @@ const Timeline = () => {
                               onClick={() => setSelectedMemory(memory)}
                             >
                               <CardContent className="p-2 bg-card">
-                                <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {/* Thumbnail */}
+                                  {memoryArtifacts[memory.id]?.artifact_type === 'image' && (
+                                    <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
+                                      <img
+                                        src={supabase.storage
+                                          .from('memory-images')
+                                          .getPublicUrl(memoryArtifacts[memory.id].storage_path).data.publicUrl}
+                                        alt=""
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  )}
+                                  
                                   <div className="flex-1 min-w-0">
                                     <h3 className="text-xs font-medium text-card-foreground truncate">
                                       {memory.title}
