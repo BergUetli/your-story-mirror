@@ -523,7 +523,8 @@ const Timeline = () => {
                   : timelineData[0]?.year || new Date().getFullYear();
                 const currentYear = new Date().getFullYear();
                 const totalYears = currentYear - birthYear;
-                return `${totalYears * 80 + 200}px`; // Add padding
+                const basePixelsPerYear = 25; // Compact by default
+                return `${totalYears * basePixelsPerYear * zoomLevel + 200}px`;
               })()
             }}
           >
@@ -534,7 +535,8 @@ const Timeline = () => {
                 : timelineData[0]?.year || new Date().getFullYear();
               const currentYear = new Date().getFullYear();
               const totalYears = currentYear - birthYear;
-              const pixelsPerYear = 80; // Base spacing per year
+              const basePixelsPerYear = 25; // Compact base spacing
+              const pixelsPerYear = basePixelsPerYear * zoomLevel; // Scale with zoom
               const totalHeight = totalYears * pixelsPerYear;
 
               return (
