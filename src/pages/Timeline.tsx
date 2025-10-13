@@ -543,7 +543,7 @@ const Timeline = () => {
                 <>
                   {/* Timeline Line - full height based on total years */}
                   <div 
-                    className="absolute left-8 top-0 w-px bg-gradient-to-b from-primary/30 via-primary/20 to-primary/10"
+                    className="absolute left-8 top-0 w-1 bg-black"
                     style={{ height: `${totalHeight}px` }}
                   />
 
