@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
+import StoryMap from '@/components/StoryMap';
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -445,25 +446,26 @@ const Timeline = () => {
         </div>
       </nav>
 
-      {/* Main Timeline Container */}
-      <div 
-        ref={containerRef}
-        className="relative overflow-auto"
-        style={{ height: 'calc(100vh - 60px)' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div
-          className="max-w-5xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
-          style={{ 
-            transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-            transformOrigin: '0 0',
-            cursor: isDragging ? 'grabbing' : 'default',
-            userSelect: isDragging ? 'none' : 'auto'
-          }}
+      {/* Main Container with Two Panels */}
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-60px)]">
+        {/* Left: Timeline (60%) */}
+        <div 
+          ref={containerRef}
+          className="relative overflow-auto lg:w-[60%] w-full"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
         >
+          <div
+            className="max-w-4xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
+            style={{ 
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+              transformOrigin: '0 0',
+              cursor: isDragging ? 'grabbing' : 'default',
+              userSelect: isDragging ? 'none' : 'auto'
+            }}
+          >
         {profileLoading || isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground animate-pulse">Loading your timeline...</div>
@@ -639,6 +641,12 @@ const Timeline = () => {
             })}
           </div>
         )}
+          </div>
+        </div>
+
+        {/* Right: Story Map (40%) */}
+        <div className="lg:w-[40%] w-full lg:border-l-[1.5px] border-section-border bg-background p-8 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] overflow-auto">
+          <StoryMap memories={timelineMemories} profile={timelineProfile} />
         </div>
       </div>
 
