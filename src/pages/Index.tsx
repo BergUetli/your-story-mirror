@@ -123,10 +123,10 @@ const Index = () => {
   const retrieveMemoryTool = useCallback(async (parameters: { query: string }) => {
     try {
       const q = parameters?.query?.trim() ?? '';
-      console.log('🔍 Solon requesting memory:', q);
+      console.log('🔍 Solon searching memories:', q);
       if (!user?.id) return 'No user session; unable to access memories.';
 
-      // Simple keyword search across title only for efficiency
+      // Keyword search across title and text
       const escaped = q.replace(/%/g, '%25').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
       const orFilter = `title.ilike.%${escaped}%,text.ilike.%${escaped}%`;
       const { data, error } = await supabase
@@ -135,7 +135,7 @@ const Index = () => {
         .eq('user_id', user.id)
         .or(orFilter)
         .order('created_at', { ascending: false })
-        .limit(2);
+        .limit(3);
 
       if (error) {
         console.error('Supabase retrieve error:', error);
@@ -143,14 +143,46 @@ const Index = () => {
       }
       if (!data || data.length === 0) return 'No matching memories found.';
 
-      // Return only titles and dates - details only if user asks
+      // Return titles with IDs so agent can request details
       const result = data
-        .map((m, i) => `${i + 1}. "${m.title}" (${new Date(m.created_at as string).toLocaleDateString()})`)
-        .join(', ');
-      return `Found ${data.length} memories: ${result}. Ask user if they want details about any.`;
+        .map((m, i) => `${i + 1}. "${m.title}" (ID: ${m.id}, ${new Date(m.created_at as string).toLocaleDateString()})`)
+        .join('\n');
+      return `Found ${data.length} matching memories:\n${result}\n\nTo get full details, use get_memory_details with the ID.`;
     } catch (error) {
       console.error('Error retrieving memory:', error);
       return 'Unable to retrieve memories at this time.';
+    }
+  }, [user]);
+
+  const getMemoryDetailsTool = useCallback(async (parameters: { memory_id: string }) => {
+    try {
+      const memoryId = parameters?.memory_id?.trim();
+      console.log('📖 Solon requesting details for memory:', memoryId);
+      if (!user?.id) return 'No user session; unable to access memory details.';
+      if (!memoryId) return 'Memory ID is required.';
+
+      const { data, error } = await supabase
+        .from('memories')
+        .select('title,text,memory_date,memory_location,tags,created_at')
+        .eq('id', memoryId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Supabase details error:', error);
+        return 'Error retrieving memory details.';
+      }
+      if (!data) return 'Memory not found or access denied.';
+
+      let details = `Title: ${data.title}\n\nContent: ${data.text}`;
+      if (data.memory_date) details += `\n\nDate: ${new Date(data.memory_date).toLocaleDateString()}`;
+      if (data.memory_location) details += `\nLocation: ${data.memory_location}`;
+      if (data.tags && data.tags.length > 0) details += `\nTags: ${data.tags.join(', ')}`;
+      
+      return details;
+    } catch (error) {
+      console.error('Error getting memory details:', error);
+      return 'Unable to retrieve memory details at this time.';
     }
   }, [user]);
 
@@ -167,7 +199,8 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
   const conversationOptionsRef = useRef({
     clientTools: { 
       save_memory: saveMemoryTool,
-      retrieve_memory: retrieveMemoryTool 
+      retrieve_memory: retrieveMemoryTool,
+      get_memory_details: getMemoryDetailsTool
     },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
