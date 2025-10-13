@@ -35,16 +35,24 @@ const Index = () => {
   }) => {
     try {
       console.log('💾 Saving memory:', parameters);
+
+      // Validate required fields from tool call
+      const title = parameters?.title?.trim();
+      const content = parameters?.content?.trim();
+      if (!title || !content) {
+        console.warn('❗ Missing required fields for memory:', { title, hasContent: !!content });
+        return 'Missing required fields: title and content. Please ask the user to provide both before saving.';
+      }
       
       // Use placeholder UUID for testing without auth
       const userId = user?.id || '00000000-0000-0000-0000-000000000000';
 
       const { data, error } = await supabase
         .from('memories')
-        .insert([{
+        .insert([{ 
           user_id: userId,
-          title: parameters.title,
-          text: parameters.content,
+          title,
+          text: content,
           tags: parameters.tags ?? [],
           memory_date: parameters.memory_date || null,
           memory_location: parameters.memory_location || null,
