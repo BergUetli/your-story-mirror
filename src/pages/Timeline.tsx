@@ -541,9 +541,9 @@ const Timeline = () => {
 
               return (
                 <>
-                  {/* Timeline Line - full height based on total years */}
+                  {/* Timeline Line - centered */}
                   <div 
-                    className="absolute left-8 top-0 w-1 bg-black"
+                    className="absolute left-1/4 top-0 w-1 bg-black"
                     style={{ height: `${totalHeight}px` }}
                   />
 
@@ -564,158 +564,159 @@ const Timeline = () => {
                         className="absolute left-0 right-0"
                         style={{ top: `${topPosition}px` }}
                        >
-                   {/* Year Marker - Centered on timeline */}
-                   <div 
-                     className={`absolute top-2 ${markerSize} rounded-full ${
-                       isMajorYear 
-                         ? 'bg-black shadow-lg' 
-                         : 'bg-black/80 shadow-md'
-                     } transition-all duration-300`}
-                     style={{
-                       left: isMajorYear ? '26px' : '28px' // Center on 4px line
-                     }}
-                   />
+                        {/* Year Marker - Centered on timeline */}
+                        <div 
+                          className={`absolute top-2 ${markerSize} rounded-full ${
+                            isMajorYear 
+                              ? 'bg-black shadow-lg' 
+                              : 'bg-black/80 shadow-md'
+                          } transition-all duration-300`}
+                          style={{
+                            left: 'calc(25% - 8px)' // Center on timeline
+                          }}
+                        />
 
-                  <div className="ml-24 space-y-4">
-                    {/* Year Header */}
-                    <div 
-                      className="cursor-pointer group"
-                      onClick={() => toggleYear(yearData.year)}
-                    >
-                      <h2 className={`${yearSize} font-light ${spacing} text-foreground group-hover:text-primary transition-colors flex items-center gap-4 ${
-                        isMajorYear ? 'animate-scale-in font-normal' : ''
-                      }`}>
-                        {yearData.year}
-                        {yearData.isCurrentYear && (
-                          <span className="text-sm text-primary font-medium bg-primary/10 px-4 py-1.5 rounded-full">
-                            Today
-                          </span>
-                        )}
-                      </h2>
-                      
-                      {/* Life Events (Birth) - Always prominent */}
-                      {yearData.events.map((event, eventIndex) => (
-                        <div key={eventIndex} className="space-y-2 mb-4 animate-fade-in">
-                          <div className="text-2xl font-light text-foreground flex items-center gap-3">
-                            {event.event}
-                            {event.location && (
-                              <div className="flex items-center gap-2 text-base text-muted-foreground">
-                                <MapPin className="w-4 h-4" />
-                                {event.location}
+                        {/* Left Side: Year Label */}
+                        <div 
+                          className="absolute right-[76%] pr-4 cursor-pointer group"
+                          onClick={() => toggleYear(yearData.year)}
+                        >
+                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors ${
+                            isMajorYear ? 'animate-scale-in font-normal' : ''
+                          }`}>
+                            {yearData.year}
+                          </h2>
+                          {yearData.isCurrentYear && (
+                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block mt-1">
+                              Today
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Right Side: Content */}
+                        <div className="ml-[26%] space-y-4">
+                          {/* Life Events (Birth) - Always prominent */}
+                          {yearData.events.map((event, eventIndex) => (
+                            <div key={eventIndex} className="space-y-2 mb-4 animate-fade-in">
+                              <div className="text-2xl font-light text-foreground flex items-center gap-3">
+                                {event.event}
+                                {event.location && (
+                                  <div className="flex items-center gap-2 text-base text-muted-foreground">
+                                    <MapPin className="w-4 h-4" />
+                                    {event.location}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          {event.date && (
-                            <div className="text-xs text-muted-foreground flex items-center gap-2 font-light">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(event.date).toLocaleDateString('en-US', {
-                                month: 'long',
-                                day: 'numeric'
+                              {event.date && (
+                                <div className="text-xs text-muted-foreground flex items-center gap-2 font-light">
+                                  <Calendar className="w-3 h-3" />
+                                  {new Date(event.date).toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          
+                          {/* Show message for current year if no memories yet */}
+                          {yearData.isCurrentYear && yearData.memories.length === 0 && yearData.events.length === 0 && (
+                            <p className="text-sm text-muted-foreground italic animate-pulse font-light">
+                              Start recording memories to fill your timeline...
+                            </p>
+                          )}
+
+                          {/* Expanded Year Content */}
+                          {expandedYears.has(yearData.year) && yearData.memories.length > 0 && (
+                            <div className="space-y-2 animate-scale-in">
+                              {yearData.memories.map((memory) => {
+                                const isMajorMemory = memory.significance === 'major';
+                                return (
+                                  <Card
+                                    key={memory.id}
+                                    className={`timeline-card transition-all duration-500 cursor-pointer border ${
+                                      materializingMemory === memory.id 
+                                        ? 'border-primary scale-105' 
+                                        : 'border-border hover:border-primary/50'
+                                    }`}
+                                    style={{
+                                      boxShadow: materializingMemory === memory.id 
+                                        ? 'var(--shadow-elevated)' 
+                                        : 'var(--shadow-soft)'
+                                    }}
+                                    onClick={() => setSelectedMemory(memory)}
+                                  >
+                                    <CardContent className="p-2 bg-card">
+                                      <div className="flex items-center gap-2">
+                                        {/* Thumbnail */}
+                                        {memoryArtifacts[memory.id]?.artifact_type === 'image' && (
+                                          <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
+                                            <img
+                                              src={supabase.storage
+                                                .from('memory-images')
+                                                .getPublicUrl(memoryArtifacts[memory.id].storage_path).data.publicUrl}
+                                              alt=""
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                        )}
+                                        
+                                        <div className="flex-1 min-w-0">
+                                          <h3 className="text-xs font-medium text-card-foreground truncate">
+                                            {memory.title}
+                                          </h3>
+                                          <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                            <Calendar className="w-2.5 h-2.5 flex-shrink-0" />
+                                            <span className="truncate">
+                                              {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric'
+                                              })}
+                                            </span>
+                                            {memory.memory_location && (
+                                              <>
+                                                <span>•</span>
+                                                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                                                <span className="truncate">{memory.memory_location}</span>
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex gap-0.5 flex-shrink-0">
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5 text-muted-foreground hover:text-card-foreground hover:bg-muted"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleEditMemory(memory.id);
+                                            }}
+                                            title="View details"
+                                          >
+                                            <Edit className="w-2.5 h-2.5" />
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteMemory(memory.id, memory.title);
+                                            }}
+                                            title="Delete memory"
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
                               })}
                             </div>
                           )}
                         </div>
-                      ))}
-                      
-                      {/* Show message for current year if no memories yet */}
-                      {yearData.isCurrentYear && yearData.memories.length === 0 && yearData.events.length === 0 && (
-                        <p className="text-sm text-muted-foreground italic animate-pulse font-light">
-                          Start recording memories to fill your timeline...
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Expanded Year Content */}
-                    {expandedYears.has(yearData.year) && yearData.memories.length > 0 && (
-                      <div className="space-y-2 animate-scale-in">
-                        {yearData.memories.map((memory) => {
-                          const isMajorMemory = memory.significance === 'major';
-                          return (
-                            <Card
-                              key={memory.id}
-                              className={`timeline-card transition-all duration-500 cursor-pointer border ${
-                                materializingMemory === memory.id 
-                                  ? 'border-primary scale-105' 
-                                  : 'border-border hover:border-primary/50'
-                              }`}
-                              style={{
-                                boxShadow: materializingMemory === memory.id 
-                                  ? 'var(--shadow-elevated)' 
-                                  : 'var(--shadow-soft)'
-                              }}
-                              onClick={() => setSelectedMemory(memory)}
-                            >
-                              <CardContent className="p-2 bg-card">
-                                <div className="flex items-center gap-2">
-                                  {/* Thumbnail */}
-                                  {memoryArtifacts[memory.id]?.artifact_type === 'image' && (
-                                    <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
-                                      <img
-                                        src={supabase.storage
-                                          .from('memory-images')
-                                          .getPublicUrl(memoryArtifacts[memory.id].storage_path).data.publicUrl}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="text-xs font-medium text-card-foreground truncate">
-                                      {memory.title}
-                                    </h3>
-                                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                                      <Calendar className="w-2.5 h-2.5 flex-shrink-0" />
-                                      <span className="truncate">
-                                        {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric'
-                                        })}
-                                      </span>
-                                      {memory.memory_location && (
-                                        <>
-                                          <span>•</span>
-                                          <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
-                                          <span className="truncate">{memory.memory_location}</span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex gap-0.5 flex-shrink-0">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-5 w-5 text-muted-foreground hover:text-card-foreground hover:bg-muted"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditMemory(memory.id);
-                                      }}
-                                      title="View details"
-                                    >
-                                      <Edit className="w-2.5 h-2.5" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteMemory(memory.id, memory.title);
-                                      }}
-                                      title="Delete memory"
-                                    >
-                                      <Trash2 className="w-2.5 h-2.5" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
                       </div>
                     );
                   })}
