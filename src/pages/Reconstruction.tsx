@@ -41,11 +41,21 @@ const Reconstruction = () => {
   const [refinePrompt, setRefinePrompt] = useState("");
   const [recentReconstructions, setRecentReconstructions] = useState<RecentReconstruction[]>([]);
   
-  // Mock trained identities (would come from API/database)
-  const trainedIdentities = [
-    { id: "me_v1", name: "Me", status: "ready" },
-    { id: "dad_v1", name: "Dad", status: "ready" }
-  ];
+  // Load trained identities from localStorage
+  const trainedIdentities = (() => {
+    const stored = localStorage.getItem('trained_identities');
+    if (stored) {
+      try {
+        return JSON.parse(stored).filter((identity: any) => identity.status === 'ready');
+      } catch (e) {
+        console.error('Error loading trained identities:', e);
+      }
+    }
+    return [
+      { id: "me_v1", name: "Me", status: "ready" },
+      { id: "dad_v1", name: "Dad", status: "ready" }
+    ];
+  })();
 
   const handleReferenceImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

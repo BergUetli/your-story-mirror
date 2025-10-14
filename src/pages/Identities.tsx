@@ -26,17 +26,34 @@ const Identities = () => {
   const [isTraining, setIsTraining] = useState(false);
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [consentChecked, setConsentChecked] = useState(false);
-  const [trainedIdentities, setTrainedIdentities] = useState<TrainedIdentity[]>([
-    {
-      id: "1",
-      name: "Me",
-      modelId: "me_v1",
-      status: "ready",
-      trainedAt: new Date("2025-01-10"),
-      thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-      version: "v1"
+  
+  // Load trained identities from localStorage on mount
+  const [trainedIdentities, setTrainedIdentities] = useState<TrainedIdentity[]>(() => {
+    const stored = localStorage.getItem('trained_identities');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        // Convert date strings back to Date objects
+        return parsed.map((identity: any) => ({
+          ...identity,
+          trainedAt: new Date(identity.trainedAt)
+        }));
+      } catch (e) {
+        console.error('Error loading trained identities:', e);
+      }
     }
-  ]);
+    return [
+      {
+        id: "1",
+        name: "Me",
+        modelId: "me_v1",
+        status: "ready",
+        trainedAt: new Date("2025-01-10"),
+        thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+        version: "v1"
+      }
+    ];
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -119,9 +136,15 @@ const Identities = () => {
         version: "v1"
       };
 
-      setTrainedIdentities(prev => [newIdentity, ...prev]);
+      const updatedIdentities = [newIdentity, ...trainedIdentities];
+      setTrainedIdentities(updatedIdentities);
       
-      toast.success(`✅ Model Ready: ${identityName} (v1)`);
+      // Save to localStorage
+      localStorage.setItem('trained_identities', JSON.stringify(updatedIdentities));
+      
+      toast.success(`✅ Identity "${identityName}" is now trained! Use it in Reconstruction to create memories.`, {
+        duration: 5000
+      });
       
       // Reset form
       setIdentityName("");
@@ -139,7 +162,9 @@ const Identities = () => {
   };
 
   const handleDeleteIdentity = (id: string) => {
-    setTrainedIdentities(prev => prev.filter(identity => identity.id !== id));
+    const updatedIdentities = trainedIdentities.filter(identity => identity.id !== id);
+    setTrainedIdentities(updatedIdentities);
+    localStorage.setItem('trained_identities', JSON.stringify(updatedIdentities));
     toast.success("Identity deleted");
   };
 
