@@ -355,7 +355,6 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
       console.log('🎙️ Requesting ElevenLabs session via Orchestrator...');
       const { data, error } = await supabase.functions.invoke('orchestrator', {
         body: { 
-          userId: user?.id || '00000000-0000-0000-0000-000000000000',
           action: 'manage_elevenlabs_session',
           sessionParams: {
             agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',

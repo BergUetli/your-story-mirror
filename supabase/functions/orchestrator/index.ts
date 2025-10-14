@@ -213,19 +213,37 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userId, message, action, limit, sessionParams }: OrchestratorRequest = await req.json();
-    
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "userId is required" }), {
-        status: 400,
+    // Authenticate user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized - Missing authorization header" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (!supabaseUrl) throw new Error("SUPABASE_URL not configured");
+    
+    const supabaseClient = createClient(supabaseUrl, authHeader.replace('Bearer ', ''));
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized - Invalid token" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Use authenticated user ID - don't trust client-provided userId
+    const authenticatedUserId = user.id;
+    
+    const { message, action, limit, sessionParams } = await req.json();
+
     // Handle timeline data request
     if (action === "get_timeline") {
-      console.log("📊 Orchestrator: Fetching timeline data for user:", userId);
-      const timelineData = await getTimelineData(userId);
+      console.log("📊 Orchestrator: Fetching timeline data for user:", authenticatedUserId);
+      const timelineData = await getTimelineData(authenticatedUserId);
       return new Response(
         JSON.stringify(timelineData),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -287,11 +305,11 @@ serve(async (req) => {
         } catch {}
 
         if (name === "retrieve_memories") {
-          const items = await retrieveMemories(userId, args.query, args.limit ?? limit ?? 5);
+          const items = await retrieveMemories(authenticatedUserId, args.query, args.limit ?? limit ?? 5);
           messages.push(resultMessage);
           messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify({ items }) });
         } else if (name === "save_memory") {
-          const out = await saveMemory(userId, args.title, args.text, args.tags);
+          const out = await saveMemory(authenticatedUserId, args.title, args.text, args.tags);
           messages.push(resultMessage);
           messages.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out) });
         } else if (name === "summarize_memories") {

@@ -34,6 +34,34 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing authorization header' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    if (!supabaseUrl) throw new Error('SUPABASE_URL not configured');
+    
+    const supabaseClient = createClient(supabaseUrl, authHeader.replace('Bearer ', ''));
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const { mode, message, memories, visitorPermissions = [] }: SolonRequest = await req.json();
     
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');

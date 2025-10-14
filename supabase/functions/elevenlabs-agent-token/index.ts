@@ -13,6 +13,36 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user from JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Missing authorization header' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Verify the JWT token
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.2');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    if (!supabaseUrl) throw new Error('SUPABASE_URL not configured');
+    
+    const supabaseClient = createClient(supabaseUrl, authHeader.replace('Bearer ', ''));
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized - Invalid token' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const { agentId } = await req.json();
     
     if (!agentId) {

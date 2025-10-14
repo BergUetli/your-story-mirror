@@ -1,10 +1,13 @@
 project_id = "gulydhhzwlltkxbfnclu"
 
 [functions.elevenlabs-agent-token]
-verify_jwt = false
+verify_jwt = true
 
 [functions.orchestrator]
-verify_jwt = false
+verify_jwt = true
+
+[functions.solin-ai]
+verify_jwt = true
 
 [functions.generate-memory-sketch]
 verify_jwt = false
