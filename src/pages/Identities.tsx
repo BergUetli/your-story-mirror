@@ -78,8 +78,8 @@ const Identities = () => {
       return;
     }
 
-    if (uploadedImages.length < 15) {
-      toast.error("Please upload at least 15 photos");
+    if (uploadedImages.length < 3) {
+      toast.error("Please upload at least 3 photos");
       return;
     }
 
@@ -152,7 +152,7 @@ const Identities = () => {
             Train the characters in your life
           </h1>
           <p className="text-muted-foreground">
-            Upload 15–40 clear photos of one person so Solon can learn their look.
+            Upload 3–40 clear photos of one person so Solon can learn their look.
           </p>
         </div>
 
@@ -196,7 +196,7 @@ const Identities = () => {
                       Drop photos here or click to upload
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      JPG/PNG • Max 20MB each • 15-40 photos required
+                      JPG/PNG • Max 20MB each • 3-40 photos required
                     </p>
                   </label>
                 </div>
@@ -241,10 +241,10 @@ const Identities = () => {
                     )}
                   </div>
 
-                  {uploadedImages.length < 15 && (
+                  {uploadedImages.length < 3 && (
                     <p className="text-sm text-amber-600 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4" />
-                      {15 - uploadedImages.length} more photos needed (minimum 15)
+                      {3 - uploadedImages.length} more photos needed (minimum 3)
                     </p>
                   )}
                 </>
@@ -297,7 +297,7 @@ const Identities = () => {
             {/* Start Training Button */}
             <Button
               onClick={handleStartTraining}
-              disabled={uploadedImages.length < 15 || !identityName.trim() || !consentChecked || isTraining}
+              disabled={uploadedImages.length < 3 || !identityName.trim() || !consentChecked || isTraining}
               className="w-full"
               size="lg"
             >
