@@ -214,7 +214,7 @@ const Settings = () => {
               Usage & Costs
             </CardTitle>
             <CardDescription>
-              Track all AI service usage across Solin voice, memory processing, and identity training
+              Track ongoing operational costs for voice services and identity training
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -261,28 +261,6 @@ const Settings = () => {
 
               <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
                 <div className="flex items-center gap-3">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">AI Chat & Processing</p>
-                    <p className="text-xs text-muted-foreground">0 messages this month</p>
-                  </div>
-                </div>
-                <span className="font-medium">CHF 0.00</span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">Memory Sketches</p>
-                    <p className="text-xs text-muted-foreground">0 sketches this month</p>
-                  </div>
-                </div>
-                <span className="font-medium">CHF 0.00</span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
-                <div className="flex items-center gap-3">
                   <Brain className="w-4 h-4 text-primary" />
                   <div>
                     <p className="font-medium text-sm">Identity Training</p>
@@ -308,7 +286,7 @@ const Settings = () => {
             <div className="p-4 rounded-lg bg-muted/30 space-y-4">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                How Costs Are Calculated
+                Ongoing Service Costs
               </h4>
               <div className="text-sm text-muted-foreground space-y-3">
                 <div>
@@ -322,19 +300,9 @@ const Settings = () => {
                 </div>
 
                 <div>
-                  <p className="font-medium text-foreground mb-2">Lovable AI (Chat & Processing):</p>
-                  <ul className="space-y-1 pl-4">
-                    <li>• <strong>AI Chat Messages:</strong> Included in your Lovable plan</li>
-                    <li>• <strong>Memory Processing:</strong> Included in your Lovable plan</li>
-                    <li>• <strong>Memory Sketches:</strong> Included in your Lovable plan</li>
-                    <li className="text-xs italic">Subject to rate limits per workspace</li>
-                  </ul>
-                </div>
-
-                <div>
                   <p className="font-medium text-foreground mb-2">Replicate AI (Identity & Images):</p>
                   <ul className="space-y-1 pl-4">
-                    <li>• <strong>Identity Training:</strong> ~CHF 1.80-3.60 per identity (one-time)</li>
+                    <li>• <strong>Identity Training:</strong> ~CHF 1.80-3.60 per identity</li>
                     <li>• <strong>Photoreal Generation:</strong> ~CHF 0.05-0.09 per image</li>
                     <li className="text-xs italic">First CHF 9.00/month free credit</li>
                   </ul>
@@ -343,8 +311,11 @@ const Settings = () => {
                 <p className="text-xs italic pt-3 border-t border-border">
                   💡 Exchange rate: 1 USD ≈ 0.90 CHF. Prices are estimates based on current service pricing.
                 </p>
-                <p className="text-xs italic">
-                  ⚠️ These are external service costs (ElevenLabs, Replicate), not Lovable platform fees.
+                <p className="text-xs font-medium">
+                  📊 These are pay-as-you-go costs charged by external AI services (ElevenLabs, Replicate).
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Note: AI chat, memory processing, and sketches are included in the platform at no additional cost.
                 </p>
               </div>
             </div>
