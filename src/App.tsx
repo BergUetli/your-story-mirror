@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
 import Timeline from "./pages/Timeline";
 import Reconstruction from "./pages/Reconstruction";
+import Identities from "./pages/Identities";
 import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
@@ -70,6 +71,11 @@ const AppContent = () => {
         <Route path="/reconstruction" element={
           <ProtectedRoute>
             <Reconstruction />
+          </ProtectedRoute>
+        } />
+        <Route path="/identities" element={
+          <ProtectedRoute>
+            <Identities />
           </ProtectedRoute>
         } />
         <Route path="/settings" element={

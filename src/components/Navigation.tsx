@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Home, Clock, Info, HelpCircle, Plus, Sparkles } from 'lucide-react';
+import { Home, Clock, Info, HelpCircle, Plus, Sparkles, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ const Navigation = () => {
     { path: '/add-memory', icon: Plus, label: 'Add Memory' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
+    { path: '/identities', icon: Users, label: 'Identities' },
   ];
 
   const isActive = (path: string) => location.pathname === path;
