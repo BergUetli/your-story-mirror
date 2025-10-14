@@ -31,8 +31,8 @@ const AppContent = () => {
     await checkOnboardingStatus();
   };
 
-  // Onboarding disabled during testing
-  if (false && user && needsOnboarding) {
+  // Show onboarding for users who haven't completed it
+  if (user && needsOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
