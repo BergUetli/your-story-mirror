@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { TagsInput } from '@/components/TagsInput';
+import { getSignedUrl } from '@/lib/storage';
 
 interface MemoryDetailDialogProps {
   memory: any;
@@ -27,6 +28,11 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
+  // Signed URLs for memory images and artifacts
+  const [memoryImageUrls, setMemoryImageUrls] = useState<(string | null)[]>([]);
+  const [loadingMemoryImages, setLoadingMemoryImages] = useState(true);
+  const [artifactUrls, setArtifactUrls] = useState<Record<string, string | null>>({});
+  
   // Editable fields
   const [editTitle, setEditTitle] = useState('');
   const [editText, setEditText] = useState('');
@@ -34,7 +40,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [editLocation, setEditLocation] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
 
-  // Load artifacts when dialog opens
+  // Load artifacts and their signed URLs when dialog opens
   const loadArtifacts = async () => {
     if (!memory?.id) return;
     
@@ -59,12 +65,42 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
       const loadedArtifacts = data?.map(ma => ma.artifacts).filter(Boolean) || [];
       setArtifacts(loadedArtifacts);
+
+      // Fetch signed URLs for all artifacts
+      const urlsMap: Record<string, string | null> = {};
+      for (const artifact of loadedArtifacts) {
+        const url = await getSignedUrl('memory-images', artifact.storage_path, 3600);
+        urlsMap[artifact.id] = url;
+      }
+      setArtifactUrls(urlsMap);
     } catch (error) {
       console.error('Failed to load artifacts:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Load signed URLs for memory images
+  useEffect(() => {
+    async function fetchMemoryImageUrls() {
+      if (!memory.image_urls || memory.image_urls.length === 0) {
+        setMemoryImageUrls([]);
+        setLoadingMemoryImages(false);
+        return;
+      }
+
+      setLoadingMemoryImages(true);
+      const urls: (string | null)[] = [];
+      for (const imagePath of memory.image_urls) {
+        const url = await getSignedUrl('memory-images', imagePath, 3600);
+        urls.push(url);
+      }
+      setMemoryImageUrls(urls);
+      setLoadingMemoryImages(false);
+    }
+
+    fetchMemoryImageUrls();
+  }, [memory.image_urls]);
 
   // Initialize edit fields when memory changes
   useEffect(() => {
@@ -390,15 +426,13 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
           {/* Existing Images */}
           {memory.image_urls && memory.image_urls.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {memory.image_urls.map((url: string, idx: number) => {
-                const publicUrl = supabase.storage
-                  .from('memory-images')
-                  .getPublicUrl(url).data.publicUrl;
+              {!loadingMemoryImages && memoryImageUrls.map((signedUrl, idx) => {
+                if (!signedUrl) return null;
                 
                 return (
                   <div key={idx} className="relative group aspect-square">
                     <img
-                      src={publicUrl}
+                      src={signedUrl}
                       alt={`Memory image ${idx + 1}`}
                       className="w-full h-full object-cover rounded-lg"
                     />
@@ -441,9 +475,8 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
             {artifacts.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {artifacts.map((artifact) => {
-                  const publicUrl = supabase.storage
-                    .from('memory-images')
-                    .getPublicUrl(artifact.storage_path).data.publicUrl;
+                  const signedUrl = artifactUrls[artifact.id];
+                  if (!signedUrl) return null;
 
                   if (artifact.artifact_type === 'image') {
                     return (
@@ -452,10 +485,10 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                         className="relative aspect-square group"
                       >
                         <img
-                          src={publicUrl}
+                          src={signedUrl}
                           alt={artifact.file_name}
                           className="w-full h-full object-cover rounded-lg cursor-pointer transition-transform group-hover:scale-105"
-                          onClick={() => setEnlargedImage(publicUrl)}
+                          onClick={() => setEnlargedImage(signedUrl)}
                         />
                         <Button
                           variant="destructive"

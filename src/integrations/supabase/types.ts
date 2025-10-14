@@ -180,7 +180,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_owns_memory: {
+        Args: { memory_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

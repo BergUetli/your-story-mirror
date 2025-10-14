@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
+import { TimelineMemoryCard } from '@/components/TimelineMemoryCard';
 import StoryMap from '@/components/StoryMap';
 
 // Detect significant events based on keywords
@@ -175,7 +176,16 @@ const Timeline = () => {
             .limit(1);
           
           if (artifactLinks && artifactLinks.length > 0 && artifactLinks[0].artifacts) {
-            artifactsMap[memory.id] = artifactLinks[0].artifacts;
+            const artifact = artifactLinks[0].artifacts;
+            // Get signed URL for the artifact
+            const { data: urlData } = await supabase.storage
+              .from('memory-images')
+              .createSignedUrl(artifact.storage_path, 3600);
+            
+            artifactsMap[memory.id] = {
+              ...artifact,
+              signedUrl: urlData?.signedUrl || null
+            };
           }
         }
         
@@ -648,13 +658,11 @@ const Timeline = () => {
                                   >
                                     <CardContent className="p-2 bg-card">
                                       <div className="flex items-center gap-2">
-                                        {/* Thumbnail */}
-                                        {memoryArtifacts[memory.id]?.artifact_type === 'image' && (
+                        {/* Thumbnail */}
+                                        {memoryArtifacts[memory.id]?.artifact_type === 'image' && memoryArtifacts[memory.id]?.signedUrl && (
                                           <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
                                             <img
-                                              src={supabase.storage
-                                                .from('memory-images')
-                                                .getPublicUrl(memoryArtifacts[memory.id].storage_path).data.publicUrl}
+                                              src={memoryArtifacts[memory.id].signedUrl}
                                               alt=""
                                               className="w-full h-full object-cover"
                                             />
