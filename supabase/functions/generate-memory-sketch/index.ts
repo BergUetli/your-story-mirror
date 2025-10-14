@@ -12,23 +12,38 @@ serve(async (req) => {
   }
 
   try {
-    const { memoryPrompt, style, guidance } = await req.json();
-    console.log('Generating memory sketch:', { memoryPrompt, style });
+    const { mode, memoryPrompt, style, camera, identities } = await req.json();
+    console.log('Generating image:', { mode, memoryPrompt, style, camera, identities });
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Build the detailed prompt based on style and user input
-    const stylePrompts: Record<string, string> = {
-      pencil_sketch: 'Create a detailed pencil sketch on textured paper with soft graphite shading.',
-      charcoal: 'Create a dramatic charcoal drawing with bold strokes and deep contrast on rough paper.',
-      soft_sepia: 'Create a warm sepia-toned vintage photograph with soft nostalgic lighting.',
-      dreamlike_ink: 'Create a dreamlike ink wash painting with flowing brushstrokes and ethereal quality.'
-    };
+    let fullPrompt: string;
 
-    const fullPrompt = `${stylePrompts[style] || stylePrompts.pencil_sketch} Memory scene: ${memoryPrompt}. Style: artistic, emotional, nostalgic, 4:3 aspect ratio.`;
+    if (mode === 'photoreal') {
+      // Build photoreal prompt
+      const lensDescription = camera?.lens_mm === 35 ? 'wide angle 35mm' : 
+                             camera?.lens_mm === 50 ? 'standard 50mm' : 
+                             'portrait 85mm';
+      
+      const styleDescription = camera?.style === 'documentary' ? 'natural documentary style' :
+                              camera?.style === 'cinematic' ? 'cinematic film look' :
+                              'professional portrait style';
+      
+      fullPrompt = `Ultra-realistic photorealistic photograph, ${lensDescription} lens, ${styleDescription}, natural lighting, high detail, 4K quality, professional photography. Scene: ${memoryPrompt}. Photographic, hyper-realistic, detailed textures, natural colors, authentic moment captured on film.`;
+    } else {
+      // Build sketch/artistic prompt
+      const stylePrompts: Record<string, string> = {
+        pencil_sketch: 'Create a detailed pencil sketch on textured paper with soft graphite shading.',
+        charcoal: 'Create a dramatic charcoal drawing with bold strokes and deep contrast on rough paper.',
+        soft_sepia: 'Create a warm sepia-toned vintage photograph with soft nostalgic lighting.',
+        dreamlike_ink: 'Create a dreamlike ink wash painting with flowing brushstrokes and ethereal quality.'
+      };
+
+      fullPrompt = `${stylePrompts[style] || stylePrompts.pencil_sketch} Memory scene: ${memoryPrompt}. Style: artistic, emotional, nostalgic, 4:3 aspect ratio.`;
+    }
 
     console.log('Full prompt:', fullPrompt);
 
