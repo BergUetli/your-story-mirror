@@ -594,19 +594,19 @@ const Timeline = () => {
                         </div>
 
                         {/* Right Side: Content */}
-                        <div className="ml-[26%] space-y-4">
+                        <div className="ml-[26%] pl-12 space-y-4">
                           {/* Life Events (Birth) - Always prominent */}
                           {yearData.events.map((event, eventIndex) => (
                             <div key={eventIndex} className="space-y-2 mb-4 animate-fade-in">
-                              <div className="text-2xl font-light text-foreground flex items-center gap-3">
+                              <div className="text-2xl font-light text-foreground">
                                 {event.event}
-                                {event.location && (
-                                  <div className="flex items-center gap-2 text-base text-muted-foreground">
-                                    <MapPin className="w-4 h-4" />
-                                    {event.location}
-                                  </div>
-                                )}
                               </div>
+                              {event.location && (
+                                <div className="flex items-center gap-2 text-base text-muted-foreground">
+                                  <MapPin className="w-4 h-4" />
+                                  {event.location}
+                                </div>
+                              )}
                               {event.date && (
                                 <div className="text-xs text-muted-foreground flex items-center gap-2 font-light">
                                   <Calendar className="w-3 h-3" />
