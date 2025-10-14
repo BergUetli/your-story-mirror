@@ -60,7 +60,7 @@ export const AddMemoryForm: React.FC = () => {
       const imageUrls = images.length > 0 ? await uploadImages(user.id) : [];
 
       // Insert memory with image URLs
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('memories')
         .insert([{
           user_id: user.id,
@@ -70,7 +70,9 @@ export const AddMemoryForm: React.FC = () => {
           memory_location: formData.memory_location || null,
           tags: tags.length > 0 ? tags : null,
           image_urls: imageUrls,
-        }]);
+        }])
+        .select('*')
+        .single();
 
       if (error) throw error;
 
@@ -153,7 +155,7 @@ export const AddMemoryForm: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, memory_date: e.target.value })}
                 className="font-light"
               />
-              <p className="text-xs text-muted-foreground">Format: DD/MM/YYYY</p>
+              <p className="text-xs text-muted-foreground">Format: YYYY-MM-DD</p>
             </div>
 
             <div className="space-y-2">

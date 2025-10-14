@@ -153,7 +153,7 @@ const Timeline = () => {
       console.log('✅ Timeline: Fetched', memories?.length || 0, 'memories and profile', profiles);
       
       setTimelineMemories(memories || []);
-      setTimelineProfile(profiles || null);
+      setTimelineProfile(profiles || profile || null);
 
       // Fetch artifacts for all memories
       if (memories && memories.length > 0) {
@@ -202,7 +202,7 @@ const Timeline = () => {
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  const timelineData = createTimelineData(timelineMemories, timelineProfile);
+  const timelineData = createTimelineData(timelineMemories, timelineProfile || profile);
 
   // Keep refs in sync with state
   useEffect(() => {

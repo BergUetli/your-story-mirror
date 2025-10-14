@@ -94,19 +94,45 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('No user found');
 
-      const { error } = await supabase
+      // Ensure a profile exists; create if missing, otherwise update
+      const { data: existing, error: fetchErr } = await supabase
         .from('users')
-        .update({
-          name: formData.name,
-          age: parseInt(formData.age),
-          birth_date: formData.birthDate,
-          birth_place: formData.birthPlace,
-          current_location: formData.currentLocation,
-          onboarding_completed: true
-        })
-        .eq('user_id', user.id);
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (fetchErr) throw fetchErr;
 
-      if (error) throw error;
+      let upsertError = null;
+      if (!existing) {
+        const { error: insertErr } = await supabase
+          .from('users')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            name: formData.name,
+            age: parseInt(formData.age),
+            birth_date: formData.birthDate,
+            birth_place: formData.birthPlace,
+            current_location: formData.currentLocation,
+            onboarding_completed: true,
+          });
+        upsertError = insertErr;
+      } else {
+        const { error: updateErr } = await supabase
+          .from('users')
+          .update({
+            name: formData.name,
+            age: parseInt(formData.age),
+            birth_date: formData.birthDate,
+            birth_place: formData.birthPlace,
+            current_location: formData.currentLocation,
+            onboarding_completed: true,
+          })
+          .eq('user_id', user.id);
+        upsertError = updateErr;
+      }
+
+      if (upsertError) throw upsertError;
 
       toast({
         title: "Welcome to Memory Scape! 🌟",
