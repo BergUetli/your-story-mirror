@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain } from 'lucide-react';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -214,7 +214,7 @@ const Settings = () => {
               Usage & Costs
             </CardTitle>
             <CardDescription>
-              Track your external service usage (Replicate AI for identity training)
+              Track all AI service usage across Solin voice, memory processing, and identity training
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -239,6 +239,50 @@ const Settings = () => {
               
               <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
                 <div className="flex items-center gap-3">
+                  <Mic className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Solin Voice Conversations</p>
+                    <p className="text-xs text-muted-foreground">0 minutes this month</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
+                  <Volume2 className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Text-to-Speech</p>
+                    <p className="text-xs text-muted-foreground">0 characters this month</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">AI Chat & Processing</p>
+                    <p className="text-xs text-muted-foreground">0 messages this month</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Memory Sketches</p>
+                    <p className="text-xs text-muted-foreground">0 sketches this month</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
                   <Brain className="w-4 h-4 text-primary" />
                   <div>
                     <p className="font-medium text-sm">Identity Training</p>
@@ -252,7 +296,7 @@ const Settings = () => {
                 <div className="flex items-center gap-3">
                   <Image className="w-4 h-4 text-primary" />
                   <div>
-                    <p className="font-medium text-sm">Image Generations</p>
+                    <p className="font-medium text-sm">Photoreal Image Generations</p>
                     <p className="text-xs text-muted-foreground">0 images generated</p>
                   </div>
                 </div>
@@ -261,23 +305,46 @@ const Settings = () => {
             </div>
 
             {/* Cost Explanation */}
-            <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+            <div className="p-4 rounded-lg bg-muted/30 space-y-4">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 <Shield className="w-4 h-4" />
                 How Costs Are Calculated
               </h4>
-              <div className="text-sm text-muted-foreground space-y-2">
-                <p className="font-medium">Replicate AI Pricing (in CHF):</p>
-                <ul className="space-y-1 pl-4">
-                  <li>• <strong>Identity Training:</strong> ~CHF 1.80-3.60 per identity (one-time)</li>
-                  <li>• <strong>Photoreal Generation:</strong> ~CHF 0.05-0.09 per image</li>
-                  <li>• <strong>Sketch Generation:</strong> FREE (uses OpenAI, already included)</li>
-                </ul>
-                <p className="text-xs italic pt-2">
-                  💡 First CHF 9.00/month is free from Replicate. Exchange rate: 1 USD = ~0.90 CHF
+              <div className="text-sm text-muted-foreground space-y-3">
+                <div>
+                  <p className="font-medium text-foreground mb-2">ElevenLabs (Voice Services):</p>
+                  <ul className="space-y-1 pl-4">
+                    <li>• <strong>Conversational AI (Solin):</strong> ~CHF 0.90 per minute</li>
+                    <li>• <strong>Text-to-Speech:</strong> ~CHF 2.70 per 100,000 characters</li>
+                    <li className="text-xs italic">First 10 minutes/month free for conversations</li>
+                    <li className="text-xs italic">First 10,000 characters/month free for TTS</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium text-foreground mb-2">Lovable AI (Chat & Processing):</p>
+                  <ul className="space-y-1 pl-4">
+                    <li>• <strong>AI Chat Messages:</strong> Included in your Lovable plan</li>
+                    <li>• <strong>Memory Processing:</strong> Included in your Lovable plan</li>
+                    <li>• <strong>Memory Sketches:</strong> Included in your Lovable plan</li>
+                    <li className="text-xs italic">Subject to rate limits per workspace</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <p className="font-medium text-foreground mb-2">Replicate AI (Identity & Images):</p>
+                  <ul className="space-y-1 pl-4">
+                    <li>• <strong>Identity Training:</strong> ~CHF 1.80-3.60 per identity (one-time)</li>
+                    <li>• <strong>Photoreal Generation:</strong> ~CHF 0.05-0.09 per image</li>
+                    <li className="text-xs italic">First CHF 9.00/month free credit</li>
+                  </ul>
+                </div>
+
+                <p className="text-xs italic pt-3 border-t border-border">
+                  💡 Exchange rate: 1 USD ≈ 0.90 CHF. Prices are estimates based on current service pricing.
                 </p>
                 <p className="text-xs italic">
-                  ⚠️ These are external service costs charged by Replicate, not Lovable fees.
+                  ⚠️ These are external service costs (ElevenLabs, Replicate), not Lovable platform fees.
                 </p>
               </div>
             </div>
