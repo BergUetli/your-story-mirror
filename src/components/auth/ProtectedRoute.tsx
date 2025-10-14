@@ -57,53 +57,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // TEMPORARILY DISABLED: Allow access without authentication
-  // Allow access if user is authenticated OR in demo mode
-  if (true) { // Temporary bypass - always allow access
-    return (
-      <>
-        {isDemoMode && !user && (
-          <div className="fixed top-0 left-0 right-0 bg-memory/10 border-b border-memory/30 p-2 z-50">
-            <div className="max-w-7xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Badge className="bg-memory/20 text-memory border-memory/30">
-                  <Play className="h-3 w-3 mr-1" />
-                  Demo Mode
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  You're exploring the app with sample data
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAuthModal(true)}
-                  className="text-xs"
-                >
-                  Create Account
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDemoMode(false)}
-                  className="text-xs text-muted-foreground"
-                >
-                  Exit Demo
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        <div className={isDemoMode && !user ? "pt-16" : ""}>
-          {children}
-        </div>
-        <AuthModal 
-          isOpen={showAuthModal} 
-          onClose={() => setShowAuthModal(false)} 
-        />
-      </>
-    );
+  // Allow access if user is authenticated
+  if (user) {
+    return <>{children}</>;
   }
 
   if (fallback) {

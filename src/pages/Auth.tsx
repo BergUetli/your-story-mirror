@@ -12,6 +12,7 @@ const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
@@ -27,6 +28,17 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Password confirmation validation
+    if (isSignUp && password !== confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please make sure both passwords are identical.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -37,9 +49,10 @@ const Auth = () => {
         }
         toast({
           title: "Account Created!",
-          description: "Please check your email to verify your account before signing in.",
+          description: "You can now sign in and start preserving your memories.",
         });
         setIsSignUp(false);
+        resetForm();
       } else {
         const { error } = await signIn(email, password);
         if (error) {
@@ -79,6 +92,7 @@ const Auth = () => {
   const resetForm = () => {
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setName('');
   };
 
@@ -158,6 +172,23 @@ const Auth = () => {
                   className="bg-card border-border"
                 />
               </div>
+
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    disabled={isLoading}
+                    minLength={6}
+                    className="bg-card border-border"
+                  />
+                </div>
+              )}
 
               <Button 
                 type="submit" 
