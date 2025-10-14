@@ -166,7 +166,7 @@ const Identities = () => {
               </Label>
               <Input
                 id="identity-name"
-                placeholder="e.g., Dad, Mom, Ishii"
+                placeholder="e.g., Dad, Mom, Me"
                 value={identityName}
                 onChange={(e) => setIdentityName(e.target.value)}
                 disabled={isTraining}
