@@ -43,7 +43,7 @@ const Reconstruction = () => {
   
   // Mock trained identities (would come from API/database)
   const trainedIdentities = [
-    { id: "ishii_v1", name: "Ishii", status: "ready" },
+    { id: "me_v1", name: "Me", status: "ready" },
     { id: "dad_v1", name: "Dad", status: "ready" }
   ];
 
