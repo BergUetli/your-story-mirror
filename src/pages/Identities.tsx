@@ -149,7 +149,7 @@ const Identities = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-serif font-bold mb-3 text-foreground">
-            Train an Identity
+            Train the characters in your life
           </h1>
           <p className="text-muted-foreground">
             Upload 15–40 clear photos of one person so Solon can learn their look.
