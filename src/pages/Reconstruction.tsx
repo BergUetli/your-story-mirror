@@ -238,8 +238,9 @@ const Reconstruction = () => {
           <Tabs value={mode} onValueChange={(v) => setMode(v as ReconstructionMode)} className="w-fit mx-auto">
             <TabsList>
               <TabsTrigger value="sketch">Sketch</TabsTrigger>
-              <TabsTrigger value="photoreal">
-                Photoreal <Badge variant="secondary" className="ml-1 text-xs">Premium</Badge>
+              <TabsTrigger value="photoreal" className="gap-1">
+                Photoreal 
+                <Badge variant="secondary" className="text-xs">Premium</Badge>
               </TabsTrigger>
             </TabsList>
           </Tabs>
