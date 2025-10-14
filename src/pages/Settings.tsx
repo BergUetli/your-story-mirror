@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2 } from 'lucide-react';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const Settings = () => {
   const [userName, setUserName] = useState('Sarah');
@@ -71,34 +72,58 @@ const Settings = () => {
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <User className="w-5 h-5 text-primary" />
               </div>
-              Profile
+              Profile Details
             </CardTitle>
+            <CardDescription>
+              Your key information used throughout the app
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="userName">Display name</Label>
-              <Input
-                id="userName"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="bg-card border-border"
-                placeholder="What should we call you?"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="userName">Display name</Label>
+                <Input
+                  id="userName"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="What should we call you?"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="your@email.com"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-card border-border"
-                placeholder="your@email.com"
-              />
-              <p className="text-xs text-muted-foreground">
-                Used for authentication and important updates
-              </p>
+            <div className="p-4 rounded-lg bg-muted/30 space-y-2">
+              <h4 className="font-medium text-sm">Account Status</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Member since</p>
+                  <p className="font-medium">October 2025</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Total memories</p>
+                  <p className="font-medium">0 stored</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Trained identities</p>
+                  <p className="font-medium">0 active</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Plan</p>
+                  <Badge variant="secondary">Free</Badge>
+                </div>
+              </div>
             </div>
 
             <Button 
@@ -175,6 +200,103 @@ const Settings = () => {
                   <p>• No data is shared without your explicit consent</p>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Usage & Costs */}
+        <Card className="modern-card border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-primary" />
+              </div>
+              Usage & Costs
+            </CardTitle>
+            <CardDescription>
+              Track your external service usage (Replicate AI for identity training)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Current Month Summary */}
+            <div className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-accent/5 border border-primary/20">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm font-medium text-muted-foreground">Current Month</span>
+                <Badge variant="secondary">October 2025</Badge>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold">CHF 0.00</span>
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-sm text-muted-foreground">Total external service costs</p>
+              </div>
+            </div>
+
+            {/* Usage Breakdown */}
+            <div className="space-y-3">
+              <h4 className="font-medium text-sm text-muted-foreground">Usage Breakdown</h4>
+              
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
+                  <Brain className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Identity Training</p>
+                    <p className="text-xs text-muted-foreground">0 identities trained</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card/50">
+                <div className="flex items-center gap-3">
+                  <Image className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="font-medium text-sm">Image Generations</p>
+                    <p className="text-xs text-muted-foreground">0 images generated</p>
+                  </div>
+                </div>
+                <span className="font-medium">CHF 0.00</span>
+              </div>
+            </div>
+
+            {/* Cost Explanation */}
+            <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                How Costs Are Calculated
+              </h4>
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p className="font-medium">Replicate AI Pricing (in CHF):</p>
+                <ul className="space-y-1 pl-4">
+                  <li>• <strong>Identity Training:</strong> ~CHF 1.80-3.60 per identity (one-time)</li>
+                  <li>• <strong>Photoreal Generation:</strong> ~CHF 0.05-0.09 per image</li>
+                  <li>• <strong>Sketch Generation:</strong> FREE (uses OpenAI, already included)</li>
+                </ul>
+                <p className="text-xs italic pt-2">
+                  💡 First CHF 9.00/month is free from Replicate. Exchange rate: 1 USD = ~0.90 CHF
+                </p>
+                <p className="text-xs italic">
+                  ⚠️ These are external service costs charged by Replicate, not Lovable fees.
+                </p>
+              </div>
+            </div>
+
+            {/* API Key Management */}
+            <div className="p-4 rounded-lg border border-border/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="font-medium text-sm">Replicate API Key</h4>
+                  <p className="text-xs text-muted-foreground">Required for identity training & photoreal images</p>
+                </div>
+                <Badge variant="outline" className="text-orange-500 border-orange-500">Not Connected</Badge>
+              </div>
+              <Button variant="outline" size="sm" className="w-full" disabled>
+                Connect Replicate Account
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Coming soon - Replicate integration in development
+              </p>
             </div>
           </CardContent>
         </Card>
