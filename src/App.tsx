@@ -41,8 +41,8 @@ const AppContent = () => {
       <Navigation />
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/" element={<About />} />
+        <Route path="/sanctuary" element={<Index />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
         <Route path="/auth" element={<Navigate to="/" replace />} />

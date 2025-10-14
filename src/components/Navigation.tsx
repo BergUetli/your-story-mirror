@@ -8,12 +8,11 @@ const Navigation = () => {
   
   
   const leftNavItems = [
-    { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
   ];
 
   const rightNavItems = [
-    { path: '/', icon: Home, label: 'Home' },
+    { path: '/sanctuary', icon: Home, label: 'Home' },
     { path: '/add-memory', icon: Plus, label: 'Add Memory' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },

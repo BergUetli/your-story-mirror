@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, Shield, Globe, Clock, Users, Sparkles, Mountain, Lock, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 const About = () => {
+  const { user } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
@@ -262,16 +268,35 @@ const About = () => {
           your legacy?
         </h2>
         
-        <Button 
-          asChild
-          size="lg" 
-          className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
-        >
-          <Link to="/">
-            Start Your Sanctuary
-          </Link>
-        </Button>
+        {!user ? (
+          <div className="space-y-4">
+            <p className="text-xl text-muted-foreground">
+              Sign in to access your personal collection of memories and conversations with Solin.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button 
+                size="lg" 
+                onClick={() => setIsAuthModalOpen(true)}
+                className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
+              >
+                Enter Your Sanctuary
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button 
+            asChild
+            size="lg" 
+            className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
+          >
+            <Link to="/sanctuary">
+              Start Your Sanctuary
+            </Link>
+          </Button>
+        )}
       </div>
+      
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );
 };
