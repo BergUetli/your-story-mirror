@@ -1,3 +1,33 @@
+/**
+ * SOLIN AI COMPANION COMPONENT
+ * 
+ * This is the core AI companion interface for "You, Remembered" - a digital memory preservation application.
+ * Solin serves as an empathetic AI guide that helps users capture and preserve their life stories through
+ * natural voice conversations, creating a lasting digital legacy for future generations.
+ * 
+ * BUSINESS PURPOSE:
+ * - Primary user interface for memory capture through AI conversation
+ * - Enables natural, voice-based interaction to reduce friction in memory sharing
+ * - Automatically converts conversations into structured memories for timeline preservation
+ * - Supports both authenticated users and visitors with different permission levels
+ * - Creates emotional connection through empathetic AI responses and memory reflection
+ * 
+ * KEY FEATURES:
+ * - Real-time voice conversation with ElevenLabs AI agent
+ * - Automatic memory extraction from conversations
+ * - Dual interface modes: Voice (primary) and Text Chat (fallback)
+ * - Intelligent conversation management with auto-pause detection
+ * - Memory context injection for personalized responses
+ * - Visitor mode for sharing public memories with others
+ * 
+ * TECHNICAL ARCHITECTURE:
+ * - Uses ElevenLabs Conversational AI for real-time voice interaction
+ * - Client-side memory tools for instant operations (zero latency)
+ * - Speech recognition for hands-free conversation
+ * - Automatic conversation-to-memory conversion
+ * - State management for conversation flow and UI updates
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -13,39 +43,68 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import solinConfig from '@/agents/solin.json';
 
+/**
+ * Component Props Configuration
+ * 
+ * BUSINESS CONTEXT:
+ * - mode: Determines user access level and available features
+ *   - 'user': Full access for authenticated users (can save private memories)
+ *   - 'visitor': Limited access for sharing public memories only
+ * - visitorPermissions: Controls which memory categories visitors can access
+ * - defaultView: Primary interaction method (voice is preferred for natural conversation)
+ */
 interface SolinProps {
-  mode?: 'user' | 'visitor';
-  visitorPermissions?: string[];
-  defaultView?: 'chat' | 'voice';
+  mode?: 'user' | 'visitor';           // User access level and permissions
+  visitorPermissions?: string[];       // Memory categories visitors can access
+  defaultView?: 'chat' | 'voice';     // Primary interaction interface
 }
 
+/**
+ * MAIN SOLIN COMPONENT
+ * 
+ * This component manages the entire AI conversation experience, including voice interaction,
+ * memory capture, and user interface state. It serves as the primary touchpoint for users
+ * to interact with their AI memory companion.
+ */
 const Solin: React.FC<SolinProps> = ({ 
   mode = 'user', 
   visitorPermissions = ['public'],
   defaultView = 'voice'
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [currentView, setCurrentView] = useState<'voice' | 'chat'>(defaultView);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [message, setMessage] = useState('');
-  const [response, setResponse] = useState<SolinResponse | null>(null);
-  const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solin', content: string}>>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isConversationActive, setIsConversationActive] = useState(false);
-  const [lastResponseTime, setLastResponseTime] = useState<number>(0);
+  // ===== USER INTERFACE STATE =====
+  // These states control the visual presentation and user interaction flow
   
-  // Auto-pause detection
-  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);
-  const [transcriptBuffer, setTranscriptBuffer] = useState('');
-  const lastTranscriptRef = useRef('');
-  const processingRef = useRef(false);
+  const [isOpen, setIsOpen] = useState(false);                    // Whether Solin chat interface is visible
+  const [currentView, setCurrentView] = useState<'voice' | 'chat'>(defaultView);  // Current interaction mode
+  const [isLoading, setIsLoading] = useState(false);              // Whether AI is processing a response
+  const [isSpeaking, setIsSpeaking] = useState(false);            // Whether AI is currently speaking
+  const [message, setMessage] = useState('');                     // Text input for chat mode
+  const [response, setResponse] = useState<SolinResponse | null>(null);  // Latest AI response
+  const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]);  // User's preferred AI voice
+  const [voiceEnabled, setVoiceEnabled] = useState(true);         // Whether voice output is enabled
   
-  const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  // ===== CONVERSATION MANAGEMENT =====
+  // These states manage the conversation flow and memory capture process
+  
+  const [conversationHistory, setConversationHistory] = useState<Array<{role: 'user' | 'solin', content: string}>>([]);  // Complete conversation record
+  const [isProcessing, setIsProcessing] = useState(false);        // Whether saving memory to database
+  const [isConversationActive, setIsConversationActive] = useState(false);  // Whether conversation is ongoing
+  const [lastResponseTime, setLastResponseTime] = useState<number>(0);  // Timestamp of last AI response
+  
+  // ===== INTELLIGENT CONVERSATION FEATURES =====
+  // These states enable natural conversation flow with automatic pause detection
+  
+  const [silenceTimer, setSilenceTimer] = useState<NodeJS.Timeout | null>(null);  // Timer for auto-processing after silence
+  const [transcriptBuffer, setTranscriptBuffer] = useState('');   // Current speech recognition text
+  const lastTranscriptRef = useRef('');                          // Previous transcript to detect changes
+  const processingRef = useRef(false);                           // Prevents duplicate processing
+  
+  // ===== BUSINESS SERVICES INTEGRATION =====
+  // These hooks connect to the memory system and user experience features
+  
+  const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();  // Memory operations
+  const { toast } = useToast();                                 // User notification system
+  const navigate = useNavigate();                               // Page navigation
   const { 
     isListening, 
     transcript, 
@@ -54,25 +113,45 @@ const Solin: React.FC<SolinProps> = ({
     startListening, 
     stopListening, 
     resetTranscript 
-  } = useSpeechRecognition();
+  } = useSpeechRecognition();                                   // Speech-to-text capabilities
 
+  /**
+   * MEMORY CONTEXT MANAGEMENT
+   * 
+   * BUSINESS PURPOSE: Provides personalized conversation context by injecting relevant memories
+   * into the AI's responses. This creates continuity and emotional connection across conversations.
+   * 
+   * TECHNICAL IMPLEMENTATION: Returns appropriate memory set based on user mode and permissions.
+   */
   const getRelevantMemories = () => {
     return mode === 'visitor' 
-      ? getMemoriesForVisitor(visitorPermissions)
-      : memories;
+      ? getMemoriesForVisitor(visitorPermissions)  // Filtered public memories for visitors
+      : memories;                                  // Full memory access for authenticated users
   };
 
-  // Intelligent conversation management
+  /**
+   * INTELLIGENT CONVERSATION MANAGEMENT
+   * 
+   * BUSINESS PURPOSE: Creates natural conversation flow by automatically detecting when users
+   * finish speaking and processing their input. This eliminates the need for manual "send" actions
+   * and makes the interaction feel more like talking to a real person.
+   * 
+   * KEY FEATURES:
+   * - Auto-pause detection: Waits 3 seconds after user stops speaking
+   * - Prevents duplicate processing: Uses refs to avoid processing same transcript twice
+   * - Natural flow: User can speak naturally without pressing buttons
+   * - Context awareness: Only processes when conversation is active and not already speaking
+   */
   useEffect(() => {
     if (transcript && isConversationActive && !isLoading && !isSpeaking) {
       setTranscriptBuffer(transcript);
       
-      // Clear any existing timer
+      // Clear any existing timer to reset the countdown
       if (silenceTimer) {
         clearTimeout(silenceTimer);
       }
 
-      // Set a new timer for auto-processing
+      // Set a new timer for auto-processing after 3 seconds of silence
       const timer = setTimeout(() => {
         if (transcript.trim() && transcript !== lastTranscriptRef.current && !processingRef.current && !isSpeaking) {
           handleAutoProcessMessage(transcript);
@@ -89,7 +168,16 @@ const Solin: React.FC<SolinProps> = ({
     };
   }, [transcript, isConversationActive, isLoading, isSpeaking]);
 
-  // Auto-restart listening after Solin finishes speaking
+  /**
+   * AUTO-RESTART LISTENING MANAGEMENT
+   * 
+   * BUSINESS PURPOSE: Ensures continuous conversation flow by automatically restarting
+   * speech recognition after Solin finishes speaking. This creates seamless back-and-forth
+   * conversation without requiring users to manually restart listening.
+   * 
+   * TECHNICAL IMPLEMENTATION: Waits 1 second after Solin stops speaking to prevent
+   * interrupting the AI, then restarts listening if conversation is still active.
+   */
   useEffect(() => {
     if (isConversationActive && !isSpeaking && !isLoading && !isListening) {
       // Longer delay to prevent interrupting Solin
@@ -103,13 +191,27 @@ const Solin: React.FC<SolinProps> = ({
     }
   }, [isSpeaking, isLoading, isConversationActive, isListening, speechSupported]);
 
+  /**
+   * AUTOMATIC MESSAGE PROCESSING
+   * 
+   * BUSINESS PURPOSE: Processes user speech input automatically, creating natural conversation flow.
+   * This function handles the core conversation logic including AI response generation, memory
+   * context injection, and conversation history management.
+   * 
+   * KEY FEATURES:
+   * - Conversation end detection: Recognizes natural ending phrases
+   * - Memory context injection: Uses relevant memories for personalized responses
+   * - Conversation history tracking: Maintains complete conversation record
+   * - Automatic speech synthesis: Converts AI response to speech
+   * - Error handling: Graceful fallback for conversation failures
+   */
   const handleAutoProcessMessage = async (userMessage: string) => {
     if (processingRef.current || !userMessage.trim()) return;
     
     processingRef.current = true;
     lastTranscriptRef.current = userMessage;
     
-    // Check for end conversation command
+    // Check for natural conversation ending commands
     const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solin', 'stop conversation'];
     const isEndCommand = endCommands.some(cmd => 
       userMessage.toLowerCase().includes(cmd.toLowerCase())
@@ -124,20 +226,20 @@ const Solin: React.FC<SolinProps> = ({
     setIsLoading(true);
     if (isListening) stopListening();
     
-    // Add user message to conversation history
+    // Add user message to conversation history for context
     const newHistory = [...conversationHistory, { role: 'user' as const, content: userMessage }];
     setConversationHistory(newHistory);
     
     try {
       const relevantMemories = getRelevantMemories();
       
-      // Create more dynamic responses in demo mode
+      // Generate AI response with memory context and conversation history
       const solinResponse = await solinService.chat({
         mode,
         message: userMessage,
         memories: relevantMemories,
         visitorPermissions,
-        conversationHistory: newHistory, // Pass conversation context
+        conversationHistory: newHistory, // Pass conversation context for continuity
       });
       
       setResponse(solinResponse);
@@ -151,7 +253,7 @@ const Solin: React.FC<SolinProps> = ({
       resetTranscript();
       setTranscriptBuffer('');
       
-      // Speak the response
+      // Convert AI response to speech for natural conversation flow
       await speakResponse(solinResponse.reflection);
       
     } catch (error) {
@@ -162,6 +264,22 @@ const Solin: React.FC<SolinProps> = ({
     }
   };
 
+  /**
+   * SPEECH SYNTHESIS SERVICE
+   * 
+   * BUSINESS PURPOSE: Converts AI text responses into natural speech using ElevenLabs technology.
+   * This creates the illusion of talking to a real person rather than reading text responses.
+   * 
+   * KEY FEATURES:
+   * - High-quality voice synthesis using ElevenLabs Turbo v2.5 model
+   * - User-configurable voice selection from multiple options
+   * - Optimized voice settings for natural conversation flow
+   * - Graceful error handling with user-friendly notifications
+   * - Respects user's voice preference settings
+   * 
+   * TECHNICAL IMPLEMENTATION: Uses ElevenLabs API with custom voice settings for optimal
+   * conversation experience. Includes comprehensive error handling and logging for debugging.
+   */
   const speakResponse = async (text: string) => {
     if (!voiceEnabled) {
       console.log('🔇 Voice disabled, skipping speech');
@@ -172,13 +290,13 @@ const Solin: React.FC<SolinProps> = ({
       setIsSpeaking(true);
       console.log('🎤 Solin starting to speak:', text.substring(0, 50) + '...');
       
-      // Use selected voice from dropdown, not hardcoded config
+      // Use selected voice from dropdown with optimized settings for conversation
       const voiceOptions = {
         voiceId: selectedVoice.id,
-        model: 'eleven_turbo_v2_5',
+        model: 'eleven_turbo_v2_5',  // Fast, high-quality model for real-time conversation
         voiceSettings: {
-          stability: 0.71,
-          similarity_boost: 0.5
+          stability: 0.71,           // Balanced stability for consistent voice quality
+          similarity_boost: 0.5      // Moderate similarity boost for natural variation
         }
       };
       
@@ -211,6 +329,21 @@ const Solin: React.FC<SolinProps> = ({
     }
   };
 
+  /**
+   * CONVERSATION INITIATION
+   * 
+   * BUSINESS PURPOSE: Starts a new conversation session with Solin, providing appropriate
+   * greetings based on user mode and initiating the voice interaction flow.
+   * 
+   * KEY FEATURES:
+   * - Browser compatibility check for speech recognition
+   * - Mode-specific greetings (visitor vs. authenticated user)
+   * - State initialization for new conversation
+   * - Automatic greeting delivery via speech synthesis
+   * 
+   * USER EXPERIENCE: Creates welcoming entry point that immediately engages users
+   * and sets expectations for the conversation experience.
+   */
   const startConversation = () => {
     if (!speechSupported) {
       toast({
@@ -227,7 +360,7 @@ const Solin: React.FC<SolinProps> = ({
     lastTranscriptRef.current = '';
     processingRef.current = false;
     
-    // Give initial greeting
+    // Give initial greeting based on user mode
     const greeting = mode === 'visitor' 
       ? "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?"
       : "Hi, I'm your AI guide through time. Please share a memory or a thought for the future with me.";
