@@ -368,6 +368,13 @@ const Solin: React.FC<SolinProps> = ({
     speakResponse(greeting);
   };
 
+  /**
+   * CONVERSATION TERMINATION
+   * 
+   * BUSINESS PURPOSE: Safely stops an active conversation, cleaning up all voice services
+   * and resetting component state. This ensures proper resource management and prevents
+   * memory leaks or hanging voice connections.
+   */
   const stopConversation = () => {
     setIsConversationActive(false);
     if (isListening) stopListening();
@@ -381,6 +388,24 @@ const Solin: React.FC<SolinProps> = ({
     setTranscriptBuffer('');
   };
 
+  /**
+   * CONVERSATION-TO-MEMORY CONVERSION
+   * 
+   * BUSINESS PURPOSE: Converts completed conversations into permanent memories, creating
+   * the core value proposition of preserving life stories. This function handles the
+   * entire memory creation workflow from conversation processing to database storage.
+   * 
+   * KEY FEATURES:
+   * - User confirmation dialog for memory saving
+   * - Automatic title generation from first user message
+   * - Content summarization from conversation history
+   * - Complete conversation preservation for future reference
+   * - Navigation to timeline after successful save
+   * - Voice confirmation of successful memory creation
+   * 
+   * USER EXPERIENCE: Provides clear feedback throughout the memory creation process
+   * and ensures users understand their stories are being preserved for posterity.
+   */
   const handleEndConversation = async () => {
     if (conversationHistory.length === 0) {
       stopConversation();
@@ -397,24 +422,24 @@ const Solin: React.FC<SolinProps> = ({
       setIsProcessing(true);
       
       try {
-        // Create conversation text from history
+        // Create conversation text from history for complete preservation
         const conversationText = conversationHistory
           .map(entry => `${entry.role === 'user' ? 'You' : 'Solin'}: ${entry.content}`)
           .join('\n\n');
 
-        // Generate title and content from conversation
+        // Generate title and content from conversation for memory organization
         const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
         const title = firstUserMessage.length > 50 
           ? firstUserMessage.substring(0, 47) + '...' 
           : firstUserMessage || 'Memory Conversation';
 
-        // Create a summary from the conversation
+        // Create a summary from the conversation for search and discovery
         const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
         const content = userMessages.length > 1 
           ? userMessages.join(' ') 
           : userMessages[0] || 'A conversation with Solin about memories';
 
-        // Save the memory with conversation
+        // Save the memory with complete conversation context
         const savedMemory = await addMemoryFromConversation(
           title,
           content,
@@ -428,10 +453,10 @@ const Solin: React.FC<SolinProps> = ({
             description: "Your conversation has been preserved as a memory.",
           });
 
-          // Navigate to timeline
+          // Navigate to timeline to show the new memory
           navigate(`/timeline`);
           
-          // Speak confirmation
+          // Provide voice confirmation for natural conversation closure
           await speakResponse("Your memory has been saved and added to your timeline.");
         } else {
           throw new Error('Failed to save memory');
@@ -449,7 +474,7 @@ const Solin: React.FC<SolinProps> = ({
       }
     }
     
-    // Clear conversation and close
+    // Clear conversation and close interface
     setConversationHistory([]);
     setResponse(null);
     setIsOpen(false);
@@ -543,7 +568,17 @@ const Solin: React.FC<SolinProps> = ({
 
   return (
     <>
-      {/* Floating Solin Button */}
+      {/* 
+        FLOATING SOLIN ACCESS BUTTON
+        BUSINESS PURPOSE: Primary entry point for users to access Solin AI companion.
+        Positioned as a floating action button for easy access from any page.
+        
+        VISUAL FEEDBACK:
+        - Gentle floating animation to draw attention
+        - Pulsing animation when Solin is active/speaking
+        - Gradient styling consistent with brand identity
+        - Responsive positioning for mobile and desktop
+      */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
@@ -559,13 +594,35 @@ const Solin: React.FC<SolinProps> = ({
         <Sparkles className="h-6 w-6 text-white" />
       </Button>
 
-      {/* Solin Chat Interface */}
+      {/* 
+        SOLIN CHAT INTERFACE
+        BUSINESS PURPOSE: Main conversation interface providing dual interaction modes
+        (voice and text) with intelligent conversation management and memory capture.
+        
+        KEY FEATURES:
+        - Responsive design for mobile and desktop
+        - Dual interface modes (voice primary, text fallback)
+        - Real-time conversation status indicators
+        - Voice settings and preferences
+        - Conversation history and memory conversion
+      */}
       {isOpen && (
         <Card className={cn(
           "fixed inset-4 md:bottom-20 md:right-4 md:left-auto md:top-auto md:w-96 md:max-h-[600px] z-50",
           "bg-card/95 backdrop-blur-sm border-memory/20",
           "shadow-2xl animate-scale-in overflow-hidden"
         )}>
+          {/* 
+            INTERFACE HEADER
+            BUSINESS PURPOSE: Provides clear identification of Solin AI companion and
+            current conversation status, along with interface controls.
+            
+            VISUAL ELEMENTS:
+            - Solin avatar with animated state indicators
+            - Mode-specific titles (Memory Keeper vs. Your Companion)
+            - Active conversation status indicator
+            - Interface toggle (Voice/Chat) and close button
+          */}
           <div className="flex items-center justify-between p-4 border-b border-border/50">
             <div className="flex items-center gap-3">
               <div className={cn(
@@ -583,7 +640,7 @@ const Solin: React.FC<SolinProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* View Toggle */}
+              {/* Interface Mode Toggle - Voice (primary) vs Chat (fallback) */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -593,6 +650,7 @@ const Solin: React.FC<SolinProps> = ({
                 {currentView === 'voice' ? 'Chat' : 'Voice'}
               </Button>
               
+              {/* Close Interface Button */}
               <Button
                 variant="ghost"
                 size="icon"
