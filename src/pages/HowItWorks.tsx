@@ -7,7 +7,7 @@ const HowItWorks = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in">
+      <div className="max-w-5xl mx-auto px-8 py-8 text-center space-y-8 animate-fade-in">
         <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
           Simple, Powerful, Timeless
         </div>
@@ -196,7 +196,7 @@ const HowItWorks = () => {
       </div>
 
       {/* Key Features */}
-      <div className="max-w-7xl mx-auto px-8 py-24 bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl my-24">
+      <div className="max-w-7xl mx-auto px-8 py-8 bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl my-8">
         <div className="text-center space-y-6 mb-16">
           <h2 className="text-5xl font-bold">Everything You Need</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -280,7 +280,7 @@ const HowItWorks = () => {
       </div>
 
       {/* CTA */}
-      <div className="max-w-5xl mx-auto px-8 py-32 text-center space-y-8">
+      <div className="max-w-5xl mx-auto px-8 py-8 text-center space-y-8">
         <h2 className="text-5xl md:text-7xl font-bold">
           Start preserving
           <br />
