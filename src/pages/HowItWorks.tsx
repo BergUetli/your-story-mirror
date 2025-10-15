@@ -22,7 +22,7 @@ const HowItWorks = () => {
       </div>
 
       {/* The Process - Step by Step */}
-      <div className="max-w-5xl mx-auto px-8 py-24 space-y-32">
+      <div className="max-w-5xl mx-auto px-8 py-16 space-y-32">
         
         {/* Step 1 */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
