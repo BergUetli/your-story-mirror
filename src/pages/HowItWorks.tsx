@@ -27,9 +27,6 @@ const HowItWorks = () => {
         {/* Step 1 */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              Step 1
-            </div>
             <h2 className="text-5xl font-bold">Talk to Solin</h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
               Start a natural conversation with Solin, your AI companion. Share stories, memories, life lessons, and wisdom. No forms, no typing—just speak naturally as if talking to a trusted friend.
@@ -89,9 +86,6 @@ const HowItWorks = () => {
             </CardContent>
           </Card>
           <div className="space-y-6 md:order-2">
-            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              Step 2
-            </div>
             <h2 className="text-5xl font-bold">We Preserve Your Voice</h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
               Advanced AI captures not just what you say, but how you say it. Your tone, your humor, your wisdom—all preserved in your authentic voice.
@@ -102,9 +96,6 @@ const HowItWorks = () => {
         {/* Step 3 */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              Step 3
-            </div>
             <h2 className="text-5xl font-bold">Your Timeline Grows</h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
               Watch as your memories are automatically organized into a beautiful, scrollable timeline spanning decades. Each conversation adds richness to your digital legacy.
@@ -183,9 +174,6 @@ const HowItWorks = () => {
             </CardContent>
           </Card>
           <div className="space-y-6 md:order-2">
-            <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              Step 4
-            </div>
             <h2 className="text-5xl font-bold">Your Voice Lives On</h2>
             <p className="text-xl text-muted-foreground leading-relaxed">
               Your loved ones can interact with your preserved wisdom whenever they need guidance, comfort, or simply want to hear your voice again.
