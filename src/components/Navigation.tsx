@@ -89,7 +89,7 @@ const Navigation = () => {
         - Hover animations for interactive feedback
       */}
       <div className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-[1.5px] z-40" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 relative">
           <div className="flex justify-between items-center h-12">
             {/* 
               INFORMATION SECTION (Left Side)
@@ -115,11 +115,14 @@ const Navigation = () => {
             </div>
 
             {/* 
-              BRAND SECTION (Center)
+              BRAND SECTION (Center) - Absolutely positioned for true centering
               BUSINESS PURPOSE: Provides brand recognition and quick access to home page.
               Acts as a visual anchor and primary logo placement.
             */}
-            <Link to="/" className="text-2xl font-bold tracking-wide hover:text-primary transition-colors">
+            <Link 
+              to="/" 
+              className="absolute left-1/2 transform -translate-x-1/2 text-2xl font-bold tracking-wide hover:text-primary transition-colors z-10"
+            >
               Solin One
             </Link>
             
@@ -135,7 +138,7 @@ const Navigation = () => {
               - Reconstruction: AI enhancement tools
               - Identities: User and family management
             */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-32">
               {rightNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
