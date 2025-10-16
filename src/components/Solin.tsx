@@ -42,6 +42,7 @@ import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import solinConfig from '@/agents/solin.json';
+import { AddMemoryForm } from '@/components/AddMemoryForm';
 
 /**
  * Component Props Configuration
@@ -52,11 +53,14 @@ import solinConfig from '@/agents/solin.json';
  *   - 'visitor': Limited access for sharing public memories only
  * - visitorPermissions: Controls which memory categories visitors can access
  * - defaultView: Primary interaction method (voice is preferred for natural conversation)
+ *   - 'voice': Natural voice conversation (default)
+ *   - 'chat': Text-based chat interface
+ *   - 'form': Manual memory entry form
  */
 interface SolinProps {
   mode?: 'user' | 'visitor';           // User access level and permissions
   visitorPermissions?: string[];       // Memory categories visitors can access
-  defaultView?: 'chat' | 'voice';     // Primary interaction interface
+  defaultView?: 'voice' | 'chat' | 'form';     // Primary interaction interface
 }
 
 /**
@@ -75,7 +79,7 @@ const Solin: React.FC<SolinProps> = ({
   // These states control the visual presentation and user interaction flow
   
   const [isOpen, setIsOpen] = useState(false);                    // Whether Solin chat interface is visible
-  const [currentView, setCurrentView] = useState<'voice' | 'chat'>(defaultView);  // Current interaction mode
+  const [currentView, setCurrentView] = useState<'voice' | 'chat' | 'form'>(defaultView);  // Current interaction mode
   const [isLoading, setIsLoading] = useState(false);              // Whether AI is processing a response
   const [isSpeaking, setIsSpeaking] = useState(false);            // Whether AI is currently speaking
   const [message, setMessage] = useState('');                     // Text input for chat mode
@@ -640,15 +644,33 @@ const Solin: React.FC<SolinProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Interface Mode Toggle - Voice (primary) vs Chat (fallback) */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setCurrentView(currentView === 'voice' ? 'chat' : 'voice')}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                {currentView === 'voice' ? 'Chat' : 'Voice'}
-              </Button>
+              {/* Interface Mode Toggle - Voice / Chat / Form */}
+              <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
+                <Button
+                  variant={currentView === 'voice' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('voice')}
+                  className="text-xs h-7 px-2"
+                >
+                  Voice
+                </Button>
+                <Button
+                  variant={currentView === 'chat' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('chat')}
+                  className="text-xs h-7 px-2"
+                >
+                  Chat
+                </Button>
+                <Button
+                  variant={currentView === 'form' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setCurrentView('form')}
+                  className="text-xs h-7 px-2"
+                >
+                  Form
+                </Button>
+              </div>
               
               {/* Close Interface Button */}
               <Button
@@ -801,7 +823,7 @@ const Solin: React.FC<SolinProps> = ({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : currentView === 'chat' ? (
               /* Text Chat Interface */
               <div className="h-full min-h-[400px] md:min-h-[500px] flex flex-col">
                 <div className="flex-1 p-4 space-y-4 overflow-y-auto max-h-[350px]">
@@ -874,6 +896,16 @@ const Solin: React.FC<SolinProps> = ({
                       </Button>
                     </div>
                   </div>
+                </div>
+              </div>
+            ) : (
+              /* Manual Memory Entry Form */
+              <div className="h-full min-h-[400px] md:min-h-[500px] overflow-y-auto">
+                <div className="p-4">
+                  <div className="text-sm text-muted-foreground mb-4">
+                    Add a memory manually using the form below. You can switch back to voice or chat mode anytime.
+                  </div>
+                  <AddMemoryForm />
                 </div>
               </div>
             )}

@@ -41,6 +41,7 @@ const Navigation = () => {
    * information-seeking behavior.
    */
   const leftNavItems = [
+    { path: '/sanctuary', icon: Home, label: 'Home' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
   ];
 
@@ -52,15 +53,13 @@ const Navigation = () => {
    * on the right as the primary action center.
    * 
    * FEATURE DESCRIPTIONS:
-   * - Home/Sanctuary: Main dashboard and memory overview
-   * - Add Memory: Primary memory creation interface
    * - Timeline: Chronological view of all memories
    * - Reconstruction: AI-powered memory enhancement and story generation
    * - Identities: User profile and family member management
+   * 
+   * NOTE: Add Memory is hidden - users can add memories through Solin agent's manual form option
    */
   const rightNavItems = [
-    { path: '/sanctuary', icon: Home, label: 'Home' },
-    { path: '/add-memory', icon: Plus, label: 'Add Memory' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
