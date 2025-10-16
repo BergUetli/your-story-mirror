@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.generate-memory-sketch]
 verify_jwt = false
+
+[functions.generate-mic-image]
+verify_jwt = false

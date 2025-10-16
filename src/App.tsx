@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Onboarding from "./components/Onboarding";
 import VoiceTest from "./components/VoiceTest";
+import MicImagePreview from "./pages/MicImagePreview";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const AppContent = () => {
         <Route path="/sanctuary" element={<Index />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
+        <Route path="/mic-preview" element={<MicImagePreview />} />
         <Route path="/auth" element={<Navigate to="/" replace />} />
         
         {/* Protected routes */}
