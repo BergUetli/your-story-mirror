@@ -631,7 +631,7 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
             </div>
             
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight text-foreground">
-            Life is short.
+            Replicate your presence
             <br />
             Make your story
             <br />
