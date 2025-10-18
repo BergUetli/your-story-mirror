@@ -639,43 +639,111 @@ const Timeline = () => {
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                // ULTRA-SIMPLE TIMELINE SIZING: Just fit content in ~1.5 screens
+                // SMART COMPACT TIMELINE: Fit content in ~1.5 screens but prevent label overlaps
+                const currentYear = new Date().getFullYear();
+                const sharedBirthYear = timelineProfile?.birth_date 
+                  ? new Date(timelineProfile.birth_date).getFullYear() 
+                  : timelineData[0]?.year || new Date().getFullYear();
+                const totalYears = currentYear - sharedBirthYear;
                 const viewportHeight = window.innerHeight - 200;
                 const displayedYears = timelineData.length;
                 
-                // Simple: Just enough space for displayed years to fit compactly
+                // Start compact
                 let pixelsPerDisplayedYear = Math.max(viewportHeight / displayedYears / 1.5, 120);
-                
-                // Only minimal expansion if heavy content (3+ memories per year)
                 const hasHeavyContent = timelineData.some(year => year.memories.length >= 3);
                 if (hasHeavyContent) {
-                  pixelsPerDisplayedYear *= 1.2; // Only 20% increase maximum
+                  pixelsPerDisplayedYear *= 1.2;
                 }
                 
-                const totalHeight = displayedYears * pixelsPerDisplayedYear;
+                let totalHeight = displayedYears * pixelsPerDisplayedYear;
+                let pixelsPerYear = totalHeight / totalYears;
                 
-                console.log(`📤 COMPACT TIMELINE: ${displayedYears} years × ${Math.round(pixelsPerDisplayedYear)}px = ${Math.round(totalHeight)}px (fits in ${Math.round(totalHeight / viewportHeight * 100) / 100} screens)`);
+                // Check for year label overlaps - same logic as positioning
+                const MINIMUM_YEAR_LABEL_GAP = 80;
+                const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
+                let maxExpansionNeeded = 1;
+                
+                for (let i = 0; i < sortedYears.length - 1; i++) {
+                  const currentYearData = sortedYears[i];
+                  const nextYearData = sortedYears[i + 1];
+                  const yearGap = nextYearData.year - currentYearData.year;
+                  const currentSpacing = yearGap * pixelsPerYear;
+                  
+                  if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
+                    const expansionNeeded = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
+                    maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
+                  }
+                }
+                
+                // Apply expansion if needed
+                totalHeight = totalYears * pixelsPerYear * maxExpansionNeeded;
+                
+                console.log(`📤 SMART TIMELINE: ${displayedYears} years, expansion: ${Math.round((maxExpansionNeeded - 1) * 100)}%, height: ${Math.round(totalHeight)}px (${Math.round(totalHeight / viewportHeight * 100) / 100} screens)`);
                 
                 return totalHeight;
               })()
             }}
           >
             {(() => {
-              // ULTRA-SIMPLE positioning calculation
+              // ULTRA-SIMPLE positioning calculation with label collision prevention
               const currentYear = new Date().getFullYear();
               const totalYears = currentYear - sharedBirthYear;
               const viewportHeight = window.innerHeight - 200;
               const displayedYears = timelineData.length;
               
-              // Same calculation as above for consistency
+              // Start with compact spacing
               let pixelsPerDisplayedYear = Math.max(viewportHeight / displayedYears / 1.5, 120);
+              
+              // Only minimal expansion if heavy content (3+ memories per year)
               const hasHeavyContent = timelineData.some(year => year.memories.length >= 3);
               if (hasHeavyContent) {
                 pixelsPerDisplayedYear *= 1.2;
               }
               
-              const totalHeight = displayedYears * pixelsPerDisplayedYear;
-              const pixelsPerYear = totalHeight / totalYears; // Simple proportional distribution
+              let totalHeight = displayedYears * pixelsPerDisplayedYear;
+              let pixelsPerYear = totalHeight / totalYears; // Simple proportional distribution
+              
+              // CRITICAL: Check for year label overlaps and expand ONLY if needed
+              const MINIMUM_YEAR_LABEL_GAP = 80; // Minimum pixels between year labels
+              const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
+              let needsExpansion = false;
+              
+              for (let i = 0; i < sortedYears.length - 1; i++) {
+                const currentYearData = sortedYears[i];
+                const nextYearData = sortedYears[i + 1];
+                const yearGap = nextYearData.year - currentYearData.year;
+                const currentSpacing = yearGap * pixelsPerYear;
+                
+                if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
+                  needsExpansion = true;
+                  console.log(`⚠️ Label collision detected: ${currentYearData.year}-${nextYearData.year} (${Math.round(currentSpacing)}px < ${MINIMUM_YEAR_LABEL_GAP}px required)`);
+                  break;
+                }
+              }
+              
+              // Expand ONLY if labels would overlap
+              if (needsExpansion) {
+                // Calculate minimum expansion needed
+                let maxExpansionNeeded = 1;
+                for (let i = 0; i < sortedYears.length - 1; i++) {
+                  const currentYearData = sortedYears[i];
+                  const nextYearData = sortedYears[i + 1];
+                  const yearGap = nextYearData.year - currentYearData.year;
+                  const currentSpacing = yearGap * pixelsPerYear;
+                  
+                  if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
+                    const expansionNeeded = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
+                    maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
+                  }
+                }
+                
+                // Apply minimal expansion to prevent overlaps
+                pixelsPerYear *= maxExpansionNeeded;
+                totalHeight = totalYears * pixelsPerYear;
+                console.log(`📏 Timeline expanded by ${Math.round((maxExpansionNeeded - 1) * 100)}% to prevent label overlaps`);
+              } else {
+                console.log(`✅ Timeline compact - no label overlaps detected`);
+              }
 
               return (
                 <>
