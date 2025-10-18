@@ -894,7 +894,12 @@ const Timeline = () => {
                     
                     // Position proportionally from birth year to current year
                     const yearsFromBirth = yearData.year - sharedBirthYear;
-                    const topPosition = yearsFromBirth * pixelsPerYear + 50;
+                    let topPosition = yearsFromBirth * pixelsPerYear + 50;
+                    
+                    // Special positioning for current year - align with end of timeline
+                    if (yearData.isCurrentYear) {
+                      topPosition = totalHeight - 100; // Position near end of timeline
+                    }
                     
                     return (
                       <div 
@@ -915,12 +920,13 @@ const Timeline = () => {
                           }}
                         />
 
-                        {/* Left Side: Year Label - Consistent alignment */}
+                        {/* Left Side: Year Label - Vertically aligned with right content */}
                         <div 
                           className="absolute right-[76%] pr-4 cursor-pointer group flex flex-col items-end"
                           onClick={() => toggleYear(yearData.year)}
+                          style={{ top: '0px' }} // Align with top of right content
                         >
-                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-tight`}>
+                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-tight leading-none`}>
                             {yearData.year}
                           </h2>
 
@@ -932,7 +938,7 @@ const Timeline = () => {
                         </div>
 
                         {/* Right Side: Content - Aligned with year labels */}
-                        <div className="ml-[26%] pl-12 space-y-2 flex flex-col justify-start pt-1">
+                        <div className="ml-[26%] pl-12 space-y-2 flex flex-col justify-start" style={{ paddingTop: '0px' }}>
                           {/* Life Events (Birth) - Compact layout */}
                           {yearData.events.map((event, eventIndex) => (
                             <div key={eventIndex} className="space-y-1 mb-2 animate-fade-in">
