@@ -24,22 +24,65 @@ const Story = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Grammar checking and correction functions
+  // Enhanced grammar checking and correction functions
   const grammarCheck = (text: string): string => {
     let corrected = text.trim();
     
     // Fix common capitalization issues
     corrected = corrected.charAt(0).toUpperCase() + corrected.slice(1);
     
+    // Fix incomplete year patterns first
+    corrected = corrected
+      .replace(/\btwo thousand\s*\.+/gi, '2000')
+      .replace(/\btwo thousand and one\b/gi, '2001')
+      .replace(/\btwo thousand one\b/gi, '2001')
+      .replace(/\bnineteen eighty-?five\b/gi, '1985')
+      .replace(/\bnineteen ninety\b/gi, '1990');
+    
+    // Fix university and institution names
+    corrected = corrected
+      .replace(/\bmanipai?l university\b/gi, 'Manipal University')
+      .replace(/\bharvard university\b/gi, 'Harvard University')
+      .replace(/\boxford university\b/gi, 'Oxford University')
+      .replace(/\bcambridge university\b/gi, 'Cambridge University');
+    
+    // Fix location names properly
+    corrected = corrected
+      .replace(/\bengland\b/gi, 'England')
+      .replace(/\bindia\b/gi, 'India')
+      .replace(/\bamerica\b/gi, 'America')
+      .replace(/\bcanada\b/gi, 'Canada')
+      .replace(/\baustralia\b/gi, 'Australia');
+    
+    // Fix missing articles before specific patterns
+    corrected = corrected
+      // Add "the" before specific events
+      .replace(/\b(graduation ceremony|after party|exam prank|zoo trip|wedding ceremony|birthday party)\b/gi, (match) => `the ${match.toLowerCase()}`)
+      // Add "his/her" before personal events when missing
+      .replace(/\binvolved (graduation|wedding|birthday|funeral)/gi, (match, event) => `involved his ${event}`)
+      // Fix compound words
+      .replace(/\bafter party\b/gi, 'afterparty')
+      // Add "the" before family references
+      .replace(/\bwith family\b/gi, 'with the family')
+      .replace(/\bwith friends\b/gi, 'with friends') // This one is correct as is
+      // Add articles before ordinal events
+      .replace(/\bfirst (zoo trip|day|time|experience)\b/gi, (match) => `the ${match.toLowerCase()}`);
+    
+    // Fix possessive patterns
+    corrected = corrected
+      .replace(/\b(graduation|wedding|birthday) ceremony\b/gi, (match, event) => `${event} ceremony`)
+      .replace(/\bhis the /gi, 'his ')
+      .replace(/\bher the /gi, 'her ');
+    
     // Fix verb tense consistency - convert simple past fragments to complete sentences
     corrected = corrected.replace(/^(went|did|had|was|were|saw|met|got|took|made)\s+/gi, (match) => {
       const verb = match.trim().toLowerCase();
       switch (verb) {
-        case 'went': return 'Going ';
-        case 'did': return 'Doing ';
+        case 'went': return 'Going to ';
+        case 'did': return 'Participating in ';
         case 'had': return 'Having ';
-        case 'was': return 'Being ';
-        case 'were': return 'Being ';
+        case 'was': return 'Being at ';
+        case 'were': return 'Being at ';
         case 'saw': return 'Seeing ';
         case 'met': return 'Meeting ';
         case 'got': return 'Getting ';
@@ -49,32 +92,22 @@ const Story = () => {
       }
     });
     
-    // Fix incomplete sentences - ensure proper sentence structure
+    // Final cleanup
+    corrected = corrected
+      // Fix double articles
+      .replace(/\bthe the\b/gi, 'the')
+      .replace(/\ba the\b/gi, 'the')
+      .replace(/\ban the\b/gi, 'the')
+      // Fix spacing issues
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([.!?])/g, '$1')
+      .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
+      // Ensure sentence ending
+      .replace(/\.+$/, '.');
+    
     if (!/[.!?]$/.test(corrected)) {
       corrected += '.';
     }
-    
-    // Fix common grammar patterns
-    corrected = corrected
-      // Fix "in england" to "in England"
-      .replace(/\bin ([a-z])/g, (match, letter) => `in ${letter.toUpperCase()}`)
-      // Fix years formatting 
-      .replace(/\b(nineteen|twenty)\s+(eighty|ninety|zero|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\s*-?\s*(one|two|three|four|five|six|seven|eight|nine)?/gi, 
-        (match) => {
-          // Convert written years to numbers where appropriate
-          const yearMap: {[key: string]: string} = {
-            'nineteen eighty-five': '1985',
-            'nineteen eighty five': '1985', 
-            'two thousand one': '2001',
-            'two thousand and one': '2001'
-          };
-          return yearMap[match.toLowerCase()] || match;
-        })
-      // Fix double spaces
-      .replace(/\s+/g, ' ')
-      // Fix spacing around punctuation
-      .replace(/\s+([.!?])/g, '$1')
-      .replace(/([.!?])\s*([A-Z])/g, '$1 $2');
     
     return corrected;
   };
@@ -121,6 +154,75 @@ const Story = () => {
       .replace(/\bUsa\b/g, 'USA')
       .replace(/\bUk\b/g, 'UK')
       .replace(/\bNyc\b/g, 'NYC');
+  };
+
+  const addAppropriateArticles = (text: string, name: string): string => {
+    let processed = text;
+    
+    // Add possessives for personal events
+    processed = processed
+      .replace(/\b(graduation|wedding|birthday|funeral)\b/gi, (match) => `${name.toLowerCase()}'s ${match.toLowerCase()}`)
+      .replace(/\b(parents|family|friends|siblings|children)\b/gi, (match) => {
+        // Don't add possessive if already mentioned with "with"
+        if (processed.includes(`with ${match}`)) {
+          return match === 'family' ? 'the family' : match;
+        }
+        return `${name.toLowerCase()}'s ${match}`;
+      });
+    
+    // Add "the" before specific events and places
+    processed = processed
+      .replace(/\b(ceremony|party|celebration|event|trip|vacation|journey)\b/gi, (match) => `the ${match.toLowerCase()}`)
+      .replace(/\b(afterparty|after-party)\b/gi, 'the afterparty')
+      .replace(/\b(exam prank|birthday party|graduation ceremony)\b/gi, (match) => `the ${match.toLowerCase()}`);
+    
+    // Clean up any double possessives or articles
+    processed = processed
+      .replace(new RegExp(`${name.toLowerCase()}'s the `, 'gi'), `${name.toLowerCase()}'s `)
+      .replace(/\bthe the\b/gi, 'the')
+      .replace(/\b's 's\b/gi, "'s");
+    
+    return processed;
+  };
+
+  const finalGrammarCheck = (text: string): string => {
+    let final = text.trim();
+    
+    // Fix common biography-specific grammar patterns
+    final = final
+      // Fix sentence fragments and improve flow
+      .replace(/\. This era was further defined by ([^,]+) and ([^,]+), each/gi, 
+        (match, item1, item2) => `. This era was further defined by ${item1} and ${item2}, with each`)
+      .replace(/\. This period was further defined by ([^,]+) and ([^,]+), each/gi, 
+        (match, item1, item2) => `. This period was also marked by ${item1} and ${item2}, with each`)
+      .replace(/\. This chapter encompassed ([^,]+), and ([^,]+), weaving/gi,
+        (match, items, lastItem) => `. This chapter encompassed ${items} and ${lastItem}, weaving`)
+      
+      // Fix awkward "experience involved" constructions
+      .replace(/This experience involved ([^.]+)\./gi, (match, content) => {
+        // Make it more natural
+        if (content.includes("'s graduation")) {
+          return `This was the time of ${content}.`;
+        } else if (content.includes(" the ")) {
+          return `This experience centered around ${content}.`;
+        } else {
+          return `This period was marked by ${content}.`;
+        }
+      })
+      
+      // Improve flow between sentences
+      .replace(/\. This era was further defined by/gi, '. The era was further enriched by')
+      .replace(/\. This period was further defined by/gi, '. The period also included')
+      .replace(/\. This chapter encompassed/gi, '. The chapter also encompassed')
+      
+      // Fix comma usage in series
+      .replace(/([^,]+), and ([^,]+), (each|weaving|with)/gi, '$1 and $2, $3')
+      
+      // Ensure proper sentence endings
+      .replace(/\.$/, '.')
+      .replace(/\.\./g, '.');
+    
+    return final;
   };
 
   // Enhanced narrative generation from actual memories
@@ -251,7 +353,19 @@ const Story = () => {
     
     conclusion += `ensuring that the experiences that shaped ${name} will be remembered and cherished for generations to come.`;
 
-    return { introduction, chapters, conclusion };
+    // Final document-level grammar check
+    const finalIntroduction = finalGrammarCheck(introduction);
+    const finalChapters = chapters.map(chapter => ({
+      ...chapter,
+      content: finalGrammarCheck(chapter.content)
+    }));
+    const finalConclusion = finalGrammarCheck(conclusion);
+
+    return { 
+      introduction: finalIntroduction, 
+      chapters: finalChapters, 
+      conclusion: finalConclusion 
+    };
   };
 
   // Enhanced theme extraction with weighted significance
@@ -449,8 +563,9 @@ const Story = () => {
           } else if (isNarrative) {
             paragraph += `${processedContent}. `;
           } else {
-            // For factual content, frame appropriately
-            paragraph += `This experience involved ${processedContent.toLowerCase()}. `;
+            // For factual content, frame appropriately and add possessives
+            const contentWithPossessives = addAppropriateArticles(processedContent.toLowerCase(), name);
+            paragraph += `This experience involved ${contentWithPossessives}. `;
           }
         }
       }
