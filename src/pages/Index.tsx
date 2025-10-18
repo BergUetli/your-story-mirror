@@ -2112,19 +2112,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 
                 {isConnected ? (
                   <div className="space-y-3">
-                    {/* Save Conversation Anytime - Reassuring message */}
-                    <div className="text-xs text-muted-foreground bg-muted/30 px-4 py-2 rounded-full border border-border/30">
-                      💬 You can end our conversation anytime — no pressure to keep going
+                    {/* Conversation active indicator */}
+                    <div className="text-xs text-muted-foreground bg-green-50 px-4 py-2 rounded-full border border-green-200">
+                      🎙️ Conversation active — Use the transcript box to save and end
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="lg" 
-                      onClick={endConversation} 
-                      className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all hover:scale-105 font-semibold"
-                    >
-                      Save & End Conversation
-                    </Button>
                   </div>
                 ) : (
                   <Button 
@@ -2140,51 +2131,96 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             </div>
           </div>
 
-          {/* Right Side - Live Conversation Transcript - Bordered with modern chat */}
+          {/* Right Side - Live Conversation Transcript - Enhanced with golden clouds background */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-white rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden"
-            style={{ borderColor: 'hsl(var(--section-border))' }}
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden relative"
+            style={{ 
+              borderColor: 'hsl(var(--section-border))',
+              backgroundImage: 'url(https://page.gensparksite.com/v1/base64_upload/4f1916716bb9026f0438d4801e30344f)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat'
+            }}
           >
-            <div className="mb-3 pb-2 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
-              <h2 className="text-base font-bold text-foreground">
-                Live Transcript
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Real-time conversation with Solin</p>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
-              {conversationMessages.length === 0 ? (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-muted-foreground text-sm text-center">
-                    Your conversation will appear here...
-                  </p>
-                </div>
-              ) : (
-                conversationMessages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+            {/* Overlay to ensure text readability */}
+            <div className="absolute inset-0 bg-white/85 backdrop-blur-[1px] rounded-lg"></div>
+            
+            {/* Content container with relative positioning */}
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Header with enhanced styling for visibility over background */}
+              <div className="mb-3 pb-2 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
+                <h2 className="text-base font-bold text-foreground drop-shadow-sm">
+                  Live Transcript
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5 drop-shadow-sm">Real-time conversation with Solin</p>
+              </div>
+              
+              {/* Messages container */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-4">
+                {conversationMessages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-muted-foreground text-sm text-center drop-shadow-sm">
+                      Your conversation will appear here...
+                    </p>
+                  </div>
+                ) : (
+                  conversationMessages.map((msg, idx) => (
                     <div
-                      className={`max-w-[85%] rounded-lg px-3 py-1.5 transition-all hover:scale-[1.02] ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-white rounded-br-md'
-                          : 'bg-muted text-foreground rounded-bl-md'
-                      }`}
+                      key={idx}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`text-xs font-medium mb-0.5 ${
-                        msg.role === 'user' ? 'text-white/70' : 'opacity-70'
-                      }`}>
-                        {msg.role === 'user' ? 'You' : 'Solin'}
-                      </div>
-                      <div className="text-xs leading-snug whitespace-pre-wrap break-words">
-                        {msg.text}
-                        {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
-                          <span className="inline-block w-1 h-3 bg-primary ml-1 animate-pulse rounded-sm" />
-                        )}
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-1.5 transition-all hover:scale-[1.02] shadow-sm ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-white rounded-br-md'
+                            : 'bg-white/90 text-foreground rounded-bl-md border border-gray-200'
+                        }`}
+                      >
+                        <div className={`text-xs font-medium mb-0.5 ${
+                          msg.role === 'user' ? 'text-white/70' : 'opacity-70'
+                        }`}>
+                          {msg.role === 'user' ? 'You' : 'Solin'}
+                        </div>
+                        <div className="text-xs leading-snug whitespace-pre-wrap break-words">
+                          {msg.text}
+                          {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
+                            <span className="inline-block w-1 h-3 bg-primary ml-1 animate-pulse rounded-sm" />
+                          )}
+                        </div>
                       </div>
                     </div>
+                  ))
+                )}
+              </div>
+              
+              {/* Save and End Button - Prominently placed in transcript box */}
+              {isConnected && (
+                <div className="border-t pt-4 space-y-3" style={{ borderColor: 'hsl(var(--section-border))' }}>
+                  {/* Helpful message */}
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground bg-white/60 px-3 py-2 rounded-full border border-gray-200 inline-block drop-shadow-sm">
+                      💬 Click below anytime to save and end your conversation
+                    </p>
                   </div>
-                ))
+                  
+                  {/* Prominent Save & End Button */}
+                  <Button 
+                    onClick={endConversation} 
+                    size="lg"
+                    className="w-full rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-white/20"
+                  >
+                    ✨ Save & End Conversation ✨
+                  </Button>
+                  
+                  {/* Session info */}
+                  {conversationState.totalMemoriesSaved > 0 && (
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground bg-white/60 px-3 py-1.5 rounded-full inline-block border border-gray-200 drop-shadow-sm">
+                        🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
