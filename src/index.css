@@ -186,4 +186,33 @@
   .animation-delay-300 {
     animation-delay: 300ms;
   }
+
+  /* Enhanced button styles for better visibility and interaction */
+  .btn-enhanced {
+    @apply transition-all duration-200 ease-out;
+    @apply border-2 shadow-sm;
+    transform: scale(1);
+  }
+
+  .btn-enhanced:hover {
+    @apply shadow-md;
+    transform: scale(1.02);
+  }
+
+  .btn-enhanced:active {
+    transform: scale(0.98);
+  }
+
+  /* Primary button enhancement */
+  .btn-primary-enhanced {
+    @apply btn-enhanced;
+    @apply border-primary/30 hover:border-primary;
+  }
+
+  /* Outline button enhancement */
+  .btn-outline-enhanced {
+    @apply btn-enhanced;
+    @apply border-muted-foreground/20 hover:border-muted-foreground;
+    @apply hover:bg-muted/50;
+  }
 }
