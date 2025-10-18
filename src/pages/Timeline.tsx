@@ -651,8 +651,13 @@ const Timeline = () => {
                 const totalMemories = timelineData.reduce((sum, y) => sum + y.memories.length, 0);
                 const avgMemoriesPerYear = totalMemories / Math.max(timelineData.length, 1);
                 
-                // Base spacing: fit timeline in viewport
-                const basePixelsPerYear = Math.max(Math.min(viewportHeight / totalYears, 30), 10);
+                // Base spacing: fit timeline in viewport based on DISPLAYED years, not total lifespan
+                // Since we only show significant years, calculate spacing to fit those in viewport
+                const displayedYears = timelineData.length; // Only significant years are in timelineData
+                const yearSpanRange = totalYears; // Full year range for proportional positioning
+                
+                // Calculate spacing so displayed content fits in viewport - halved as requested
+                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 2, 8), 2);
                 
                 // Start with no expansion - fit timeline in viewport initially
                 let collisionExpansionFactor = 1;
@@ -749,8 +754,13 @@ const Timeline = () => {
               const totalMemories = timelineData.reduce((sum, y) => sum + y.memories.length, 0);
               const avgMemoriesPerYear = totalMemories / Math.max(timelineData.length, 1);
               
-              // Base spacing: fit timeline in viewport
-              const basePixelsPerYear = Math.max(Math.min(viewportHeight / totalYears, 30), 10);
+              // Base spacing: fit timeline in viewport based on DISPLAYED years, not total lifespan
+              // Since we only show significant years, calculate spacing to fit those in viewport
+              const displayedYears = timelineData.length; // Only significant years are in timelineData
+              const yearSpanRange = totalYears; // Full year range for proportional positioning
+              
+              // Calculate spacing so displayed content fits in viewport - halved as requested
+              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 2, 8), 2);
               
               // Start with no expansion - fit timeline in viewport initially (duplicate for consistency)
               let collisionExpansionFactor = 1;
