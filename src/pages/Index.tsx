@@ -916,9 +916,16 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
                 <p className="text-base font-semibold text-foreground">
                   {isConnecting ? 'Connecting to Solin...' : isConnected ? (isSpeaking ? 'Solin is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
                 </p>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
+                  </p>
+                  {!isConnected && (
+                    <p className="text-xs text-muted-foreground/70 max-w-md">
+                      Share as much or as little as you'd like — you can save and stop anytime
+                    </p>
+                  )}
+                </div>
                 
                 {/* User authentication indicator */}
                 {user && (
@@ -944,14 +951,21 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
                 )}
                 
                 {isConnected ? (
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    onClick={endConversation} 
-                    className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all hover:scale-105 font-semibold"
-                  >
-                    End Conversation
-                  </Button>
+                  <div className="space-y-3">
+                    {/* Save Conversation Anytime - Reassuring message */}
+                    <div className="text-xs text-muted-foreground bg-muted/30 px-4 py-2 rounded-full border border-border/30">
+                      💬 You can end our conversation anytime — no pressure to keep going
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      onClick={endConversation} 
+                      className="rounded-full border-2 hover:bg-destructive hover:text-white hover:border-destructive transition-all hover:scale-105 font-semibold"
+                    >
+                      Save & End Conversation
+                    </Button>
+                  </div>
                 ) : (
                   <Button 
                     size="lg" 
