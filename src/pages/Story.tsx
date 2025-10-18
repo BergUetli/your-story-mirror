@@ -24,14 +24,20 @@ const Story = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Enhanced grammar checking and correction functions
-  const grammarCheck = (text: string): string => {
+  // Simplified and safe grammar checking functions
+  const grammarCheck = (text: string, userName: string = ''): string => {
     let corrected = text.trim();
     
-    // Fix common capitalization issues
+    // Protect the user's name from modifications
+    const nameProtectionToken = `__USER_NAME_${Math.random().toString(36).substr(2, 9)}__`;
+    if (userName) {
+      corrected = corrected.replace(new RegExp(`\\b${userName}\\b`, 'gi'), nameProtectionToken);
+    }
+    
+    // Fix basic capitalization
     corrected = corrected.charAt(0).toUpperCase() + corrected.slice(1);
     
-    // Fix incomplete year patterns first
+    // Fix incomplete year patterns
     corrected = corrected
       .replace(/\btwo thousand\s*\.+/gi, '2000')
       .replace(/\btwo thousand and one\b/gi, '2001')
@@ -39,74 +45,29 @@ const Story = () => {
       .replace(/\bnineteen eighty-?five\b/gi, '1985')
       .replace(/\bnineteen ninety\b/gi, '1990');
     
-    // Fix university and institution names
+    // Fix institution names (specific, safe patterns only)
     corrected = corrected
       .replace(/\bmanipai?l university\b/gi, 'Manipal University')
-      .replace(/\bharvard university\b/gi, 'Harvard University')
-      .replace(/\boxford university\b/gi, 'Oxford University')
-      .replace(/\bcambridge university\b/gi, 'Cambridge University');
+      .replace(/\bharvard university\b/gi, 'Harvard University');
     
-    // Fix location names properly
+    // Fix basic location names (safe patterns only)
     corrected = corrected
       .replace(/\bengland\b/gi, 'England')
-      .replace(/\bindia\b/gi, 'India')
-      .replace(/\bamerica\b/gi, 'America')
-      .replace(/\bcanada\b/gi, 'Canada')
-      .replace(/\baustralia\b/gi, 'Australia');
+      .replace(/\bindia\b/gi, 'India');
     
-    // Fix missing articles before specific patterns
+    // Basic punctuation and spacing fixes
     corrected = corrected
-      // Add "the" before specific events
-      .replace(/\b(graduation ceremony|after party|exam prank|zoo trip|wedding ceremony|birthday party)\b/gi, (match) => `the ${match.toLowerCase()}`)
-      // Add "his/her" before personal events when missing
-      .replace(/\binvolved (graduation|wedding|birthday|funeral)/gi, (match, event) => `involved his ${event}`)
-      // Fix compound words
-      .replace(/\bafter party\b/gi, 'afterparty')
-      // Add "the" before family references
-      .replace(/\bwith family\b/gi, 'with the family')
-      .replace(/\bwith friends\b/gi, 'with friends') // This one is correct as is
-      // Add articles before ordinal events
-      .replace(/\bfirst (zoo trip|day|time|experience)\b/gi, (match) => `the ${match.toLowerCase()}`);
-    
-    // Fix possessive patterns
-    corrected = corrected
-      .replace(/\b(graduation|wedding|birthday) ceremony\b/gi, (match, event) => `${event} ceremony`)
-      .replace(/\bhis the /gi, 'his ')
-      .replace(/\bher the /gi, 'her ');
-    
-    // Fix verb tense consistency - convert simple past fragments to complete sentences
-    corrected = corrected.replace(/^(went|did|had|was|were|saw|met|got|took|made)\s+/gi, (match) => {
-      const verb = match.trim().toLowerCase();
-      switch (verb) {
-        case 'went': return 'Going to ';
-        case 'did': return 'Participating in ';
-        case 'had': return 'Having ';
-        case 'was': return 'Being at ';
-        case 'were': return 'Being at ';
-        case 'saw': return 'Seeing ';
-        case 'met': return 'Meeting ';
-        case 'got': return 'Getting ';
-        case 'took': return 'Taking ';
-        case 'made': return 'Making ';
-        default: return match;
-      }
-    });
-    
-    // Final cleanup
-    corrected = corrected
-      // Fix double articles
-      .replace(/\bthe the\b/gi, 'the')
-      .replace(/\ba the\b/gi, 'the')
-      .replace(/\ban the\b/gi, 'the')
-      // Fix spacing issues
       .replace(/\s+/g, ' ')
       .replace(/\s+([.!?])/g, '$1')
-      .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
-      // Ensure sentence ending
-      .replace(/\.+$/, '.');
+      .replace(/\.+/g, '.');
     
     if (!/[.!?]$/.test(corrected)) {
       corrected += '.';
+    }
+    
+    // Restore the user's name
+    if (userName) {
+      corrected = corrected.replace(new RegExp(nameProtectionToken, 'g'), userName);
     }
     
     return corrected;
@@ -115,29 +76,21 @@ const Story = () => {
   const convertToThirdPerson = (text: string, name: string): string => {
     let converted = text;
     
-    // Convert first person pronouns to third person
+    // Only do very specific, safe conversions
     converted = converted
-      // Handle "I" at start of sentence
-      .replace(/^I\s+/gi, `${name} `)
-      // Handle "I" in middle of sentence
-      .replace(/\s+I\s+/g, ` ${name} `)
-      // Handle possessive "my" 
-      .replace(/^My\s+/gi, `${name}'s `)
-      .replace(/\s+my\s+/g, ` ${name}'s `)
-      // Handle "we" - convert to appropriate third person
-      .replace(/^We\s+/gi, `${name} and companions `)
-      .replace(/\s+we\s+/g, ` they `)
-      // Handle "our"
-      .replace(/^Our\s+/gi, `Their `)
-      .replace(/\s+our\s+/g, ` their `)
-      // Handle "me"
-      .replace(/\s+me\b/g, ` ${name}`)
-      // Handle reflexive pronouns
-      .replace(/\s+(myself|ourselves)\b/g, ` ${name}`)
-      // Fix verb conjugation after pronoun conversion
-      .replace(new RegExp(`${name} am\\b`, 'g'), `${name} was`)
-      .replace(new RegExp(`${name} have\\b`, 'g'), `${name} had`)
-      .replace(new RegExp(`${name} are\\b`, 'g'), `${name} was`);
+      // Handle "I" at start of sentence (with word boundary)
+      .replace(/^I\s+([a-z])/gi, `${name} $1`)
+      // Handle "I" with clear word boundaries  
+      .replace(/\bI\s+([a-z])/g, `${name} $1`)
+      // Handle possessive "my" with word boundaries
+      .replace(/\bmy\s+([a-z])/gi, `${name}'s $1`)
+      // Handle "me" at end of phrases
+      .replace(/\s+me(\s|[.!?])/g, ` ${name}$1`);
+    
+    // Fix verb conjugation only for the specific name
+    converted = converted
+      .replace(new RegExp(`\\b${name} am\\b`, 'g'), `${name} was`)
+      .replace(new RegExp(`\\b${name} have\\b`, 'g'), `${name} had`);
     
     return converted;
   };
@@ -156,71 +109,48 @@ const Story = () => {
       .replace(/\bNyc\b/g, 'NYC');
   };
 
-  const addAppropriateArticles = (text: string, name: string): string => {
+  const addBasicArticles = (text: string): string => {
     let processed = text;
     
-    // Add possessives for personal events
+    // Only add articles in very specific, safe cases
     processed = processed
-      .replace(/\b(graduation|wedding|birthday|funeral)\b/gi, (match) => `${name.toLowerCase()}'s ${match.toLowerCase()}`)
-      .replace(/\b(parents|family|friends|siblings|children)\b/gi, (match) => {
-        // Don't add possessive if already mentioned with "with"
-        if (processed.includes(`with ${match}`)) {
-          return match === 'family' ? 'the family' : match;
-        }
-        return `${name.toLowerCase()}'s ${match}`;
-      });
-    
-    // Add "the" before specific events and places
-    processed = processed
-      .replace(/\b(ceremony|party|celebration|event|trip|vacation|journey)\b/gi, (match) => `the ${match.toLowerCase()}`)
-      .replace(/\b(afterparty|after-party)\b/gi, 'the afterparty')
-      .replace(/\b(exam prank|birthday party|graduation ceremony)\b/gi, (match) => `the ${match.toLowerCase()}`);
-    
-    // Clean up any double possessives or articles
-    processed = processed
-      .replace(new RegExp(`${name.toLowerCase()}'s the `, 'gi'), `${name.toLowerCase()}'s `)
-      .replace(/\bthe the\b/gi, 'the')
-      .replace(/\b's 's\b/gi, "'s");
+      // Fix compound words
+      .replace(/\bafter party\b/gi, 'afterparty')
+      // Add "with the" for family (safe pattern)
+      .replace(/\bwith family\b/gi, 'with the family');
     
     return processed;
   };
 
-  const finalGrammarCheck = (text: string): string => {
+  const finalGrammarCheck = (text: string, userName: string = ''): string => {
     let final = text.trim();
     
-    // Fix common biography-specific grammar patterns
+    // Protect the user's name
+    const nameProtectionToken = `__USER_NAME_${Math.random().toString(36).substr(2, 9)}__`;
+    if (userName) {
+      final = final.replace(new RegExp(`\\b${userName}\\b`, 'gi'), nameProtectionToken);
+    }
+    
+    // Only very safe, minimal corrections
     final = final
-      // Fix sentence fragments and improve flow
-      .replace(/\. This era was further defined by ([^,]+) and ([^,]+), each/gi, 
-        (match, item1, item2) => `. This era was further defined by ${item1} and ${item2}, with each`)
-      .replace(/\. This period was further defined by ([^,]+) and ([^,]+), each/gi, 
-        (match, item1, item2) => `. This period was also marked by ${item1} and ${item2}, with each`)
-      .replace(/\. This chapter encompassed ([^,]+), and ([^,]+), weaving/gi,
-        (match, items, lastItem) => `. This chapter encompassed ${items} and ${lastItem}, weaving`)
-      
-      // Fix awkward "experience involved" constructions
-      .replace(/This experience involved ([^.]+)\./gi, (match, content) => {
-        // Make it more natural
-        if (content.includes("'s graduation")) {
-          return `This was the time of ${content}.`;
-        } else if (content.includes(" the ")) {
-          return `This experience centered around ${content}.`;
-        } else {
-          return `This period was marked by ${content}.`;
-        }
-      })
-      
-      // Improve flow between sentences
-      .replace(/\. This era was further defined by/gi, '. The era was further enriched by')
-      .replace(/\. This period was further defined by/gi, '. The period also included')
-      .replace(/\. This chapter encompassed/gi, '. The chapter also encompassed')
-      
-      // Fix comma usage in series
-      .replace(/([^,]+), and ([^,]+), (each|weaving|with)/gi, '$1 and $2, $3')
-      
-      // Ensure proper sentence endings
-      .replace(/\.$/, '.')
-      .replace(/\.\./g, '.');
+      // Fix double spaces
+      .replace(/\s+/g, ' ')
+      // Fix spacing around punctuation
+      .replace(/\s+([.!?])/g, '$1')
+      .replace(/([.!?])\s+([A-Z])/g, '$1 $2')
+      // Fix obvious double articles (but be very careful)
+      .replace(/\bthe the\b/gi, 'the')
+      // Ensure sentence ending
+      .replace(/\.+$/, '.');
+    
+    if (!/[.!?]$/.test(final)) {
+      final += '.';
+    }
+    
+    // Restore the user's name
+    if (userName) {
+      final = final.replace(new RegExp(nameProtectionToken, 'g'), userName);
+    }
     
     return final;
   };
@@ -353,13 +283,13 @@ const Story = () => {
     
     conclusion += `ensuring that the experiences that shaped ${name} will be remembered and cherished for generations to come.`;
 
-    // Final document-level grammar check
-    const finalIntroduction = finalGrammarCheck(introduction);
+    // Final document-level grammar check with name protection
+    const finalIntroduction = finalGrammarCheck(introduction, name);
     const finalChapters = chapters.map(chapter => ({
       ...chapter,
-      content: finalGrammarCheck(chapter.content)
+      content: finalGrammarCheck(chapter.content, name)
     }));
-    const finalConclusion = finalGrammarCheck(conclusion);
+    const finalConclusion = finalGrammarCheck(conclusion, name);
 
     return { 
       introduction: finalIntroduction, 
@@ -544,28 +474,25 @@ const Story = () => {
         }
         
         if (bestContent.length > 20 && bestContent.length < 250) {
-          // Grammar check and correct the content
-          let processedContent = grammarCheck(bestContent);
+          // Safe grammar check
+          let processedContent = grammarCheck(bestContent, name);
           
           if (isFirstPerson) {
-            // Convert first person to third person narrative with proper grammar
+            // Convert first person to third person with safe patterns
             processedContent = convertToThirdPerson(processedContent, name);
           }
           
-          // Choose appropriate integration based on content type with proper sentence structure
+          // Simple, safe integration without dangerous transformations
           if (hasEmotion || reflectiveSentence) {
-            // For emotional/reflective content, integrate as direct narrative
             if (processedContent.match(/^(realized|learned|discovered|understood|felt)/i)) {
               paragraph += `During this time, ${name} ${processedContent.toLowerCase()}. `;
             } else {
               paragraph += `Reflecting on this period, ${processedContent}. `;
             }
-          } else if (isNarrative) {
-            paragraph += `${processedContent}. `;
           } else {
-            // For factual content, frame appropriately and add possessives
-            const contentWithPossessives = addAppropriateArticles(processedContent.toLowerCase(), name);
-            paragraph += `This experience involved ${contentWithPossessives}. `;
+            // Keep it simple and safe
+            const safeContent = addBasicArticles(processedContent.toLowerCase());
+            paragraph += `This was the time of ${safeContent}. `;
           }
         }
       }
@@ -604,8 +531,8 @@ const Story = () => {
       paragraph += `This singular experience became a defining moment, influencing perspectives and decisions in the years that followed.`;
     }
     
-    // Final grammar check on the complete paragraph
-    return grammarCheck(paragraph);
+    // Final grammar check on the complete paragraph with name protection
+    return grammarCheck(paragraph, name);
   };
 
 
