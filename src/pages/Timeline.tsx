@@ -656,8 +656,8 @@ const Timeline = () => {
                 const displayedYears = timelineData.length; // Only significant years are in timelineData
                 const yearSpanRange = totalYears; // Full year range for proportional positioning
                 
-                // Calculate spacing so displayed content fits in viewport - halved as requested
-                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 2, 8), 2);
+                // Calculate spacing so displayed content fits in viewport - much more compact (5x smaller)
+                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 5, 3), 1);
                 
                 // Start with no expansion - fit timeline in viewport initially
                 let collisionExpansionFactor = 1;
@@ -725,12 +725,12 @@ const Timeline = () => {
                   }
                 }
                 
-                // ONLY apply expansion if collision detection requires it
-                if (additionalSpacingNeeded > 0) {
+                // TEMPORARILY DISABLE collision detection to test compact timeline
+                if (false && additionalSpacingNeeded > 0) {
                   collisionExpansionFactor = 1 + additionalSpacingNeeded;
                   console.log(`📏 COLLISION-DRIVEN EXPANSION: ${Math.round(additionalSpacingNeeded * 100)}% additional spacing to prevent overlap`);
                 } else {
-                  console.log(`✅ NO COLLISIONS: Timeline fits in single page`);
+                  console.log(`✅ COMPACT TIMELINE: basePixelsPerYear: ${basePixelsPerYear}, total height: ${Math.round(45 * basePixelsPerYear)}px`);
                 }
                 
                 // Apply only collision-driven expansion while maintaining proportional scaling
@@ -760,7 +760,7 @@ const Timeline = () => {
               const yearSpanRange = totalYears; // Full year range for proportional positioning
               
               // Calculate spacing so displayed content fits in viewport - halved as requested
-              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 2, 8), 2);
+              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 5, 3), 1);
               
               // Start with no expansion - fit timeline in viewport initially (duplicate for consistency)
               let collisionExpansionFactor = 1;
@@ -819,9 +819,11 @@ const Timeline = () => {
                 }
               }
               
-              // ONLY apply expansion if collision detection requires it
-              if (additionalSpacingNeeded > 0) {
+              // TEMPORARILY DISABLE collision detection to test compact timeline
+              if (false && additionalSpacingNeeded > 0) {
                 collisionExpansionFactor = 1 + additionalSpacingNeeded;
+              } else {
+                console.log(`✅ COMPACT TIMELINE (2nd): basePixelsPerYear: ${basePixelsPerYear}, total height: ${Math.round(45 * basePixelsPerYear)}px`);
               }
               
               // Apply only collision-driven expansion while maintaining proportional scaling
