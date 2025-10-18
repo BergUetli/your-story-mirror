@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthModal } from './AuthModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 // Demo mode context
 const DemoContext = createContext<{ isDemoMode: boolean; setDemoMode: (demo: boolean) => void } | undefined>(undefined);
@@ -88,15 +88,35 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               Enter Your Sanctuary
             </Button>
             
-            <Button
-              onClick={() => setDemoMode(true)}
-              variant="outline"
-              className="w-full border-memory/30 hover:border-memory hover:bg-memory/10"
-              size="lg"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Try Demo Mode
-            </Button>
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                onClick={async () => {
+                  try {
+                    console.log('🔧 Manual authentication attempt...');
+                    const { supabase } = await import('@/integrations/supabase/client');
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                      email: 'berguetli@gmail.com',
+                      password: 'zippy6'
+                    });
+                    
+                    if (error) {
+                      console.error('Authentication failed:', error.message);
+                      alert('Authentication failed: ' + error.message);
+                    } else {
+                      console.log('✅ Authentication successful');
+                    }
+                  } catch (error) {
+                    console.error('Authentication error:', error);
+                    alert('Authentication error: ' + error);
+                  }
+                }}
+                variant="outline"
+                className="w-full"
+                size="sm"
+              >
+                🔧 Dev: Quick Login (berguetli@gmail.com)
+              </Button>
+            )}
           </div>
         </div>
       </div>

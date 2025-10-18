@@ -8,6 +8,7 @@ import { ProtectedRoute, DemoProvider } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
 import Timeline from "./pages/Timeline";
+import Story from "./pages/Story";
 import Reconstruction from "./pages/Reconstruction";
 import Identities from "./pages/Identities";
 import Settings from "./pages/Settings";
@@ -16,9 +17,11 @@ import Visitor from "./pages/Visitor";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
+import Auth from "./pages/Auth";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import Admin from "./pages/Admin";
 import Onboarding from "./components/Onboarding";
 import VoiceTest from "./components/VoiceTest";
 import MicImagePreview from "./pages/MicImagePreview";
@@ -41,13 +44,14 @@ const AppContent = () => {
     <div className="pb-16 md:pb-0">
       <Navigation />
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<About />} />
+        {/* Authentication-based routing */}
+        <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
+        <Route path="/about" element={<About />} />
         <Route path="/sanctuary" element={<Index />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
         <Route path="/mic-preview" element={<MicImagePreview />} />
-        <Route path="/auth" element={<Navigate to="/" replace />} />
+        <Route path="/auth" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
@@ -70,6 +74,11 @@ const AppContent = () => {
             <Timeline />
           </ProtectedRoute>
         } />
+        <Route path="/story" element={
+          <ProtectedRoute>
+            <Story />
+          </ProtectedRoute>
+        } />
         <Route path="/reconstruction" element={
           <ProtectedRoute>
             <Reconstruction />
@@ -90,6 +99,11 @@ const AppContent = () => {
             <div className="min-h-screen bg-background flex items-center justify-center p-6">
               <VoiceTest />
             </div>
+          </ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute>
+            <Admin />
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

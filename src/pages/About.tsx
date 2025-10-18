@@ -12,25 +12,66 @@ const About = () => {
   
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <div className="max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in">
-        <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-          Our Mission
-        </div>
+      {/* Hero Section with Cosmic Background */}
+      <div 
+        className="relative overflow-hidden"
+        style={{
+          backgroundImage: 'url(/cosmic-background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
         
-        <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-          Life is short.
-          <br />
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Make your story
+        <div className="relative max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in text-white">
+          <div className="inline-block px-4 py-2 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm border border-white/30">
+            Our Mission
+          </div>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+            Would your life make a good movie?
             <br />
-            last forever.
-          </span>
-        </h1>
-        
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
-        </p>
+            <span className="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
+              Take the journey to make your story last forever.
+            </span>
+          </h1>
+          
+          <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
+          </p>
+          
+          {/* CTA moved to top - right after hero text */}
+          <div className="pt-8">
+            {!user ? (
+              <div className="space-y-4">
+                <p className="text-lg text-white/80">
+                  Sign in to access your personal collection of memories and conversations with Solin.
+                </p>
+                <div className="flex gap-4 justify-center">
+                  <Button 
+                    size="lg" 
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="bg-white/20 hover:bg-white/30 text-white border-2 border-white/30 hover:border-white/50 backdrop-blur-sm px-12 py-6 rounded-full text-lg font-semibold transition-all hover:scale-105 shadow-lg"
+                  >
+                    Enter Your Sanctuary
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button 
+                asChild
+                size="lg" 
+                className="bg-white/20 hover:bg-white/30 text-white border-2 border-white/30 hover:border-white/50 backdrop-blur-sm px-12 py-6 rounded-full text-lg font-semibold transition-all hover:scale-105 shadow-lg"
+              >
+                <Link to="/sanctuary">
+                  Start Your Sanctuary
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* The Vision */}
@@ -260,37 +301,30 @@ const About = () => {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="max-w-5xl mx-auto px-8 py-32 text-center space-y-8">
-        <h2 className="text-5xl md:text-6xl font-bold">
-          Ready to preserve
-          <br />
-          your legacy?
+      {/* Secondary CTA - Keep this but make it shorter since primary CTA is now at top */}
+      <div className="max-w-5xl mx-auto px-8 py-16 text-center space-y-6">
+        <h2 className="text-3xl md:text-4xl font-bold">
+          Ready to preserve your legacy?
         </h2>
         
         {!user ? (
           <div className="space-y-4">
-            <p className="text-xl text-muted-foreground">
-              Sign in to access your personal collection of memories and conversations with Solin.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button 
-                size="lg" 
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
-              >
-                Enter Your Sanctuary
-              </Button>
-            </div>
+            <Button 
+              size="lg" 
+              onClick={() => setIsAuthModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full"
+            >
+              Get Started Today
+            </Button>
           </div>
         ) : (
           <Button 
             asChild
             size="lg" 
-            className="bg-primary hover:bg-primary/90 text-white px-12 py-6 rounded-full text-lg"
+            className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full"
           >
             <Link to="/sanctuary">
-              Start Your Sanctuary
+              Continue Your Journey
             </Link>
           </Button>
         )}

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, Mail, Lock, User } from 'lucide-react';
 
 interface AuthModalProps {
@@ -20,6 +21,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const { signUp, signIn, resetPassword } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +59,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         description: "Please check your email to verify your account.",
       });
       onClose();
+      // For now, navigate to sanctuary even for unverified users
+      // The backend can handle email verification requirements
+      navigate('/sanctuary', { replace: true });
     }
     setIsLoading(false);
   };
@@ -79,6 +84,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         description: "You're now signed in to your memory sanctuary.",
       });
       onClose();
+      // Navigate to sanctuary after successful authentication
+      navigate('/sanctuary', { replace: true });
     }
     setIsLoading(false);
   };

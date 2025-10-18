@@ -28,10 +28,14 @@ serve(async (req) => {
     // Verify the JWT token
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.2');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    if (!supabaseUrl) throw new Error('SUPABASE_URL not configured');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    const supabaseClient = createClient(supabaseUrl, authHeader.replace('Bearer ', ''));
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (!supabaseUrl) throw new Error('SUPABASE_URL not configured');
+    if (!supabaseServiceRoleKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+    
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(jwt);
 
     if (authError || !user) {
       return new Response(

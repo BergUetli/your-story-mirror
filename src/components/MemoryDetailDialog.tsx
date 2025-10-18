@@ -293,10 +293,10 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
             </DialogTitle>
             {!isEditing && (
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => setIsEditing(true)}
-                className="gap-2"
+                className="gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <Edit2 className="w-4 h-4" />
                 Edit
@@ -359,11 +359,11 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                 />
               </div>
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-3 pt-2">
                 <Button
                   onClick={handleSaveEdit}
                   disabled={isSaving}
-                  className="gap-2"
+                  className="gap-2 border-2 border-primary hover:border-primary/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
                 >
                   <Save className="w-4 h-4" />
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -379,6 +379,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                     setEditTags(memory.tags || []);
                   }}
                   disabled={isSaving}
+                  className="border-2 border-muted-foreground/20 hover:border-muted-foreground hover:bg-muted/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
                 >
                   Cancel
                 </Button>
@@ -442,15 +443,10 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
             </div>
           )}
 
-          {/* Artifacts Section */}
+          {/* Attachments Section */}
           <div className="border-t pt-4">
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-              <Upload className="w-4 h-4" />
-              Attachments
-            </h3>
-            
-            {/* Upload Button */}
-            <div className="mb-3">
+            {/* Single Upload Button with Better Styling */}
+            <div className="mb-4">
               <input
                 type="file"
                 id="artifact-upload"
@@ -462,12 +458,13 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
               />
               <Button
                 variant="outline"
-                size="sm"
+                size="default"
                 onClick={() => document.getElementById('artifact-upload')?.click()}
                 disabled={uploading}
+                className="w-full sm:w-auto border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Add Files'}
+                {uploading ? 'Uploading...' : 'Add Attachments'}
               </Button>
             </div>
 
