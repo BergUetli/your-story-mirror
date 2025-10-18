@@ -44,7 +44,7 @@ const AppContent = () => {
     <div className="flex min-h-screen">
       <SidebarNavigation />
       {/* Main content area with left margin for sidebar */}
-      <div className="flex-1 ml-0 md:ml-16 transition-all duration-300 min-h-screen">
+      <div className="flex-1 ml-0 md:ml-[4.5rem] transition-all duration-300 min-h-screen">
         <Routes>
         {/* Authentication-based routing */}
         <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
