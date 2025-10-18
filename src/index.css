@@ -225,4 +225,20 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Sidebar layout classes */
+  .main-content-with-sidebar {
+    margin-left: 4rem; /* 64px for collapsed sidebar */
+  }
+
+  .main-content-with-sidebar-expanded {
+    margin-left: 16rem; /* 256px for expanded sidebar */
+  }
+
+  @media (max-width: 768px) {
+    .main-content-with-sidebar,
+    .main-content-with-sidebar-expanded {
+      margin-left: 0;
+    }
+  }
 }
