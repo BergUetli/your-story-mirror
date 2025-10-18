@@ -6,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
+import { chunkMemoryContent } from '@/utils/memoryChunking';
+import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
 // Dummy mode removed - always use real authentication
 import { 
   Heart, 
@@ -31,6 +33,146 @@ const Index = () => {
   const lastConnectedAtRef = useRef(0);
   const retryCountRef = useRef(0);
   const startConversationRef = useRef<(isRetry?: boolean) => Promise<void>>();
+
+  // Biography topics tool for collecting general information about the user
+  const saveBiographyTopicTool = useCallback(async (parameters: {
+    topic_category: string;
+    topic_title: string;
+    content: string;
+    context_notes?: string;
+  }) => {
+    const handoffId = `biography-${Date.now()}`;
+    const logHandoff = (stage: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      console.log(`📖 [${handoffId}] BIOGRAPHY HANDOFF: ${stage} @ ${timestamp}`, data || '');
+    };
+
+    try {
+      logHandoff('1️⃣ RECEIVED', { source: 'ElevenLabs voice agent', parameters });
+
+      // Validate required fields
+      const { topic_category, topic_title, content } = parameters;
+      
+      if (!topic_category || !topic_title || !content) {
+        logHandoff('❌ VALIDATION FAILED', { 
+          hasCategory: !!topic_category, 
+          hasTitle: !!topic_title, 
+          hasContent: !!content 
+        });
+        return 'Missing required fields. Please provide category, title, and content for the biographical topic.';
+      }
+
+      logHandoff('2️⃣ VALIDATED', { 
+        category: topic_category, 
+        title: topic_title, 
+        contentLength: content.length 
+      });
+
+      // Use real authenticated user ID only
+      if (!effectiveUser?.id) {
+        logHandoff('❌ NO USER ID', { message: 'User must be logged in to save biography topics' });
+        return 'You must be logged in to save biographical information. Please sign in and try again.';
+      }
+
+      const userId = effectiveUser.id;
+      
+      logHandoff('3️⃣ SUBMITTING TO DATABASE', { userId, category: topic_category, title: topic_title });
+
+      const { data, error } = await supabase
+        .from('biography_entries')
+        .insert([{
+          user_id: userId,
+          topic_category: topic_category,
+          topic_title: topic_title,
+          content: content,
+          context_notes: parameters.context_notes || null,
+          source: 'solin_conversation'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        logHandoff('❌ DATABASE ERROR', { error: error.message, code: error.code });
+        throw error;
+      }
+
+      logHandoff('4️⃣ DATABASE COMMITTED', { entryId: data.id, title: data.topic_title });
+
+      toast({
+        title: 'Biography Topic Saved',
+        description: `"${topic_title}" added to your biographical profile.`,
+        duration: 5000,
+      });
+
+      logHandoff('✅ HANDOFF COMPLETE', {
+        status: 'success',
+        agentResponse: `Thank you for sharing about "${topic_title}". This biographical information enriches your life story beyond specific memories.`,
+        note: 'Biography topic successfully saved'
+      });
+
+      return `Thank you for sharing about "${topic_title}". This biographical information has been saved and will help create a richer narrative of who you are as a person.`;
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      logHandoff('❌ HANDOFF FAILED', { error: errorMsg });
+      
+      toast({
+        title: 'Failed to save biography topic',
+        description: errorMsg,
+        variant: 'destructive',
+      });
+      
+      return `Failed to save biographical information: ${errorMsg}. Please try again.`;
+    }
+  }, [effectiveUser?.id, toast]);
+
+  // Background function to update persistent biography when new memories are added
+  const tryUpdatePersistentBiography = useCallback(async (userId: string, newMemory: any) => {
+    try {
+      // This runs in background - don't block the conversation
+      console.log('🧩 Attempting to update persistent biography with new memory:', newMemory.title);
+      
+      // Get current user profile and biography topics for context
+      const [{ data: profile }, { data: topics }] = await Promise.all([
+        supabase.from('users').select('*').eq('user_id', userId).single(),
+        supabase.from('biography_entries').select('*').eq('user_id', userId)
+      ]);
+
+      // Get all memories for full context
+      const { getGroupedMemories } = await import('@/utils/memoryGrouping');
+      const allMemories = await getGroupedMemories(userId);
+      
+      const context: NarrativeGenerationContext = {
+        user_profile: {
+          name: profile?.name,
+          birth_date: profile?.birth_date,
+          birth_place: profile?.birth_place,
+          current_location: profile?.current_location,
+          age: profile?.birth_date ? new Date().getFullYear() - new Date(profile.birth_date).getFullYear() : undefined
+        },
+        memories: allMemories,
+        biography_topics: (topics || []).map(t => ({
+          topic_category: t.topic_category,
+          topic_title: t.topic_title,
+          content: t.content
+        })),
+        generation_preferences: {
+          tone: 'reflective_optimistic',
+          length: 'comprehensive',
+          focus_themes: ['growth', 'relationships', 'achievements']
+        }
+      };
+
+      // Try to insert the new memory into existing narrative
+      await narrativeAI.insertMemoryIntoNarrative(userId, newMemory, context);
+      
+      console.log('✅ Persistent biography updated with new memory');
+      
+    } catch (error) {
+      // Don't throw - this is background processing
+      console.log('📝 Background biography update failed (this is OK):', error);
+    }
+  }, []);
 
   const saveMemoryTool = useCallback(async (parameters: { 
     title: string; 
@@ -113,46 +255,74 @@ const Index = () => {
       
       const userId = effectiveUser.id;
       
-      logHandoff('4️⃣ SUBMITTING TO DATABASE', { userId, title, hasDate: !!formattedDate });
+      logHandoff('4️⃣ CHUNKING CONTENT', { userId, title, contentLength: content.length });
+
+      // Chunk the memory content if it's too long
+      const chunks = chunkMemoryContent(content);
+      
+      logHandoff('5️⃣ SUBMITTING TO DATABASE', { 
+        userId, 
+        title, 
+        hasDate: !!formattedDate,
+        chunksCount: chunks.length,
+        memoryGroupId: chunks[0].memoryGroupId
+      });
+
+      // Insert all chunks
+      const memoryInserts = chunks.map(chunk => ({
+        user_id: userId,
+        title: chunks.length > 1 ? `${title} (Part ${chunk.chunkSequence}/${chunk.totalChunks})` : title,
+        text: chunk.content,
+        tags: Array.isArray(parameters.tags) && parameters.tags.length > 0 ? parameters.tags : null,
+        memory_date: formattedDate,
+        memory_location: parameters.memory_location?.trim?.() || null,
+        memory_group_id: chunk.memoryGroupId,
+        chunk_sequence: chunk.chunkSequence,
+        total_chunks: chunk.totalChunks,
+        image_urls: null,
+      }));
 
       const { data, error } = await supabase
         .from('memories')
-        .insert([{ 
-          user_id: userId,
-          title,
-          text: content,
-          tags: Array.isArray(parameters.tags) && parameters.tags.length > 0 ? parameters.tags : null,
-          memory_date: formattedDate,
-          memory_location: parameters.memory_location?.trim?.() || null,
-          image_urls: null,
-        }])
-        .select()
-        .single();
+        .insert(memoryInserts)
+        .select();
 
       if (error) {
         logHandoff('❌ DATABASE ERROR', { error: error.message, code: error.code });
         throw error;
       }
 
-      logHandoff('5️⃣ DATABASE COMMITTED', { memoryId: data.id, title: data.title });
+      logHandoff('6️⃣ DATABASE COMMITTED', { 
+        chunksStored: data.length, 
+        memoryGroupId: chunks[0].memoryGroupId,
+        firstChunkId: data[0]?.id 
+      });
       
-      // Return success message with memory ID so agent can confirm
-      const memoryId = data?.id;
-      const memoryTitle = data?.title || parameters.title;
+      // Return success message with memory info
+      const memoryGroupId = chunks[0].memoryGroupId;
+      const memoryTitle = parameters.title; // Use original title without chunk numbering
+      const primaryMemoryId = data[0]?.id; // First chunk ID for references
       
-      logHandoff('6️⃣ SHOWING USER FEEDBACK', { memoryId, memoryTitle, timelineEligible: hasDatePlaceTitle });
+      logHandoff('7️⃣ SHOWING USER FEEDBACK', { 
+        memoryGroupId, 
+        memoryTitle, 
+        timelineEligible: hasDatePlaceTitle,
+        chunksCount: chunks.length 
+      });
       
-      // Different messaging based on whether memory will appear on timeline
+      // Different messaging based on whether memory will appear on timeline and chunking
+      const chunkMessage = chunks.length > 1 ? ` (${chunks.length} parts)` : '';
+      
       if (hasDatePlaceTitle) {
         toast({ 
           title: 'Memory saved to Timeline', 
-          description: `"${memoryTitle}" has been preserved and will appear on your Timeline!`,
+          description: `"${memoryTitle}"${chunkMessage} has been preserved and will appear on your Timeline!`,
           duration: 5000,
         });
       } else {
         toast({ 
           title: 'Memory saved', 
-          description: `"${memoryTitle}" has been preserved. Add date and location later to show on Timeline.`,
+          description: `"${memoryTitle}"${chunkMessage} has been preserved. Add date and location later to show on Timeline.`,
           duration: 5000,
         });
       }
@@ -160,9 +330,11 @@ const Index = () => {
       logHandoff('✅ HANDOFF COMPLETE', { 
         status: 'success',
         timelineEligible: hasDatePlaceTitle,
+        chunksCount: chunks.length,
+        memoryGroupId,
         agentResponse: hasDatePlaceTitle 
-          ? `Memory "${memoryTitle}" saved successfully and will appear on your Timeline!` 
-          : `Memory "${memoryTitle}" saved successfully. It won't appear on the Timeline without a date and location, but you can still query it later.`,
+          ? `Memory "${memoryTitle}"${chunkMessage} saved successfully and will appear on your Timeline!` 
+          : `Memory "${memoryTitle}"${chunkMessage} saved successfully. It won't appear on the Timeline without a date and location, but you can still query it later.`,
         note: 'No auto-navigation - user can continue conversation'
       });
       
@@ -170,7 +342,7 @@ const Index = () => {
       setConversationState(prev => ({
         ...prev,
         recentMemories: [
-          { id: memoryId, title: memoryTitle, timestamp: new Date().toISOString() },
+          { id: primaryMemoryId, title: memoryTitle, timestamp: new Date().toISOString() },
           ...prev.recentMemories.slice(0, 4) // Keep only 5 most recent
         ],
         totalMemoriesSaved: prev.totalMemoriesSaved + 1,
@@ -178,15 +350,28 @@ const Index = () => {
           ...new Set([title, ...prev.recentTopics.slice(0, 9)]) // Keep unique topics, max 10
         ]
       }));
+
+      // Trigger narrative AI integration for biography updates
+      // This happens asynchronously in the background
+      tryUpdatePersistentBiography(userId, {
+        memory_group_id: chunks[0].memoryGroupId,
+        id: primaryMemoryId,
+        title: memoryTitle,
+        text: content,
+        memory_date: formattedDate,
+        memory_location: parameters.memory_location?.trim?.() || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
       
       // Generate intelligent follow-up questions after saving memory
-      generateIntelligentSuggestions({ id: memoryId, title: memoryTitle, text: content, created_at: new Date().toISOString() });
+      generateIntelligentSuggestions({ id: primaryMemoryId, title: memoryTitle, text: content, created_at: new Date().toISOString() });
       
       // Return appropriate response based on timeline eligibility
       if (hasDatePlaceTitle) {
-        return `Memory "${memoryTitle}" saved successfully and will appear on your Timeline! You can continue sharing stories or explore other memories.`;
+        return `Memory "${memoryTitle}"${chunkMessage} saved successfully and will appear on your Timeline! You can continue sharing stories or explore other memories.`;
       } else {
-        return `Memory "${memoryTitle}" saved successfully! Since it doesn't have a specific date and location, it won't appear on the Timeline but you can still query it later. Would you like to add more details or continue with other stories?`;
+        return `Memory "${memoryTitle}"${chunkMessage} saved successfully! Since it doesn't have a specific date and location, it won't appear on the Timeline but you can still query it later. Would you like to add more details or continue with other stories?`;
       }
     } catch (error) {
       logHandoff('❌ HANDOFF FAILED', { 
@@ -446,6 +631,105 @@ const Index = () => {
     }
   }, [effectiveUser, conversationState.recentMemories]);
 
+  // Biography editing tool for Solin integration
+  const editBiographyTool = useCallback(async (parameters: {
+    modification_request: string;
+    focus_area?: string;
+    tone_adjustment?: string;
+  }) => {
+    const handoffId = `biography-edit-${Date.now()}`;
+    const logHandoff = (stage: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      console.log(`✍️ [${handoffId}] BIOGRAPHY EDIT: ${stage} @ ${timestamp}`, data || '');
+    };
+
+    try {
+      logHandoff('1️⃣ RECEIVED', { source: 'Solin voice agent', parameters });
+
+      const { modification_request } = parameters;
+      
+      if (!modification_request?.trim()) {
+        logHandoff('❌ VALIDATION FAILED', { hasRequest: !!modification_request });
+        return 'Please specify what changes you would like me to make to your biography.';
+      }
+
+      if (!effectiveUser?.id) {
+        logHandoff('❌ NO USER ID', { message: 'User must be logged in to edit biography' });
+        return 'You must be logged in to edit your biography. Please sign in and try again.';
+      }
+
+      const userId = effectiveUser.id;
+      
+      logHandoff('2️⃣ STARTING REGENERATION', { userId, request: modification_request });
+
+      // Get current context for regeneration
+      const [{ data: profile }, { data: topics }] = await Promise.all([
+        supabase.from('users').select('*').eq('user_id', userId).single(),
+        supabase.from('biography_entries').select('*').eq('user_id', userId)
+      ]);
+
+      const { getGroupedMemories } = await import('@/utils/memoryGrouping');
+      const memories = await getGroupedMemories(userId);
+      
+      const context: NarrativeGenerationContext = {
+        user_profile: {
+          name: profile?.name,
+          birth_date: profile?.birth_date,
+          birth_place: profile?.birth_place,
+          current_location: profile?.current_location,
+          age: profile?.birth_date ? new Date().getFullYear() - new Date(profile.birth_date).getFullYear() : undefined
+        },
+        memories,
+        biography_topics: (topics || []).map(t => ({
+          topic_category: t.topic_category,
+          topic_title: t.topic_title,
+          content: t.content
+        })),
+        generation_preferences: {
+          tone: parameters.tone_adjustment as any || 'reflective_optimistic',
+          length: 'comprehensive',
+          focus_themes: parameters.focus_area ? [parameters.focus_area] : ['growth', 'relationships', 'achievements']
+        }
+      };
+
+      // Regenerate biography with user's modification request
+      const updatedBiography = await narrativeAI.regenerateBiographyWithPrompt(
+        userId,
+        modification_request.trim(),
+        context
+      );
+
+      logHandoff('3️⃣ BIOGRAPHY REGENERATED', { biographyId: updatedBiography.id });
+
+      toast({
+        title: 'Biography Updated',
+        description: 'Your story has been regenerated based on your request',
+        duration: 5000,
+      });
+
+      logHandoff('✅ HANDOFF COMPLETE', {
+        status: 'success',
+        biographyId: updatedBiography.id,
+        chaptersCount: updatedBiography.chapters.length,
+        agentResponse: `I've successfully updated your biography based on your request: "${modification_request}". The changes have been applied throughout your story.`
+      });
+
+      return `I've successfully updated your biography based on your request. Your story has been regenerated with the changes you requested: "${modification_request}". You can view the updated version on your Story page.`;
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      logHandoff('❌ HANDOFF FAILED', { error: errorMsg });
+      
+      toast({
+        title: 'Failed to update biography',
+        description: errorMsg,
+        variant: 'destructive',
+      });
+      
+      return `I wasn't able to update your biography: ${errorMsg}. Please try again or let me know if you need help with a different approach.`;
+    }
+  }, [effectiveUser?.id, toast]);
+
   // Generate intelligent follow-up questions based on user's memory patterns
   const generateIntelligentSuggestions = useCallback(async (latestMemory?: any) => {
     try {
@@ -628,10 +912,12 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
   const conversationOptionsRef = useRef({
     clientTools: { 
       save_memory: saveMemoryTool,
+      save_biography_topic: saveBiographyTopicTool,
       retrieve_memory: retrieveMemoryTool,
       get_memory_details: getMemoryDetailsTool,
       get_conversation_suggestions: getConversationSuggestionsTool,
-      close_conversation: closeConversationTool
+      close_conversation: closeConversationTool,
+      edit_biography: editBiographyTool
     },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
