@@ -8,7 +8,7 @@ declare global {
 }
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -567,17 +567,20 @@ const Timeline = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Page Header with Controls */}
-      <div className="border-b border-border bg-white/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      {/* Navigation */}
+      <nav className="border-b-[1.5px] border-section-border bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Timeline</h1>
-            <span className="text-sm text-muted-foreground">
-              Your life story chronologically organized
-            </span>
+            <Link to="/dashboard">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </Link>
+            <h1 className="text-xl font-semibold">Timeline</h1>
           </div>
           
-          {/* Timeline Controls */}
+          {/* Zoom Controls */}
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -625,10 +628,10 @@ const Timeline = () => {
             )}
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Main Container - Full Width Timeline */}
-      <div className="h-[calc(100vh-80px)]">
+      <div className="h-[calc(100vh-60px)]">
         {/* Timeline - Full Width */}
         <div 
           ref={containerRef}

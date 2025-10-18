@@ -18,7 +18,7 @@ import Visitor from "./pages/Visitor";
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import Auth from "./pages/Auth";
-import SidebarNavigation from "./components/SidebarNavigation";
+import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
@@ -41,11 +41,9 @@ const AppContent = () => {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <SidebarNavigation />
-      {/* Main content area with left margin for sidebar */}
-      <div className="flex-1 ml-0 md:ml-[4.5rem] transition-all duration-300 min-h-screen">
-        <Routes>
+    <div className="pb-16 md:pb-0">
+      <Navigation />
+      <Routes>
         {/* Authentication-based routing */}
         <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
         <Route path="/about" element={<About />} />
@@ -110,8 +108,7 @@ const AppContent = () => {
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
-        </Routes>
-      </div>
+      </Routes>
     </div>
   );
 };
