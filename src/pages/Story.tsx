@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Heart, MapPin, Calendar, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
 
 const Story = () => {
   const { user } = useAuth();
@@ -14,6 +16,14 @@ const Story = () => {
   const [timelineMemories, setTimelineMemories] = useState<any[]>([]);
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
+  
+  // State for theme popup and memory details
+  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [themeMemories, setThemeMemories] = useState<any[]>([]);
+  const [selectedMemory, setSelectedMemory] = useState<any | null>(null);
+  
+  // State for collapsible chapters
+  const [expandedChapters, setExpandedChapters] = useState<Set<number>>(new Set());
   
   const fetchStoryData = async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000';
@@ -143,20 +153,20 @@ const Story = () => {
     return { introduction, chapters, conclusion };
   };
 
-  // Analyze themes from memories
+  // Analyze themes from memories with memory tracking
   const analyzeThemes = () => {
     if (!timelineMemories || timelineMemories.length === 0) {
       return [
-        { name: "Love & Relationships", count: 0, icon: Heart, color: "text-red-500" },
-        { name: "Travel & Adventure", count: 0, icon: MapPin, color: "text-blue-500" },
-        { name: "Achievements", count: 0, icon: Sparkles, color: "text-yellow-500" },
+        { name: "Love & Relationships", count: 0, icon: Heart, color: "text-red-500", memories: [] },
+        { name: "Travel & Adventure", count: 0, icon: MapPin, color: "text-blue-500", memories: [] },
+        { name: "Achievements", count: 0, icon: Sparkles, color: "text-yellow-500", memories: [] },
       ];
     }
 
     const themes = {
-      love: { keywords: ['love', 'relationship', 'marriage', 'wedding', 'anniversary', 'partner'], count: 0 },
-      travel: { keywords: ['travel', 'trip', 'vacation', 'visit', 'journey', 'adventure'], count: 0 },
-      achievements: { keywords: ['graduation', 'job', 'promotion', 'award', 'achievement', 'success'], count: 0 },
+      love: { keywords: ['love', 'relationship', 'marriage', 'wedding', 'anniversary', 'partner'], count: 0, memories: [] },
+      travel: { keywords: ['travel', 'trip', 'vacation', 'visit', 'journey', 'adventure'], count: 0, memories: [] },
+      achievements: { keywords: ['graduation', 'job', 'promotion', 'award', 'achievement', 'success'], count: 0, memories: [] },
     };
 
     timelineMemories.forEach(memory => {
@@ -165,15 +175,35 @@ const Story = () => {
       Object.keys(themes).forEach(theme => {
         if (themes[theme].keywords.some(keyword => text.includes(keyword))) {
           themes[theme].count++;
+          themes[theme].memories.push(memory);
         }
       });
     });
 
     return [
-      { name: "Love & Relationships", count: themes.love.count, icon: Heart, color: "text-red-500" },
-      { name: "Travel & Adventure", count: themes.travel.count, icon: MapPin, color: "text-blue-500" },
-      { name: "Achievements", count: themes.achievements.count, icon: Sparkles, color: "text-yellow-500" },
+      { name: "Love & Relationships", count: themes.love.count, icon: Heart, color: "text-red-500", memories: themes.love.memories },
+      { name: "Travel & Adventure", count: themes.travel.count, icon: MapPin, color: "text-blue-500", memories: themes.travel.memories },
+      { name: "Achievements", count: themes.achievements.count, icon: Sparkles, color: "text-yellow-500", memories: themes.achievements.memories },
     ];
+  };
+
+  // Handle theme click to show related memories
+  const handleThemeClick = (theme: any) => {
+    if (theme.count > 0) {
+      setSelectedTheme(theme.name);
+      setThemeMemories(theme.memories);
+    }
+  };
+
+  // Toggle chapter expansion
+  const toggleChapter = (index: number) => {
+    const newExpanded = new Set(expandedChapters);
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index);
+    } else {
+      newExpanded.add(index);
+    }
+    setExpandedChapters(newExpanded);
   };
 
   const themes = analyzeThemes();
@@ -218,40 +248,55 @@ const Story = () => {
                   </p>
                 </div>
                 
-                {/* Life Chapters */}
+                {/* Life Chapters - Collapsible */}
                 {biographicalStory.chapters.length > 0 && (
-                  <div className="space-y-6">
+                  <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
                       Life Chapters
                     </h3>
                     {biographicalStory.chapters.map((chapter, index) => (
-                      <div key={index} className="space-y-3">
-                        <h4 className="text-base font-medium text-primary flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          {chapter.title}
-                        </h4>
-                        <div className="bg-muted/20 rounded-lg p-4 border-l-4 border-primary">
-                          <p className="text-sm text-foreground leading-relaxed">
-                            {chapter.content}
-                          </p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {chapter.memories.map((memory) => (
-                              <span 
-                                key={memory.id}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                              >
-                                <Calendar className="w-3 h-3" />
-                                {new Date(memory.memory_date || memory.created_at).getFullYear()}
-                                {memory.memory_location && (
-                                  <>
-                                    <MapPin className="w-3 h-3 ml-1" />
-                                    {memory.memory_location.split(',')[0]}
-                                  </>
-                                )}
-                              </span>
-                            ))}
+                      <div key={index} className="border border-border rounded-lg">
+                        <button
+                          onClick={() => toggleChapter(index)}
+                          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/20 transition-colors rounded-lg"
+                        >
+                          <h4 className="text-base font-medium text-primary flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            {chapter.title}
+                          </h4>
+                          {expandedChapters.has(index) ? (
+                            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        
+                        {expandedChapters.has(index) && (
+                          <div className="px-4 pb-4">
+                            <div className="bg-muted/20 rounded-lg p-4 border-l-4 border-primary">
+                              <p className="text-sm text-foreground leading-relaxed">
+                                {chapter.content}
+                              </p>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {chapter.memories.map((memory) => (
+                                  <span 
+                                    key={memory.id}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
+                                  >
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(memory.memory_date || memory.created_at).getFullYear()}
+                                    {memory.memory_location && (
+                                      <>
+                                        <MapPin className="w-3 h-3 ml-1" />
+                                        {memory.memory_location.split(',')[0]}
+                                      </>
+                                    )}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -319,18 +364,29 @@ const Story = () => {
               
               <div className="space-y-4">
                 {themes.map((theme) => (
-                  <div key={theme.name} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/30 transition-colors">
+                  <div 
+                    key={theme.name} 
+                    className={`flex items-center justify-between p-3 rounded-lg border border-border transition-colors ${
+                      theme.count > 0 ? 'hover:bg-muted/30 cursor-pointer' : 'opacity-60'
+                    }`}
+                    onClick={() => handleThemeClick(theme)}
+                  >
                     <div className="flex items-center gap-3">
                       <theme.icon className={`w-5 h-5 ${theme.color}`} />
                       <div>
                         <h4 className="font-medium text-sm">{theme.name}</h4>
                         <p className="text-xs text-muted-foreground">
                           {theme.count} {theme.count === 1 ? 'memory' : 'memories'}
+                          {theme.count > 0 && <span className="ml-1 text-primary">• Click to view</span>}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-semibold text-primary">{theme.count}</div>
+                      <div className={`text-lg font-semibold ${
+                        theme.count > 0 ? 'text-primary hover:scale-105 transition-transform' : 'text-muted-foreground'
+                      }`}>
+                        {theme.count}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -352,6 +408,76 @@ const Story = () => {
           </Card>
         </div>
       </div>
+
+      {/* Theme Memories Popup */}
+      <Dialog open={!!selectedTheme} onOpenChange={(open) => !open && setSelectedTheme(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Memories: {selectedTheme}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedTheme(null)}
+                className="h-6 w-6"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {themeMemories.map((memory) => (
+              <div
+                key={memory.id}
+                className="p-4 border border-border rounded-lg hover:bg-muted/20 cursor-pointer transition-colors"
+                onClick={() => {
+                  setSelectedMemory(memory);
+                  setSelectedTheme(null);
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm text-foreground mb-1">
+                      {memory.title}
+                    </h4>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(memory.memory_date || memory.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </div>
+                      {memory.memory_location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {memory.memory_location}
+                        </div>
+                      )}
+                    </div>
+                    {memory.text && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {memory.text.substring(0, 150)}{memory.text.length > 150 ? '...' : ''}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Memory Detail Dialog */}
+      {selectedMemory && (
+        <MemoryDetailDialog
+          memory={selectedMemory}
+          open={!!selectedMemory}
+          onOpenChange={(open) => !open && setSelectedMemory(null)}
+          onUpdate={fetchStoryData}
+        />
+      )}
     </div>
   );
 };
