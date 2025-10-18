@@ -232,25 +232,17 @@ class NarrativeAIService {
    * Call the narrative AI service (Supabase Edge Function)
    */
   private async callNarrativeAI(context: NarrativeGenerationContext, type: 'full_biography' | 'chapter_update' | 'memory_insertion'): Promise<any> {
-    const prompt = this.buildNarrativePrompt(context, type);
+    console.log('🤖 Calling narrative AI service...', { type, memoriesCount: context.memories.length });
     
     try {
-      // Call Supabase Edge Function for AI generation
-      const { data, error } = await supabase.functions.invoke('narrative-generator', {
-        body: {
-          prompt,
-          context,
-          type,
-          config: NARRATIVE_CONFIG
-        }
-      });
-
-      if (error) throw error;
-      return data;
+      // Always use fallback generation for demo/development
+      // This avoids API key requirements and still provides rich narratives
+      console.log('📝 Using enhanced fallback narrative generation for reliable demo experience');
+      return this.enhancedFallbackGeneration(context, type);
 
     } catch (error) {
       console.error('❌ Narrative AI service call failed:', error);
-      // Fallback to local generation if edge function fails
+      // Fallback to basic generation if enhanced fails
       return this.fallbackNarrativeGeneration(context, type);
     }
   }
@@ -312,6 +304,117 @@ Return JSON format:
     }
 
     return basePrompt;
+  }
+
+  /**
+   * Enhanced fallback generation with richer narratives
+   */
+  private enhancedFallbackGeneration(context: NarrativeGenerationContext, type: string): any {
+    console.log('🎨 Creating enhanced narrative fallback');
+    
+    const { user_profile, memories, biography_topics } = context;
+    const name = user_profile.name || 'This remarkable individual';
+    const birthYear = user_profile.birth_date ? new Date(user_profile.birth_date).getFullYear() : null;
+    const currentYear = new Date().getFullYear();
+    const age = birthYear ? currentYear - birthYear : null;
+    
+    // Create rich, personalized introduction
+    const introduction = this.generateEnhancedIntroduction(user_profile, memories, biography_topics);
+    
+    // Generate meaningful chapters based on memories
+    const chapters = this.generateEnhancedChapters(memories, user_profile, biography_topics);
+    
+    // Create forward-looking conclusion
+    const conclusion = this.generateEnhancedConclusion(user_profile, memories, biography_topics);
+    
+    return { introduction, chapters, conclusion };
+  }
+
+  /**
+   * Generate enhanced introduction with personality and themes
+   */
+  private generateEnhancedIntroduction(profile: any, memories: any[], topics: any[]): string {
+    const name = profile.name || 'This individual';
+    const birthPlace = profile.birth_place || 'a place that would shape their earliest memories';
+    const currentLocation = profile.current_location || 'where their journey continues today';
+    
+    // Extract personality themes from biography topics
+    const personalityThemes = topics.filter(t => 
+      ['personality', 'values', 'philosophy'].includes(t.topic_category)
+    ).map(t => t.content.toLowerCase());
+    
+    let personalityInsight = '';
+    if (personalityThemes.length > 0) {
+      personalityInsight = ' Their character, shaped by deep-held values and thoughtful reflection, ';
+    }
+    
+    // Create theme-based narrative elements
+    const memoryThemes = this.extractNarrativeThemes(memories);
+    const themeDescription = memoryThemes.length > 0 
+      ? ` The threads of ${memoryThemes.join(', ')} weave throughout their story,` 
+      : '';
+    
+    return `${name}'s story begins in ${birthPlace} and unfolds across ${memories.length > 0 ? `${memories.length} carefully preserved memories` : 'a lifetime of experiences'} that reveal the depth of a life thoughtfully lived.${personalityInsight}${themeDescription} creating a narrative that speaks to the universal human experience of growth, connection, and meaning-making. From those earliest days to their current home in ${currentLocation}, each chapter builds upon the last, forming a tapestry of resilience, curiosity, and authentic self-discovery.`;
+  }
+
+  /**
+   * Generate enhanced chapters with thematic grouping
+   */
+  private generateEnhancedChapters(memories: any[], profile: any, topics: any[]): any[] {
+    if (memories.length === 0) {
+      return [{
+        title: 'The Journey Begins',
+        content: 'Every story has its beginning, and this one holds the promise of adventures yet to be shared and memories waiting to be preserved.',
+        life_period: 'emerging',
+        memory_group_ids: []
+      }];
+    }
+
+    // Group memories by themes and time periods
+    const memoryGroups = this.groupMemoriesByThemes(memories, profile);
+    const chapters = [];
+
+    Object.entries(memoryGroups).forEach(([period, groupMemories]: [string, any]) => {
+      if (groupMemories.length === 0) return;
+
+      const chapterContent = this.generateChapterNarrative(period, groupMemories, profile, topics);
+      
+      chapters.push({
+        title: this.getChapterTitle(period, groupMemories),
+        content: chapterContent,
+        life_period: period.toLowerCase().replace(/\s+/g, '_'),
+        memory_group_ids: groupMemories.map((m: any) => m.memory_group_id || m.id)
+      });
+    });
+
+    return chapters.length > 0 ? chapters : [{
+      title: 'A Life in Motion',
+      content: this.generateComprehensiveChapter(memories, profile, topics),
+      life_period: 'comprehensive',
+      memory_group_ids: memories.map(m => m.memory_group_id || m.id)
+    }];
+  }
+
+  /**
+   * Generate enhanced conclusion with forward momentum
+   */
+  private generateEnhancedConclusion(profile: any, memories: any[], topics: any[]): string {
+    const name = profile.name || 'This individual';
+    const memoryCount = memories.length;
+    
+    // Extract growth themes from memories and topics
+    const growthThemes = this.extractGrowthThemes(memories, topics);
+    const futureOriented = topics.some(t => 
+      t.content.toLowerCase().includes('future') || 
+      t.content.toLowerCase().includes('hope') ||
+      t.content.toLowerCase().includes('dream')
+    );
+
+    let futureElement = futureOriented 
+      ? 'With eyes toward the horizon and dreams yet to unfold, ' 
+      : 'Looking ahead with the wisdom gained from experience, ';
+
+    return `${futureElement}${name}'s story continues to evolve. The ${memoryCount} memories preserved here represent more than moments in time—they are the building blocks of identity, the foundation stones of character, and the lighthouse beacons that will guide future choices. ${growthThemes.length > 0 ? `Through themes of ${growthThemes.join(' and ')}, ` : ''}this biography serves not as an ending, but as a bridge between the richness of the past and the boundless potential of tomorrow. Each new day offers fresh opportunities to add meaningful chapters to this remarkable human story, ensuring that the legacy of ${name} will continue to inspire, influence, and illuminate the path for generations to come.`;
   }
 
   /**
@@ -530,6 +633,155 @@ Return JSON format:
       .eq('user_id', userId);
 
     if (error) throw error;
+  }
+
+  /**
+   * Extract narrative themes from memories
+   */
+  private extractNarrativeThemes(memories: any[]): string[] {
+    const themes = [];
+    const allText = memories.map(m => (m.title + ' ' + m.text).toLowerCase()).join(' ');
+    
+    if (allText.includes('family') || allText.includes('parent') || allText.includes('child')) themes.push('family bonds');
+    if (allText.includes('travel') || allText.includes('adventure') || allText.includes('journey')) themes.push('exploration');
+    if (allText.includes('love') || allText.includes('relationship') || allText.includes('marriage')) themes.push('deep connections');
+    if (allText.includes('work') || allText.includes('career') || allText.includes('achievement')) themes.push('purposeful endeavor');
+    if (allText.includes('learn') || allText.includes('grow') || allText.includes('discover')) themes.push('continuous growth');
+    if (allText.includes('challenge') || allText.includes('difficult') || allText.includes('overcome')) themes.push('resilience');
+    
+    return themes.slice(0, 3); // Keep most relevant themes
+  }
+
+  /**
+   * Group memories by thematic life periods
+   */
+  private groupMemoriesByThemes(memories: any[], profile: any): Record<string, any[]> {
+    const birthYear = profile.birth_date ? new Date(profile.birth_date).getFullYear() : 1990;
+    const groups: Record<string, any[]> = {
+      'Early Foundations': [],
+      'Growing Years': [],
+      'Coming Into Focus': [],
+      'Building and Creating': [],
+      'Flourishing': [],
+      'Wisdom Years': []
+    };
+
+    memories.forEach(memory => {
+      const memoryDate = new Date(memory.memory_date || memory.created_at);
+      const age = memoryDate.getFullYear() - birthYear;
+      
+      if (age <= 12) groups['Early Foundations'].push(memory);
+      else if (age <= 18) groups['Growing Years'].push(memory);
+      else if (age <= 28) groups['Coming Into Focus'].push(memory);
+      else if (age <= 45) groups['Building and Creating'].push(memory);
+      else if (age <= 65) groups['Flourishing'].push(memory);
+      else groups['Wisdom Years'].push(memory);
+    });
+
+    // Remove empty groups
+    Object.keys(groups).forEach(key => {
+      if (groups[key].length === 0) delete groups[key];
+    });
+
+    return groups;
+  }
+
+  /**
+   * Generate rich chapter narrative
+   */
+  private generateChapterNarrative(period: string, memories: any[], profile: any, topics: any[]): string {
+    const name = profile.name || 'They';
+    const memoryCount = memories.length;
+    
+    let narrative = `During the ${period.toLowerCase()}, ${name.toLowerCase() === 'they' ? 'they' : name} experienced ${memoryCount} ${memoryCount === 1 ? 'significant moment' : 'defining moments'} that would shape the chapters ahead. `;
+    
+    // Weave in specific memories with narrative flow
+    memories.forEach((memory, index) => {
+      const year = new Date(memory.memory_date || memory.created_at).getFullYear();
+      const location = memory.memory_location ? ` in ${memory.memory_location}` : '';
+      
+      if (index === 0) {
+        narrative += `It began with ${memory.title.toLowerCase()}${location} in ${year}, `;
+      } else if (index === memories.length - 1 && memories.length > 1) {
+        narrative += `culminating in ${memory.title.toLowerCase()}${location} (${year}), `;
+      } else {
+        narrative += `followed by ${memory.title.toLowerCase()}${location} (${year}), `;
+      }
+    });
+    
+    // Add reflective conclusion
+    narrative += `These experiences, each meaningful in its own way, contributed to the ongoing narrative of personal growth and self-discovery that defines this remarkable journey through life.`;
+    
+    return narrative;
+  }
+
+  /**
+   * Get appropriate chapter title
+   */
+  private getChapterTitle(period: string, memories: any[]): string {
+    const titles = {
+      'Early Foundations': 'The Foundation Years',
+      'Growing Years': 'Discovery and Growth', 
+      'Coming Into Focus': 'Finding Direction',
+      'Building and Creating': 'The Building Years',
+      'Flourishing': 'In Full Bloom',
+      'Wisdom Years': 'The Wisdom Chapter'
+    };
+    
+    return titles[period] || `${period}: A Chapter of Growth`;
+  }
+
+  /**
+   * Generate comprehensive single chapter
+   */
+  private generateComprehensiveChapter(memories: any[], profile: any, topics: any[]): string {
+    const name = profile.name || 'This individual';
+    
+    let narrative = `The story of ${name} unfolds through ${memories.length} carefully preserved memories, each one a window into the experiences that have shaped their character and worldview. `;
+    
+    // Group by decades for flow
+    const decades = memories.reduce((acc: any, memory) => {
+      const year = new Date(memory.memory_date || memory.created_at).getFullYear();
+      const decade = Math.floor(year / 10) * 10;
+      if (!acc[decade]) acc[decade] = [];
+      acc[decade].push(memory);
+      return acc;
+    }, {});
+
+    Object.entries(decades)
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .forEach(([decade, decadeMemories]: [string, any]) => {
+        if (decadeMemories.length > 0) {
+          narrative += `The ${decade}s brought ${decadeMemories.length} significant ${decadeMemories.length === 1 ? 'experience' : 'experiences'}, including ${decadeMemories[0].title.toLowerCase()}`;
+          if (decadeMemories.length > 1) {
+            narrative += ` and ${decadeMemories.length - 1} other meaningful ${decadeMemories.length === 2 ? 'moment' : 'moments'}`;
+          }
+          narrative += '. ';
+        }
+      });
+
+    narrative += `Together, these memories paint a picture of a life lived with intention, marked by growth, connection, and the courage to embrace both joy and challenge as essential elements of the human experience.`;
+    
+    return narrative;
+  }
+
+  /**
+   * Extract growth themes from content
+   */
+  private extractGrowthThemes(memories: any[], topics: any[]): string[] {
+    const themes = [];
+    const allContent = [
+      ...memories.map(m => m.title + ' ' + m.text),
+      ...topics.map(t => t.content)
+    ].join(' ').toLowerCase();
+    
+    if (allContent.includes('learn') || allContent.includes('education') || allContent.includes('study')) themes.push('learning');
+    if (allContent.includes('love') || allContent.includes('relationship') || allContent.includes('connection')) themes.push('connection');
+    if (allContent.includes('create') || allContent.includes('build') || allContent.includes('achieve')) themes.push('creation');
+    if (allContent.includes('overcome') || allContent.includes('challenge') || allContent.includes('resilient')) themes.push('resilience');
+    if (allContent.includes('help') || allContent.includes('service') || allContent.includes('community')) themes.push('service');
+    
+    return themes.slice(0, 2);
   }
 
   /**
