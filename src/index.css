@@ -62,21 +62,68 @@
     min-height: 100vh;
   }
 
-  /* Modern scrollbar */
+  /* Modern thick scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 12px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-background;
+    @apply bg-muted/20 rounded-full;
+    margin: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted rounded-full;
+    @apply bg-muted/60 rounded-full;
+    transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary;
+    @apply bg-primary/70;
+    transform: scaleY(1.1);
+  }
+
+  /* Custom scrollbar for timeline container */
+  .modern-scrollbar::-webkit-scrollbar {
+    width: 16px;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/10 rounded-full;
+    margin: 8px;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/60;
+    transform: scaleX(1.2);
+    border: 1px solid transparent;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb:active {
+    @apply bg-primary/80;
+  }
+
+  /* Mini scrollbar for floating controls */
+  .mini-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/10 rounded-full;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/40 rounded-full;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/60;
   }
 }
 
@@ -138,5 +185,44 @@
 
   .animation-delay-300 {
     animation-delay: 300ms;
+  }
+
+  /* Enhanced button styles for better visibility and interaction */
+  .btn-enhanced {
+    @apply transition-all duration-200 ease-out;
+    @apply border-2 shadow-sm;
+    transform: scale(1);
+  }
+
+  .btn-enhanced:hover {
+    @apply shadow-md;
+    transform: scale(1.02);
+  }
+
+  .btn-enhanced:active {
+    transform: scale(0.98);
+  }
+
+  /* Primary button enhancement */
+  .btn-primary-enhanced {
+    @apply btn-enhanced;
+    @apply border-primary/30 hover:border-primary;
+  }
+
+  /* Outline button enhancement */
+  .btn-outline-enhanced {
+    @apply btn-enhanced;
+    @apply border-muted-foreground/20 hover:border-muted-foreground;
+    @apply hover:bg-muted/50;
+  }
+
+  /* Mobile navigation scroll hiding */
+  .mobile-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-nav-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
