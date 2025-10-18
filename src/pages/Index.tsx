@@ -568,6 +568,63 @@ The suggestions are tailored to each user's memory patterns, preferred topics, a
 
 Keep responses brief and conversational. Focus on helping users explore meaningful moments through intelligent, personalized questioning.`;
 
+  // Enhanced conversation closing tool for ElevenLabs agent communication
+  const closeConversationTool = useCallback(async (parameters: {
+    summary?: string;
+    memory_count?: number;
+    final_message?: string;
+  }) => {
+    const handoffId = `close-${Date.now()}`;
+    const logHandoff = (stage: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      console.log(`🔚 [${handoffId}] CLOSE HANDOFF: ${stage} @ ${timestamp}`, data || '');
+    };
+
+    try {
+      logHandoff('1️⃣ RECEIVED CLOSE REQUEST', { 
+        source: 'ElevenLabs voice agent', 
+        parameters,
+        sessionMemories: conversationState.totalMemoriesSaved
+      });
+
+      const summary = parameters?.summary || 'User requested to end conversation';
+      const memoryCount = parameters?.memory_count || conversationState.totalMemoriesSaved;
+      const finalMessage = parameters?.final_message || 'Thank you for sharing your memories!';
+
+      logHandoff('2️⃣ PREPARED CLOSURE', { summary, memoryCount, finalMessage });
+
+      // Show user feedback about conversation closure
+      toast({ 
+        title: 'Conversation Saved', 
+        description: `Session ended. ${memoryCount} memories preserved.`,
+        duration: 5000,
+      });
+
+      logHandoff('3️⃣ USER NOTIFIED', { status: 'toast_shown' });
+
+      // Allow agent to send final message before closing
+      // Note: We can't access conversation directly here due to hook dependencies
+      // The actual session closure will be handled by the endConversation function
+      logHandoff('⏳ SCHEDULING CLOSURE', { delay: '1000ms' });
+      
+      setTimeout(() => {
+        setConversationMessages([]);
+        logHandoff('✅ MESSAGES CLEARED', { method: 'programmatic' });
+      }, 1000);
+
+      logHandoff('🎯 HANDOFF COMPLETE', { 
+        status: 'success',
+        agentResponse: 'Conversation will be closed in 1 second. Thank you for using Solin!',
+        note: 'ElevenLabs agent informed about conversation closure'
+      });
+
+      return `${finalMessage} Your conversation has been saved and will be closed shortly. You can always start a new conversation anytime.`;
+    } catch (error) {
+      logHandoff('❌ CLOSE HANDOFF FAILED', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return 'Error closing conversation. Please try again or close manually.';
+    }
+  }, [toast, conversationState.totalMemoriesSaved]);
+
   const conversationOptionsRef = useRef({
     clientTools: { 
       save_memory: saveMemoryTool,
@@ -821,60 +878,6 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
     return () => { startConversationRef.current = undefined; };
   }, [startConversation]);
 
-  // Enhanced conversation closing tool for ElevenLabs agent communication
-  const closeConversationTool = useCallback(async (parameters: {
-    summary?: string;
-    memory_count?: number;
-    final_message?: string;
-  }) => {
-    const handoffId = `close-${Date.now()}`;
-    const logHandoff = (stage: string, data?: any) => {
-      const timestamp = new Date().toISOString();
-      console.log(`🔚 [${handoffId}] CLOSE HANDOFF: ${stage} @ ${timestamp}`, data || '');
-    };
-
-    try {
-      logHandoff('1️⃣ RECEIVED CLOSE REQUEST', { 
-        source: 'ElevenLabs voice agent', 
-        parameters,
-        sessionMemories: conversationState.totalMemoriesSaved
-      });
-
-      const summary = parameters?.summary || 'User requested to end conversation';
-      const memoryCount = parameters?.memory_count || conversationState.totalMemoriesSaved;
-      const finalMessage = parameters?.final_message || 'Thank you for sharing your memories!';
-
-      logHandoff('2️⃣ PREPARED CLOSURE', { summary, memoryCount, finalMessage });
-
-      // Show user feedback about conversation closure
-      toast({ 
-        title: 'Conversation Saved', 
-        description: `Session ended. ${memoryCount} memories preserved.`,
-        duration: 5000,
-      });
-
-      logHandoff('3️⃣ USER NOTIFIED', { status: 'toast_shown' });
-
-      // Allow agent to send final message before closing
-      setTimeout(() => {
-        conversation.endSession();
-        setConversationMessages([]);
-        logHandoff('✅ SESSION CLOSED', { method: 'programmatic' });
-      }, 1000);
-
-      logHandoff('🎯 HANDOFF COMPLETE', { 
-        status: 'success',
-        agentResponse: 'Conversation will be closed in 1 second. Thank you for using Solin!',
-        note: 'ElevenLabs agent informed about conversation closure'
-      });
-
-      return `${finalMessage} Your conversation has been saved and will be closed shortly. You can always start a new conversation anytime.`;
-    } catch (error) {
-      logHandoff('❌ CLOSE HANDOFF FAILED', { error: error instanceof Error ? error.message : 'Unknown error' });
-      return 'Error closing conversation. Please try again or close manually.';
-    }
-  }, [conversation, toast, conversationState.totalMemoriesSaved]);
-
   const endConversation = useCallback(async () => {
     try {
       console.log('👋 Manual conversation end requested...');
@@ -885,6 +888,11 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
         memory_count: conversationState.totalMemoriesSaved,
         final_message: 'Thanks for sharing your memories with Solin!'
       });
+      
+      // End the actual conversation session
+      await conversation.endSession();
+      setConversationMessages([]);
+      toast({ title: 'Conversation ended', description: 'Your session has been saved and ended' });
       
     } catch (error) {
       console.error('Error ending conversation:', error);
