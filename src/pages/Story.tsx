@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, Bot, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, Bot, AlertCircle, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,15 @@ const Story = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pan and Zoom functionality
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const zoomLevelRef = useRef(1);
+  const panOffsetRef = useRef({ x: 0, y: 0 });
 
   // Simplified and safe grammar checking functions
   const grammarCheck = (text: string, userName: string = ''): string => {
@@ -687,6 +696,87 @@ const Story = () => {
     fetchStoryData();
   }, [user?.id]);
 
+  // Keep refs in sync with state for pan and zoom
+  useEffect(() => {
+    zoomLevelRef.current = zoomLevel;
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
+
+  // Zoom control handlers
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.2, 2));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  // Mouse wheel zoom (only with Ctrl key held)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only zoom if Ctrl key is pressed, otherwise allow normal scroll
+      if (!e.ctrlKey) return;
+      
+      e.preventDefault();
+      
+      const delta = e.deltaY * -0.001;
+      const currentZoom = zoomLevelRef.current;
+      const currentPan = panOffsetRef.current;
+      const newZoom = Math.min(Math.max(currentZoom + delta, 0.5), 2);
+      
+      if (newZoom !== currentZoom) {
+        // Calculate zoom center based on mouse position
+        const rect = container.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Adjust pan to zoom towards mouse position
+        const zoomRatio = newZoom / currentZoom;
+        const newPanX = mouseX - (mouseX - currentPan.x) * zoomRatio;
+        const newPanY = mouseY - (mouseY - currentPan.y) * zoomRatio;
+        
+        setZoomLevel(newZoom);
+        setPanOffset({ x: newPanX, y: newPanY });
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Mouse drag to pan (only with Shift key held)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 0 && e.shiftKey) { // Left mouse + Shift key
+      e.preventDefault();
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) {
+      setPanOffset({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   const narrative = generateDynamicNarrative(memories, userProfile);
 
   if (loading) {
@@ -716,39 +806,92 @@ const Story = () => {
         )
       `
     }}>
-      {/* Minimal Navigation */}
-      <nav className="absolute top-4 left-4 z-10">
+      {/* Enhanced Navigation with Zoom Controls */}
+      <nav className="absolute top-4 left-4 right-4 z-10 flex justify-between items-center">
         <Link to="/dashboard">
           <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 bg-white/80 backdrop-blur-sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
         </Link>
+        
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+          <span className="text-xs text-slate-600 font-medium mr-2">
+            Ctrl+Wheel to zoom • Shift+Drag to pan
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomOut}
+            disabled={zoomLevel <= 0.5}
+            className="text-slate-600 border-slate-300"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-slate-600 font-medium min-w-[60px] text-center">
+            {Math.round(zoomLevel * 100)}%
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomIn}
+            disabled={zoomLevel >= 2}
+            className="text-slate-600 border-slate-300"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </Button>
+          {(zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetZoom}
+              className="text-slate-600"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
       </nav>
 
-      {/* Paper Document Container */}
-      <div className="min-h-screen flex items-center justify-center p-8">
-        <div 
-          className="max-w-4xl w-full bg-white shadow-2xl relative"
-          style={{
-            minHeight: '90vh',
-            boxShadow: `
-              0 0 20px rgba(0, 0, 0, 0.1),
-              0 0 40px rgba(0, 0, 0, 0.05),
-              inset 0 0 0 1px rgba(139, 69, 19, 0.1)
-            `,
-            background: `
-              linear-gradient(135deg, #ffffff 0%, #fefefe 100%),
-              repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 29px,
-                rgba(139, 69, 19, 0.08) 30px,
-                rgba(139, 69, 19, 0.08) 31px
-              )
-            `
-          }}
-        >
+      {/* Scrollable Container with Pan and Zoom */}
+      <div 
+        ref={containerRef}
+        className="min-h-screen overflow-auto cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+        style={{
+          cursor: isDragging ? 'grabbing' : 'default',
+          userSelect: isDragging ? 'none' : 'auto'
+        }}
+      >
+        {/* Paper Document Container with Transform */}
+        <div className="min-h-screen flex items-center justify-center p-8">
+          <div 
+            className="max-w-4xl w-full bg-white shadow-2xl relative transition-transform duration-100 ease-out"
+            style={{
+              minHeight: '90vh',
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+              transformOrigin: '0 0',
+              boxShadow: `
+                0 0 20px rgba(0, 0, 0, 0.1),
+                0 0 40px rgba(0, 0, 0, 0.05),
+                inset 0 0 0 1px rgba(139, 69, 19, 0.1)
+              `,
+              background: `
+                linear-gradient(135deg, #ffffff 0%, #fefefe 100%),
+                repeating-linear-gradient(
+                  0deg,
+                  transparent,
+                  transparent 29px,
+                  rgba(139, 69, 19, 0.08) 30px,
+                  rgba(139, 69, 19, 0.08) 31px
+                )
+              `
+            }}
+          >
           {/* Paper Content */}
           <div className="px-16 py-20 space-y-8">
             
@@ -835,6 +978,7 @@ const Story = () => {
               `
             }}
           />
+          </div>
         </div>
       </div>
     </div>
