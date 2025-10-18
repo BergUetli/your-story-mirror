@@ -51,12 +51,23 @@ const Index = () => {
       // Validate required fields from tool call
       const title = parameters?.title?.trim();
       const content = parameters?.content?.trim();
+      const memoryDate = parameters?.memory_date?.trim();
+      const memoryLocation = parameters?.memory_location?.trim();
+      
       if (!title || !content) {
         logHandoff('❌ VALIDATION FAILED', { title, hasContent: !!content });
         return 'Missing required fields: title and content. Please ask the user to provide both before saving.';
       }
       
-      logHandoff('2️⃣ VALIDATED', { title, contentLength: content.length });
+      // Check if we have date, place, and title for timeline eligibility
+      const hasDatePlaceTitle = !!(memoryDate && memoryLocation && title);
+      logHandoff('2️⃣ VALIDATED', { 
+        title, 
+        contentLength: content.length, 
+        hasDate: !!memoryDate, 
+        hasLocation: !!memoryLocation,
+        timelineEligible: hasDatePlaceTitle
+      });
       
       // Parse and format memory_date to handle various formats
       let formattedDate: string | null = null;
@@ -129,17 +140,29 @@ const Index = () => {
       const memoryId = data?.id;
       const memoryTitle = data?.title || parameters.title;
       
-      logHandoff('6️⃣ SHOWING USER FEEDBACK', { memoryId, memoryTitle });
+      logHandoff('6️⃣ SHOWING USER FEEDBACK', { memoryId, memoryTitle, timelineEligible: hasDatePlaceTitle });
       
-      toast({ 
-        title: 'Memory saved', 
-        description: `"${memoryTitle}" has been preserved. View it on your Timeline!`,
-        duration: 5000,
-      });
+      // Different messaging based on whether memory will appear on timeline
+      if (hasDatePlaceTitle) {
+        toast({ 
+          title: 'Memory saved to Timeline', 
+          description: `"${memoryTitle}" has been preserved and will appear on your Timeline!`,
+          duration: 5000,
+        });
+      } else {
+        toast({ 
+          title: 'Memory saved', 
+          description: `"${memoryTitle}" has been preserved. Add date and location later to show on Timeline.`,
+          duration: 5000,
+        });
+      }
       
       logHandoff('✅ HANDOFF COMPLETE', { 
         status: 'success',
-        agentResponse: `Memory "${memoryTitle}" saved successfully`,
+        timelineEligible: hasDatePlaceTitle,
+        agentResponse: hasDatePlaceTitle 
+          ? `Memory "${memoryTitle}" saved successfully and will appear on your Timeline!` 
+          : `Memory "${memoryTitle}" saved successfully. It won't appear on the Timeline without a date and location, but you can still query it later.`,
         note: 'No auto-navigation - user can continue conversation'
       });
       
@@ -159,7 +182,12 @@ const Index = () => {
       // Generate intelligent follow-up questions after saving memory
       generateIntelligentSuggestions({ id: memoryId, title: memoryTitle, text: content, created_at: new Date().toISOString() });
       
-      return `Memory "${memoryTitle}" saved successfully! You can continue sharing stories, or the user can visit their Timeline to see it.`;
+      // Return appropriate response based on timeline eligibility
+      if (hasDatePlaceTitle) {
+        return `Memory "${memoryTitle}" saved successfully and will appear on your Timeline! You can continue sharing stories or explore other memories.`;
+      } else {
+        return `Memory "${memoryTitle}" saved successfully! Since it doesn't have a specific date and location, it won't appear on the Timeline but you can still query it later. Would you like to add more details or continue with other stories?`;
+      }
     } catch (error) {
       logHandoff('❌ HANDOFF FAILED', { 
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -519,15 +547,22 @@ const Index = () => {
   // Static agent instructions - no memory context to avoid filling context window
   const agentInstructions = `You are Solin, a warm AI voice companion helping users preserve their life stories. You have access to these powerful tools:
 
-1. save_memory: Save new memories when users share stories. Include title, content, and optionally tags, date, and location.
+1. save_memory: Save new memories when users share stories. IMPORTANT: For memories to appear on the Timeline, they need title, content, date (memory_date), and location (memory_location). Without date and location, memories are still saved but won't show on Timeline.
 2. retrieve_memory: Search through existing memories when users ask about past conversations.
 3. get_memory_details: Get full details of a specific memory by ID.
 4. get_conversation_suggestions: Get intelligent, personalized follow-up questions based on the user's memory patterns and conversation history.
+5. close_conversation: Use this when the user wants to end the conversation. This properly communicates the closure and saves the session.
+
+CONVERSATION CLOSURE:
+- When user indicates they want to end the conversation ("I'm done", "let's stop", "save and end", etc.), use close_conversation tool
+- This ensures proper handoff and session closure communication
+- The tool handles the technical aspects of closing the ElevenLabs session
 
 IMPORTANT CONVERSATION FLOW:
 - After a user shares a memory, use get_conversation_suggestions with type="followup" to get personalized follow-up questions
 - If conversation stalls, use get_conversation_suggestions with type="reflection" to get thoughtful prompts
 - For new conversations, use get_conversation_suggestions with type="starter" to get personalized conversation starters
+- When saving memories, gently prompt for date and location if missing: "When did this happen?" and "Where were you?"
 
 The suggestions are tailored to each user's memory patterns, preferred topics, and conversation style. Always choose the most natural question from the suggestions rather than creating generic ones.
 
@@ -538,7 +573,8 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
       save_memory: saveMemoryTool,
       retrieve_memory: retrieveMemoryTool,
       get_memory_details: getMemoryDetailsTool,
-      get_conversation_suggestions: getConversationSuggestionsTool
+      get_conversation_suggestions: getConversationSuggestionsTool,
+      close_conversation: closeConversationTool
     },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
@@ -785,16 +821,79 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
     return () => { startConversationRef.current = undefined; };
   }, [startConversation]);
 
+  // Enhanced conversation closing tool for ElevenLabs agent communication
+  const closeConversationTool = useCallback(async (parameters: {
+    summary?: string;
+    memory_count?: number;
+    final_message?: string;
+  }) => {
+    const handoffId = `close-${Date.now()}`;
+    const logHandoff = (stage: string, data?: any) => {
+      const timestamp = new Date().toISOString();
+      console.log(`🔚 [${handoffId}] CLOSE HANDOFF: ${stage} @ ${timestamp}`, data || '');
+    };
+
+    try {
+      logHandoff('1️⃣ RECEIVED CLOSE REQUEST', { 
+        source: 'ElevenLabs voice agent', 
+        parameters,
+        sessionMemories: conversationState.totalMemoriesSaved
+      });
+
+      const summary = parameters?.summary || 'User requested to end conversation';
+      const memoryCount = parameters?.memory_count || conversationState.totalMemoriesSaved;
+      const finalMessage = parameters?.final_message || 'Thank you for sharing your memories!';
+
+      logHandoff('2️⃣ PREPARED CLOSURE', { summary, memoryCount, finalMessage });
+
+      // Show user feedback about conversation closure
+      toast({ 
+        title: 'Conversation Saved', 
+        description: `Session ended. ${memoryCount} memories preserved.`,
+        duration: 5000,
+      });
+
+      logHandoff('3️⃣ USER NOTIFIED', { status: 'toast_shown' });
+
+      // Allow agent to send final message before closing
+      setTimeout(() => {
+        conversation.endSession();
+        setConversationMessages([]);
+        logHandoff('✅ SESSION CLOSED', { method: 'programmatic' });
+      }, 1000);
+
+      logHandoff('🎯 HANDOFF COMPLETE', { 
+        status: 'success',
+        agentResponse: 'Conversation will be closed in 1 second. Thank you for using Solin!',
+        note: 'ElevenLabs agent informed about conversation closure'
+      });
+
+      return `${finalMessage} Your conversation has been saved and will be closed shortly. You can always start a new conversation anytime.`;
+    } catch (error) {
+      logHandoff('❌ CLOSE HANDOFF FAILED', { error: error instanceof Error ? error.message : 'Unknown error' });
+      return 'Error closing conversation. Please try again or close manually.';
+    }
+  }, [conversation, toast, conversationState.totalMemoriesSaved]);
+
   const endConversation = useCallback(async () => {
     try {
-      console.log('👋 Ending conversation...');
+      console.log('👋 Manual conversation end requested...');
+      
+      // First, notify the ElevenLabs agent about the closure
+      await closeConversationTool({
+        summary: 'User manually ended conversation',
+        memory_count: conversationState.totalMemoriesSaved,
+        final_message: 'Thanks for sharing your memories with Solin!'
+      });
+      
+    } catch (error) {
+      console.error('Error ending conversation:', error);
+      // Fallback: direct session end if tool fails
       await conversation.endSession();
       setConversationMessages([]);
       toast({ title: 'Conversation ended', description: 'Your session has ended' });
-    } catch (error) {
-      console.error('Error ending conversation:', error);
     }
-  }, [conversation, toast]);
+  }, [conversation, toast, closeConversationTool, conversationState.totalMemoriesSaved]);
 
   useEffect(() => {
     startConversationRef.current = startConversation;
