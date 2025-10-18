@@ -725,10 +725,29 @@ const Timeline = () => {
                   }
                 }
                 
-                // TEMPORARILY DISABLE collision detection to test compact timeline
-                if (false && additionalSpacingNeeded > 0) {
-                  collisionExpansionFactor = 1 + additionalSpacingNeeded;
-                  console.log(`📏 COLLISION-DRIVEN EXPANSION: ${Math.round(additionalSpacingNeeded * 100)}% additional spacing to prevent overlap`);
+                // Smart label spacing - only expand minimum needed for year label separation
+                // Calculate minimum spacing needed between year labels (not memory content)
+                const MINIMUM_YEAR_LABEL_GAP = 40; // Minimum 40px between year labels (1980, 1985, 2025)
+                let labelSpacingExpansion = 0;
+                
+                // Check spacing between consecutive year labels
+                const sortedYearsForLabels = [...timelineData].sort((a, b) => a.year - b.year);
+                for (let i = 0; i < sortedYearsForLabels.length - 1; i++) {
+                  const currentYear = sortedYearsForLabels[i];
+                  const nextYear = sortedYearsForLabels[i + 1];
+                  const yearGap = nextYear.year - currentYear.year;
+                  const currentSpacing = yearGap * basePixelsPerYear;
+                  
+                  if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
+                    const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
+                    labelSpacingExpansion = Math.max(labelSpacingExpansion, neededExpansion - 1);
+                    console.log(`📏 LABEL SPACING: ${currentYear.year}-${nextYear.year} needs ${Math.round((neededExpansion - 1) * 100)}% expansion`);
+                  }
+                }
+                
+                if (labelSpacingExpansion > 0) {
+                  collisionExpansionFactor = 1 + labelSpacingExpansion;
+                  console.log(`📏 MINIMAL LABEL EXPANSION: ${Math.round(labelSpacingExpansion * 100)}% to prevent year label overlap`);
                 } else {
                   console.log(`✅ COMPACT TIMELINE: basePixelsPerYear: ${basePixelsPerYear}, total height: ${Math.round(45 * basePixelsPerYear)}px`);
                 }
@@ -819,11 +838,27 @@ const Timeline = () => {
                 }
               }
               
-              // TEMPORARILY DISABLE collision detection to test compact timeline
-              if (false && additionalSpacingNeeded > 0) {
-                collisionExpansionFactor = 1 + additionalSpacingNeeded;
-              } else {
-                console.log(`✅ COMPACT TIMELINE (2nd): basePixelsPerYear: ${basePixelsPerYear}, total height: ${Math.round(45 * basePixelsPerYear)}px`);
+              // Smart label spacing - only expand minimum needed for year label separation
+              // Calculate minimum spacing needed between year labels (not memory content)
+              const MINIMUM_YEAR_LABEL_GAP = 40; // Minimum 40px between year labels (1980, 1985, 2025)
+              let labelSpacingExpansion = 0;
+              
+              // Check spacing between consecutive year labels
+              const sortedYearsForLabels2 = [...timelineData].sort((a, b) => a.year - b.year);
+              for (let i = 0; i < sortedYearsForLabels2.length - 1; i++) {
+                const currentYear = sortedYearsForLabels2[i];
+                const nextYear = sortedYearsForLabels2[i + 1];
+                const yearGap = nextYear.year - currentYear.year;
+                const currentSpacing = yearGap * basePixelsPerYear;
+                
+                if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
+                  const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
+                  labelSpacingExpansion = Math.max(labelSpacingExpansion, neededExpansion - 1);
+                }
+              }
+              
+              if (labelSpacingExpansion > 0) {
+                collisionExpansionFactor = 1 + labelSpacingExpansion;
               }
               
               // Apply only collision-driven expansion while maintaining proportional scaling
