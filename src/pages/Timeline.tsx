@@ -33,6 +33,52 @@ const detectEventSignificance = (memory: any): 'major' | 'minor' => {
   return majorKeywords.some(keyword => text.includes(keyword)) ? 'major' : 'minor';
 };
 
+// LABEL OVERLAP CHECKER MODULE - Use this for ALL timeline sizing decisions
+const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight: number, minGap: number = 50) => {
+  if (timelineData.length <= 1) {
+    return { hasOverlaps: false, expansionNeeded: 1, details: [] };
+  }
+
+  const pixelsPerYear = baseHeight / totalYears;
+  const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
+  const overlaps = [];
+  let maxExpansionNeeded = 1;
+
+  console.log(`🔍 LABEL OVERLAP CHECK: Base height ${baseHeight}px, ${pixelsPerYear.toFixed(1)}px per year, min gap ${minGap}px`);
+
+  for (let i = 0; i < sortedYears.length - 1; i++) {
+    const current = sortedYears[i];
+    const next = sortedYears[i + 1];
+    const yearGap = next.year - current.year;
+    const pixelGap = yearGap * pixelsPerYear;
+
+    if (pixelGap < minGap) {
+      const expansionNeeded = minGap / pixelGap;
+      maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
+      overlaps.push({
+        currentYear: current.year,
+        nextYear: next.year,
+        yearGap,
+        pixelGap: Math.round(pixelGap),
+        needed: Math.round(expansionNeeded * 100) / 100
+      });
+      console.log(`❌ OVERLAP: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px < ${minGap}px (needs ${Math.round((expansionNeeded - 1) * 100)}% expansion)`);
+    } else {
+      console.log(`✅ OK: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px ≥ ${minGap}px`);
+    }
+  }
+
+  const result = {
+    hasOverlaps: overlaps.length > 0,
+    expansionNeeded: maxExpansionNeeded,
+    details: overlaps,
+    finalHeight: baseHeight * maxExpansionNeeded
+  };
+
+  console.log(`📊 OVERLAP SUMMARY: ${overlaps.length} overlaps, expansion needed: ${Math.round((maxExpansionNeeded - 1) * 100)}%, final: ${Math.round(result.finalHeight)}px`);
+  return result;
+};
+
 // Generate only birth event from profile
 const generateLifeEvents = (profile: any) => {
   if (!profile?.birth_date) return [];
@@ -639,82 +685,39 @@ const Timeline = () => {
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                // BACK TO SIMPLE: DEFAULT is ONE PAGE, expand only if labels overlap
-                const viewportHeight = window.innerHeight - 200;
-                const displayedYears = timelineData.length;
-                
-                // DEFAULT: Target one page height (never more unless labels would overlap)
-                let baseHeight = Math.min(viewportHeight * 0.8, 600); // Max 600px or 80% of screen
-                
-                // Check if labels would overlap at this default size
+                // COMPACT DEFAULT: Start much smaller, use overlap checker to expand minimally
                 const currentYear = new Date().getFullYear();
                 const sharedBirthYear = timelineProfile?.birth_date 
                   ? new Date(timelineProfile.birth_date).getFullYear() 
                   : timelineData[0]?.year || new Date().getFullYear();
                 const totalYears = currentYear - sharedBirthYear;
-                let pixelsPerYear = baseHeight / totalYears;
                 
-                // Check label overlaps with MINIMAL gap requirement
-                const MINIMUM_YEAR_LABEL_GAP = 60; // Reduced from 80px
-                const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
-                let needsExpansion = false;
-                let maxExpansionNeeded = 1;
+                // START VERY COMPACT: Try to fit in minimal space first
+                const viewportHeight = window.innerHeight - 200;
+                const baseHeight = Math.min(400, viewportHeight * 0.5); // Much smaller: 400px max or 50% screen
                 
-                for (let i = 0; i < sortedYears.length - 1; i++) {
-                  const currentYearData = sortedYears[i];
-                  const nextYearData = sortedYears[i + 1];
-                  const yearGap = nextYearData.year - currentYearData.year;
-                  const spacing = yearGap * pixelsPerYear;
-                  
-                  if (spacing < MINIMUM_YEAR_LABEL_GAP) {
-                    needsExpansion = true;
-                    const expansionNeeded = MINIMUM_YEAR_LABEL_GAP / spacing;
-                    maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
-                  }
-                }
+                // Use dedicated overlap checker module
+                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 55);
                 
-                let finalHeight = baseHeight;
-                if (needsExpansion) {
-                  finalHeight = baseHeight * maxExpansionNeeded;
-                  console.log(`📏 DEFAULT ONE PAGE (${Math.round(baseHeight)}px) → Expanded ${Math.round((maxExpansionNeeded - 1) * 100)}% to ${Math.round(finalHeight)}px for label spacing`);
-                } else {
-                  console.log(`✅ FITS ONE PAGE: ${Math.round(baseHeight)}px - no label overlaps`);
-                }
+                console.log(`🎯 COMPACT TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
                 
-                return finalHeight;
+                return overlapCheck.finalHeight;
               })()
             }}
           >
             {(() => {
-              // SIMPLE POSITIONING: Start with one page, expand only if labels overlap
+              // POSITIONING: Use same overlap checker for consistent results
               const currentYear = new Date().getFullYear();
               const totalYears = currentYear - sharedBirthYear;
               const viewportHeight = window.innerHeight - 200;
               
-              // DEFAULT: One page height (same as container calculation)
-              let baseHeight = Math.min(viewportHeight * 0.8, 600);
-              let pixelsPerYear = baseHeight / totalYears;
+              // Same logic as container: Start compact, use overlap checker
+              const baseHeight = Math.min(400, viewportHeight * 0.5);
+              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 55);
               
-              // Check label overlaps - same as container logic
-              const MINIMUM_YEAR_LABEL_GAP = 60;
-              const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
-              let maxExpansionNeeded = 1;
-              
-              for (let i = 0; i < sortedYears.length - 1; i++) {
-                const currentYearData = sortedYears[i];
-                const nextYearData = sortedYears[i + 1];
-                const yearGap = nextYearData.year - currentYearData.year;
-                const spacing = yearGap * pixelsPerYear;
-                
-                if (spacing < MINIMUM_YEAR_LABEL_GAP) {
-                  const expansionNeeded = MINIMUM_YEAR_LABEL_GAP / spacing;
-                  maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
-                }
-              }
-              
-              // Apply same expansion as container
-              pixelsPerYear *= maxExpansionNeeded;
-              const totalHeight = baseHeight * maxExpansionNeeded;
+              // Final sizing - guaranteed to match container
+              const pixelsPerYear = overlapCheck.finalHeight / totalYears;
+              const totalHeight = overlapCheck.finalHeight;
 
               return (
                 <>
