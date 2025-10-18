@@ -38,27 +38,48 @@ const Story = () => {
     const birthPlace = profile?.birth_place;
     const currentLocation = profile?.current_location;
     
-    // Filter for significant memories (longer content, emotional keywords, specific details)
+    // Enhanced memory significance scoring for better narrative content
     const getMemorySignificance = (memory: Memory): number => {
       let score = 0;
+      const text = memory.text.toLowerCase();
+      const title = memory.title.toLowerCase();
+      const combined = text + ' ' + title;
       
-      // Content length indicates detail/importance
-      if (memory.text.length > 100) score += 3;
+      // Content depth and quality
+      if (memory.text.length > 200) score += 4;
+      else if (memory.text.length > 100) score += 3;
       else if (memory.text.length > 50) score += 2;
       else if (memory.text.length > 20) score += 1;
       
-      // Emotional indicators
-      const emotionalWords = ['love', 'fear', 'joy', 'sad', 'happy', 'excited', 'proud', 'remember', 'never forget', 'special', 'important', 'changed', 'learned', 'realized'];
-      const emotionalCount = emotionalWords.filter(word => 
-        memory.text.toLowerCase().includes(word) || memory.title.toLowerCase().includes(word)
-      ).length;
+      // Reflective and emotional content (higher weight)
+      const reflectiveWords = ['realized', 'learned', 'understood', 'discovered', 'grew', 'changed', 'became', 'felt', 'experienced', 'never forget', 'remember thinking', 'it taught me', 'i understood'];
+      const reflectiveCount = reflectiveWords.filter(word => combined.includes(word)).length;
+      score += reflectiveCount * 3;
+      
+      // Emotional depth indicators
+      const emotionalWords = ['love', 'fear', 'joy', 'sad', 'happy', 'excited', 'proud', 'grateful', 'overwhelmed', 'peaceful', 'confused', 'clarity', 'meaningful'];
+      const emotionalCount = emotionalWords.filter(word => combined.includes(word)).length;
       score += emotionalCount * 2;
       
-      // Specific details (locations, dates, names)
+      // Life transition indicators (highly valuable for narrative)
+      const transitionWords = ['first time', 'last time', 'graduation', 'wedding', 'birth', 'death', 'moving', 'started', 'ended', 'beginning', 'turning point'];
+      const transitionCount = transitionWords.filter(word => combined.includes(word)).length;
+      score += transitionCount * 3;
+      
+      // Narrative quality indicators
+      const narrativeWords = ['story', 'journey', 'adventure', 'challenge', 'achievement', 'milestone', 'breakthrough', 'struggle', 'triumph'];
+      const narrativeCount = narrativeWords.filter(word => combined.includes(word)).length;
+      score += narrativeCount * 2;
+      
+      // Specific details enhance narrative value
       if (memory.memory_location) score += 2;
       if (memory.memory_date) score += 1;
       
-      return score;
+      // Penalize very short or purely factual content
+      if (memory.text.length < 30) score -= 1;
+      if (/^(went|did|had|was|were|saw|met)\s+\w+/.test(text)) score -= 1; // Simple past tense descriptions
+      
+      return Math.max(0, score); // Ensure non-negative
     };
 
     // Sort by significance, then by date
@@ -112,45 +133,65 @@ const Story = () => {
     return { introduction, chapters, conclusion };
   };
 
-  // Extract themes from memories
+  // Enhanced theme extraction with weighted significance
   const extractThemes = (memories: Memory[]): string[] => {
-    const themes = new Set<string>();
+    const themeScores = new Map<string, number>();
     
     memories.forEach(memory => {
       const text = (memory.title + ' ' + memory.text).toLowerCase();
+      const significance = memory.significance || 1;
       
-      // Family themes
-      if (/family|mother|father|parent|sibling|brother|sister|grandmother|grandfather/.test(text)) {
-        themes.add('family connections');
+      // Family and relationships (weighted by memory significance)
+      if (/family|mother|father|parent|sibling|brother|sister|grandmother|grandfather|relatives/.test(text)) {
+        themeScores.set('family bonds', (themeScores.get('family bonds') || 0) + significance);
       }
       
-      // Achievement themes  
-      if (/achievement|success|proud|accomplished|graduation|promotion|award/.test(text)) {
-        themes.add('personal achievements');
+      // Achievement and success
+      if (/achievement|success|proud|accomplished|graduation|promotion|award|recognition|honor/.test(text)) {
+        themeScores.set('personal achievements', (themeScores.get('personal achievements') || 0) + significance);
       }
       
-      // Growth themes
-      if (/learned|grew|changed|realized|understanding|wisdom|experience/.test(text)) {
-        themes.add('personal growth');
+      // Learning and growth  
+      if (/learned|grew|changed|realized|understanding|wisdom|experience|insight|discovery/.test(text)) {
+        themeScores.set('personal growth', (themeScores.get('personal growth') || 0) + significance);
       }
       
-      // Adventure themes
-      if (/travel|adventure|journey|explore|trip|vacation|new place/.test(text)) {
-        themes.add('exploration and adventure');
+      // Adventure and exploration
+      if (/travel|adventure|journey|explore|trip|vacation|new place|foreign|abroad/.test(text)) {
+        themeScores.set('exploration', (themeScores.get('exploration') || 0) + significance);
       }
       
-      // Love themes
-      if (/love|relationship|wedding|marriage|partner|romance/.test(text)) {
-        themes.add('love and relationships');
+      // Love and romance
+      if (/love|relationship|wedding|marriage|partner|romance|dating|boyfriend|girlfriend/.test(text)) {
+        themeScores.set('love and relationships', (themeScores.get('love and relationships') || 0) + significance);
       }
       
-      // Challenge themes
-      if (/difficult|challenge|struggle|overcome|perseverance|strength/.test(text)) {
-        themes.add('overcoming challenges');
+      // Challenges and resilience
+      if (/difficult|challenge|struggle|overcome|perseverance|strength|hardship|obstacle/.test(text)) {
+        themeScores.set('resilience', (themeScores.get('resilience') || 0) + significance);
+      }
+      
+      // Education and learning
+      if (/school|university|college|education|study|learning|academic|student/.test(text)) {
+        themeScores.set('education', (themeScores.get('education') || 0) + significance);
+      }
+      
+      // Career and work
+      if (/work|career|job|profession|business|employment|workplace/.test(text)) {
+        themeScores.set('professional development', (themeScores.get('professional development') || 0) + significance);
+      }
+      
+      // Creativity and arts
+      if (/art|music|creative|painting|writing|performing|artistic/.test(text)) {
+        themeScores.set('creative expression', (themeScores.get('creative expression') || 0) + significance);
       }
     });
     
-    return Array.from(themes);
+    // Return themes sorted by significance, take top themes
+    return Array.from(themeScores.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 4)
+      .map(([theme]) => theme);
   };
 
   // Create flowing narrative paragraphs from memory clusters
@@ -244,14 +285,52 @@ const Story = () => {
     
     paragraph += '. ';
     
-    // Weave in actual memory content as reflection
+    // Intelligently weave in actual memory content
     if (keyMemory.text.length > 50) {
-      const sentences = keyMemory.text.split(/[.!?]/).filter(s => s.trim().length > 10);
+      const memoryText = keyMemory.text.trim();
+      
+      // Analyze the memory content to determine how to integrate it
+      const isFirstPerson = /^(I |My |We |Our )/i.test(memoryText);
+      const isNarrative = /^(The |That |This |It )/i.test(memoryText);
+      const hasEmotion = /(felt|remember|realized|learned|discovered|understood|experienced)/i.test(memoryText);
+      
+      // Extract meaningful content
+      const sentences = memoryText.split(/[.!?]/).filter(s => s.trim().length > 10);
       if (sentences.length > 0) {
-        const bestSentence = sentences[0].trim();
-        if (bestSentence.length > 20 && bestSentence.length < 200) {
-          // Make it flow as part of the biography narrative
-          paragraph += `The experience was marked by a profound realization: ${bestSentence.toLowerCase()}. `;
+        let bestContent = sentences[0].trim();
+        
+        // Find a sentence that contains reflection or emotion if available
+        const reflectiveSentence = sentences.find(s => 
+          /(felt|remember|realized|learned|discovered|understood|never forget|changed|grew)/i.test(s)
+        );
+        
+        if (reflectiveSentence && reflectiveSentence.trim().length > 20) {
+          bestContent = reflectiveSentence.trim();
+        }
+        
+        if (bestContent.length > 20 && bestContent.length < 250) {
+          // Convert to third person if needed and integrate naturally
+          let processedContent = bestContent;
+          
+          if (isFirstPerson) {
+            // Convert first person to third person narrative
+            processedContent = processedContent
+              .replace(/^I /gi, `${name} `)
+              .replace(/ I /g, ` ${name} `)
+              .replace(/^My /gi, `${name}'s `)
+              .replace(/ my /g, ` ${name}'s `)
+              .replace(/^We /gi, `${name} and others `)
+              .replace(/ we /g, ` they `);
+          }
+          
+          // Choose appropriate integration based on content type
+          if (hasEmotion || reflectiveSentence) {
+            paragraph += `Reflecting on this time, ${processedContent.toLowerCase()}. `;
+          } else if (isNarrative) {
+            paragraph += `${processedContent}. `;
+          } else {
+            paragraph += `As ${name} would later describe it, ${processedContent.toLowerCase()}. `;
+          }
         }
       }
     }
