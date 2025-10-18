@@ -153,7 +153,7 @@ const Story = () => {
     return Array.from(themes);
   };
 
-  // Create narrative chapters from memory clusters
+  // Create flowing narrative paragraphs from memory clusters
   const createNarrativeChapters = (memories: Memory[], name: string) => {
     if (memories.length === 0) return [];
     
@@ -162,15 +162,16 @@ const Story = () => {
     // Group memories by time periods and themes
     const timeGroups = groupMemoriesByTimePeriod(memories);
     
+    // Create flowing narrative paragraphs (no chapter titles)
     Object.entries(timeGroups).forEach(([period, periodMemories]) => {
       if (periodMemories.length === 0) return;
       
       // Create rich narrative for this time period
-      const chapterContent = createChapterNarrative(periodMemories, name, period);
+      const paragraphContent = createFlowingParagraph(periodMemories, name, period);
       
       chapters.push({
-        title: getChapterTitle(period, periodMemories),
-        content: chapterContent,
+        title: '', // No titles for flowing text
+        content: paragraphContent,
         memories: periodMemories
       });
     });
@@ -199,67 +200,85 @@ const Story = () => {
     return groups;
   };
 
-  // Create narrative content for a chapter
-  const createChapterNarrative = (memories: Memory[], name: string, period: string): string => {
+  // Create flowing paragraph content for biography style
+  const createFlowingParagraph = (memories: Memory[], name: string, period: string): string => {
     if (memories.length === 0) return '';
     
     const keyMemory = memories[0]; // Highest significance memory in this period
-    let narrative = '';
+    let paragraph = '';
     
-    // Start with the most significant memory
+    // Create smooth transitions between time periods
     if (period === 'recent') {
-      narrative = `In recent years, ${name}'s story has been marked by significant experiences. `;
+      paragraph = `As the years have progressed, `;
     } else if (period === 'middle') {
-      narrative = `During the middle chapter of this journey, `;
+      paragraph = `Through the developing years of life, `;
     } else {
-      narrative = `In the foundational years, `;
+      paragraph = `In the earlier chapters of this story, `;
     }
     
-    // Incorporate key memory details
-    narrative += `One particularly meaningful moment was ${keyMemory.title.toLowerCase()}`;
+    // Incorporate the most significant memory with rich detail
+    paragraph += `${name} experienced what would become `;
     
-    if (keyMemory.memory_location) {
-      narrative += ` in ${keyMemory.memory_location}`;
+    // Determine memory significance
+    const significance = memories[0].significance || 0;
+    if (significance > 8) {
+      paragraph += `one of the most transformative moments of this period`;
+    } else if (significance > 5) {
+      paragraph += `a particularly meaningful experience`;
+    } else {
+      paragraph += `a memorable chapter`;
     }
     
-    if (keyMemory.memory_date) {
+    paragraph += ` through ${keyMemory.title.toLowerCase()}`;
+    
+    // Add location and time context naturally
+    if (keyMemory.memory_location && keyMemory.memory_date) {
       const year = new Date(keyMemory.memory_date).getFullYear();
-      narrative += ` (${year})`;
+      paragraph += ` in ${keyMemory.memory_location} during ${year}`;
+    } else if (keyMemory.memory_location) {
+      paragraph += ` in ${keyMemory.memory_location}`;
+    } else if (keyMemory.memory_date) {
+      const year = new Date(keyMemory.memory_date).getFullYear();
+      paragraph += ` in ${year}`;
     }
     
-    narrative += '. ';
+    paragraph += '. ';
     
-    // Add excerpt from the memory text if it's substantial
+    // Weave in actual memory content as reflection
     if (keyMemory.text.length > 50) {
-      // Extract first meaningful sentence or key phrase
-      const firstSentence = keyMemory.text.split(/[.!?]/)[0].trim();
-      if (firstSentence.length > 20 && firstSentence.length < 150) {
-        narrative += `As ${name} recalls: "${firstSentence}." `;
+      const sentences = keyMemory.text.split(/[.!?]/).filter(s => s.trim().length > 10);
+      if (sentences.length > 0) {
+        const bestSentence = sentences[0].trim();
+        if (bestSentence.length > 20 && bestSentence.length < 200) {
+          // Make it flow as part of the biography narrative
+          paragraph += `The experience was marked by a profound realization: ${bestSentence.toLowerCase()}. `;
+        }
       }
     }
     
-    // Connect to other memories in this period
+    // Connect other memories from this period naturally
     if (memories.length > 1) {
-      const otherMemoryTitles = memories.slice(1, 3).map(m => m.title.toLowerCase());
-      narrative += `This period also included ${otherMemoryTitles.join(' and ')}, `;
-      narrative += `weaving together ${memories.length} significant experiences that shaped this chapter of life.`;
+      const additionalMemories = memories.slice(1, 4); // Take up to 3 more
+      
+      if (additionalMemories.length === 1) {
+        paragraph += `This was also the time of ${additionalMemories[0].title.toLowerCase()}, `;
+      } else if (additionalMemories.length === 2) {
+        paragraph += `This period was further defined by ${additionalMemories[0].title.toLowerCase()} and ${additionalMemories[1].title.toLowerCase()}, `;
+      } else {
+        const titles = additionalMemories.map(m => m.title.toLowerCase());
+        const lastTitle = titles.pop();
+        paragraph += `This era encompassed ${titles.join(', ')}, and ${lastTitle}, `;
+      }
+      
+      paragraph += `each experience building upon the last to create a tapestry of growth and understanding.`;
     } else {
-      narrative += `This memory stands as a defining moment from this period.`;
+      paragraph += `This singular experience became a cornerstone of personal development, influencing countless decisions and perspectives in the years that followed.`;
     }
     
-    return narrative;
+    return paragraph;
   };
 
-  // Generate chapter titles
-  const getChapterTitle = (period: string, memories: Memory[]): string => {
-    const titles = {
-      'recent': 'Recent Chapters',
-      'middle': 'The Journey Continues', 
-      'early': 'Foundation Years'
-    };
-    
-    return `${titles[period]} (${memories.length} memories)`;
-  };
+
 
   // Fetch story data (with offline fallback)
   const fetchStoryData = async () => {
@@ -428,127 +447,138 @@ const Story = () => {
   // This ensures the app always works even with database issues
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b-[1.5px] border-section-border bg-white sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </Link>
-            <h1 className="text-xl font-semibold">Your Story</h1>
-          </div>
-        </div>
+    <div className="min-h-screen relative" style={{
+      background: `
+        linear-gradient(135deg, #f8f7f4 0%, #f1efea 100%),
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 23px,
+          rgba(139, 69, 19, 0.1) 24px,
+          rgba(139, 69, 19, 0.1) 25px
+        )
+      `
+    }}>
+      {/* Minimal Navigation */}
+      <nav className="absolute top-4 left-4 z-10">
+        <Link to="/dashboard">
+          <Button variant="ghost" size="sm" className="text-slate-600 hover:text-slate-800 bg-white/80 backdrop-blur-sm">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        </Link>
       </nav>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <Card className="modern-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-primary" />
-              Your Life Story
-              <span className="text-sm text-muted-foreground ml-2">
-                ({memories.length} memories preserved)
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Introduction */}
-            <div className="prose prose-sm max-w-none">
-              <p className="text-base text-foreground leading-relaxed font-light">
+      {/* Paper Document Container */}
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div 
+          className="max-w-4xl w-full bg-white shadow-2xl relative"
+          style={{
+            minHeight: '90vh',
+            boxShadow: `
+              0 0 20px rgba(0, 0, 0, 0.1),
+              0 0 40px rgba(0, 0, 0, 0.05),
+              inset 0 0 0 1px rgba(139, 69, 19, 0.1)
+            `,
+            background: `
+              linear-gradient(135deg, #ffffff 0%, #fefefe 100%),
+              repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 29px,
+                rgba(139, 69, 19, 0.08) 30px,
+                rgba(139, 69, 19, 0.08) 31px
+              )
+            `
+          }}
+        >
+          {/* Paper Content */}
+          <div className="px-16 py-20 space-y-8">
+            
+            {/* Title */}
+            <div className="text-center mb-12">
+              <h1 className="text-4xl font-serif text-slate-800 mb-2">
+                {userProfile?.name ? `The Life Story of ${userProfile.name}` : 'A Life Story'}
+              </h1>
+              <div className="w-32 h-px bg-slate-300 mx-auto mt-4"></div>
+              {memories.length > 0 && (
+                <p className="text-sm text-slate-500 mt-4 font-light">
+                  Based on {memories.length} preserved memories
+                </p>
+              )}
+            </div>
+            
+            {/* Introduction Paragraph */}
+            <div className="text-justify">
+              <p className="text-lg leading-8 text-slate-700 font-light first-letter:text-6xl first-letter:font-serif first-letter:float-left first-letter:mr-2 first-letter:mt-1 first-letter:leading-none first-letter:text-slate-600">
                 {narrative.introduction}
               </p>
             </div>
             
-            {/* Chapters */}
+            {/* Chapter Content - Pure Text Flow */}
             {narrative.chapters.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground border-b border-border pb-2">
-                  Life Chapters
-                </h3>
+              <div className="space-y-6">
                 {narrative.chapters.map((chapter, index) => (
-                  <div key={index} className="bg-muted/20 rounded-lg p-4 border-l-4 border-primary">
-                    <h4 className="text-base font-medium text-primary mb-3 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      {chapter.title}
-                    </h4>
-                    <p className="text-sm text-foreground leading-relaxed mb-3">
+                  <div key={index} className="text-justify">
+                    <p className="text-lg leading-8 text-slate-700 font-light">
                       {chapter.content}
                     </p>
-                    <div className="flex flex-wrap gap-2">
-                      {chapter.memories.slice(0, 3).map((memory) => (
-                        <span 
-                          key={memory.id}
-                          className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-xs"
-                        >
-                          <Calendar className="w-3 h-3" />
-                          {memory.title}
-                        </span>
-                      ))}
-                      {chapter.memories.length > 3 && (
-                        <span className="text-xs text-muted-foreground px-2 py-1">
-                          +{chapter.memories.length - 3} more
-                        </span>
-                      )}
-                    </div>
                   </div>
                 ))}
               </div>
             )}
             
-            {/* Conclusion */}
-            <div className="prose prose-sm max-w-none">
-              <p className="text-sm text-muted-foreground leading-relaxed italic">
-                {narrative.conclusion}
-              </p>
-            </div>
+            {/* Conclusion Paragraph */}
+            {narrative.conclusion && (
+              <div className="text-justify mt-8">
+                <p className="text-lg leading-8 text-slate-700 font-light italic">
+                  {narrative.conclusion}
+                </p>
+              </div>
+            )}
 
-            {/* No memories state */}
-            {memories.length === 0 && (
-              <div className="text-center py-8 space-y-4">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                  <Bot className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-base font-medium text-foreground mb-2">
+            {/* No memories state - Clean version */}
+            {memories.length === 0 && !loading && (
+              <div className="text-center py-16 space-y-6">
+                <div className="max-w-2xl mx-auto">
+                  <h2 className="text-2xl font-serif text-slate-700 mb-4">
                     Your Story Awaits
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Start by sharing memories to create your unique life narrative
+                  </h2>
+                  <p className="text-lg leading-8 text-slate-600 font-light mb-8">
+                    Every life has a story worth telling. Share your memories to create a beautiful, 
+                    flowing biography that captures the essence of your journey through life.
                   </p>
                   <Link to="/">
-                    <Button className="bg-primary hover:bg-primary/90">
-                      Share Your First Memory
+                    <Button className="bg-slate-700 hover:bg-slate-800 text-white px-8 py-2">
+                      Begin Your Story
                     </Button>
                   </Link>
                 </div>
               </div>
             )}
 
-            {/* Stats */}
+            {/* Subtle signature line */}
             {memories.length > 0 && (
-              <div className="p-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg border border-primary/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Story Statistics
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <strong>{memories.length}</strong> memories • 
-                      <strong>{narrative.chapters.length}</strong> chapters • 
-                      <strong>{Math.round(narrative.introduction.length / 5)}</strong> words
-                    </p>
-                  </div>
-                  <Sparkles className="w-5 h-5 text-primary" />
+              <div className="text-center mt-16 pt-8 border-t border-slate-200">
+                <div className="text-sm text-slate-400 font-light">
+                  Preserved with care by Solin One • Digital Memory Sanctuary
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Paper aging effects */}
+          <div 
+            className="absolute inset-0 pointer-events-none opacity-30"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 69, 19, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(139, 69, 19, 0.02) 0%, transparent 50%)
+              `
+            }}
+          />
+        </div>
       </div>
     </div>
   );
