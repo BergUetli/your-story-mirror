@@ -1268,13 +1268,12 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
       <div className="min-h-screen bg-background overflow-hidden relative">
         
 
-        <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
-          {/* Left Side - Solin Orb - Framed with gradient panel */}
+        <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
+          {/* Left Side - Solin Agent - Matched size with transcript */}
           <div 
-            className="flex-1 max-w-xl flex flex-col items-center justify-center space-y-6 animate-fade-in p-8 rounded-lg border-[1.5px]"
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-white rounded-lg border-[1.5px] shadow-elevated p-8 flex flex-col justify-center animate-fade-in"
             style={{ 
-              borderColor: 'hsl(var(--section-border))',
-              background: 'var(--gradient-panel)'
+              borderColor: 'hsl(var(--section-border))'
             }}
           >
             
@@ -1378,13 +1377,13 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
             className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] bg-white rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden"
             style={{ borderColor: 'hsl(var(--section-border))' }}
           >
-            <div className="mb-4 pb-3 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
-              <h2 className="text-lg font-bold text-foreground">
+            <div className="mb-3 pb-2 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
+              <h2 className="text-base font-bold text-foreground">
                 Live Transcript
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">Real-time conversation with Solin</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Real-time conversation with Solin</p>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
               {conversationMessages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
                   <p className="text-muted-foreground text-sm text-center">
@@ -1398,21 +1397,21 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-lg px-4 py-2.5 transition-all hover:scale-[1.02] ${
+                      className={`max-w-[85%] rounded-lg px-3 py-1.5 transition-all hover:scale-[1.02] ${
                         msg.role === 'user'
                           ? 'bg-primary text-white rounded-br-md'
                           : 'bg-muted text-foreground rounded-bl-md'
                       }`}
                     >
-                      <div className={`text-xs font-bold mb-1 ${
+                      <div className={`text-xs font-medium mb-0.5 ${
                         msg.role === 'user' ? 'text-white/70' : 'opacity-70'
                       }`}>
                         {msg.role === 'user' ? 'You' : 'Solin'}
                       </div>
-                      <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                      <div className="text-xs leading-snug whitespace-pre-wrap break-words">
                         {msg.text}
                         {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
-                          <span className="inline-block w-1.5 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
+                          <span className="inline-block w-1 h-3 bg-primary ml-1 animate-pulse rounded-sm" />
                         )}
                       </div>
                     </div>
