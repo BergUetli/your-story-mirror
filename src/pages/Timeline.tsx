@@ -656,8 +656,8 @@ const Timeline = () => {
                 const displayedYears = timelineData.length; // Only significant years are in timelineData
                 const yearSpanRange = totalYears; // Full year range for proportional positioning
                 
-                // Calculate spacing so displayed content fits in viewport - much more compact (5x smaller)
-                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 5, 3), 1);
+                // Calculate spacing so displayed content fits in viewport initially, but allow for expansion
+                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 3, 8), 2);
                 
                 // Start with no expansion - fit timeline in viewport initially
                 let collisionExpansionFactor = 1;
@@ -665,7 +665,7 @@ const Timeline = () => {
                 // Calculate actual memory card heights and positions for collision detection
                 const MINIMUM_GAP_PX = 20; // Minimum 20px gap between memory cards
                 const MEMORY_CARD_HEIGHT = 80; // Increased from 60px to account for actual card height with padding
-                const MEMORY_CARD_SPACING = 24; // Current spacing between memory cards in CSS
+                const MEMORY_CARD_SPACING = 32; // Updated spacing between memory cards in CSS
                 const LIFE_EVENT_HEIGHT = 40; // Height of life events like "Born"
                 const YEAR_MARKER_HEIGHT = 32; // Height reserved for year marker and label
                 
@@ -725,9 +725,15 @@ const Timeline = () => {
                   }
                 }
                 
+                // Apply collision expansion if any collisions were detected
+                if (additionalSpacingNeeded > 0) {
+                  collisionExpansionFactor = 1 + additionalSpacingNeeded;
+                  console.log(`🔧 COLLISION EXPANSION: ${Math.round(additionalSpacingNeeded * 100)}% to prevent content overlap`);
+                }
+                
                 // Smart label spacing - only expand minimum needed for year label separation
                 // Calculate minimum spacing needed between year labels (not memory content)
-                const MINIMUM_YEAR_LABEL_GAP = 40; // Minimum 40px between year labels (1980, 1985, 2025)
+                const MINIMUM_YEAR_LABEL_GAP = 60; // Increased from 40px to 60px for better label separation
                 let labelSpacingExpansion = 0;
                 
                 // Check spacing between consecutive year labels
@@ -736,7 +742,7 @@ const Timeline = () => {
                   const currentYear = sortedYearsForLabels[i];
                   const nextYear = sortedYearsForLabels[i + 1];
                   const yearGap = nextYear.year - currentYear.year;
-                  const currentSpacing = yearGap * basePixelsPerYear;
+                  const currentSpacing = yearGap * basePixelsPerYear * collisionExpansionFactor;
                   
                   if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
                     const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
@@ -746,10 +752,8 @@ const Timeline = () => {
                 }
                 
                 if (labelSpacingExpansion > 0) {
-                  collisionExpansionFactor = 1 + labelSpacingExpansion;
-                  console.log(`📏 MINIMAL LABEL EXPANSION: ${Math.round(labelSpacingExpansion * 100)}% to prevent year label overlap`);
-                } else {
-                  console.log(`✅ COMPACT TIMELINE: basePixelsPerYear: ${basePixelsPerYear}, total height: ${Math.round(45 * basePixelsPerYear)}px`);
+                  collisionExpansionFactor *= (1 + labelSpacingExpansion);
+                  console.log(`📏 COMBINED EXPANSION: ${Math.round((collisionExpansionFactor - 1) * 100)}% total expansion`);
                 }
                 
                 // Apply only collision-driven expansion while maintaining proportional scaling
@@ -778,8 +782,8 @@ const Timeline = () => {
               const displayedYears = timelineData.length; // Only significant years are in timelineData
               const yearSpanRange = totalYears; // Full year range for proportional positioning
               
-              // Calculate spacing so displayed content fits in viewport - halved as requested
-              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 5, 3), 1);
+              // Use same base spacing calculation as above
+              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 3, 8), 2);
               
               // Start with no expansion - fit timeline in viewport initially (duplicate for consistency)
               let collisionExpansionFactor = 1;
@@ -787,7 +791,7 @@ const Timeline = () => {
               // Calculate actual memory card heights and positions for collision detection
               const MINIMUM_GAP_PX = 20; // Minimum 20px gap between memory cards
               const MEMORY_CARD_HEIGHT = 80; // Increased from 60px to account for actual card height with padding
-              const MEMORY_CARD_SPACING = 24; // Current spacing between memory cards in CSS
+              const MEMORY_CARD_SPACING = 32; // Updated spacing between memory cards in CSS
               const LIFE_EVENT_HEIGHT = 40; // Height of life events like "Born"
               const YEAR_MARKER_HEIGHT = 32; // Height reserved for year marker and label
               
@@ -838,9 +842,13 @@ const Timeline = () => {
                 }
               }
               
+              // Apply collision expansion if any collisions were detected
+              if (additionalSpacingNeeded > 0) {
+                collisionExpansionFactor = 1 + additionalSpacingNeeded;
+              }
+              
               // Smart label spacing - only expand minimum needed for year label separation
-              // Calculate minimum spacing needed between year labels (not memory content)
-              const MINIMUM_YEAR_LABEL_GAP = 40; // Minimum 40px between year labels (1980, 1985, 2025)
+              const MINIMUM_YEAR_LABEL_GAP = 60; // Same as above - 60px for better label separation
               let labelSpacingExpansion = 0;
               
               // Check spacing between consecutive year labels
@@ -849,7 +857,7 @@ const Timeline = () => {
                 const currentYear = sortedYearsForLabels2[i];
                 const nextYear = sortedYearsForLabels2[i + 1];
                 const yearGap = nextYear.year - currentYear.year;
-                const currentSpacing = yearGap * basePixelsPerYear;
+                const currentSpacing = yearGap * basePixelsPerYear * collisionExpansionFactor;
                 
                 if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
                   const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
@@ -858,7 +866,7 @@ const Timeline = () => {
               }
               
               if (labelSpacingExpansion > 0) {
-                collisionExpansionFactor = 1 + labelSpacingExpansion;
+                collisionExpansionFactor *= (1 + labelSpacingExpansion);
               }
               
               // Apply only collision-driven expansion while maintaining proportional scaling
@@ -976,10 +984,12 @@ const Timeline = () => {
                           {/* Memory Content - Always show memories if they exist */}
                           {yearData.memories.length > 0 && (
                             <div 
-                              className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'} space-y-6`}
+                              className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}
                               style={{
-                                // Ensure minimum 20px gap between memory cards as calculated in collision detection
-                                gap: '24px' // This matches the MEMORY_CARD_SPACING constant (space-y-6 = 24px)
+                                // Ensure proper spacing between memory cards to prevent overlap
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '32px' // Increased from 24px to 32px for better separation
                               }}
                             >
                               {yearData.memories.map((memory) => {
