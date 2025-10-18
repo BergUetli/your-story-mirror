@@ -924,7 +924,7 @@ const Timeline = () => {
                         <div 
                           className="absolute right-[76%] pr-4 cursor-pointer group flex flex-col items-end justify-start"
                           onClick={() => toggleYear(yearData.year)}
-                          style={{ top: '-4px' }} // Align text-2xl baseline with text-lg baseline
+                          style={{ top: '1px' }} // Fine-tune alignment between text-2xl and text-lg
                         >
                           <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-none`}>
                             {yearData.year}
