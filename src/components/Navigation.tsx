@@ -24,6 +24,8 @@ import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen, LogOu
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { AuthModal } from '@/components/auth/AuthModal';
 
 /**
  * MAIN NAVIGATION COMPONENT
@@ -35,6 +37,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   /**
    * INFORMATION NAVIGATION ITEMS
@@ -142,15 +145,26 @@ const Navigation = () => {
               BRAND SECTION (Center) - Flexible positioning for responsive design
               BUSINESS PURPOSE: Provides brand recognition and quick access to home page.
               Acts as a visual anchor and primary logo placement.
+              For unauthenticated users, triggers sign-in modal.
               RESPONSIVE: Adjusts size and positioning based on screen size
             */}
-            <Link 
-              to="/" 
-              className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4"
-            >
-              <span className="hidden lg:inline">Solin One</span>
-              <span className="lg:hidden">Solin</span>
-            </Link>
+            {user ? (
+              <Link 
+                to="/" 
+                className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4"
+              >
+                <span className="hidden lg:inline">Solin One</span>
+                <span className="lg:hidden">Solin</span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4 cursor-pointer"
+              >
+                <span className="hidden lg:inline">Solin One</span>
+                <span className="lg:hidden">Solin</span>
+              </button>
+            )}
             
             {/* 
               CORE FEATURES SECTION (Right Side)
@@ -278,6 +292,9 @@ const Navigation = () => {
         visible and properly positioned below the navigation.
       */}
       <div className="hidden sm:block h-12"></div>
+      
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </>
   );
 };
