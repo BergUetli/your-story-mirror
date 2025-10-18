@@ -215,4 +215,14 @@
     @apply border-muted-foreground/20 hover:border-muted-foreground;
     @apply hover:bg-muted/50;
   }
+
+  /* Mobile navigation scroll hiding */
+  .mobile-nav-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-nav-scroll {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }

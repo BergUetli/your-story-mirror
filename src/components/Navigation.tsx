@@ -80,54 +80,59 @@ const Navigation = () => {
   return (
     <>
       {/* 
-        DESKTOP NAVIGATION BAR
-        BUSINESS PURPOSE: Primary navigation interface for desktop users, providing
-        full access to all features with clear visual hierarchy and professional styling.
+        DESKTOP/TABLET NAVIGATION BAR
+        BUSINESS PURPOSE: Primary navigation interface for desktop and tablet users, providing
+        full access to all features with responsive design that adapts to screen sizes.
         
-        DESIGN FEATURES:
+        RESPONSIVE DESIGN FEATURES:
         - Fixed top positioning for consistent access
         - Semi-transparent background with backdrop blur for modern aesthetic
-        - Three-section layout: Information (left), Brand (center), Actions (right)
+        - Flexible layout that adapts from large screens to tablets
+        - Smart spacing and overflow handling for iPad and smaller tablets
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden md:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-[1.5px] z-40" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-6 relative">
-          <div className="flex justify-between items-center h-12">
+      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-[1.5px] z-40" style={{ borderColor: 'hsl(var(--section-border))' }}>
+        <div className="max-w-7xl mx-auto px-3 lg:px-6 relative">
+          <div className="flex items-center justify-between h-12 gap-2">
             {/* 
               INFORMATION SECTION (Left Side)
               BUSINESS PURPOSE: Provides access to educational content and help resources.
               Users can learn about the platform before engaging with core features.
+              RESPONSIVE: Compact spacing and text on smaller tablets
             */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
                     className={cn(
-                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
+                      "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
                       isActive(path) && "border-b-2 rounded-b-none"
                     )}
                     style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                   >
-                    <Icon className="w-4 h-4" />
-                    {label}
+                    <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline">{label}</span>
+                    <span className="lg:hidden">{label.split(' ')[0]}</span>
                   </Button>
                 </Link>
               ))}
             </div>
 
             {/* 
-              BRAND SECTION (Center) - Absolutely positioned for true centering
+              BRAND SECTION (Center) - Flexible positioning for responsive design
               BUSINESS PURPOSE: Provides brand recognition and quick access to home page.
               Acts as a visual anchor and primary logo placement.
+              RESPONSIVE: Adjusts size and positioning based on screen size
             */}
             <Link 
               to="/" 
-              className="absolute left-1/2 transform -translate-x-1/2 text-2xl font-bold tracking-wide hover:text-primary transition-colors z-10"
+              className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4"
             >
-              Solin One
+              <span className="hidden lg:inline">Solin One</span>
+              <span className="lg:hidden">Solin</span>
             </Link>
             
             {/* 
@@ -142,21 +147,34 @@ const Navigation = () => {
               - Reconstruction: AI enhancement tools
               - Identities: User and family management
             */}
+            {/* 
+              CORE FEATURES SECTION (Right Side)
+              BUSINESS PURPOSE: Primary action center where users access main functionality.
+              This is where users spend most of their time creating and managing memories.
+              
+              RESPONSIVE FEATURES:
+              - Compact spacing on tablets and smaller screens
+              - Icon-only mode on very tight spaces
+              - Flexible gap and text sizing
+              - Overflow handling with scroll on extreme cases
+            */}
             {user && (
-              <div className="flex items-center gap-3 ml-16">
+              <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0 overflow-x-auto max-w-[50%] lg:max-w-none">
                 {rightNavItems.map(({ path, icon: Icon, label }) => (
-                  <Link key={path} to={path}>
+                  <Link key={path} to={path} className="flex-shrink-0">
                     <Button
                       variant={isActive(path) ? 'default' : 'ghost'}
                       size="sm"
                       className={cn(
-                        "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
+                        "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
                         isActive(path) && "border-b-2 rounded-b-none"
                       )}
                       style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                     >
-                      <Icon className="w-4 h-4" />
-                      {label}
+                      <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
+                      <span className="hidden xl:inline">{label}</span>
+                      <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
+                      <span className="lg:hidden sr-only">{label}</span>
                     </Button>
                   </Link>
                 ))}
@@ -173,27 +191,33 @@ const Navigation = () => {
         
         MOBILE UX CONSIDERATIONS:
         - Bottom positioning for natural thumb reach
-        - Icon + text layout for clear feature identification
-        - Compact spacing to fit all navigation items
+        - Icon-first layout for space efficiency
+        - Horizontal scroll for overflow handling
         - Active state highlighting for current page awareness
         - Combined information and feature items for simplified mobile experience
+        - Responsive text sizing based on number of items
       */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-border md:hidden z-40">
-        <div className="flex justify-around items-center py-2 px-4 max-w-md mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-border sm:hidden z-40">
+        <div className="flex items-center py-2 px-2 overflow-x-auto gap-1 mobile-nav-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {[...leftNavItems, ...rightNavItems].map(({ path, icon: Icon, label }) => (
-            <Link key={path} to={path}>
+            <Link key={path} to={path} className="flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "flex flex-col items-center gap-1 h-auto py-2 px-3 min-w-0 font-light",
+                  "flex flex-col items-center gap-0.5 h-auto py-1.5 px-2 min-w-0 font-light",
                   isActive(path) 
                     ? "text-primary bg-primary/10" 
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {Icon && <Icon className="w-5 h-5" />}
-                <span className="text-xs">{label}</span>
+                {Icon && <Icon className="w-4 h-4" />}
+                <span className={cn(
+                  "text-xs leading-tight text-center",
+                  [...leftNavItems, ...rightNavItems].length > 6 ? "text-[10px]" : "text-xs"
+                )}>
+                  {label.length > 8 ? label.split(' ')[0] : label}
+                </span>
               </Button>
             </Link>
           ))}
@@ -206,7 +230,7 @@ const Navigation = () => {
         behind the fixed desktop navigation bar. This ensures all page content is
         visible and properly positioned below the navigation.
       */}
-      <div className="hidden md:block h-12"></div>
+      <div className="hidden sm:block h-12"></div>
     </>
   );
 };
