@@ -43,9 +43,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     // Then get the current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Development auto-login for testing Timeline collision detection
+      if (!session && process.env.NODE_ENV === 'development') {
+        console.log('🔧 Development mode: Auto-authenticating test user...');
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: 'berguetli@gmail.com',
+            password: 'zippy6'
+          });
+          
+          if (error) {
+            console.log('🔧 Development auto-login failed:', error.message);
+          } else {
+            console.log('✅ Development auto-login successful');
+            setSession(data.session);
+            setUser(data.session?.user ?? null);
+          }
+        } catch (error) {
+          console.log('🔧 Development auto-login error:', error);
+        }
+      }
+      
       setLoading(false);
     });
 

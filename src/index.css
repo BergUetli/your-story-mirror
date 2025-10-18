@@ -62,21 +62,68 @@
     min-height: 100vh;
   }
 
-  /* Modern scrollbar */
+  /* Modern thick scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
+    width: 12px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-background;
+    @apply bg-muted/20 rounded-full;
+    margin: 4px;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-muted rounded-full;
+    @apply bg-muted/60 rounded-full;
+    transition: all 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary;
+    @apply bg-primary/70;
+    transform: scaleY(1.1);
+  }
+
+  /* Custom scrollbar for timeline container */
+  .modern-scrollbar::-webkit-scrollbar {
+    width: 16px;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/10 rounded-full;
+    margin: 8px;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/30 rounded-full;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/60;
+    transform: scaleX(1.2);
+    border: 1px solid transparent;
+  }
+
+  .modern-scrollbar::-webkit-scrollbar-thumb:active {
+    @apply bg-primary/80;
+  }
+
+  /* Mini scrollbar for floating controls */
+  .mini-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted/10 rounded-full;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary/40 rounded-full;
+  }
+
+  .mini-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/60;
   }
 }
 

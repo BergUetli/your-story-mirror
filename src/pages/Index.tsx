@@ -5,6 +5,8 @@ import { useConversation } from '@11labs/react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
+import { intelligentPrompting } from '@/services/intelligentPrompting';
+// Dummy mode removed - always use real authentication
 import { 
   Heart, 
   Clock, 
@@ -19,6 +21,10 @@ import { Link } from 'react-router-dom';
 const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Always use real user - no dummy mode in production
+  const effectiveUser = user;
+  
   const [isConnecting, setIsConnecting] = useState(false);
   const noEndBeforeRef = useRef(0);
   const isTogglingRef = useRef(false);
@@ -88,8 +94,13 @@ const Index = () => {
         logHandoff('3️⃣ DATE PARSED', { input: dateStr, formatted: formattedDate });
       }
       
-      // Use placeholder UUID for testing without auth
-      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+      // Use real authenticated user ID only
+      if (!effectiveUser?.id) {
+        logHandoff('❌ NO USER ID', { effectiveUser, message: 'User must be logged in to save memories' });
+        return 'You must be logged in to save memories. Please sign in and try again.';
+      }
+      
+      const userId = effectiveUser.id;
       
       logHandoff('4️⃣ SUBMITTING TO DATABASE', { userId, title, hasDate: !!formattedDate });
 
@@ -132,6 +143,22 @@ const Index = () => {
         note: 'No auto-navigation - user can continue conversation'
       });
       
+      // Update conversation state safely (not passed to ElevenLabs)
+      setConversationState(prev => ({
+        ...prev,
+        recentMemories: [
+          { id: memoryId, title: memoryTitle, timestamp: new Date().toISOString() },
+          ...prev.recentMemories.slice(0, 4) // Keep only 5 most recent
+        ],
+        totalMemoriesSaved: prev.totalMemoriesSaved + 1,
+        recentTopics: [
+          ...new Set([title, ...prev.recentTopics.slice(0, 9)]) // Keep unique topics, max 10
+        ]
+      }));
+      
+      // Generate intelligent follow-up questions after saving memory
+      generateIntelligentSuggestions({ id: memoryId, title: memoryTitle, text: content, created_at: new Date().toISOString() });
+      
       return `Memory "${memoryTitle}" saved successfully! You can continue sharing stories, or the user can visit their Timeline to see it.`;
     } catch (error) {
       logHandoff('❌ HANDOFF FAILED', { 
@@ -150,7 +177,7 @@ const Index = () => {
       
       return `Failed to save memory: ${errorMsg}. Please try again or ask the user to provide the date in a different format.`;
     }
-  }, [user?.id, toast]);
+  }, [effectiveUser?.id, toast]);
 
   const onConnectCb = useCallback(() => {
     const timestamp = new Date().toISOString();
@@ -161,6 +188,20 @@ const Index = () => {
     
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
+    
+    // Initialize conversation state for this session
+    setConversationState(prev => ({
+      ...prev,
+      sessionStartTime: timestamp,
+      // Keep existing data but mark new session
+      recentTopics: [], // Reset for new session
+      recentMemories: [], // Reset for new session
+      totalMemoriesSaved: 0
+    }));
+    
+    // Generate conversation starters based on user's memory history
+    setTimeout(() => generateIntelligentSuggestions(), 1000);
+    
     // Do not reset retryCountRef here; only reset after a stable connection duration
     // retryCountRef will be reset in onDisconnect if the session lasted long enough
     toast({ title: 'Connected', description: 'Start speaking naturally' });
@@ -210,6 +251,25 @@ const Index = () => {
   }, [toast]);
 
   const [conversationMessages, setConversationMessages] = useState<Array<{role: string, text: string}>>([]);
+  
+  // Safe conversation state management - NOT passed to ElevenLabs to avoid crashes
+  const [conversationState, setConversationState] = useState<{
+    recentTopics: string[];
+    recentMemories: Array<{id: string, title: string, timestamp: string}>;
+    sessionStartTime: string;
+    totalMemoriesSaved: number;
+    userInteractionStyle: 'brief' | 'detailed';
+    userMemoryProfile: any;
+    suggestedQuestions: string[];
+  }>({
+    recentTopics: [],
+    recentMemories: [],
+    sessionStartTime: '',
+    totalMemoriesSaved: 0,
+    userInteractionStyle: 'detailed',
+    userMemoryProfile: null,
+    suggestedQuestions: []
+  });
 
   const retrieveMemoryTool = useCallback(async (parameters: { query?: string; limit?: number }) => {
     try {
@@ -221,7 +281,7 @@ const Index = () => {
       let query = supabase
         .from('memories')
         .select('id,title,created_at')
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUser.id)
         .order('created_at', { ascending: false })
         .limit(maxResults);
 
@@ -244,12 +304,81 @@ const Index = () => {
       const result = data
         .map((m, i) => `${i + 1}. "${m.title}" (ID: ${m.id}, ${new Date(m.created_at as string).toLocaleDateString()})`)
         .join('\n');
-      return `Found ${data.length} matching memories:\n${result}\n\nTo get full details, use get_memory_details with the ID.`;
+      // Smart response based on conversation state
+      let contextualNote = '';
+      if (conversationState.recentMemories.length > 0) {
+        const recentTitles = conversationState.recentMemories.map(m => m.title);
+        const hasRecentMatch = data.some(m => recentTitles.includes(m.title));
+        if (hasRecentMatch) {
+          contextualNote = '\n\n💬 Note: Some of these were discussed recently in our conversation.';
+        }
+      }
+      
+      return `Found ${data.length} matching memories:\n${result}\n\nTo get full details, use get_memory_details with the ID.${contextualNote}`;
     } catch (error) {
       console.error('Error retrieving memory:', error);
       return 'Unable to retrieve memories at this time.';
     }
-  }, [user]);
+  }, [effectiveUser, conversationState.recentTopics, conversationState.recentMemories]);
+
+  // Tool for Solin to get intelligent conversation suggestions
+  const getConversationSuggestionsTool = useCallback(async (parameters: { context?: string; type?: 'followup' | 'starter' | 'reflection' }) => {
+    try {
+      const context = parameters?.context?.trim() || '';
+      const type = parameters?.type || 'followup';
+      
+      console.log('🤖 Solin requesting conversation suggestions, type:', type, 'context:', context);
+      
+      if (!effectiveUser?.id) return 'No user session available for suggestions.';
+      
+      // Use existing suggestions if available and recent
+      if (conversationState.suggestedQuestions.length > 0 && type === 'followup') {
+        const suggestions = conversationState.suggestedQuestions.slice(0, 3);
+        return `Here are some thoughtful questions you could ask:\n${suggestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nChoose one that feels most natural for the conversation flow.`;
+      }
+      
+      // Generate new suggestions based on request type
+      const profile = conversationState.userMemoryProfile;
+      if (!profile) {
+        // Fallback suggestions if no profile yet
+        const fallbackQuestions = [
+          "What's a moment from your past that always makes you smile?",
+          "Tell me about a place that holds special meaning for you.",
+          "What's something you've learned about yourself recently?"
+        ];
+        return `Here are some conversation starters:\n${fallbackQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
+      }
+      
+      let suggestions: string[] = [];
+      
+      if (type === 'reflection') {
+        suggestions = intelligentPrompting.generateReflectionPrompts(profile, context);
+      } else if (type === 'starter') {
+        suggestions = intelligentPrompting.generateConversationStarters(profile);
+      } else {
+        // Default to follow-up questions
+        if (conversationState.recentMemories.length > 0) {
+          const latestMemory = conversationState.recentMemories[0];
+          suggestions = intelligentPrompting.generateFollowUpQuestions(
+            { id: latestMemory.id, title: latestMemory.title, text: context, created_at: latestMemory.timestamp },
+            profile,
+            conversationState.recentTopics
+          );
+        } else {
+          suggestions = intelligentPrompting.generateConversationStarters(profile);
+        }
+      }
+      
+      const response = `Based on your conversation patterns, here are some thoughtful questions:\n${suggestions.slice(0, 3).map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nPick one that resonates with the current conversation mood.`;
+      
+      console.log('💬 Generated suggestions for Solin:', suggestions.slice(0, 3));
+      return response;
+      
+    } catch (error) {
+      console.error('Error getting conversation suggestions:', error);
+      return 'I\'m having trouble generating suggestions right now. Let\'s continue with what feels natural to ask.';
+    }
+  }, [effectiveUser, conversationState, intelligentPrompting]);
 
   const getMemoryDetailsTool = useCallback(async (parameters: { memory_id: string }) => {
     try {
@@ -262,7 +391,7 @@ const Index = () => {
         .from('memories')
         .select('title,text,memory_date,memory_location,tags,created_at')
         .eq('id', memoryId)
-        .eq('user_id', user.id)
+        .eq('user_id', effectiveUser.id)
         .maybeSingle();
 
       if (error) {
@@ -276,28 +405,140 @@ const Index = () => {
       if (data.memory_location) details += `\nLocation: ${data.memory_location}`;
       if (data.tags && data.tags.length > 0) details += `\nTags: ${data.tags.join(', ')}`;
       
+      // Add context if this memory was recently saved
+      const isRecentlySaved = conversationState.recentMemories.some(m => m.id === memoryId);
+      if (isRecentlySaved) {
+        details += `\n\n🎆 Note: This memory was saved during our current conversation.`;
+      }
+      
       return details;
     } catch (error) {
       console.error('Error getting memory details:', error);
       return 'Unable to retrieve memory details at this time.';
     }
-  }, [user]);
+  }, [effectiveUser, conversationState.recentMemories]);
+
+  // Generate intelligent follow-up questions based on user's memory patterns
+  const generateIntelligentSuggestions = useCallback(async (latestMemory?: any) => {
+    try {
+      if (!effectiveUser?.id) {
+        console.log('🧠 No user ID, using fallback suggestions');
+        // Provide fallback suggestions without user data
+        const fallbackSuggestions = [
+          "What's a moment from your past that always makes you smile?",
+          "Tell me about a place that holds special meaning for you.",
+          "What's something you've learned about yourself recently?"
+        ];
+        setConversationState(prev => ({
+          ...prev,
+          suggestedQuestions: fallbackSuggestions
+        }));
+        return;
+      }
+      
+      // Fetch user's recent memories to analyze patterns
+      console.log('🧠 Fetching memories for intelligent analysis...');
+      const { data: memories, error } = await supabase
+        .from('memories')
+        .select('id,title,text,memory_date,memory_location,tags,created_at')
+        .eq('user_id', effectiveUser.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) {
+        console.warn('⚠️ Could not fetch memories for analysis:', error);
+        // Use basic suggestions if database fails
+        const basicSuggestions = [
+          "What's a childhood memory that shaped who you are?",
+          "Tell me about someone who had a big impact on your life.",
+          "What's a moment you'd want your family to remember?"
+        ];
+        setConversationState(prev => ({
+          ...prev,
+          suggestedQuestions: basicSuggestions
+        }));
+        return;
+      }
+      
+      if (!memories || memories.length === 0) {
+        console.log('🧠 No memories found, using starter suggestions');
+        const starterSuggestions = [
+          "What's your earliest childhood memory?",
+          "Tell me about your hometown and what made it special.",
+          "What's a family tradition that means a lot to you?"
+        ];
+        setConversationState(prev => ({
+          ...prev,
+          suggestedQuestions: starterSuggestions
+        }));
+        return;
+      }
+      
+      // Analyze user's memory profile
+      console.log(`🧠 Analyzing ${memories.length} memories for patterns...`);
+      const profile = intelligentPrompting.analyzeMemoryProfile(memories);
+      
+      let suggestions: string[] = [];
+      
+      if (latestMemory) {
+        // Generate follow-up questions for the just-saved memory
+        suggestions = intelligentPrompting.generateFollowUpQuestions(
+          latestMemory,
+          profile,
+          conversationState.recentTopics
+        );
+      } else {
+        // Generate conversation starters
+        suggestions = intelligentPrompting.generateConversationStarters(profile);
+      }
+      
+      // Update state with profile and suggestions
+      setConversationState(prev => ({
+        ...prev,
+        userMemoryProfile: profile,
+        suggestedQuestions: suggestions
+      }));
+      
+      console.log(`🧠 Generated ${suggestions.length} intelligent suggestions:`, suggestions);
+      
+    } catch (error) {
+      console.error('❌ Error generating intelligent suggestions:', error);
+      // Always provide fallback suggestions
+      const fallbackSuggestions = [
+        "What's something that happened recently that you'd like to remember?",
+        "Tell me about a person who influenced your life.",
+        "What's a decision you made that you're proud of?"
+      ];
+      setConversationState(prev => ({
+        ...prev,
+        suggestedQuestions: fallbackSuggestions
+      }));
+    }
+  }, [effectiveUser, conversationState.recentTopics, supabase]);
 
   // Static agent instructions - no memory context to avoid filling context window
-  const agentInstructions = `You are Solin, a warm AI voice companion helping users preserve their life stories. You have access to two important tools:
+  const agentInstructions = `You are Solin, a warm AI voice companion helping users preserve their life stories. You have access to these powerful tools:
 
-1. save_memory: Use this to save new memories when users share stories. Include title, content, and optionally tags, date, and location.
-2. retrieve_memory: Use this to search through the user's existing memories when they ask about past conversations or want to recall something.
+1. save_memory: Save new memories when users share stories. Include title, content, and optionally tags, date, and location.
+2. retrieve_memory: Search through existing memories when users ask about past conversations.
+3. get_memory_details: Get full details of a specific memory by ID.
+4. get_conversation_suggestions: Get intelligent, personalized follow-up questions based on the user's memory patterns and conversation history.
 
-IMPORTANT: When users ask about memories, use retrieve_memory - it returns only titles. If the user wants details about a specific memory, tell them you'll add a detail retrieval feature soon, but for now you can help them create new memories.
+IMPORTANT CONVERSATION FLOW:
+- After a user shares a memory, use get_conversation_suggestions with type="followup" to get personalized follow-up questions
+- If conversation stalls, use get_conversation_suggestions with type="reflection" to get thoughtful prompts
+- For new conversations, use get_conversation_suggestions with type="starter" to get personalized conversation starters
 
-Keep responses brief and conversational. Ask one thoughtful, open-ended question at a time to help them explore meaningful moments.`;
+The suggestions are tailored to each user's memory patterns, preferred topics, and conversation style. Always choose the most natural question from the suggestions rather than creating generic ones.
+
+Keep responses brief and conversational. Focus on helping users explore meaningful moments through intelligent, personalized questioning.`;
 
   const conversationOptionsRef = useRef({
     clientTools: { 
       save_memory: saveMemoryTool,
       retrieve_memory: retrieveMemoryTool,
-      get_memory_details: getMemoryDetailsTool
+      get_memory_details: getMemoryDetailsTool,
+      get_conversation_suggestions: getConversationSuggestionsTool
     },
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
@@ -315,7 +556,17 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
             return [...prev, { role: 'ai', text: msg.delta }];
           });
         } else if (msg.source === 'user' && msg.message) {
-          setConversationMessages(prev => [...prev, { role: 'user', text: msg.message }]);
+          const userMessage = msg.message;
+          setConversationMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+          
+          // Extract topics from user messages for smarter context
+          const topics = userMessage.toLowerCase().match(/\b(family|childhood|school|work|travel|memory|remember|story|time|years?|ago)\b/g) || [];
+          if (topics.length > 0) {
+            setConversationState(prev => ({
+              ...prev,
+              recentTopics: [...new Set([...topics, ...prev.recentTopics])].slice(0, 10)
+            }));
+          }
         } else if (msg.source === 'ai' && msg.message) {
           setConversationMessages(prev => [...prev, { role: 'ai', text: msg.message }]);
         }
@@ -333,10 +584,52 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
   }, [conversation.status, conversation.isSpeaking]);
 
   const startConversation = useCallback(async () => {
+    console.log('🚀 START CONVERSATION: Function called');
+    
+    // Define sessionHandoffId at function scope so it's available in catch block
+    const sessionHandoffId = `session-${Date.now()}`;
+    
     try {
+      console.log('🚀 START CONVERSATION: Setting isConnecting to true');
       setIsConnecting(true);
       
+      // Check authentication status first
+      console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🔍 CHECKING AUTH STATUS`);
+      
+      console.log('🚀 START CONVERSATION: About to call supabase.auth.getSession()');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('🚀 START CONVERSATION: Got session response:', { session: !!session, error: !!sessionError });
+      
+      if (sessionError) {
+        console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: ⚠️ SESSION CHECK ERROR:`, sessionError);
+      }
+      
+      const isAuthenticated = !!(session?.user);
+      console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🔐 AUTH STATUS:`, {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userEmail: session?.user?.email || 'none',
+        isAuthenticated,
+        hasEffectiveUser: !!effectiveUser
+      });
+      
+      // Require real authentication for voice agent
+      const finalUserId = session?.user?.id;
+      
+      if (!finalUserId) {
+        console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: ❌ AUTH REQUIRED`);
+        throw new Error('Authentication system not available. Please refresh and try again.');
+      }
+      
+      console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🔐 USING USER:`, {
+        isAuthenticated,
+        userId: finalUserId
+      });
+      
+      // Check microphone permissions
+      console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🎤 REQUESTING MIC ACCESS`);
       await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: ✅ MIC ACCESS GRANTED`);
 
       // Proactively unlock audio on mobile/desktop to avoid autoplay policies blocking TTS
       try {
@@ -351,20 +644,69 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
         console.warn('⚠️ AudioContext unlock failed (safe to ignore):', e);
       }
 
-      // Use orchestrator to manage ElevenLabs session
-      console.log('🎙️ Requesting ElevenLabs session via Orchestrator...');
-      const { data, error } = await supabase.functions.invoke('orchestrator', {
+      let data, error;
+      
+      // Require real authentication for voice agent
+      if (!session) {
+        console.log(`🔌 [${sessionHandoffId}] AUTH REQUIRED: No session`);
+        console.log('🚀 START CONVERSATION: EARLY RETURN - Authentication required');
+        toast({
+          title: "Authentication Required", 
+          description: "Please sign in to use the voice agent.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('🚀 START CONVERSATION: Passed authentication check, proceeding...');
+
+      // Get signed URL from elevenlabs-agent-token function
+      console.log(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: ➡️ CALLING elevenlabs-agent-token`);
+      
+      const response = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { 
-          action: 'manage_elevenlabs_session',
-          sessionParams: {
-            agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
-            action: 'start'
-          }
+          agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4'
         }
       });
+      
+      console.log(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: 📦 RAW RESPONSE:`, response);
+      
+      data = response.data;
+      error = response.error;
+      
+      console.log(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: 👀 RESPONSE RECEIVED:`, {
+        hasData: !!data,
+        hasError: !!error,
+        dataContent: data,
+        errorContent: error,
+        errorType: error?.message ? 'message' : error?.code ? 'code' : 'none',
+        errorDetails: error?.message || error?.code || 'none'
+      });
 
-      if (error) throw error;
-      if (!data?.signed_url) throw new Error('Failed to get signed URL from Orchestrator');
+      if (error) {
+        console.error(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: ❌ FAILED - Edge function error:`, error);
+        console.log(`🚀 EXPLICIT ERROR CHECK: Error detected, about to throw`);
+        
+        // This throw should be caught by the outer catch block
+        
+        // Check if it's an auth error, network error, or function error
+        if (error.message?.includes('Unauthorized')) {
+          throw new Error('Authentication failed - please check if you are logged in');
+        } else if (error.message?.includes('network')) {
+          throw new Error('Network error - please check your connection');
+        } else if (error.message?.includes('ElevenLabs API key not configured')) {
+          throw new Error('ElevenLabs API key is not configured. Please add ELEVENLABS_API_KEY to your Supabase project settings.');
+        } else {
+          throw new Error(`Edge function failed: ${error.message || 'Unknown error'}`);
+        }
+      }
+      
+      if (!data?.signed_url) {
+        console.error(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: ❌ INVALID RESPONSE - No signed URL:`, data);
+        throw new Error('Failed to get signed URL from elevenlabs-agent-token function');
+      }
+      
+      console.log(`🔌 [${sessionHandoffId}] EDGE FUNCTION HANDOFF: ✅ SUCCESS - Got signed URL`);
 
       console.log('Starting session with memory context...');
       
@@ -391,13 +733,48 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
       }
       
     } catch (error) {
-      console.error('Failed to start:', error);
+      console.log('🚀 CATCH BLOCK: Error caught in try-catch');
+      const errorMsg = error instanceof Error ? error.message : 'Could not start';
+      
+      // Enhanced diagnostic logging
+      console.error('❌ FULL ERROR DETAILS:', {
+        error,
+        message: errorMsg,
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        type: typeof error,
+        sessionHandoffId
+      });
+      
+      // Provide specific guidance based on error type
+      let userMessage = errorMsg;
+      let diagnosticHint = '';
+      
+      if (errorMsg.includes('Authentication failed') || errorMsg.includes('Unauthorized')) {
+        userMessage = 'Authentication issue - please check your login status.';
+        diagnosticHint = 'Check: User authentication, Supabase session, JWT token validity';
+      } else if (errorMsg.includes('Network error') || errorMsg.includes('fetch')) {
+        userMessage = 'Connection issue. Please check your internet and try again.';
+        diagnosticHint = 'Check: Internet connection, Supabase availability, CORS settings';
+      } else if (errorMsg.includes('Edge function failed') || errorMsg.includes('ElevenLabs')) {
+        userMessage = 'Service temporarily unavailable. Please try again in a moment.';
+        diagnosticHint = 'Check: ElevenLabs API key, Supabase Edge function, API rate limits';
+      } else if (errorMsg.includes('Connection timed out')) {
+        userMessage = 'Connection timed out. The service might be slow or unavailable.';
+        diagnosticHint = 'Check: ElevenLabs service status, network latency, WebSocket connectivity';
+      } else {
+        userMessage = `Connection failed: ${errorMsg}`;
+        diagnosticHint = 'Check console for detailed error information';
+      }
+      
+      console.log(`🔍 DIAGNOSTIC HINT: ${diagnosticHint}`);
+      
       toast({
         title: "Failed to connect",
-        description: error instanceof Error ? error.message : "Could not start",
+        description: userMessage,
         variant: "destructive",
       });
     } finally {
+      console.log('🚀 START CONVERSATION: Finally block - setting isConnecting to false');
       setIsConnecting(false);
     }
   }, [conversation, toast, agentInstructions]);
@@ -490,13 +867,14 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
     }
   ];
 
-  // Always show Solin interface (auth disabled)
+  // Always show Solin interface for real authenticated users
   const shouldShowSolinInterface = true;
 
   if (shouldShowSolinInterface) {
     return (
       <div className="min-h-screen bg-background overflow-hidden relative">
         
+
         <div className="relative min-h-screen flex flex-col lg:flex-row items-center justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
           {/* Left Side - Solin Orb - Framed with gradient panel */}
           <div 
@@ -529,6 +907,30 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
                 <p className="text-sm text-muted-foreground max-w-md">
                   {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
                 </p>
+                
+                {/* User authentication indicator */}
+                {user && (
+                  <div className="text-xs bg-green-100 text-green-800 px-3 py-2 rounded-full border border-green-200">
+                    ✅ Signed in as {user.email}
+                  </div>
+                )}
+                
+                {/* Smart conversation state indicator */}
+                {isConnected && (
+                  <div className="space-y-2">
+                    {conversationState.totalMemoriesSaved > 0 && (
+                      <div className="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-full inline-block">
+                        🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
+                      </div>
+                    )}
+                    {conversationState.userMemoryProfile && (
+                      <div className="text-xs text-accent bg-accent/10 px-3 py-1.5 rounded-full inline-block">
+                        🎯 Intelligent prompting active • {conversationState.userMemoryProfile.totalMemories} total memories analyzed
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 {isConnected ? (
                   <Button 
                     variant="outline" 
@@ -600,6 +1002,30 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
               )}
             </div>
           </div>
+          
+          {/* Intelligent Prompting Debug Panel */}
+          {conversationState.suggestedQuestions.length > 0 && (
+            <div 
+              className="flex-1 max-w-xl bg-accent/5 rounded-lg border-[1.5px] p-4 max-h-64 overflow-y-auto"
+              style={{ borderColor: 'hsl(var(--section-border))' }}
+            >
+              <div className="mb-3 pb-2 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  🧠 Intelligent Suggestions
+                  <span className="text-xs bg-accent/20 px-2 py-0.5 rounded-full">Debug Mode</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">Solin can use these personalized questions</p>
+              </div>
+              <div className="space-y-2">
+                {conversationState.suggestedQuestions.slice(0, 4).map((question, idx) => (
+                  <div key={idx} className="text-xs bg-white/50 rounded p-2 border" style={{ borderColor: 'hsl(var(--section-border))' }}>
+                    <span className="font-medium text-accent">{idx + 1}.</span> {question}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
         </div>
       </div>
     );
@@ -607,17 +1033,23 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
 
   return (
     <div className="h-screen bg-background overflow-hidden">
+
       {/* Navigation */}
-      <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent border-b-[1.5px]" style={{ borderColor: 'hsl(var(--section-border))' }}>
+      <nav className="absolute top-0 left-0 right-0 z-40 bg-transparent border-b-[1.5px]" style={{ borderColor: 'hsl(var(--section-border))' }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="text-2xl font-bold">You, Remembered</div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <Button variant="ghost" asChild>
               <Link to="/about">About</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link to="/how-it-works">How It Works</Link>
             </Button>
+            {!effectiveUser && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
+            )}
           </div>
         </div>
       </nav>
@@ -641,20 +1073,47 @@ Keep responses brief and conversational. Ask one thoughtful, open-ended question
           </h1>
             
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Preserve your voice, stories, and values. Create a lasting legacy.
+              {effectiveUser ? `Welcome back, ${effectiveUser.email}! Ready to continue your memory journey?` : 'Preserve your voice, stories, and values. Create a lasting legacy.'}
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              onClick={startConversation}
-              disabled={isConnecting || isConnected}
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
-            >
-              {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start for free'}
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
+            {effectiveUser ? (
+              // Authenticated user - show voice agent button
+              <Button 
+                size="lg" 
+                onClick={startConversation}
+                disabled={isConnecting || isConnected}
+                className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
+              >
+                {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start Conversation'}
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+            ) : (
+              // Unauthenticated user - show sign up options
+              <>
+                <Button 
+                  size="lg" 
+                  asChild
+                  className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
+                >
+                  <Link to="/auth">
+                    Create Account
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Link>
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  asChild
+                  className="px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all border-2"
+                >
+                  <Link to="/auth">
+                    Sign In
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Feature Pills */}

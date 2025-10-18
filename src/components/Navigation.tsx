@@ -20,7 +20,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Home, Clock, Info, HelpCircle, Plus, Sparkles, Users } from 'lucide-react';
+import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +41,8 @@ const Navigation = () => {
    * information-seeking behavior.
    */
   const leftNavItems = [
-    { path: '/sanctuary', icon: Home, label: 'Home' },
+    { path: '/admin', icon: Shield, label: 'Admin' },
+    { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
   ];
 
@@ -61,6 +62,7 @@ const Navigation = () => {
    */
   const rightNavItems = [
     { path: '/timeline', icon: Clock, label: 'Timeline' },
+    { path: '/story', icon: BookOpen, label: 'Story' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
   ];
@@ -95,18 +97,19 @@ const Navigation = () => {
               BUSINESS PURPOSE: Provides access to educational content and help resources.
               Users can learn about the platform before engaging with core features.
             */}
-            <div className="flex items-center gap-2">
-              {leftNavItems.map(({ path, label }) => (
+            <div className="flex items-center gap-3">
+              {leftNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="sm"
                     className={cn(
-                      "font-semibold transition-all duration-200 hover:scale-105",
+                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
                       isActive(path) && "border-b-2 rounded-b-none"
                     )}
                     style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                   >
+                    <Icon className="w-4 h-4" />
                     {label}
                   </Button>
                 </Link>
@@ -137,7 +140,7 @@ const Navigation = () => {
               - Reconstruction: AI enhancement tools
               - Identities: User and family management
             */}
-            <div className="flex items-center gap-2 ml-32">
+            <div className="flex items-center gap-3 ml-16">
               {rightNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
