@@ -47,26 +47,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      // Development auto-login for testing Timeline collision detection
-      if (!session && process.env.NODE_ENV === 'development') {
-        console.log('🔧 Development mode: Auto-authenticating test user...');
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: 'berguetli@gmail.com',
-            password: 'zippy6'
-          });
-          
-          if (error) {
-            console.log('🔧 Development auto-login failed:', error.message);
-          } else {
-            console.log('✅ Development auto-login successful');
-            setSession(data.session);
-            setUser(data.session?.user ?? null);
-          }
-        } catch (error) {
-          console.log('🔧 Development auto-login error:', error);
-        }
-      }
+      // Development auto-login disabled to allow proper new user testing
+      // This was previously auto-signing in users which prevented testing the new user flow
+      console.log('🔧 Development mode: Auto-login disabled for proper new user testing');
       
       setLoading(false);
     });

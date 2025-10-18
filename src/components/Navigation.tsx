@@ -20,8 +20,8 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen, LogOut } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -33,7 +33,8 @@ import { useAuth } from '@/contexts/AuthContext';
  */
 const Navigation = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   
   /**
    * INFORMATION NAVIGATION ITEMS
@@ -76,6 +77,22 @@ const Navigation = () => {
    * location within the application, reducing confusion and improving navigation.
    */
   const isActive = (path: string) => location.pathname === path;
+
+  /**
+   * SIGN OUT HANDLER
+   * 
+   * BUSINESS PURPOSE: Allows users to properly sign out and return to the public
+   * landing page, ensuring clean session management and proper onboarding flow
+   * for subsequent users.
+   */
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   return (
     <>
@@ -159,25 +176,40 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0 overflow-x-auto max-w-[50%] lg:max-w-none">
-                {rightNavItems.map(({ path, icon: Icon, label }) => (
-                  <Link key={path} to={path} className="flex-shrink-0">
-                    <Button
-                      variant={isActive(path) ? 'default' : 'ghost'}
-                      size="sm"
-                      className={cn(
-                        "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
-                        isActive(path) && "border-b-2 rounded-b-none"
-                      )}
-                      style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
-                    >
-                      <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
-                      <span className="hidden xl:inline">{label}</span>
-                      <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
-                      <span className="lg:hidden sr-only">{label}</span>
-                    </Button>
-                  </Link>
-                ))}
+              <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
+                <div className="flex items-center gap-1 lg:gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
+                  {rightNavItems.map(({ path, icon: Icon, label }) => (
+                    <Link key={path} to={path} className="flex-shrink-0">
+                      <Button
+                        variant={isActive(path) ? 'default' : 'ghost'}
+                        size="sm"
+                        className={cn(
+                          "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
+                          isActive(path) && "border-b-2 rounded-b-none"
+                        )}
+                        style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
+                      >
+                        <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
+                        <span className="hidden xl:inline">{label}</span>
+                        <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
+                        <span className="lg:hidden sr-only">{label}</span>
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+                
+                {/* Sign Out Button */}
+                <div className="ml-2 lg:ml-4 border-l border-border/30 pl-2 lg:pl-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
+                  >
+                    <LogOut className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <span className="hidden lg:inline">Sign Out</span>
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -221,6 +253,21 @@ const Navigation = () => {
               </Button>
             </Link>
           ))}
+          
+          {/* Mobile Sign Out Button */}
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="flex flex-col items-center gap-0.5 h-auto py-1.5 px-2 min-w-0 font-light text-destructive hover:text-destructive flex-shrink-0"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-[10px] leading-tight text-center">
+                Sign Out
+              </span>
+            </Button>
+          )}
         </div>
       </div>
       
