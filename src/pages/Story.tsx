@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -409,20 +409,12 @@ const Story = () => {
         </div>
       </div>
 
-      {/* Theme Memories Popup */}
+      {/* Theme Memories Popup - Simple List */}
       <Dialog open={!!selectedTheme} onOpenChange={(open) => !open && setSelectedTheme(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Memories: {selectedTheme}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedTheme(null)}
-                className="h-6 w-6"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+            <DialogTitle>
+              Memories: {selectedTheme}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
