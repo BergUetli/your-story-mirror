@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * MAIN NAVIGATION COMPONENT
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils';
  */
 const Navigation = () => {
   const location = useLocation();
+  const { user } = useAuth();
   
   /**
    * INFORMATION NAVIGATION ITEMS
@@ -41,7 +43,7 @@ const Navigation = () => {
    * information-seeking behavior.
    */
   const leftNavItems = [
-    { path: '/admin', icon: Shield, label: 'Admin' },
+    ...(user ? [{ path: '/admin', icon: Shield, label: 'Admin' }] : []),
     { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
   ];
@@ -60,12 +62,12 @@ const Navigation = () => {
    * 
    * NOTE: Add Memory is hidden - users can add memories through Solin agent's manual form option
    */
-  const rightNavItems = [
+  const rightNavItems = user ? [
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/story', icon: BookOpen, label: 'Story' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
-  ];
+  ] : [];
 
   /**
    * ACTIVE PAGE DETECTION
@@ -140,24 +142,26 @@ const Navigation = () => {
               - Reconstruction: AI enhancement tools
               - Identities: User and family management
             */}
-            <div className="flex items-center gap-3 ml-16">
-              {rightNavItems.map(({ path, icon: Icon, label }) => (
-                <Link key={path} to={path}>
-                  <Button
-                    variant={isActive(path) ? 'default' : 'ghost'}
-                    size="sm"
-                    className={cn(
-                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
-                      isActive(path) && "border-b-2 rounded-b-none"
-                    )}
-                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </Button>
-                </Link>
-              ))}
-            </div>
+            {user && (
+              <div className="flex items-center gap-3 ml-16">
+                {rightNavItems.map(({ path, icon: Icon, label }) => (
+                  <Link key={path} to={path}>
+                    <Button
+                      variant={isActive(path) ? 'default' : 'ghost'}
+                      size="sm"
+                      className={cn(
+                        "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105",
+                        isActive(path) && "border-b-2 rounded-b-none"
+                      )}
+                      style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -44,14 +44,14 @@ const AppContent = () => {
     <div className="pb-16 md:pb-0">
       <Navigation />
       <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<Index />} />
+        {/* Authentication-based routing */}
+        <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
         <Route path="/about" element={<About />} />
         <Route path="/sanctuary" element={<Index />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
         <Route path="/mic-preview" element={<MicImagePreview />} />
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={

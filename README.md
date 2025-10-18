@@ -448,6 +448,11 @@ Uses semantic color tokens defined in `src/index.css`:
 - **Instant feedback**: Memory operations happen immediately
 - **Backend only for complex ops**: Orchestrator handles batch/async tasks
 
+## 🎨 Assets & Copyright
+
+### AI-Generated Images
+- **Cosmic Background** (`/public/cosmic-background.jpg`): AI-generated cosmic scene used on the About page. This image was generated specifically for this project and has no copyright restrictions. Free to use in accordance with the project license.
+
 ## 📄 License
 
 MIT License - feel free to use for personal or commercial projects

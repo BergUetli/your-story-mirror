@@ -901,6 +901,18 @@ Keep responses brief and conversational. Focus on helping users explore meaningf
               </div>
 
               <div className="text-center space-y-3">
+                {/* Personalized welcome message */}
+                {user && (
+                  <div className="mb-4">
+                    <h2 className="text-xl font-bold text-foreground mb-1">
+                      Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend'}!
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Ready to continue your memory journey with Solin?
+                    </p>
+                  </div>
+                )}
+                
                 <p className="text-base font-semibold text-foreground">
                   {isConnecting ? 'Connecting to Solin...' : isConnected ? (isSpeaking ? 'Solin is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
                 </p>

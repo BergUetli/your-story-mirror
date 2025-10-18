@@ -12,25 +12,39 @@ const About = () => {
   
   return (
     <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <div className="max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in">
-        <div className="inline-block px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-          Our Mission
-        </div>
+      {/* Hero Section with Cosmic Background */}
+      <div 
+        className="relative overflow-hidden"
+        style={{
+          backgroundImage: 'url(/cosmic-background.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/40"></div>
         
-        <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-          Life is short.
-          <br />
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Make your story
+        <div className="relative max-w-5xl mx-auto px-8 py-24 text-center space-y-8 animate-fade-in text-white">
+          <div className="inline-block px-4 py-2 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-sm border border-white/30">
+            Our Mission
+          </div>
+          
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
+            Life is short.
             <br />
-            last forever.
-          </span>
-        </h1>
-        
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-          Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
-        </p>
+            <span className="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
+              Make your story
+              <br />
+              last forever.
+            </span>
+          </h1>
+          
+          <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
+          </p>
+        </div>
+      </div>
       </div>
 
       {/* The Vision */}
