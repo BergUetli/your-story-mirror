@@ -639,250 +639,43 @@ const Timeline = () => {
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                const currentYear = new Date().getFullYear();
-                const totalYears = currentYear - sharedBirthYear;
-                
-                // Dynamic spacing that maintains proportional scaling and adjusts for memory density
+                // ULTRA-SIMPLE TIMELINE SIZING: Just fit content in ~1.5 screens
                 const viewportHeight = window.innerHeight - 200;
+                const displayedYears = timelineData.length;
                 
-                // Calculate memory density for dynamic spacing
-                const memoriesPerYear = timelineData.map(y => y.memories.length);
-                const maxMemoriesInYear = Math.max(...memoriesPerYear, 0);
-                const totalMemories = timelineData.reduce((sum, y) => sum + y.memories.length, 0);
-                const avgMemoriesPerYear = totalMemories / Math.max(timelineData.length, 1);
+                // Simple: Just enough space for displayed years to fit compactly
+                let pixelsPerDisplayedYear = Math.max(viewportHeight / displayedYears / 1.5, 120);
                 
-                // Base spacing: fit timeline in viewport based on DISPLAYED years, not total lifespan
-                // Since we only show significant years, calculate spacing to fit those in viewport
-                const displayedYears = timelineData.length; // Only significant years are in timelineData
-                const yearSpanRange = totalYears; // Full year range for proportional positioning
-                
-                // Calculate spacing so displayed content fits in viewport initially, but allow for expansion
-                const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 3, 8), 2);
-                
-                // Start with no expansion - fit timeline in viewport initially
-                let collisionExpansionFactor = 1;
-                
-                // Calculate actual memory card heights and positions for collision detection
-                const MINIMUM_GAP_PX = 20; // Minimum 20px gap between memory cards
-                const MEMORY_CARD_HEIGHT = 80; // Increased from 60px to account for actual card height with padding
-                const MEMORY_CARD_SPACING = 32; // Updated spacing between memory cards in CSS
-                const LIFE_EVENT_HEIGHT = 40; // Height of life events like "Born"
-                const YEAR_MARKER_HEIGHT = 32; // Height reserved for year marker and label
-                
-                // Check for potential collisions by calculating actual positions
-                let additionalSpacingNeeded = 0;
-                
-                // Sort years to check sequential positioning
-                const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
-                
-                for (let i = 0; i < sortedYears.length - 1; i++) {
-                  const currentYear = sortedYears[i];
-                  const nextYear = sortedYears[i + 1];
-                  
-                  // Check collision potential for any year with content
-                  if ((currentYear.memories.length > 0 || currentYear.events.length > 0) && 
-                      (nextYear.memories.length > 0 || nextYear.events.length > 0)) {
-                    
-                    const yearGap = nextYear.year - currentYear.year;
-                    const availablePixelSpace = yearGap * basePixelsPerYear;
-                    
-                    // Calculate total content height for current year (from year marker downward)
-                    let currentYearTotalHeight = YEAR_MARKER_HEIGHT;
-                    
-                    // Add life events height
-                    if (currentYear.events.length > 0) {
-                      currentYearTotalHeight += (currentYear.events.length * LIFE_EVENT_HEIGHT);
-                      currentYearTotalHeight += 32; // Space between events and memories
-                    }
-                    
-                    // Add memories height with spacing
-                    if (currentYear.memories.length > 0) {
-                      currentYearTotalHeight += (currentYear.memories.length * MEMORY_CARD_HEIGHT);
-                      currentYearTotalHeight += (Math.max(currentYear.memories.length - 1, 0) * MEMORY_CARD_SPACING);
-                      currentYearTotalHeight += 16; // Bottom padding for memories section
-                    }
-                    
-                    // Calculate height needed for next year marker
-                    const nextYearMarkerSpace = YEAR_MARKER_HEIGHT;
-                    
-                    // Total space required (current year content + gap + next year marker)
-                    const requiredSpace = currentYearTotalHeight + MINIMUM_GAP_PX + nextYearMarkerSpace;
-                    
-                    if (requiredSpace > availablePixelSpace) {
-                      // Calculate additional spacing factor needed
-                      const spacingMultiplier = requiredSpace / availablePixelSpace;
-                      additionalSpacingNeeded = Math.max(additionalSpacingNeeded, spacingMultiplier - 1);
-                      
-                      console.log(`🔍 COLLISION DETECTED between ${currentYear.year} and ${nextYear.year}:`, {
-                        yearGap,
-                        availableSpace: Math.round(availablePixelSpace),
-                        requiredSpace: Math.round(requiredSpace),
-                        currentYearHeight: Math.round(currentYearTotalHeight),
-                        deficit: Math.round(requiredSpace - availablePixelSpace),
-                        spacingIncrease: `${Math.round((spacingMultiplier - 1) * 100)}%`
-                      });
-                    }
-                  }
+                // Only minimal expansion if heavy content (3+ memories per year)
+                const hasHeavyContent = timelineData.some(year => year.memories.length >= 3);
+                if (hasHeavyContent) {
+                  pixelsPerDisplayedYear *= 1.2; // Only 20% increase maximum
                 }
                 
-                // Apply collision expansion if any collisions were detected
-                if (additionalSpacingNeeded > 0) {
-                  collisionExpansionFactor = 1 + additionalSpacingNeeded;
-                  console.log(`🔧 COLLISION EXPANSION: ${Math.round(additionalSpacingNeeded * 100)}% to prevent content overlap`);
-                }
+                const totalHeight = displayedYears * pixelsPerDisplayedYear;
                 
-                // Smart label spacing - only expand minimum needed for year label separation
-                // Calculate minimum spacing needed between year labels (not memory content)
-                const MINIMUM_YEAR_LABEL_GAP = 60; // Increased from 40px to 60px for better label separation
-                let labelSpacingExpansion = 0;
+                console.log(`📤 COMPACT TIMELINE: ${displayedYears} years × ${Math.round(pixelsPerDisplayedYear)}px = ${Math.round(totalHeight)}px (fits in ${Math.round(totalHeight / viewportHeight * 100) / 100} screens)`);
                 
-                // Check spacing between consecutive year labels
-                const sortedYearsForLabels = [...timelineData].sort((a, b) => a.year - b.year);
-                for (let i = 0; i < sortedYearsForLabels.length - 1; i++) {
-                  const currentYear = sortedYearsForLabels[i];
-                  const nextYear = sortedYearsForLabels[i + 1];
-                  const yearGap = nextYear.year - currentYear.year;
-                  const currentSpacing = yearGap * basePixelsPerYear * collisionExpansionFactor;
-                  
-                  if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
-                    const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
-                    labelSpacingExpansion = Math.max(labelSpacingExpansion, neededExpansion - 1);
-                    console.log(`📏 LABEL SPACING: ${currentYear.year}-${nextYear.year} needs ${Math.round((neededExpansion - 1) * 100)}% expansion`);
-                  }
-                }
-                
-                if (labelSpacingExpansion > 0) {
-                  collisionExpansionFactor *= (1 + labelSpacingExpansion);
-                  console.log(`📏 COMBINED EXPANSION: ${Math.round((collisionExpansionFactor - 1) * 100)}% total expansion`);
-                }
-                
-                // Apply only collision-driven expansion while maintaining proportional scaling
-                const adjustedPixelsPerYear = basePixelsPerYear * collisionExpansionFactor * zoomLevel;
-                const dynamicHeight = totalYears * adjustedPixelsPerYear + 200;
-                return `${Math.max(dynamicHeight, viewportHeight)}px`;
+                return totalHeight;
               })()
             }}
           >
             {(() => {
-              // Calculate total span and proportional positions using shared variable
+              // ULTRA-SIMPLE positioning calculation
               const currentYear = new Date().getFullYear();
               const totalYears = currentYear - sharedBirthYear;
-              
-              // Dynamic spacing that maintains proportional scaling and adjusts for memory density
               const viewportHeight = window.innerHeight - 200;
+              const displayedYears = timelineData.length;
               
-              // Calculate memory density to detect crowding
-              const memoriesPerYear = timelineData.map(y => y.memories.length);
-              const maxMemoriesInYear = Math.max(...memoriesPerYear, 0);
-              const totalMemories = timelineData.reduce((sum, y) => sum + y.memories.length, 0);
-              const avgMemoriesPerYear = totalMemories / Math.max(timelineData.length, 1);
-              
-              // Base spacing: fit timeline in viewport based on DISPLAYED years, not total lifespan
-              // Since we only show significant years, calculate spacing to fit those in viewport
-              const displayedYears = timelineData.length; // Only significant years are in timelineData
-              const yearSpanRange = totalYears; // Full year range for proportional positioning
-              
-              // Use same base spacing calculation as above
-              const basePixelsPerYear = Math.max(Math.min(viewportHeight / yearSpanRange / 3, 8), 2);
-              
-              // Start with no expansion - fit timeline in viewport initially (duplicate for consistency)
-              let collisionExpansionFactor = 1;
-              
-              // Calculate actual memory card heights and positions for collision detection
-              const MINIMUM_GAP_PX = 20; // Minimum 20px gap between memory cards
-              const MEMORY_CARD_HEIGHT = 80; // Increased from 60px to account for actual card height with padding
-              const MEMORY_CARD_SPACING = 32; // Updated spacing between memory cards in CSS
-              const LIFE_EVENT_HEIGHT = 40; // Height of life events like "Born"
-              const YEAR_MARKER_HEIGHT = 32; // Height reserved for year marker and label
-              
-              // Check for potential collisions by calculating actual positions
-              let additionalSpacingNeeded = 0;
-              
-              // Sort years to check sequential positioning
-              const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
-              
-              for (let i = 0; i < sortedYears.length - 1; i++) {
-                const currentYear = sortedYears[i];
-                const nextYear = sortedYears[i + 1];
-                
-                // Check collision potential for any year with content
-                if ((currentYear.memories.length > 0 || currentYear.events.length > 0) && 
-                    (nextYear.memories.length > 0 || nextYear.events.length > 0)) {
-                  
-                  const yearGap = nextYear.year - currentYear.year;
-                  const availablePixelSpace = yearGap * basePixelsPerYear;
-                  
-                  // Calculate total content height for current year (from year marker downward)
-                  let currentYearTotalHeight = YEAR_MARKER_HEIGHT;
-                  
-                  // Add life events height
-                  if (currentYear.events.length > 0) {
-                    currentYearTotalHeight += (currentYear.events.length * LIFE_EVENT_HEIGHT);
-                    currentYearTotalHeight += 32; // Space between events and memories
-                  }
-                  
-                  // Add memories height with spacing
-                  if (currentYear.memories.length > 0) {
-                    currentYearTotalHeight += (currentYear.memories.length * MEMORY_CARD_HEIGHT);
-                    currentYearTotalHeight += (Math.max(currentYear.memories.length - 1, 0) * MEMORY_CARD_SPACING);
-                    currentYearTotalHeight += 16; // Bottom padding for memories section
-                  }
-                  
-                  // Calculate height needed for next year marker
-                  const nextYearMarkerSpace = YEAR_MARKER_HEIGHT;
-                  
-                  // Total space required (current year content + gap + next year marker)
-                  const requiredSpace = currentYearTotalHeight + MINIMUM_GAP_PX + nextYearMarkerSpace;
-                  
-                  if (requiredSpace > availablePixelSpace) {
-                    // Calculate additional spacing factor needed
-                    const spacingMultiplier = requiredSpace / availablePixelSpace;
-                    additionalSpacingNeeded = Math.max(additionalSpacingNeeded, spacingMultiplier - 1);
-                  }
-                }
+              // Same calculation as above for consistency
+              let pixelsPerDisplayedYear = Math.max(viewportHeight / displayedYears / 1.5, 120);
+              const hasHeavyContent = timelineData.some(year => year.memories.length >= 3);
+              if (hasHeavyContent) {
+                pixelsPerDisplayedYear *= 1.2;
               }
               
-              // Apply collision expansion if any collisions were detected
-              if (additionalSpacingNeeded > 0) {
-                collisionExpansionFactor = 1 + additionalSpacingNeeded;
-              }
-              
-              // Smart label spacing - only expand minimum needed for year label separation
-              const MINIMUM_YEAR_LABEL_GAP = 60; // Same as above - 60px for better label separation
-              let labelSpacingExpansion = 0;
-              
-              // Check spacing between consecutive year labels
-              const sortedYearsForLabels2 = [...timelineData].sort((a, b) => a.year - b.year);
-              for (let i = 0; i < sortedYearsForLabels2.length - 1; i++) {
-                const currentYear = sortedYearsForLabels2[i];
-                const nextYear = sortedYearsForLabels2[i + 1];
-                const yearGap = nextYear.year - currentYear.year;
-                const currentSpacing = yearGap * basePixelsPerYear * collisionExpansionFactor;
-                
-                if (currentSpacing < MINIMUM_YEAR_LABEL_GAP) {
-                  const neededExpansion = MINIMUM_YEAR_LABEL_GAP / currentSpacing;
-                  labelSpacingExpansion = Math.max(labelSpacingExpansion, neededExpansion - 1);
-                }
-              }
-              
-              if (labelSpacingExpansion > 0) {
-                collisionExpansionFactor *= (1 + labelSpacingExpansion);
-              }
-              
-              // Apply only collision-driven expansion while maintaining proportional scaling
-              const adjustedPixelsPerYear = basePixelsPerYear * collisionExpansionFactor * zoomLevel;
-              const pixelsPerYear = adjustedPixelsPerYear;
-              const totalHeight = Math.max(totalYears * pixelsPerYear + 200, viewportHeight);
-              
-              console.log('📏 Timeline Spacing Debug:', {
-                significantYearsShown: timelineData.length,
-                totalLifespanYears: totalYears,
-                basePixelsPerYear: Math.round(basePixelsPerYear),
-                collisionExpansionFactor: Math.round(collisionExpansionFactor * 100) / 100,
-                finalPixelsPerYear: Math.round(pixelsPerYear),
-                fitsInSinglePage: additionalSpacingNeeded === 0,
-                expansionDueToCollisions: additionalSpacingNeeded > 0 ? `${Math.round(additionalSpacingNeeded * 100)}%` : 'None'
-              });
+              const totalHeight = displayedYears * pixelsPerDisplayedYear;
+              const pixelsPerYear = totalHeight / totalYears; // Simple proportional distribution
 
               return (
                 <>
