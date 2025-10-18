@@ -30,13 +30,15 @@ const About = () => {
             Our Mission
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-            Life is short.
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight">
+            Does your life have good stories?
             <br />
             <span className="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
-              Make your story
-              <br />
-              last forever.
+              Make your story last forever.
+            </span>
+            <br />
+            <span className="text-4xl md:text-5xl text-white/90">
+              An AI companion called Solin to guide you.
             </span>
           </h1>
           
