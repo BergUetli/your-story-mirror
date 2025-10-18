@@ -767,7 +767,7 @@ const Timeline = () => {
                           onClick={() => toggleYear(yearData.year)}
                           style={{ top: '12px' }} // Move year labels significantly lower to align with content baseline
                         >
-                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-none`}>
+                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-none font-mono tabular-nums`}>
                             {yearData.year}
                           </h2>
 
@@ -948,7 +948,7 @@ const Timeline = () => {
                         key={yearData.year}
                         variant="ghost"
                         size="sm"
-                        className="text-xs h-6 justify-start px-2 hover:bg-primary/10"
+                        className="text-xs h-6 justify-start px-2 hover:bg-primary/10 font-mono tabular-nums"
                         onClick={() => scrollToYear(yearData.year)}
                       >
                         {yearData.year}
