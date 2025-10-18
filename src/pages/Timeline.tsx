@@ -908,15 +908,16 @@ const Timeline = () => {
                         style={{ top: `${topPosition}px` }}
                         data-year={yearData.year}
                        >
-                        {/* Year Marker - Centered on timeline */}
+                        {/* Year Marker - Aligned with year labels */}
                         <div 
-                          className={`absolute top-2 ${markerSize} rounded-full ${
+                          className={`absolute ${markerSize} rounded-full ${
                             isMajorYear 
                               ? 'bg-black shadow-lg' 
                               : 'bg-black/80 shadow-md'
                           } transition-all duration-300`}
                           style={{
-                            left: 'calc(25% - 8px)' // Center on timeline
+                            left: 'calc(25% - 8px)', // Center on timeline
+                            top: '16px' // Align with year labels (12px + 4px for centering)
                           }}
                         />
 
