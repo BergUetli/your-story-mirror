@@ -24,6 +24,105 @@ const Story = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Grammar checking and correction functions
+  const grammarCheck = (text: string): string => {
+    let corrected = text.trim();
+    
+    // Fix common capitalization issues
+    corrected = corrected.charAt(0).toUpperCase() + corrected.slice(1);
+    
+    // Fix verb tense consistency - convert simple past fragments to complete sentences
+    corrected = corrected.replace(/^(went|did|had|was|were|saw|met|got|took|made)\s+/gi, (match) => {
+      const verb = match.trim().toLowerCase();
+      switch (verb) {
+        case 'went': return 'Going ';
+        case 'did': return 'Doing ';
+        case 'had': return 'Having ';
+        case 'was': return 'Being ';
+        case 'were': return 'Being ';
+        case 'saw': return 'Seeing ';
+        case 'met': return 'Meeting ';
+        case 'got': return 'Getting ';
+        case 'took': return 'Taking ';
+        case 'made': return 'Making ';
+        default: return match;
+      }
+    });
+    
+    // Fix incomplete sentences - ensure proper sentence structure
+    if (!/[.!?]$/.test(corrected)) {
+      corrected += '.';
+    }
+    
+    // Fix common grammar patterns
+    corrected = corrected
+      // Fix "in england" to "in England"
+      .replace(/\bin ([a-z])/g, (match, letter) => `in ${letter.toUpperCase()}`)
+      // Fix years formatting 
+      .replace(/\b(nineteen|twenty)\s+(eighty|ninety|zero|ten|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\s*-?\s*(one|two|three|four|five|six|seven|eight|nine)?/gi, 
+        (match) => {
+          // Convert written years to numbers where appropriate
+          const yearMap: {[key: string]: string} = {
+            'nineteen eighty-five': '1985',
+            'nineteen eighty five': '1985', 
+            'two thousand one': '2001',
+            'two thousand and one': '2001'
+          };
+          return yearMap[match.toLowerCase()] || match;
+        })
+      // Fix double spaces
+      .replace(/\s+/g, ' ')
+      // Fix spacing around punctuation
+      .replace(/\s+([.!?])/g, '$1')
+      .replace(/([.!?])\s*([A-Z])/g, '$1 $2');
+    
+    return corrected;
+  };
+  
+  const convertToThirdPerson = (text: string, name: string): string => {
+    let converted = text;
+    
+    // Convert first person pronouns to third person
+    converted = converted
+      // Handle "I" at start of sentence
+      .replace(/^I\s+/gi, `${name} `)
+      // Handle "I" in middle of sentence
+      .replace(/\s+I\s+/g, ` ${name} `)
+      // Handle possessive "my" 
+      .replace(/^My\s+/gi, `${name}'s `)
+      .replace(/\s+my\s+/g, ` ${name}'s `)
+      // Handle "we" - convert to appropriate third person
+      .replace(/^We\s+/gi, `${name} and companions `)
+      .replace(/\s+we\s+/g, ` they `)
+      // Handle "our"
+      .replace(/^Our\s+/gi, `Their `)
+      .replace(/\s+our\s+/g, ` their `)
+      // Handle "me"
+      .replace(/\s+me\b/g, ` ${name}`)
+      // Handle reflexive pronouns
+      .replace(/\s+(myself|ourselves)\b/g, ` ${name}`)
+      // Fix verb conjugation after pronoun conversion
+      .replace(new RegExp(`${name} am\\b`, 'g'), `${name} was`)
+      .replace(new RegExp(`${name} have\\b`, 'g'), `${name} had`)
+      .replace(new RegExp(`${name} are\\b`, 'g'), `${name} was`);
+    
+    return converted;
+  };
+
+  const formatLocationName = (location: string): string => {
+    if (!location) return location;
+    
+    // Capitalize each word in location names
+    return location
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+      // Handle common location patterns
+      .replace(/\bUsa\b/g, 'USA')
+      .replace(/\bUk\b/g, 'UK')
+      .replace(/\bNyc\b/g, 'NYC');
+  };
+
   // Enhanced narrative generation from actual memories
   const generateDynamicNarrative = (memories: Memory[], profile: any) => {
     if (memories.length === 0) {
@@ -96,18 +195,30 @@ const Story = () => {
       ? significantMemories 
       : [...memories].sort((a, b) => b.text.length - a.text.length);
 
-    // Create dynamic introduction based on actual memory themes
+    // Create dynamic introduction based on actual memory themes with grammar checking
     const memoryThemes = extractThemes(narrativeMemories);
     let introduction = `${name}'s life story unfolds through ${narrativeMemories.length} significant memories`;
     
     if (birthPlace && currentLocation) {
-      introduction += `, spanning from ${birthPlace} to ${currentLocation}`;
+      // Properly format location names
+      const formattedBirthPlace = formatLocationName(birthPlace);
+      const formattedCurrentLocation = formatLocationName(currentLocation);
+      introduction += `, spanning from ${formattedBirthPlace} to ${formattedCurrentLocation}`;
     } else if (currentLocation) {
-      introduction += `, with roots in ${currentLocation}`;
+      const formattedLocation = formatLocationName(currentLocation);
+      introduction += `, rooted in ${formattedLocation}`;
     }
     
     if (memoryThemes.length > 0) {
-      introduction += `. These memories reveal themes of ${memoryThemes.slice(0, 3).join(', ')}, painting a picture of a life rich with experience and growth.`;
+      // Ensure proper grammar in theme listing
+      const themeList = memoryThemes.slice(0, 3);
+      if (themeList.length === 1) {
+        introduction += `. These memories reveal a central theme of ${themeList[0]}, painting a picture of a life rich with purpose and meaning.`;
+      } else if (themeList.length === 2) {
+        introduction += `. These memories reveal themes of ${themeList[0]} and ${themeList[1]}, painting a picture of a life rich with experience and growth.`;
+      } else {
+        introduction += `. These memories reveal themes of ${themeList.slice(0, -1).join(', ')}, and ${themeList[themeList.length - 1]}, painting a picture of a life rich with experience and growth.`;
+      }
     } else {
       introduction += `. Each memory captures a moment that helped shape who ${name} is today.`;
     }
@@ -115,17 +226,27 @@ const Story = () => {
     // Create narrative chapters from memory clusters
     const chapters = createNarrativeChapters(narrativeMemories, name);
 
-    // Create personalized conclusion
+    // Create personalized conclusion with proper grammar
     const recentMemoryCount = narrativeMemories.filter(m => {
       const memoryYear = new Date(m.memory_date || m.created_at).getFullYear();
       const currentYear = new Date().getFullYear();
       return currentYear - memoryYear <= 2;
     }).length;
 
-    let conclusion = `Through these ${narrativeMemories.length} preserved memories, we see the continuing evolution of ${name}'s story. `;
+    let conclusion = '';
+    
+    if (narrativeMemories.length === 1) {
+      conclusion = `Through this preserved memory, we glimpse into a meaningful moment that helped define ${name}'s journey. `;
+    } else {
+      conclusion = `Through these ${narrativeMemories.length} preserved memories, we witness the continuing evolution of ${name}'s story. `;
+    }
     
     if (recentMemoryCount > 0) {
-      conclusion += `With ${recentMemoryCount} memories from recent years, this narrative continues to grow, `;
+      if (recentMemoryCount === 1) {
+        conclusion += `With one memory from recent years, this narrative continues to grow, `;
+      } else {
+        conclusion += `With ${recentMemoryCount} memories from recent years, this narrative continues to unfold, `;
+      }
     }
     
     conclusion += `ensuring that the experiences that shaped ${name} will be remembered and cherished for generations to come.`;
@@ -285,7 +406,7 @@ const Story = () => {
     
     paragraph += '. ';
     
-    // Intelligently weave in actual memory content
+    // Intelligently weave in actual memory content with grammar checking
     if (keyMemory.text.length > 50) {
       const memoryText = keyMemory.text.trim();
       
@@ -309,52 +430,67 @@ const Story = () => {
         }
         
         if (bestContent.length > 20 && bestContent.length < 250) {
-          // Convert to third person if needed and integrate naturally
-          let processedContent = bestContent;
+          // Grammar check and correct the content
+          let processedContent = grammarCheck(bestContent);
           
           if (isFirstPerson) {
-            // Convert first person to third person narrative
-            processedContent = processedContent
-              .replace(/^I /gi, `${name} `)
-              .replace(/ I /g, ` ${name} `)
-              .replace(/^My /gi, `${name}'s `)
-              .replace(/ my /g, ` ${name}'s `)
-              .replace(/^We /gi, `${name} and others `)
-              .replace(/ we /g, ` they `);
+            // Convert first person to third person narrative with proper grammar
+            processedContent = convertToThirdPerson(processedContent, name);
           }
           
-          // Choose appropriate integration based on content type
+          // Choose appropriate integration based on content type with proper sentence structure
           if (hasEmotion || reflectiveSentence) {
-            paragraph += `Reflecting on this time, ${processedContent.toLowerCase()}. `;
+            // For emotional/reflective content, integrate as direct narrative
+            if (processedContent.match(/^(realized|learned|discovered|understood|felt)/i)) {
+              paragraph += `During this time, ${name} ${processedContent.toLowerCase()}. `;
+            } else {
+              paragraph += `Reflecting on this period, ${processedContent}. `;
+            }
           } else if (isNarrative) {
             paragraph += `${processedContent}. `;
           } else {
-            paragraph += `As ${name} would later describe it, ${processedContent.toLowerCase()}. `;
+            // For factual content, frame appropriately
+            paragraph += `This experience involved ${processedContent.toLowerCase()}. `;
           }
         }
       }
     }
     
-    // Connect other memories from this period naturally
+    // Connect other memories from this period with proper grammar
     if (memories.length > 1) {
       const additionalMemories = memories.slice(1, 4); // Take up to 3 more
       
+      // Format memory titles properly
+      const formatMemoryTitle = (title: string): string => {
+        return title.toLowerCase()
+          .replace(/^(the|a|an)\s+/, '') // Remove articles at start
+          .replace(/^\w/, c => c.toLowerCase()); // Ensure lowercase start for flow
+      };
+      
       if (additionalMemories.length === 1) {
-        paragraph += `This was also the time of ${additionalMemories[0].title.toLowerCase()}, `;
+        const formattedTitle = formatMemoryTitle(additionalMemories[0].title);
+        paragraph += `This period was also marked by ${formattedTitle}, `;
       } else if (additionalMemories.length === 2) {
-        paragraph += `This period was further defined by ${additionalMemories[0].title.toLowerCase()} and ${additionalMemories[1].title.toLowerCase()}, `;
+        const title1 = formatMemoryTitle(additionalMemories[0].title);
+        const title2 = formatMemoryTitle(additionalMemories[1].title);
+        paragraph += `This era was further defined by ${title1} and ${title2}, `;
       } else {
-        const titles = additionalMemories.map(m => m.title.toLowerCase());
-        const lastTitle = titles.pop();
-        paragraph += `This era encompassed ${titles.join(', ')}, and ${lastTitle}, `;
+        const formattedTitles = additionalMemories.map(m => formatMemoryTitle(m.title));
+        const lastTitle = formattedTitles.pop();
+        paragraph += `This chapter encompassed ${formattedTitles.join(', ')}, and ${lastTitle}, `;
       }
       
-      paragraph += `each experience building upon the last to create a tapestry of growth and understanding.`;
+      if (memories.length <= 3) {
+        paragraph += `each experience contributing to personal growth and understanding.`;
+      } else {
+        paragraph += `weaving together multiple experiences that collectively shaped this important period of development.`;
+      }
     } else {
-      paragraph += `This singular experience became a cornerstone of personal development, influencing countless decisions and perspectives in the years that followed.`;
+      paragraph += `This singular experience became a defining moment, influencing perspectives and decisions in the years that followed.`;
     }
     
-    return paragraph;
+    // Final grammar check on the complete paragraph
+    return grammarCheck(paragraph);
   };
 
 
