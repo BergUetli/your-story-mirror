@@ -696,8 +696,8 @@ const Timeline = () => {
                 const viewportHeight = window.innerHeight - 200;
                 const baseHeight = Math.min(400, viewportHeight * 0.5); // Much smaller: 400px max or 50% screen
                 
-                // Use dedicated overlap checker module
-                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 55);
+                // Use dedicated overlap checker module with tighter spacing
+                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
                 
                 console.log(`🎯 COMPACT TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
                 
@@ -711,9 +711,9 @@ const Timeline = () => {
               const totalYears = currentYear - sharedBirthYear;
               const viewportHeight = window.innerHeight - 200;
               
-              // Same logic as container: Start compact, use overlap checker
+              // Same logic as container: Start compact, use overlap checker with tighter spacing
               const baseHeight = Math.min(400, viewportHeight * 0.5);
-              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 55);
+              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
               
               // Final sizing - guaranteed to match container
               const pixelsPerYear = overlapCheck.finalHeight / totalYears;
