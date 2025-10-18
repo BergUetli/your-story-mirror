@@ -24,8 +24,8 @@ const Story = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate simple AI-style narrative from memories
-  const generateSimpleNarrative = (memories: Memory[], profile: any) => {
+  // Enhanced narrative generation from actual memories
+  const generateDynamicNarrative = (memories: Memory[], profile: any) => {
     if (memories.length === 0) {
       return {
         introduction: "Every life has a story waiting to be told. This digital sanctuary is ready to preserve the memories that matter most.",
@@ -34,57 +34,231 @@ const Story = () => {
       };
     }
 
-    const name = profile?.name || 'This individual';
-    const birthPlace = profile?.birth_place || 'a place of beginnings';
-    const currentLocation = profile?.current_location || 'where the story continues';
+    const name = profile?.name || 'This person';
+    const birthPlace = profile?.birth_place;
+    const currentLocation = profile?.current_location;
     
-    // Sort memories by date
-    const sortedMemories = [...memories].sort((a, b) => {
-      const dateA = new Date(a.memory_date || a.created_at).getTime();
-      const dateB = new Date(b.memory_date || b.created_at).getTime();
-      return dateA - dateB;
-    });
-
-    // Create rich introduction
-    const introduction = `${name}'s journey through life has been carefully documented through ${memories.length} meaningful memories. From ${birthPlace} to ${currentLocation}, each preserved moment tells a part of a larger story—one of growth, connection, and the human experience in all its complexity.`;
-
-    // Group memories into simple chapters
-    const chapters = [];
-    const recentMemories = sortedMemories.slice(0, 3);
-    const olderMemories = sortedMemories.slice(3);
-
-    if (recentMemories.length > 0) {
-      let recentContent = "The most recent chapters of this story include ";
-      recentContent += recentMemories.map((memory, index) => {
-        const year = new Date(memory.memory_date || memory.created_at).getFullYear();
-        const location = memory.memory_location ? ` in ${memory.memory_location}` : '';
-        return `${memory.title.toLowerCase()}${location} (${year})`;
-      }).join(', ') + '.';
+    // Filter for significant memories (longer content, emotional keywords, specific details)
+    const getMemorySignificance = (memory: Memory): number => {
+      let score = 0;
       
-      recentContent += ` These experiences represent ${recentMemories.length} significant moments that have shaped recent years, each contributing to the ongoing narrative of personal development and life experience.`;
+      // Content length indicates detail/importance
+      if (memory.text.length > 100) score += 3;
+      else if (memory.text.length > 50) score += 2;
+      else if (memory.text.length > 20) score += 1;
+      
+      // Emotional indicators
+      const emotionalWords = ['love', 'fear', 'joy', 'sad', 'happy', 'excited', 'proud', 'remember', 'never forget', 'special', 'important', 'changed', 'learned', 'realized'];
+      const emotionalCount = emotionalWords.filter(word => 
+        memory.text.toLowerCase().includes(word) || memory.title.toLowerCase().includes(word)
+      ).length;
+      score += emotionalCount * 2;
+      
+      // Specific details (locations, dates, names)
+      if (memory.memory_location) score += 2;
+      if (memory.memory_date) score += 1;
+      
+      return score;
+    };
 
-      chapters.push({
-        title: 'Recent Chapters',
-        content: recentContent,
-        memories: recentMemories
+    // Sort by significance, then by date
+    const significantMemories = [...memories]
+      .map(memory => ({ ...memory, significance: getMemorySignificance(memory) }))
+      .filter(memory => memory.significance > 2) // Only include meaningful memories
+      .sort((a, b) => {
+        if (a.significance !== b.significance) return b.significance - a.significance;
+        return new Date(a.memory_date || a.created_at).getTime() - new Date(b.memory_date || b.created_at).getTime();
       });
+
+    // If no significant memories, use all memories but prioritize longer ones
+    const narrativeMemories = significantMemories.length > 0 
+      ? significantMemories 
+      : [...memories].sort((a, b) => b.text.length - a.text.length);
+
+    // Create dynamic introduction based on actual memory themes
+    const memoryThemes = extractThemes(narrativeMemories);
+    let introduction = `${name}'s life story unfolds through ${narrativeMemories.length} significant memories`;
+    
+    if (birthPlace && currentLocation) {
+      introduction += `, spanning from ${birthPlace} to ${currentLocation}`;
+    } else if (currentLocation) {
+      introduction += `, with roots in ${currentLocation}`;
+    }
+    
+    if (memoryThemes.length > 0) {
+      introduction += `. These memories reveal themes of ${memoryThemes.slice(0, 3).join(', ')}, painting a picture of a life rich with experience and growth.`;
+    } else {
+      introduction += `. Each memory captures a moment that helped shape who ${name} is today.`;
     }
 
-    if (olderMemories.length > 0) {
-      let earlierContent = `Earlier in this life story, ${olderMemories.length} foundational experiences helped shape the person ${name} would become. `;
-      earlierContent += `From ${olderMemories[0].title.toLowerCase()} to other significant moments, these memories form the bedrock of character and perspective that continues to influence decisions and relationships today.`;
+    // Create narrative chapters from memory clusters
+    const chapters = createNarrativeChapters(narrativeMemories, name);
 
-      chapters.push({
-        title: 'Foundation Years',
-        content: earlierContent,
-        memories: olderMemories
-      });
+    // Create personalized conclusion
+    const recentMemoryCount = narrativeMemories.filter(m => {
+      const memoryYear = new Date(m.memory_date || m.created_at).getFullYear();
+      const currentYear = new Date().getFullYear();
+      return currentYear - memoryYear <= 2;
+    }).length;
+
+    let conclusion = `Through these ${narrativeMemories.length} preserved memories, we see the continuing evolution of ${name}'s story. `;
+    
+    if (recentMemoryCount > 0) {
+      conclusion += `With ${recentMemoryCount} memories from recent years, this narrative continues to grow, `;
     }
-
-    // Create forward-looking conclusion
-    const conclusion = `This collection of ${memories.length} memories represents more than just moments in time—they are the building blocks of identity and the foundation for future growth. As new experiences unfold, this living biography will continue to expand, ensuring that the story of ${name} remains preserved for generations to come.`;
+    
+    conclusion += `ensuring that the experiences that shaped ${name} will be remembered and cherished for generations to come.`;
 
     return { introduction, chapters, conclusion };
+  };
+
+  // Extract themes from memories
+  const extractThemes = (memories: Memory[]): string[] => {
+    const themes = new Set<string>();
+    
+    memories.forEach(memory => {
+      const text = (memory.title + ' ' + memory.text).toLowerCase();
+      
+      // Family themes
+      if (/family|mother|father|parent|sibling|brother|sister|grandmother|grandfather/.test(text)) {
+        themes.add('family connections');
+      }
+      
+      // Achievement themes  
+      if (/achievement|success|proud|accomplished|graduation|promotion|award/.test(text)) {
+        themes.add('personal achievements');
+      }
+      
+      // Growth themes
+      if (/learned|grew|changed|realized|understanding|wisdom|experience/.test(text)) {
+        themes.add('personal growth');
+      }
+      
+      // Adventure themes
+      if (/travel|adventure|journey|explore|trip|vacation|new place/.test(text)) {
+        themes.add('exploration and adventure');
+      }
+      
+      // Love themes
+      if (/love|relationship|wedding|marriage|partner|romance/.test(text)) {
+        themes.add('love and relationships');
+      }
+      
+      // Challenge themes
+      if (/difficult|challenge|struggle|overcome|perseverance|strength/.test(text)) {
+        themes.add('overcoming challenges');
+      }
+    });
+    
+    return Array.from(themes);
+  };
+
+  // Create narrative chapters from memory clusters
+  const createNarrativeChapters = (memories: Memory[], name: string) => {
+    if (memories.length === 0) return [];
+    
+    const chapters = [];
+    
+    // Group memories by time periods and themes
+    const timeGroups = groupMemoriesByTimePeriod(memories);
+    
+    Object.entries(timeGroups).forEach(([period, periodMemories]) => {
+      if (periodMemories.length === 0) return;
+      
+      // Create rich narrative for this time period
+      const chapterContent = createChapterNarrative(periodMemories, name, period);
+      
+      chapters.push({
+        title: getChapterTitle(period, periodMemories),
+        content: chapterContent,
+        memories: periodMemories
+      });
+    });
+    
+    return chapters;
+  };
+
+  // Group memories by life periods
+  const groupMemoriesByTimePeriod = (memories: Memory[]) => {
+    const currentYear = new Date().getFullYear();
+    const groups: { [key: string]: Memory[] } = {
+      'recent': [],
+      'middle': [], 
+      'early': []
+    };
+    
+    memories.forEach(memory => {
+      const memoryYear = new Date(memory.memory_date || memory.created_at).getFullYear();
+      const yearsAgo = currentYear - memoryYear;
+      
+      if (yearsAgo <= 2) groups.recent.push(memory);
+      else if (yearsAgo <= 10) groups.middle.push(memory);
+      else groups.early.push(memory);
+    });
+    
+    return groups;
+  };
+
+  // Create narrative content for a chapter
+  const createChapterNarrative = (memories: Memory[], name: string, period: string): string => {
+    if (memories.length === 0) return '';
+    
+    const keyMemory = memories[0]; // Highest significance memory in this period
+    let narrative = '';
+    
+    // Start with the most significant memory
+    if (period === 'recent') {
+      narrative = `In recent years, ${name}'s story has been marked by significant experiences. `;
+    } else if (period === 'middle') {
+      narrative = `During the middle chapter of this journey, `;
+    } else {
+      narrative = `In the foundational years, `;
+    }
+    
+    // Incorporate key memory details
+    narrative += `One particularly meaningful moment was ${keyMemory.title.toLowerCase()}`;
+    
+    if (keyMemory.memory_location) {
+      narrative += ` in ${keyMemory.memory_location}`;
+    }
+    
+    if (keyMemory.memory_date) {
+      const year = new Date(keyMemory.memory_date).getFullYear();
+      narrative += ` (${year})`;
+    }
+    
+    narrative += '. ';
+    
+    // Add excerpt from the memory text if it's substantial
+    if (keyMemory.text.length > 50) {
+      // Extract first meaningful sentence or key phrase
+      const firstSentence = keyMemory.text.split(/[.!?]/)[0].trim();
+      if (firstSentence.length > 20 && firstSentence.length < 150) {
+        narrative += `As ${name} recalls: "${firstSentence}." `;
+      }
+    }
+    
+    // Connect to other memories in this period
+    if (memories.length > 1) {
+      const otherMemoryTitles = memories.slice(1, 3).map(m => m.title.toLowerCase());
+      narrative += `This period also included ${otherMemoryTitles.join(' and ')}, `;
+      narrative += `weaving together ${memories.length} significant experiences that shaped this chapter of life.`;
+    } else {
+      narrative += `This memory stands as a defining moment from this period.`;
+    }
+    
+    return narrative;
+  };
+
+  // Generate chapter titles
+  const getChapterTitle = (period: string, memories: Memory[]): string => {
+    const titles = {
+      'recent': 'Recent Chapters',
+      'middle': 'The Journey Continues', 
+      'early': 'Foundation Years'
+    };
+    
+    return `${titles[period]} (${memories.length} memories)`;
   };
 
   // Fetch story data (with offline fallback)
@@ -93,41 +267,48 @@ const Story = () => {
       setLoading(true);
       setError(null);
 
-      // Check if user is signed in - if not, show demo content
+      // For non-signed users, show demo content with rich narrative
       if (!user?.id) {
-        console.log('User not signed in, showing demo content');
-        // Set demo content instead of error
+        console.log('User not signed in, showing enhanced demo content');
         const demoMemories: Memory[] = [
           {
             id: 'demo-1',
-            title: 'First Day of School',
-            text: 'I remember walking into that classroom, feeling both excited and nervous. The teacher smiled warmly and I knew everything would be okay.',
+            title: 'My First Day at University',
+            text: 'Walking through those campus gates, I felt a mixture of excitement and terror. Mom had packed my favorite snacks, and Dad kept reminding me to call home. The dormitory smelled like cleaning supplies and possibility. My roommate was from California, and we spent hours talking about our dreams and fears. I realized this was the beginning of becoming who I was meant to be. The independence was intoxicating, but I also missed the comfort of home-cooked meals and familiar faces.',
             created_at: '2020-09-01T08:00:00Z',
             memory_date: '2020-09-01',
-            memory_location: 'Roosevelt Elementary School'
+            memory_location: 'State University Campus'
           },
           {
             id: 'demo-2', 
-            title: 'Summer Vacation at the Beach',
-            text: 'The waves crashed against the shore as we built sandcastles. Dad taught me how to bodysurf, and we collected shells until sunset.',
+            title: 'The Summer I Learned to Surf',
+            text: 'That summer in California changed everything. I was staying with my aunt, working at a beach cafe, when I decided to finally learn to surf. Every morning at 6 AM, I would paddle out with the local surfers. They laughed at my terrible form but encouraged me anyway. After two weeks of drinking saltwater and getting tumbled by waves, I finally caught my first real wave. The feeling was indescribable - like flying and falling at the same time. I understood then why people become obsessed with the ocean. That summer taught me patience, persistence, and the joy of embracing something completely outside my comfort zone.',
             created_at: '2021-07-15T15:30:00Z',
             memory_date: '2021-07-15',
-            memory_location: 'Myrtle Beach, SC'
+            memory_location: 'Malibu Beach, California'
           },
           {
             id: 'demo-3',
-            title: 'Learning to Ride a Bike',
-            text: 'After so many attempts, I finally pedaled without training wheels. The feeling of freedom was incredible - I felt like I could go anywhere!',
-            created_at: '2019-05-10T10:00:00Z',
-            memory_date: '2019-05-10',
-            memory_location: 'Neighborhood Park'
+            title: 'The Night Grandpa Told Me About the War',
+            text: 'It was Christmas Eve, and the family had gone to bed, but Grandpa and I stayed up by the fireplace. He rarely talked about his time in Korea, but that night something changed. Maybe it was the warmth of the fire or the quiet of the house, but he began telling me stories I had never heard. About friends he lost, about moments of terror and unexpected kindness, about how war changes you in ways you can never fully explain. His voice got quiet when he talked about coming home and trying to fit back into normal life. I realized that night that the quiet, gentle man I knew carried depths of experience I could barely imagine. It made me understand courage differently.',
+            created_at: '2019-12-24T22:30:00Z',
+            memory_date: '2019-12-24',
+            memory_location: 'Family Home, Ohio'
+          },
+          {
+            id: 'demo-4',
+            title: 'Getting Lost in Tokyo',
+            text: 'My first solo international trip, and I managed to get completely lost on day two. I had been so confident with my translation app and printed maps, but somehow ended up in a residential neighborhood with no English signs anywhere. An elderly woman noticed my confusion and, despite speaking no English, gestured for me to follow her. She walked me six blocks to a train station, bought me a ticket, and made sure I got on the right train. She refused any money and just smiled and bowed. That act of kindness from a complete stranger taught me more about humanity and travel than any guidebook could. It was the moment I stopped being a tourist and started being a traveler.',
+            created_at: '2022-03-18T14:20:00Z',
+            memory_date: '2022-03-18',
+            memory_location: 'Tokyo, Japan'
           }
         ];
         
         const demoProfile = {
-          name: 'Demo User',
-          birth_place: 'Sample City',
-          current_location: 'Demo Town'
+          name: 'Alex Chen',
+          birth_place: 'Portland, Oregon',
+          current_location: 'San Francisco, California'
         };
 
         setMemories(demoMemories);
@@ -141,52 +322,70 @@ const Story = () => {
         return;
       }
 
-      // Try to fetch from Supabase with timeout and fallback
+      // Try to fetch actual user memories with timeout protection
+      console.log('Attempting to fetch memories for user:', user.id);
+      
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database connection timeout')), 5000)
+        setTimeout(() => reject(new Error('Database connection timeout')), 8000)
       );
 
-      const fetchPromise = Promise.all([
-        supabase
-          .from('memories')
-          .select('id, title, text, created_at, memory_date, memory_location')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('users')
-          .select('*')
-          .eq('user_id', user.id)
-          .single()
-      ]);
+      const memoriesPromise = supabase
+        .from('memories')
+        .select('id, title, text, created_at, memory_date, memory_location')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      const profilePromise = supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
       try {
-        const [memoriesResult, profileResult] = await Promise.race([
-          fetchPromise,
-          timeoutPromise
-        ]) as any;
+        // Try to fetch memories with timeout protection
+        const memoriesResult = await Promise.race([memoriesPromise, timeoutPromise]) as any;
+        
+        // Try to fetch profile (non-blocking if it fails)
+        let profileResult: any = { data: null, error: null };
+        try {
+          profileResult = await Promise.race([profilePromise, 
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Profile timeout')), 3000))
+          ]) as any;
+        } catch (profileError) {
+          console.warn('Profile fetch failed, continuing without profile:', profileError);
+        }
 
-        if (memoriesResult.error && memoriesResult.error.code !== 'PGRST116') {
+        if (memoriesResult.error) {
           throw memoriesResult.error;
         }
 
-        setMemories(memoriesResult.data || []);
-        setUserProfile(profileResult.data);
+        const fetchedMemories = memoriesResult.data || [];
+        setMemories(fetchedMemories);
+        setUserProfile(profileResult.data || { 
+          name: user.email?.split('@')[0] || 'User',
+          user_id: user.id 
+        });
 
+        console.log(`✅ Successfully loaded ${fetchedMemories.length} memories`);
+        
         toast({
-          title: 'Story Loaded',
-          description: `Found ${memoriesResult.data?.length || 0} memories to weave into your story`,
+          title: 'Story Loaded Successfully',
+          description: `Crafted from your ${fetchedMemories.length} preserved memories`,
         });
 
       } catch (dbError: any) {
-        console.warn('Database connection failed, using fallback:', dbError);
+        console.warn('⚠️ Database connection failed, using offline mode:', dbError.message);
         
-        // Fallback: Show empty state with helpful message
+        // Graceful fallback: Show user's offline state with helpful message
         setMemories([]);
-        setUserProfile({ name: user.email?.split('@')[0] || 'User' });
+        setUserProfile({ 
+          name: user.email?.split('@')[0] || 'User',
+          user_id: user.id 
+        });
         
         toast({
-          title: 'Database Temporarily Unavailable',
-          description: 'Showing offline mode. Your data is safe and will sync when connection is restored.',
+          title: 'Offline Mode',
+          description: 'Unable to load memories right now. Add new memories to see your story grow!',
           variant: 'default'
         });
       }
@@ -212,7 +411,7 @@ const Story = () => {
     fetchStoryData();
   }, [user?.id]);
 
-  const narrative = generateSimpleNarrative(memories, userProfile);
+  const narrative = generateDynamicNarrative(memories, userProfile);
 
   if (loading) {
     return (
