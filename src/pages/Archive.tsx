@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { aiVoiceSearch, VoiceSearchResult } from '@/services/aiVoiceSearch';
 import { AudioPlayer } from '@/components/AudioPlayer';
 
-export const Archive = () => {
+const Archive = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -343,3 +343,5 @@ export const Archive = () => {
     </div>
   );
 };
+
+export default Archive;

@@ -10,6 +10,8 @@ import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
 import { voiceRecordingService } from '@/services/voiceRecording';
 import { soundEffects } from '@/services/soundEffects';
+import { FirstConversationDialog } from '@/components/FirstConversationDialog';
+import { userProfileService } from '@/services/userProfileService';
 // Dummy mode removed - always use real authentication
 import { 
   Heart, 
@@ -50,6 +52,11 @@ const Index = () => {
     needsCollection: boolean;
   } | null>(null);
   const [lastSavedMemoryId, setLastSavedMemoryId] = useState<string | null>(null);
+  
+  // First Conversation state
+  const [needsFirstConversation, setNeedsFirstConversation] = useState(false);
+  const [showFirstConversation, setShowFirstConversation] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(true);
 
   // Biography topics tool for collecting general information about the user
   const saveBiographyTopicTool = useCallback(async (parameters: {
@@ -2058,6 +2065,49 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
     return () => { startConversationRef.current = undefined; };
   }, [startConversation]);
 
+  // Check if user needs first conversation
+  useEffect(() => {
+    const checkFirstConversationStatus = async () => {
+      if (!effectiveUser?.id) {
+        setCheckingProfile(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 Checking first conversation status...');
+        const needsFirstConv = await userProfileService.needsFirstConversation(effectiveUser.id);
+        
+        console.log(`👤 User needs first conversation: ${needsFirstConv}`);
+        setNeedsFirstConversation(needsFirstConv);
+        
+        if (needsFirstConv) {
+          setShowFirstConversation(true);
+        }
+      } catch (error) {
+        console.error('❌ Error checking first conversation status:', error);
+        // Default to showing first conversation on error for safety
+        setNeedsFirstConversation(true);
+        setShowFirstConversation(true);
+      } finally {
+        setCheckingProfile(false);
+      }
+    };
+
+    checkFirstConversationStatus();
+  }, [effectiveUser?.id]);
+
+  // Handle first conversation completion
+  const handleFirstConversationComplete = useCallback(() => {
+    console.log('✅ First conversation completed');
+    setNeedsFirstConversation(false);
+    setShowFirstConversation(false);
+    
+    toast({
+      title: 'Welcome to Solin!',
+      description: 'Your profile has been created. Let\'s start capturing your memories!',
+    });
+  }, [toast]);
+
   const isConnected = conversation.status === 'connected';
   const isSpeaking = conversation.isSpeaking;
 
@@ -2078,6 +2128,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
     // Orb now only STARTS the session. It will not end it.
     if (isConnected) {
       console.log('ℹ️ Orb press ignored while connected (use End button)');
+      return;
+    }
+
+    // Prevent interaction if first conversation is needed
+    if (needsFirstConversation) {
+      toast({
+        title: 'Complete your profile first',
+        description: 'Please finish the welcome conversation to get started with Solin.',
+      });
       return;
     }
 
@@ -2455,6 +2514,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           </div>
         </div>
       </div>
+      
+      {/* First Conversation Dialog */}
+      <FirstConversationDialog 
+        isOpen={showFirstConversation}
+        onComplete={handleFirstConversationComplete}
+      />
     </div>
   );
 };

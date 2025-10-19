@@ -973,16 +973,29 @@ const Timeline = () => {
                             <div 
                               className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}
                               style={{
-                                // Ensure proper spacing between memory cards to prevent overlap
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '32px' // Increased from 24px to 32px for better separation
+                                position: 'relative',
+                                minHeight: yearData.memories.length > 1 ? '120px' : '60px' // Extra height for stacked memories
                               }}
                             >
-                              {yearData.memories.map((memory) => {
+                              {yearData.memories.map((memory, memoryIndex) => {
                                 const isMajorMemory = memory.significance === 'major';
+                                
+                                // Calculate stacking offset for multiple memories in same year
+                                const isStacked = yearData.memories.length > 1;
+                                const stackOffset = isStacked ? memoryIndex * 16 : 0; // 16px horizontal offset for each subsequent memory
+                                const verticalOffset = isStacked ? memoryIndex * 8 : 0; // 8px vertical offset for visual depth
+                                
                                 return (
-                                  <div key={memory.id} className="mb-4 timeline-card">
+                                  <div 
+                                    key={memory.id} 
+                                    className="absolute timeline-card transition-all duration-300"
+                                    style={{
+                                      left: `${stackOffset}px`,
+                                      top: `${verticalOffset}px`,
+                                      zIndex: yearData.memories.length - memoryIndex, // First memory on top, others stacked behind
+                                      width: isStacked ? 'calc(100% - 32px)' : '100%', // Slightly narrower when stacked
+                                    }}
+                                  >
                                     <TimelineMemoryCard
                                       memory={memory}
                                       artifact={memoryArtifacts[memory.id] || null}
