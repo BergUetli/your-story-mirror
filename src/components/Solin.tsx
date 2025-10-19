@@ -37,9 +37,11 @@ import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, M
 import { cn } from '@/lib/utils';
 import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
+import { voiceRecordingService } from '@/services/voiceRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import solinConfig from '@/agents/solin.json';
 import { AddMemoryForm } from '@/components/AddMemoryForm';
@@ -108,7 +110,13 @@ const Solin: React.FC<SolinProps> = ({
   
   const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();  // Memory operations
   const { toast } = useToast();                                 // User notification system
+  const { user } = useAuth();                                   // User authentication state
   const navigate = useNavigate();                               // Page navigation
+  
+  // ===== VOICE RECORDING STATE =====
+  // State for tracking conversation audio recording
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);  // Whether voice is being recorded
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);  // Current recording session ID
   const { 
     isListening, 
     transcript, 
@@ -208,12 +216,22 @@ const Solin: React.FC<SolinProps> = ({
    * - Conversation history tracking: Maintains complete conversation record
    * - Automatic speech synthesis: Converts AI response to speech
    * - Error handling: Graceful fallback for conversation failures
+   * - **NEW**: Voice recording transcript capture for archival
    */
   const handleAutoProcessMessage = async (userMessage: string) => {
     if (processingRef.current || !userMessage.trim()) return;
     
     processingRef.current = true;
     lastTranscriptRef.current = userMessage;
+    
+    // Add transcript to voice recording if active
+    if (isRecordingVoice && currentSessionId) {
+      try {
+        voiceRecordingService.addTranscript(userMessage, 'user');
+      } catch (error) {
+        console.error('❌ Failed to add user transcript to recording:', error);
+      }
+    }
     
     // Check for natural conversation ending commands
     const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solin', 'stop conversation'];
@@ -252,6 +270,15 @@ const Solin: React.FC<SolinProps> = ({
       // Add Solin's response to conversation history
       const updatedHistory = [...newHistory, { role: 'solin' as const, content: solinResponse.reflection }];
       setConversationHistory(updatedHistory);
+      
+      // Add AI response transcript to voice recording if active
+      if (isRecordingVoice && currentSessionId) {
+        try {
+          voiceRecordingService.addTranscript(solinResponse.reflection, 'ai');
+        } catch (error) {
+          console.error('❌ Failed to add AI transcript to recording:', error);
+        }
+      }
       
       // Reset transcript after processing
       resetTranscript();
@@ -344,11 +371,12 @@ const Solin: React.FC<SolinProps> = ({
    * - Mode-specific greetings (visitor vs. authenticated user)
    * - State initialization for new conversation
    * - Automatic greeting delivery via speech synthesis
+   * - **NEW**: Automatic voice recording for conversation archival
    * 
    * USER EXPERIENCE: Creates welcoming entry point that immediately engages users
    * and sets expectations for the conversation experience.
    */
-  const startConversation = () => {
+  const startConversation = async () => {
     if (!speechSupported) {
       toast({
         title: "Speech Recognition Not Supported",
@@ -364,6 +392,24 @@ const Solin: React.FC<SolinProps> = ({
     lastTranscriptRef.current = '';
     processingRef.current = false;
     
+    // Start voice recording for conversation archival
+    if (user?.id) {
+      try {
+        const sessionId = await voiceRecordingService.startRecording(user.id, 'solin_conversation');
+        setCurrentSessionId(sessionId);
+        setIsRecordingVoice(true);
+        console.log('🎙️ Started recording Solin conversation:', sessionId);
+      } catch (error) {
+        console.error('❌ Failed to start voice recording:', error);
+        // Continue conversation even if recording fails
+        toast({
+          title: "Recording Notice",
+          description: "Voice recording couldn't start, but you can still have a conversation.",
+          variant: "default"
+        });
+      }
+    }
+    
     // Give initial greeting based on user mode
     const greeting = mode === 'visitor' 
       ? "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?"
@@ -378,12 +424,29 @@ const Solin: React.FC<SolinProps> = ({
    * BUSINESS PURPOSE: Safely stops an active conversation, cleaning up all voice services
    * and resetting component state. This ensures proper resource management and prevents
    * memory leaks or hanging voice connections.
+   * 
+   * **NEW**: Also handles voice recording cleanup and archival.
    */
-  const stopConversation = () => {
+  const stopConversation = async () => {
     setIsConversationActive(false);
     if (isListening) stopListening();
     if (isSpeaking) voiceService.stop();
     if (silenceTimer) clearTimeout(silenceTimer);
+    
+    // Stop voice recording if active
+    if (isRecordingVoice && currentSessionId) {
+      try {
+        const recordingMetadata = await voiceRecordingService.stopRecording();
+        if (recordingMetadata) {
+          console.log('🎙️ Stopped Solin conversation recording:', recordingMetadata);
+        }
+      } catch (error) {
+        console.error('❌ Failed to stop voice recording:', error);
+      } finally {
+        setIsRecordingVoice(false);
+        setCurrentSessionId(null);
+      }
+    }
     
     setIsSpeaking(false);
     setIsLoading(false);
@@ -406,18 +469,19 @@ const Solin: React.FC<SolinProps> = ({
    * - Complete conversation preservation for future reference
    * - Navigation to timeline after successful save
    * - Voice confirmation of successful memory creation
+   * - **NEW**: Links voice recordings to memories for unified archival
    * 
    * USER EXPERIENCE: Provides clear feedback throughout the memory creation process
    * and ensures users understand their stories are being preserved for posterity.
    */
   const handleEndConversation = async () => {
     if (conversationHistory.length === 0) {
-      stopConversation();
+      await stopConversation();
       return;
     }
 
     // Stop conversation and show save prompt
-    stopConversation();
+    await stopConversation();
     
     // Ask user if they want to save the memory
     const shouldSave = await showSaveMemoryPrompt();
@@ -451,17 +515,27 @@ const Solin: React.FC<SolinProps> = ({
           'public'
         );
 
+        // Link voice recording to the saved memory if both exist
+        if (savedMemory && currentSessionId && isRecordingVoice) {
+          try {
+            voiceRecordingService.addMemoryId(savedMemory.id);
+            console.log('🔗 Linked voice recording to memory:', { memoryId: savedMemory.id, sessionId: currentSessionId });
+          } catch (error) {
+            console.error('❌ Failed to link voice recording to memory:', error);
+          }
+        }
+
         if (savedMemory) {
           toast({
             title: "Memory Saved",
-            description: "Your conversation has been preserved as a memory.",
+            description: "Your conversation has been preserved as a memory and voice recording.",
           });
 
           // Navigate to timeline to show the new memory
           navigate(`/timeline`);
           
           // Provide voice confirmation for natural conversation closure
-          await speakResponse("Your memory has been saved and added to your timeline.");
+          await speakResponse("Your memory has been saved and added to your timeline. The conversation is also archived as a voice recording.");
         } else {
           throw new Error('Failed to save memory');
         }
@@ -749,6 +823,14 @@ const Solin: React.FC<SolinProps> = ({
                           {getConversationStatus()}
                         </p>
                         
+                        {/* Voice Recording Indicator */}
+                        {isRecordingVoice && (
+                          <div className="flex items-center justify-center gap-2 text-xs text-memory bg-memory/10 rounded-lg px-3 py-1 mx-auto">
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span>Recording conversation</span>
+                          </div>
+                        )}
+                        
                         {speechError && (
                           <p className="text-destructive text-sm">{speechError}</p>
                         )}
@@ -758,6 +840,11 @@ const Solin: React.FC<SolinProps> = ({
                           <div className="text-sm text-muted-foreground max-w-sm">
                             Click the circle to start a natural conversation with Solin. 
                             I'll listen and respond automatically.
+                            {user && (
+                              <div className="text-xs text-memory mt-1">
+                                💾 Your conversations will be automatically recorded and archived
+                              </div>
+                            )}
                           </div>
                         )}
                         
