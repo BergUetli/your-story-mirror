@@ -448,9 +448,82 @@ Uses semantic color tokens defined in `src/index.css`:
 - **Instant feedback**: Memory operations happen immediately
 - **Backend only for complex ops**: Orchestrator handles batch/async tasks
 
+## 🎨 Assets & Copyright
+
+### AI-Generated Images
+- **Cosmic Background** (`/public/cosmic-background.jpg`): AI-generated cosmic scene used on the About page. This image was generated specifically for this project and has no copyright restrictions. Free to use in accordance with the project license.
+
 ## 📄 License
 
 MIT License - feel free to use for personal or commercial projects
+
+## 📚 Advanced Features
+
+### Memory Chunking System
+The application automatically handles long memories by intelligently splitting them into manageable chunks:
+- **Automatic Detection**: Memories over 8KB are automatically chunked
+- **Intelligent Boundaries**: Preserves paragraph and sentence structure
+- **Grouped Retrieval**: Related chunks are automatically reconstructed
+- **Database Schema**: Uses `memory_group_id`, `chunk_sequence`, and `total_chunks` fields
+
+### Biography Enhancement
+Two complementary systems for comprehensive life storytelling:
+
+#### 1. Flowing Narrative Generation
+- **Story Page**: Transforms discrete memories into flowing biographical prose
+- **Chapter Organization**: Groups memories by life periods (Early Years, Discovery, Building, etc.)
+- **Rich Context**: Extracts themes and creates narrative connections between events
+- **Collapsible Chapters**: Maintains readability while providing detail access
+
+#### 2. Proprietary Biography Analysis
+Advanced editorial analysis system that evaluates biographical narratives for quality and coherence.
+
+**Configuration** (Optional - service works with fallback if not configured):
+```env
+# Biography Checker Service Configuration
+REACT_APP_BIOGRAPHY_CHECKER_ENDPOINT=https://your-analysis-service.com/api/analyze
+REACT_APP_BIOGRAPHY_CHECKER_API_KEY=your-api-key-here
+REACT_APP_BIOGRAPHY_CHECKER_VERSION=v1
+REACT_APP_BIOGRAPHY_ANALYSIS_DEPTH=standard
+REACT_APP_BIOGRAPHY_ENABLE_ENHANCEMENT=true
+REACT_APP_BIOGRAPHY_TONE_PREFERENCE=optimistic
+```
+
+**Analysis Features**:
+- **Flow Analysis** (0-100): Evaluates narrative coherence and sentence structure
+- **Tone Consistency** (0-100): Assesses emotional balance and language quality  
+- **Positivity Scoring** (0-100): Measures overall optimism and growth themes
+- **Enhancement Suggestions**: Provides specific improvement recommendations
+- **Fallback Analysis**: Local heuristics when proprietary service unavailable
+
+#### 3. Biographical Topics Collection
+- **Separate Database**: `biography_entries` table for general personality/values information
+- **Solin Integration**: Voice agent collects biographical topics beyond specific memories
+- **Topic Categories**: personality, values, preferences, background, philosophy, relationships
+- **Enhanced Narratives**: Biographical context enriches story generation
+
+### Database Extensions
+
+#### Memory Chunking Schema
+```sql
+-- New fields in memories table
+memory_group_id UUID      -- Groups related chunks
+chunk_sequence INTEGER    -- Order within group (1, 2, 3...)  
+total_chunks INTEGER      -- Total chunks in group
+```
+
+#### Biography Topics Table
+```sql
+-- biography_entries table
+id UUID PRIMARY KEY
+user_id UUID REFERENCES auth.users(id)
+topic_category TEXT       -- 'personality', 'values', etc.
+topic_title TEXT          -- Specific topic name
+content TEXT              -- User's input about this topic
+context_notes TEXT        -- Additional context
+source TEXT               -- How collected ('solin_conversation')
+created_at TIMESTAMP
+```
 
 ## 🙋‍♂️ Support
 

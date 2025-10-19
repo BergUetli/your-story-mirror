@@ -1,7 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+
+// Extend window interface for scroll timeout
+declare global {
+  interface Window {
+    scrollTimeout: NodeJS.Timeout;
+  }
+}
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus, ChevronUp, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -10,7 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
 import { TimelineMemoryCard } from '@/components/TimelineMemoryCard';
-import StoryMap from '@/components/StoryMap';
+import { soundEffects } from '@/services/soundEffects';
+
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -19,10 +27,57 @@ const detectEventSignificance = (memory: any): 'major' | 'minor' => {
     'graduated', 'graduation', 'married', 'marriage', 'wedding',
     'born', 'birth', 'child', 'baby', 'died', 'death', 'funeral',
     'college', 'university', 'degree', 'moved', 'new job', 'promoted',
-    'promotion', 'started', 'founded', 'retired', 'divorce'
+    'promotion', 'started', 'founded', 'retired', 'divorce',
+    'first', 'trip', 'travel', 'vacation', 'holiday', 'family'
   ];
   
   return majorKeywords.some(keyword => text.includes(keyword)) ? 'major' : 'minor';
+};
+
+// LABEL OVERLAP CHECKER MODULE - Use this for ALL timeline sizing decisions
+const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight: number, minGap: number = 50) => {
+  if (timelineData.length <= 1) {
+    return { hasOverlaps: false, expansionNeeded: 1, details: [] };
+  }
+
+  const pixelsPerYear = baseHeight / totalYears;
+  const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
+  const overlaps = [];
+  let maxExpansionNeeded = 1;
+
+  console.log(`🔍 LABEL OVERLAP CHECK: Base height ${baseHeight}px, ${pixelsPerYear.toFixed(1)}px per year, min gap ${minGap}px`);
+
+  for (let i = 0; i < sortedYears.length - 1; i++) {
+    const current = sortedYears[i];
+    const next = sortedYears[i + 1];
+    const yearGap = next.year - current.year;
+    const pixelGap = yearGap * pixelsPerYear;
+
+    if (pixelGap < minGap) {
+      const expansionNeeded = minGap / pixelGap;
+      maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
+      overlaps.push({
+        currentYear: current.year,
+        nextYear: next.year,
+        yearGap,
+        pixelGap: Math.round(pixelGap),
+        needed: Math.round(expansionNeeded * 100) / 100
+      });
+      console.log(`❌ OVERLAP: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px < ${minGap}px (needs ${Math.round((expansionNeeded - 1) * 100)}% expansion)`);
+    } else {
+      console.log(`✅ OK: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px ≥ ${minGap}px`);
+    }
+  }
+
+  const result = {
+    hasOverlaps: overlaps.length > 0,
+    expansionNeeded: maxExpansionNeeded,
+    details: overlaps,
+    finalHeight: baseHeight * maxExpansionNeeded
+  };
+
+  console.log(`📊 OVERLAP SUMMARY: ${overlaps.length} overlaps, expansion needed: ${Math.round((maxExpansionNeeded - 1) * 100)}%, final: ${Math.round(result.finalHeight)}px`);
+  return result;
 };
 
 // Generate only birth event from profile
@@ -47,6 +102,13 @@ const generateLifeEvents = (profile: any) => {
 const createTimelineData = (actualMemories: any[], profile: any) => {
   console.log('🔄 Timeline: Creating timeline data', { 
     memoriesCount: actualMemories?.length || 0, 
+    memories: actualMemories?.map(m => ({ 
+      id: m.id, 
+      title: m.title, 
+      memory_date: m.memory_date, 
+      created_at: m.created_at,
+      date: m.date 
+    })),
     profile: profile ? { birth_date: profile.birth_date, birth_place: profile.birth_place } : 'NO PROFILE'
   });
   
@@ -79,8 +141,13 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     const hasMajorEvents = yearEvents.some(e => e.significance === 'major') || 
                           yearMemories.some(m => m.significance === 'major');
     
-    // Only include years that have content (birth event, memories, or current year)
-    if (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear) {
+    // Only include years with significant events or current year
+    // Birth year is always significant, other years need major events/memories
+    const isSignificantYear = year === birthYear || // Always show birth year
+                             year === currentYear || // Always show current year
+                             hasMajorEvents; // Show years with major events/memories
+    
+    if (isSignificantYear && (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear)) {
       timelineData.push({
         year,
         events: yearEvents,
@@ -92,7 +159,16 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     }
   }
   
-  console.log('✅ Timeline: Created', timelineData.length, 'year entries');
+  console.log('✅ Timeline: Created', timelineData.length, 'year entries:', 
+    timelineData.map(y => ({ 
+      year: y.year, 
+      memories: y.memories.length, 
+      events: y.events.length,
+      significance: y.significance,
+      memoryTitles: y.memories.map(m => m.title),
+      memorySignificance: y.memories.map(m => m.significance)
+    }))
+  );
   return timelineData;
 };
 
@@ -110,6 +186,11 @@ const Timeline = () => {
   const zoomLevelRef = useRef(1);
   const panOffsetRef = useRef({ x: 0, y: 0 });
   
+  // Scroll state for modern scroll indicators
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [showScrollControls, setShowScrollControls] = useState(false);
+  
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
   
@@ -118,8 +199,9 @@ const Timeline = () => {
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
   const [memoryArtifacts, setMemoryArtifacts] = useState<Record<string, any>>({});
+  const [memoryVoiceRecordings, setMemoryVoiceRecordings] = useState<Set<string>>(new Set());
 
-  const fetchTimelineData = async () => {
+  const fetchTimelineData = useCallback(async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000';
     
     console.log('🔄 Timeline: Fetching data for user', userId);
@@ -156,10 +238,12 @@ const Timeline = () => {
       setTimelineMemories(memories || []);
       setTimelineProfile(profiles || profile || null);
 
-      // Fetch artifacts for all memories
+      // Fetch artifacts and voice recordings for all memories
       if (memories && memories.length > 0) {
         const artifactsMap: Record<string, any> = {};
+        const voiceRecordingSet = new Set<string>();
         
+        // Fetch artifacts
         for (const memory of memories) {
           const { data: artifactLinks } = await supabase
             .from('memory_artifacts')
@@ -189,18 +273,43 @@ const Timeline = () => {
           }
         }
         
+        // Fetch voice recordings that reference these memories
+        const memoryIds = memories.map(m => m.id);
+        const { data: voiceRecordings } = await supabase
+          .from('voice_recordings')
+          .select('memory_ids')
+          .eq('user_id', userId)
+          .not('memory_ids', 'is', null);
+        
+        if (voiceRecordings) {
+          for (const recording of voiceRecordings) {
+            if (recording.memory_ids && Array.isArray(recording.memory_ids)) {
+              for (const memoryId of recording.memory_ids) {
+                if (memoryIds.includes(memoryId)) {
+                  voiceRecordingSet.add(memoryId);
+                }
+              }
+            }
+          }
+        }
+        
+        console.log('🎤 Timeline: Found voice recordings for memories:', Array.from(voiceRecordingSet));
+        
         setMemoryArtifacts(artifactsMap);
+        setMemoryVoiceRecordings(voiceRecordingSet);
       }
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {
       setTimelineLoading(false);
     }
-  };
+  }, [user?.id, profile]);
 
   useEffect(() => {
-    fetchTimelineData();
-  }, [user?.id]);
+    if (user?.id) {
+      fetchTimelineData();
+    }
+  }, [user?.id, fetchTimelineData]);
 
   // Poll for updates every 5 seconds when on timeline page (more frequent for testing)
   useEffect(() => {
@@ -210,9 +319,15 @@ const Timeline = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [user?.id]);
+  }, [fetchTimelineData]);
 
-  const timelineData = createTimelineData(timelineMemories, timelineProfile || profile);
+  // Memoize timeline data to prevent infinite re-renders
+  const timelineData = useMemo(() => {
+    return createTimelineData(timelineMemories, timelineProfile || profile);
+  }, [timelineMemories, timelineProfile, profile]);
+  
+  // For now, let's remove the auto-expansion status to focus on the working collision detection
+  // The collision detection itself is working perfectly as shown in console logs
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -228,21 +343,117 @@ const Timeline = () => {
     loadMemories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Auto-expand years with major events on initial load
+  // Auto-expand ALL years with memories on initial load (not just significant ones)
+  // Use a flag to prevent re-expansion
+  const hasInitializedExpansion = useRef(false);
+  
   useEffect(() => {
-    if (!isLoading && timelineData.length > 0) {
-      const majorYears = timelineData
-        .filter(y => y.significance === 'major')
+    if (!timelineLoading && timelineData.length > 0 && !hasInitializedExpansion.current) {
+      const yearsWithAnyContent = timelineData
+        .filter(y => 
+          y.memories.length > 0 || // Expand ANY year with memories
+          y.events.length > 0 ||   // Always expand years with life events (like birth)
+          y.significance === 'major'
+        )
         .map(y => y.year);
-      if (majorYears.length > 0) {
-        setExpandedYears(new Set(majorYears));
+      console.log('🔄 Timeline: Auto-expanding all years with content:', yearsWithAnyContent);
+      console.log('🔄 Timeline: Timeline data details:', timelineData.map(y => ({
+        year: y.year,
+        memoriesCount: y.memories.length,
+        eventsCount: y.events.length,
+        significance: y.significance,
+        memories: y.memories.map(m => ({ title: m.title, significance: m.significance }))
+      })));
+      if (yearsWithAnyContent.length > 0) {
+        setExpandedYears(new Set(yearsWithAnyContent));
+        hasInitializedExpansion.current = true;
       }
     }
-  }, [isLoading, timelineData]);
+  }, [timelineLoading, timelineData]);
 
-  // Handle new memory materialization animation
+  // Handle new memory materialization animation and highlighting
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
+    const highlightMemoryId = urlParams.get('highlight');
+    const isNewMemory = urlParams.get('new') === 'true';
+    
+    if (highlightMemoryId && !timelineLoading && timelineData.length > 0) {
+      console.log('🎯 Timeline: Processing memory highlight:', { highlightMemoryId, isNewMemory });
+      
+      // Find the memory in the timeline data
+      let foundMemory = null;
+      let foundYear = null;
+      
+      for (const yearData of timelineData) {
+        const memory = yearData.memories.find(m => m.id === highlightMemoryId);
+        if (memory) {
+          foundMemory = memory;
+          foundYear = yearData.year;
+          break;
+        }
+      }
+      
+      if (foundMemory && foundYear) {
+        console.log('✅ Timeline: Found memory to highlight:', foundMemory.title, 'in year', foundYear);
+        
+        // Expand the year containing the memory
+        setExpandedYears(prev => new Set([...prev, foundYear]));
+        
+        // If it's a new memory, trigger materialization animation
+        if (isNewMemory) {
+          setTimeout(async () => {
+            try {
+              // Play happy whoosh sound
+              await soundEffects.playHappyWhoosh();
+              
+              // Trigger materialization animation
+              setMaterializingMemory(highlightMemoryId);
+              
+              // Scroll to the memory after a brief delay
+              setTimeout(() => {
+                const memoryElement = document.getElementById(`memory-${highlightMemoryId}`);
+                if (memoryElement) {
+                  memoryElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                  });
+                  console.log('📍 Timeline: Scrolled to new memory:', highlightMemoryId);
+                }
+              }, 300);
+              
+              // Clear materialization after animation
+              setTimeout(() => {
+                setMaterializingMemory(null);
+              }, 2000);
+              
+            } catch (error) {
+              console.warn('Sound effect failed:', error);
+            }
+          }, 500); // Delay to ensure DOM is ready
+        } else {
+          // Just scroll to existing memory
+          setTimeout(() => {
+            const memoryElement = document.getElementById(`memory-${highlightMemoryId}`);
+            if (memoryElement) {
+              memoryElement.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+              });
+              console.log('📍 Timeline: Scrolled to highlighted memory:', highlightMemoryId);
+            }
+          }, 300);
+        }
+        
+        // Clear URL params after processing
+        setTimeout(() => {
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, newUrl);
+        }, 3000);
+      } else {
+        console.warn('⚠️ Timeline: Memory not found for highlighting:', highlightMemoryId);
+      }
+    }
+    
     const newMemoryId = urlParams.get('newMemory');
     const shouldAnimate = urlParams.get('animate') === 'true';
     const memorySummary = urlParams.get('summary');
@@ -293,7 +504,7 @@ const Timeline = () => {
         }, 2500);
       }, 300);
     }
-  }, [memories]);
+  }, [timelineLoading, timelineData]);
 
   const toggleYear = (year: number) => {
     const newExpanded = new Set(expandedYears);
@@ -419,6 +630,48 @@ const Timeline = () => {
     setPanOffset({ x: 0, y: 0 });
   };
 
+  // Scroll handling for progress indicator
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    const scrollTop = container.scrollTop;
+    const scrollHeight = container.scrollHeight - container.clientHeight;
+    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    
+    setScrollProgress(progress);
+    setShowScrollControls(scrollTop > 100); // Show controls after scrolling 100px
+    
+    // Set scrolling state for visual feedback
+    setIsScrolling(true);
+    clearTimeout(window.scrollTimeout);
+    window.scrollTimeout = window.setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+  };
+
+  // Smooth scroll functions
+  const scrollToTop = () => {
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const scrollToBottom = () => {
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
+  const scrollToYear = (year: number) => {
+    const yearElement = document.querySelector(`[data-year="${year}"]`);
+    if (yearElement && containerRef.current) {
+      const container = containerRef.current;
+      const elementTop = yearElement.getBoundingClientRect().top;
+      const containerTop = container.getBoundingClientRect().top;
+      const scrollPosition = container.scrollTop + (elementTop - containerTop) - 100; // 100px offset
+      
+      container.scrollTo({ top: scrollPosition, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
@@ -484,16 +737,20 @@ const Timeline = () => {
         </div>
       </nav>
 
-      {/* Main Container with Two Panels */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-60px)]">
-        {/* Left: Timeline (60%) */}
+      {/* Main Container - Full Width Timeline */}
+      <div className="h-[calc(100vh-60px)]">
+        {/* Timeline - Full Width */}
         <div 
           ref={containerRef}
-          className="relative overflow-auto lg:w-[60%] w-full"
+          className="relative overflow-auto w-full modern-scrollbar"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
+          onScroll={handleScroll}
+          style={{
+            scrollBehavior: 'smooth',
+          }}
         >
           <div
             className="max-w-4xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
@@ -524,30 +781,50 @@ const Timeline = () => {
             </Link>
           </div>
         ) : (
+          (() => {
+            // Shared variables for timeline calculations
+            const sharedBirthYear = timelineProfile?.birth_date 
+              ? new Date(timelineProfile.birth_date).getFullYear() 
+              : timelineData[0]?.year || new Date().getFullYear();
+            
+            return (
           <div 
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                const birthYear = timelineProfile?.birth_date 
+                // COMPACT DEFAULT: Start much smaller, use overlap checker to expand minimally
+                const currentYear = new Date().getFullYear();
+                const sharedBirthYear = timelineProfile?.birth_date 
                   ? new Date(timelineProfile.birth_date).getFullYear() 
                   : timelineData[0]?.year || new Date().getFullYear();
-                const currentYear = new Date().getFullYear();
-                const totalYears = currentYear - birthYear;
-                const basePixelsPerYear = 25; // Compact by default
-                return `${totalYears * basePixelsPerYear * zoomLevel + 200}px`;
+                const totalYears = currentYear - sharedBirthYear;
+                
+                // START VERY COMPACT: Try to fit in minimal space first
+                const viewportHeight = window.innerHeight - 200;
+                const baseHeight = Math.min(400, viewportHeight * 0.5); // Much smaller: 400px max or 50% screen
+                
+                // Use dedicated overlap checker module with tighter spacing
+                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
+                
+                console.log(`🎯 COMPACT TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
+                
+                return overlapCheck.finalHeight;
               })()
             }}
           >
             {(() => {
-              // Calculate total span and proportional positions
-              const birthYear = timelineProfile?.birth_date 
-                ? new Date(timelineProfile.birth_date).getFullYear() 
-                : timelineData[0]?.year || new Date().getFullYear();
+              // POSITIONING: Use same overlap checker for consistent results
               const currentYear = new Date().getFullYear();
-              const totalYears = currentYear - birthYear;
-              const basePixelsPerYear = 25; // Compact base spacing
-              const pixelsPerYear = basePixelsPerYear * zoomLevel; // Scale with zoom
-              const totalHeight = totalYears * pixelsPerYear;
+              const totalYears = currentYear - sharedBirthYear;
+              const viewportHeight = window.innerHeight - 200;
+              
+              // Same logic as container: Start compact, use overlap checker with tighter spacing
+              const baseHeight = Math.min(400, viewportHeight * 0.5);
+              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
+              
+              // Final sizing - guaranteed to match container
+              const pixelsPerYear = overlapCheck.finalHeight / totalYears;
+              const totalHeight = overlapCheck.finalHeight;
 
               return (
                 <>
@@ -558,74 +835,84 @@ const Timeline = () => {
                   />
 
                   {/* Timeline Content with proportional spacing */}
-                  {timelineData.map((yearData) => {
+                  {timelineData.map((yearData, index) => {
                     const isMajorYear = yearData.significance === 'major';
-                    const yearSize = isMajorYear ? 'text-3xl' : 'text-2xl';
+                    // Consistent font size for all years for better alignment
+                    const yearSize = 'text-2xl'; // Same size for all years
                     const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
                     const spacing = isMajorYear ? 'mb-6' : 'mb-4';
                     
-                    // Calculate position from birth year
-                    const yearsFromBirth = yearData.year - birthYear;
-                    const topPosition = yearsFromBirth * pixelsPerYear;
+                    // Position proportionally from birth year to current year
+                    const yearsFromBirth = yearData.year - sharedBirthYear;
+                    let topPosition = yearsFromBirth * pixelsPerYear + 50;
+                    
+                    // Special positioning for current year - align with end of timeline
+                    if (yearData.isCurrentYear) {
+                      topPosition = totalHeight - 100; // Position near end of timeline
+                    }
                     
                     return (
                       <div 
                         key={yearData.year} 
                         className="absolute left-0 right-0"
                         style={{ top: `${topPosition}px` }}
+                        data-year={yearData.year}
                        >
-                        {/* Year Marker - Centered on timeline */}
+                        {/* Year Marker - Aligned with year labels */}
                         <div 
-                          className={`absolute top-2 ${markerSize} rounded-full ${
+                          className={`absolute ${markerSize} rounded-full ${
                             isMajorYear 
                               ? 'bg-black shadow-lg' 
                               : 'bg-black/80 shadow-md'
                           } transition-all duration-300`}
                           style={{
-                            left: 'calc(25% - 8px)' // Center on timeline
+                            left: 'calc(25% - 8px)', // Center on timeline
+                            top: '16px' // Align with year labels (12px + 4px for centering)
                           }}
                         />
 
-                        {/* Left Side: Year Label */}
+                        {/* Left Side: Year Label - Vertically aligned with right content */}
                         <div 
-                          className="absolute right-[76%] pr-4 cursor-pointer group"
+                          className="absolute right-[76%] pr-4 cursor-pointer group flex flex-col items-end justify-start"
                           onClick={() => toggleYear(yearData.year)}
+                          style={{ top: '12px' }} // Move year labels significantly lower to align with content baseline
                         >
-                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors ${
-                            isMajorYear ? 'animate-scale-in font-normal' : ''
-                          }`}>
+                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-none font-mono tabular-nums`}>
                             {yearData.year}
                           </h2>
+
                           {yearData.isCurrentYear && (
-                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block mt-1">
-                              Today
+                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block mt-1 whitespace-nowrap">
+                              17th October 2025
                             </span>
                           )}
                         </div>
 
-                        {/* Right Side: Content */}
-                        <div className="ml-[26%] pl-12 space-y-4">
-                          {/* Life Events (Birth) - Always prominent */}
+                        {/* Right Side: Content - Aligned with year labels */}
+                        <div className="ml-[26%] pl-12 space-y-2 flex flex-col justify-start" style={{ paddingTop: '0px' }}>
+                          {/* Life Events (Birth) - Compact layout */}
                           {yearData.events.map((event, eventIndex) => (
-                            <div key={eventIndex} className="space-y-2 mb-4 animate-fade-in">
-                              <div className="text-2xl font-light text-foreground">
+                            <div key={eventIndex} className="space-y-1 mb-2 animate-fade-in">
+                              <div className="text-lg font-light text-foreground">
                                 {event.event}
                               </div>
-                              {event.location && (
-                                <div className="flex items-center gap-2 text-base text-muted-foreground">
-                                  <MapPin className="w-4 h-4" />
-                                  {event.location}
-                                </div>
-                              )}
-                              {event.date && (
-                                <div className="text-xs text-muted-foreground flex items-center gap-2 font-light">
-                                  <Calendar className="w-3 h-3" />
-                                  {new Date(event.date).toLocaleDateString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
-                                </div>
-                              )}
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                {event.location && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {event.location}
+                                  </div>
+                                )}
+                                {event.date && (
+                                  <div className="flex items-center gap-1 font-light">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(event.date).toLocaleDateString('en-US', {
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           ))}
                           
@@ -636,90 +923,29 @@ const Timeline = () => {
                             </p>
                           )}
 
-                          {/* Expanded Year Content */}
-                          {expandedYears.has(yearData.year) && yearData.memories.length > 0 && (
-                            <div className="space-y-2 animate-scale-in">
+                          {/* Memory Content - Always show memories if they exist */}
+                          {yearData.memories.length > 0 && (
+                            <div 
+                              className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}
+                              style={{
+                                // Ensure proper spacing between memory cards to prevent overlap
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '32px' // Increased from 24px to 32px for better separation
+                              }}
+                            >
                               {yearData.memories.map((memory) => {
                                 const isMajorMemory = memory.significance === 'major';
                                 return (
-                                  <Card
-                                    key={memory.id}
-                                    className={`timeline-card transition-all duration-500 cursor-pointer border ${
-                                      materializingMemory === memory.id 
-                                        ? 'border-primary scale-105' 
-                                        : 'border-border hover:border-primary/50'
-                                    }`}
-                                    style={{
-                                      boxShadow: materializingMemory === memory.id 
-                                        ? 'var(--shadow-elevated)' 
-                                        : 'var(--shadow-soft)'
-                                    }}
-                                    onClick={() => setSelectedMemory(memory)}
-                                  >
-                                    <CardContent className="p-2 bg-card">
-                                      <div className="flex items-center gap-2">
-                        {/* Thumbnail */}
-                                        {memoryArtifacts[memory.id]?.artifact_type === 'image' && memoryArtifacts[memory.id]?.signedUrl && (
-                                          <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
-                                            <img
-                                              src={memoryArtifacts[memory.id].signedUrl}
-                                              alt=""
-                                              className="w-full h-full object-cover"
-                                            />
-                                          </div>
-                                        )}
-                                        
-                                        <div className="flex-1 min-w-0">
-                                          <h3 className="text-xs font-medium text-card-foreground truncate">
-                                            {memory.title}
-                                          </h3>
-                                          <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                                            <Calendar className="w-2.5 h-2.5 flex-shrink-0" />
-                                            <span className="truncate">
-                                              {new Date(memory.memory_date || memory.created_at || memory.date).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric'
-                                              })}
-                                            </span>
-                                            {memory.memory_location && (
-                                              <>
-                                                <span>•</span>
-                                                <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
-                                                <span className="truncate">{memory.memory_location}</span>
-                                              </>
-                                            )}
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="flex gap-0.5 flex-shrink-0">
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-5 w-5 text-muted-foreground hover:text-card-foreground hover:bg-muted"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleEditMemory(memory.id);
-                                            }}
-                                            title="View details"
-                                          >
-                                            <Edit className="w-2.5 h-2.5" />
-                                          </Button>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDeleteMemory(memory.id, memory.title);
-                                            }}
-                                            title="Delete memory"
-                                          >
-                                            <Trash2 className="w-2.5 h-2.5" />
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </CardContent>
-                                  </Card>
+                                  <div key={memory.id} className="mb-4 timeline-card">
+                                    <TimelineMemoryCard
+                                      memory={memory}
+                                      artifact={memoryArtifacts[memory.id] || null}
+                                      onClick={() => setSelectedMemory(memory)}
+                                      isMaterializing={materializingMemory === memory.id}
+                                      hasVoiceRecording={memoryVoiceRecordings.has(memory.id)}
+                                    />
+                                  </div>
                                 );
                               })}
                             </div>
@@ -732,14 +958,85 @@ const Timeline = () => {
               );
             })()}
           </div>
+            );
+          })()
         )}
           </div>
         </div>
 
-        {/* Right: Story Map (40%) */}
-        <div className="lg:w-[40%] w-full lg:border-l-[1.5px] border-section-border bg-background p-8 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] overflow-auto">
-          <StoryMap memories={timelineMemories} profile={timelineProfile} />
-        </div>
+        {/* Modern Scroll Indicators and Controls */}
+        {timelineData.length > 0 && (
+          <>
+            {/* Scroll Progress Bar */}
+            <div className="fixed left-0 top-[60px] w-1 h-[calc(100vh-60px)] bg-muted/20 z-40 lg:block hidden">
+              <div 
+                className={`w-full bg-gradient-to-b from-primary/60 to-primary transition-all duration-300 ${
+                  isScrolling ? 'shadow-lg shadow-primary/20' : ''
+                }`}
+                style={{ height: `${scrollProgress}%` }}
+              />
+            </div>
+
+            {/* Floating Scroll Controls */}
+            {showScrollControls && (
+              <div className="fixed right-6 bottom-6 flex flex-col gap-2 z-50 animate-fade-in">
+                {/* Year Quick Navigation */}
+                <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg">
+                  <div className="text-xs text-muted-foreground mb-2 px-2">Jump to:</div>
+                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mini-scrollbar">
+                    {timelineData.slice().reverse().map((yearData) => (
+                      <Button
+                        key={yearData.year}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-6 justify-start px-2 hover:bg-primary/10 font-mono tabular-nums"
+                        onClick={() => scrollToYear(yearData.year)}
+                      >
+                        {yearData.year}
+                        {yearData.memories.length > 0 && (
+                          <span className="ml-auto text-primary">•</span>
+                        )}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scroll Direction Controls */}
+                <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-1 shadow-lg flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary/10"
+                    onClick={scrollToTop}
+                    title="Scroll to top"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 hover:bg-primary/10"
+                    onClick={scrollToBottom}
+                    title="Scroll to bottom"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Scroll Progress Indicator (mobile) */}
+            <div className="fixed bottom-0 left-0 right-0 h-1 bg-muted/20 z-40 lg:hidden">
+              <div 
+                className={`h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ${
+                  isScrolling ? 'shadow-lg shadow-primary/20' : ''
+                }`}
+                style={{ width: `${scrollProgress}%` }}
+              />
+            </div>
+          </>
+        )}
+
       </div>
 
       {/* Memory Detail Dialog */}

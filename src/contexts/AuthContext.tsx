@@ -43,9 +43,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
 
     // Then get the current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Development auto-login disabled to allow proper new user testing
+      // This was previously auto-signing in users which prevented testing the new user flow
+      console.log('🔧 Development mode: Auto-login disabled for proper new user testing');
+      
       setLoading(false);
     });
 
