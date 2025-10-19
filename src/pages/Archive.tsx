@@ -161,19 +161,14 @@ const Archive = () => {
   }, [user]);
 
   useEffect(() => {
-    console.log('🔍 Filter useEffect: searchQuery:', searchQuery, 'recordings.length:', recordings.length);
     filterRecordings(searchQuery);
   }, [searchQuery, recordings]);
 
   useEffect(() => {
-    console.log('📊 Sort useEffect: sortBy:', sortBy, 'filteredRecordings.length before sort:', filteredRecordings.length);
     setFilteredRecordings(prev => sortRecordings(prev, sortBy));
   }, [sortBy]);
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('🎯 STATE DEBUG - recordings:', recordings.length, 'filteredRecordings:', filteredRecordings.length, 'isLoading:', isLoading, 'error:', error);
-  }, [recordings, filteredRecordings, isLoading, error]);
+
 
   // Format duration
   const formatDuration = (seconds: number) => {
@@ -186,17 +181,7 @@ const Archive = () => {
   const totalDuration = recordings.reduce((sum, r) => sum + r.duration_seconds, 0);
   const totalMemories = recordings.reduce((sum, r) => sum + (r.memory_titles?.length || 0), 0);
 
-  // RENDER DEBUG - Log exactly what will be rendered
-  console.log('🎨 RENDER DEBUG:', {
-    isLoading,
-    hasError: !!error,
-    recordingsLength: recordings.length,
-    filteredRecordingsLength: filteredRecordings.length,
-    errorMessage: error,
-    willShowNoRecordings: recordings.length === 0 && !isLoading,
-    willShowNoFiltered: filteredRecordings.length === 0,
-    willShowRecordingsList: filteredRecordings.length > 0
-  });
+
 
   return (
     <div className="min-h-screen bg-background">
