@@ -145,21 +145,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('onboarding_completed')
+      // Try user_profiles table first, fallback to users table
+      let { data, error } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed, first_conversation_completed')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      // If user_profiles table doesn't exist, try users table as fallback
+      if (error && error.code === 'PGRST205') {
+        console.log('📋 user_profiles table not found, using users table as fallback');
+        const fallback = await supabase
+          .from('users')
+          .select('onboarding_completed')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        data = fallback.data ? { 
+          onboarding_completed: fallback.data.onboarding_completed,
+          first_conversation_completed: fallback.data.onboarding_completed // Assume same value
+        } : null;
+        error = fallback.error;
+      }
+
+      // If there's an error or no profile, user needs onboarding
+      const needsOnboarding = !data || !data.onboarding_completed || !data.first_conversation_completed;
       
-      const needsOnboarding = !data || !data.onboarding_completed;
       console.log('🔍 Onboarding check:', {
         user_id: user.id,
         data,
         onboarding_completed: data?.onboarding_completed,
-        needsOnboarding
+        first_conversation_completed: data?.first_conversation_completed,
+        needsOnboarding,
+        error: error?.message
       });
+      
       setNeedsOnboarding(needsOnboarding);
     } catch (error) {
       console.error('Error checking onboarding status:', error);

@@ -95,8 +95,12 @@ const DatabaseManagementPanel = () => {
       // Step 5: Reset all user onboarding status
       setClearingStep('Resetting all user onboarding status...');
       const { error: onboardingError } = await supabase
-        .from('users')
-        .update({ onboarding_completed: false })
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: false,
+          first_conversation_completed: false,
+          first_conversation_completed_at: null
+        })
         .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Reset all users
 
       if (onboardingError) {
@@ -155,8 +159,12 @@ const DatabaseManagementPanel = () => {
 
     try {
       const { error: onboardingError } = await supabase
-        .from('users')
-        .update({ onboarding_completed: false })
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: false,
+          first_conversation_completed: false,
+          first_conversation_completed_at: null
+        })
         .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Reset all users
 
       if (onboardingError) {
@@ -190,10 +198,25 @@ const DatabaseManagementPanel = () => {
     setClearingStep('Resetting current user onboarding...');
 
     try {
-      const { error: onboardingError } = await supabase
-        .from('users')
-        .update({ onboarding_completed: false })
+      // Try user_profiles table first, fallback to users table
+      let { error: onboardingError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_completed: false,
+          first_conversation_completed: false,
+          first_conversation_completed_at: null
+        })
         .eq('user_id', user.id);
+
+      // If user_profiles table doesn't exist, try users table as fallback  
+      if (onboardingError && onboardingError.code === 'PGRST205') {
+        console.log('📋 user_profiles table not found, using users table as fallback');
+        const fallback = await supabase
+          .from('users')
+          .update({ onboarding_completed: false })
+          .eq('user_id', user.id);
+        onboardingError = fallback.error;
+      }
 
       if (onboardingError) {
         throw onboardingError;
