@@ -32,7 +32,7 @@ const Archive = () => {
   const [recordings, setRecordings] = useState<VoiceSearchResult[]>([]);
   const [filteredRecordings, setFilteredRecordings] = useState<VoiceSearchResult[]>([]);
   const [selectedRecording, setSelectedRecording] = useState<VoiceSearchResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'memories'>('date');
