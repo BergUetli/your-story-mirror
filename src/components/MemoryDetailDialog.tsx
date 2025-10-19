@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save } from 'lucide-react';
+import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,6 +39,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [editDate, setEditDate] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load artifacts and their signed URLs when dialog opens
   const loadArtifacts = async () => {
@@ -274,6 +275,40 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
     }
   };
 
+  const handleDeleteMemory = async () => {
+    if (!memory?.id || !confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Delete the memory (cascading deletes will handle artifacts and chunks)
+      const { error } = await supabase
+        .from('memories')
+        .delete()
+        .eq('id', memory.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Memory deleted',
+        description: 'The memory has been permanently removed',
+      });
+
+      onUpdate?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Delete memory error:', error);
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Failed to delete memory',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getArtifactIcon = (type: string) => {
     switch (type) {
       case 'image': return <ImageIcon className="w-4 h-4" />;
@@ -292,15 +327,27 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
               {isEditing ? 'Edit Memory' : memory.title}
             </DialogTitle>
             {!isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
-              >
-                <Edit2 className="w-4 h-4" />
-                Edit
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteMemory}
+                  disabled={isDeleting}
+                  className="gap-2 border-2 border-red-200 text-red-600 hover:border-red-500 hover:bg-red-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
             )}
           </div>
         </DialogHeader>

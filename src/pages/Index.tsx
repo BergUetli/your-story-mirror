@@ -1983,9 +1983,22 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       setTimeout(async () => {
         try {
           console.log('🛑 Forcefully ending ElevenLabs session...');
-          await conversation.endSession();
+          
+          // More aggressive session termination
+          if (conversation.status === 'connected') {
+            await conversation.endSession();
+          }
+          
+          // Force disconnect if still connected
+          if (conversation.status !== 'disconnected') {
+            console.log('🔄 Force disconnecting...');
+            conversation.disconnect();
+          }
+          
+          // Clear all conversation state
           setConversationMessages([]);
           setIsEndingConversation(false);
+          setIsConnected(false);
           
           console.log('✅ Session ended successfully');
           

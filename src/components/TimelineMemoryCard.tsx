@@ -54,13 +54,31 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
               <h3 className="text-xs font-medium text-card-foreground truncate flex-1">
                 {memory.title}
               </h3>
-              {/* Voice recording indicator */}
-              {hasVoiceRecording && (
-                <Music 
-                  className="w-3 h-3 text-primary flex-shrink-0" 
-                  title="This memory has voice recording"
-                />
-              )}
+              
+              {/* Media indicators */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Voice recording indicator */}
+                {hasVoiceRecording && (
+                  <Music 
+                    className="w-3 h-3 text-primary" 
+                    title="This memory has voice recording"
+                  />
+                )}
+                
+                {/* Image indicator */}
+                {(memory.image_urls?.length > 0 || artifact?.artifact_type === 'image') && (
+                  <div className="w-3 h-3 rounded-sm bg-blue-100 flex items-center justify-center">
+                    <span className="text-[8px] text-blue-600 font-bold">📷</span>
+                  </div>
+                )}
+                
+                {/* Audio file indicator (different from voice recording) */}
+                {artifact?.artifact_type === 'audio' && (
+                  <div className="w-3 h-3 rounded-sm bg-green-100 flex items-center justify-center">
+                    <span className="text-[8px] text-green-600 font-bold">🎵</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-2.5 h-2.5 flex-shrink-0" />
