@@ -689,6 +689,67 @@ const Timeline = () => {
           
           {/* Zoom Controls */}
           <div className="flex items-center gap-2">
+            {/* Debug: Check Voice Recordings */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!user?.id) return;
+                try {
+                  // Check for "Shiven" memory
+                  const { data: memories, error: memError } = await supabase
+                    .from('memories')
+                    .select('id, title, created_at')
+                    .eq('user_id', user.id)
+                    .ilike('title', '%shiven%')
+                    .order('created_at', { ascending: false })
+                    .limit(3);
+                  
+                  if (memError) throw memError;
+                  
+                  if (memories && memories.length > 0) {
+                    // Check voice recordings for these memories
+                    const { data: recordings, error: recError } = await supabase
+                      .from('voice_recordings')
+                      .select('memory_id, audio_path, duration_ms, created_at')
+                      .in('memory_id', memories.map(m => m.id));
+                    
+                    toast({
+                      title: `🎤 Voice Recording Check`,
+                      description: `Found ${memories.length} "Shiven" memories, ${recordings?.length || 0} have voice recordings`,
+                      duration: 5000
+                    });
+                    
+                    console.log('🔍 VOICE RECORDING DEBUG:', {
+                      memories,
+                      recordings,
+                      details: memories.map(m => ({
+                        memory: m.title,
+                        id: m.id,
+                        hasRecording: recordings?.some(r => r.memory_id === m.id)
+                      }))
+                    });
+                  } else {
+                    toast({
+                      title: '🔍 No Shiven memories found',
+                      description: 'No memories with "Shiven" in the title were found',
+                    });
+                  }
+                } catch (error) {
+                  console.error('Debug error:', error);
+                  toast({
+                    title: 'Debug Error',
+                    description: 'Failed to check voice recordings',
+                    variant: 'destructive'
+                  });
+                }
+              }}
+              className="text-xs"
+              title="Debug: Check voice recordings for Shiven memory"
+            >
+              🎤 Debug
+            </Button>
+            
             <Button
               variant="ghost"
               size="sm"
