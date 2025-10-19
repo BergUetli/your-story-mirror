@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
 import Archive from "./pages/Archive";
+import ArchiveSimple from "./pages/ArchiveSimple";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -76,6 +77,7 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
         <Route path="/archive" element={<Archive />} />
+        <Route path="/archive-simple" element={<ArchiveSimple />} />
         <Route path="/story" element={
           <ProtectedRoute>
             <Story />
