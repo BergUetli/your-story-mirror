@@ -55,8 +55,11 @@ const Archive = () => {
         const allRecordings = await aiVoiceSearch.getDemoRecordings();
         console.log('📊 getDemoRecordings returned:', allRecordings);
         console.log(`📈 Number of recordings: ${allRecordings.length}`);
+        console.log('🔧 About to setRecordings with:', allRecordings.length, 'items');
         setRecordings(allRecordings);
+        console.log('🔧 About to setFilteredRecordings with:', allRecordings.length, 'items');
         setFilteredRecordings(allRecordings);
+        console.log('🔧 State updates completed');
         console.log(`✅ Demo Archive loaded: ${allRecordings.length} demo recordings`);
         
         if (allRecordings.length === 0) {
@@ -161,9 +164,9 @@ const Archive = () => {
 
   // Effects
   useEffect(() => {
-    console.log('🔄 Archive useEffect triggered, user?.id:', user?.id);
+    console.log('🔄 Archive useEffect triggered - loading recordings directly');
     loadRecordings();
-  }, [user]);
+  }, []); // Remove user dependency to match ArchiveSimple pattern
 
   useEffect(() => {
     console.log('🔄 Filter and sort effect triggered');
@@ -344,6 +347,8 @@ const Archive = () => {
 
             {/* No Recordings State */}
             {!isLoading && recordings.length === 0 && !error && (
+              <div className="bg-red-200 border-2 border-red-500">
+                <div className="bg-red-300 p-2">🚨 NO RECORDINGS STATE TRIGGERED</div>
               <div className="text-center py-12 px-6">
                 <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-4">
@@ -373,10 +378,13 @@ const Archive = () => {
                   </div>
                 </div>
               </div>
+              </div>
             )}
 
             {/* No Filtered Results State */}
             {!isLoading && recordings.length > 0 && filteredRecordings.length === 0 && (
+              <div className="bg-orange-200 border-2 border-orange-500">
+                <div className="bg-orange-300 p-2">🔍 NO FILTERED RESULTS STATE TRIGGERED</div>
               <div className="text-center py-12">
                 <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
@@ -389,11 +397,23 @@ const Archive = () => {
                   }
                 </p>
               </div>
+              </div>
             )}
+
+            {/* VISUAL DEBUG INDICATOR */}
+            <div className="bg-green-200 border-2 border-green-500 p-4 rounded">
+              <strong>🔍 DEBUG:</strong> isLoading: {String(isLoading)}, 
+              recordings: {recordings.length}, 
+              filteredRecordings: {filteredRecordings.length},
+              shouldShowRecordings: {String(!isLoading && filteredRecordings.length > 0)}
+            </div>
 
             {/* Recordings List */}
             {!isLoading && filteredRecordings.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3 bg-blue-100 border-2 border-blue-500 p-4 rounded">
+                <div className="bg-yellow-200 p-2 rounded">
+                  <strong>📋 RECORDINGS SECTION RENDERED:</strong> {filteredRecordings.length} items
+                </div>
 
                 {filteredRecordings.map((recording) => (
                   <Card 
