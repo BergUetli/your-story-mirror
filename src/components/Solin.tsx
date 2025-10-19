@@ -37,7 +37,7 @@ import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, M
 import { cn } from '@/lib/utils';
 import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
-import { voiceRecordingService } from '@/services/voiceRecording';
+import { voiceRecordingService, testGuestRecording } from '@/services/voiceRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
@@ -117,6 +117,12 @@ const Solin: React.FC<SolinProps> = ({
   // State for tracking conversation audio recording
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);  // Whether voice is being recorded
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);  // Current recording session ID
+  
+  // ===== DEBUG: Expose test function globally =====
+  useEffect(() => {
+    (window as any).testGuestRecording = testGuestRecording;
+    (window as any).voiceRecordingService = voiceRecordingService;
+  }, []);
   const { 
     isListening, 
     transcript, 

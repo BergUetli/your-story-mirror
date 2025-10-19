@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS public.voice_recordings (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL, -- Changed to TEXT to support both UUIDs and guest IDs
   
   -- Recording metadata
   session_id TEXT NOT NULL, -- Links to conversation session
@@ -42,25 +42,47 @@ CREATE TABLE IF NOT EXISTS public.voice_recordings (
 ALTER TABLE public.voice_recordings ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for voice_recordings
+-- Allow authenticated users to access their own recordings
 CREATE POLICY "Users can view their own voice recordings"
 ON public.voice_recordings
 FOR SELECT
-USING (auth.uid() = user_id);
+USING (auth.uid()::text = user_id);
 
 CREATE POLICY "Users can create their own voice recordings"
 ON public.voice_recordings
 FOR INSERT
-WITH CHECK (auth.uid() = user_id);
+WITH CHECK (auth.uid()::text = user_id);
 
 CREATE POLICY "Users can update their own voice recordings"
 ON public.voice_recordings
 FOR UPDATE
-USING (auth.uid() = user_id);
+USING (auth.uid()::text = user_id);
 
 CREATE POLICY "Users can delete their own voice recordings"
 ON public.voice_recordings
 FOR DELETE
-USING (auth.uid() = user_id);
+USING (auth.uid()::text = user_id);
+
+-- Allow public access to guest recordings (for demo and guest sessions)
+CREATE POLICY "Public can view guest recordings"
+ON public.voice_recordings
+FOR SELECT
+USING (user_id LIKE 'guest-%');
+
+CREATE POLICY "Public can create guest recordings"
+ON public.voice_recordings
+FOR INSERT
+WITH CHECK (user_id LIKE 'guest-%');
+
+CREATE POLICY "Public can update guest recordings"
+ON public.voice_recordings
+FOR UPDATE
+USING (user_id LIKE 'guest-%');
+
+CREATE POLICY "Public can delete guest recordings"
+ON public.voice_recordings
+FOR DELETE
+USING (user_id LIKE 'guest-%');
 
 -- Indexes for efficient queries
 CREATE INDEX IF NOT EXISTS idx_voice_recordings_user_id ON public.voice_recordings(user_id);

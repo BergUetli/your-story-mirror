@@ -326,6 +326,19 @@ export class VoiceRecordingService {
 
       if (dbError) {
         console.error('❌ Database save failed:', dbError);
+        console.error('🔍 Error details:', {
+          message: dbError.message,
+          code: dbError.code,
+          details: dbError.details,
+          hint: dbError.hint
+        });
+        console.error('📝 Failed payload details:', {
+          user_id: session.userId,
+          session_id: session.sessionId,
+          user_id_type: typeof session.userId,
+          user_id_length: session.userId.length,
+          is_guest: session.userId.startsWith('guest-')
+        });
         // Don't throw - audio is already uploaded
       } else {
         console.log('✅ Recording metadata saved:', dbData.id);
@@ -518,3 +531,51 @@ export class VoiceRecordingService {
 }
 
 export const voiceRecordingService = new VoiceRecordingService();
+
+// Test function to check if guest recordings work
+export const testGuestRecording = async () => {
+  try {
+    console.log('🧪 Testing guest recording functionality...');
+    
+    const guestUserId = `guest-${Date.now()}-test`;
+    console.log('👤 Test guest user ID:', guestUserId);
+    
+    // Test database insertion with guest ID
+    const { data, error } = await supabase
+      .from('voice_recordings')
+      .insert([{
+        user_id: guestUserId,
+        session_id: 'test-session-123',
+        recording_type: 'test',
+        storage_path: 'test/path.webm',
+        original_filename: 'test.webm',
+        file_size_bytes: 1000,
+        duration_seconds: 10.5,
+        mime_type: 'audio/webm;codecs=opus',
+        transcript_text: 'This is a test recording',
+        conversation_summary: 'Test recording for debugging',
+        session_mode: 'test'
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Test recording failed:', error);
+      return { success: false, error };
+    } else {
+      console.log('✅ Test recording succeeded:', data);
+      
+      // Clean up test record
+      await supabase
+        .from('voice_recordings')
+        .delete()
+        .eq('id', data.id);
+      
+      console.log('🧹 Test record cleaned up');
+      return { success: true, data };
+    }
+  } catch (error) {
+    console.error('❌ Test recording exception:', error);
+    return { success: false, error };
+  }
+};
