@@ -150,7 +150,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
                              year === currentYear || // Always show current year
                              hasMajorEvents; // Show years with major events/memories
     
-    if (isSignificantYear && (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear)) {
+    if (isSignificantYear && (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear || year === birthYear)) {
       timelineData.push({
         year,
         events: yearEvents,
@@ -837,21 +837,21 @@ const Timeline = () => {
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                // COMPACT DEFAULT: Start much smaller, use overlap checker to expand minimally
+                // FULL PAGE DEFAULT: Always start with one full page height minimum
                 const currentYear = new Date().getFullYear();
                 const sharedBirthYear = timelineProfile?.birth_date 
                   ? new Date(timelineProfile.birth_date).getFullYear() 
                   : timelineData[0]?.year || new Date().getFullYear();
                 const totalYears = currentYear - sharedBirthYear;
                 
-                // START VERY COMPACT: Try to fit in minimal space first
+                // ALWAYS ONE PAGE MINIMUM: Ensure timeline fills viewport height
                 const viewportHeight = window.innerHeight - 200;
-                const baseHeight = Math.min(400, viewportHeight * 0.5); // Much smaller: 400px max or 50% screen
+                const baseHeight = Math.max(viewportHeight * 0.9, 800); // Always at least 90% of screen or 800px minimum
                 
-                // Use dedicated overlap checker module with tighter spacing
-                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
+                // Use dedicated overlap checker module with generous spacing for readability
+                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
                 
-                console.log(`🎯 COMPACT TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
+                console.log(`🎯 FULL PAGE TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
                 
                 return overlapCheck.finalHeight;
               })()
@@ -863,9 +863,9 @@ const Timeline = () => {
               const totalYears = currentYear - sharedBirthYear;
               const viewportHeight = window.innerHeight - 200;
               
-              // Same logic as container: Start compact, use overlap checker with tighter spacing
-              const baseHeight = Math.min(400, viewportHeight * 0.5);
-              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 30);
+              // Same logic as container: Start with full page, use overlap checker with generous spacing
+              const baseHeight = Math.max(viewportHeight * 0.9, 800);
+              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
               
               // Final sizing - guaranteed to match container
               const pixelsPerYear = overlapCheck.finalHeight / totalYears;
@@ -879,21 +879,28 @@ const Timeline = () => {
                     style={{ height: `${totalHeight}px` }}
                   />
 
-                  {/* Timeline Content with proportional spacing */}
-                  {timelineData.map((yearData, index) => {
+                  {/* Timeline Content with proportional spacing - CHRONOLOGICAL ORDER */}
+                  {timelineData
+                    .sort((a, b) => a.year - b.year) // Sort chronologically: earliest year first (birth to current)
+                    .map((yearData, index) => {
                     const isMajorYear = yearData.significance === 'major';
                     // Consistent font size for all years for better alignment
                     const yearSize = 'text-2xl'; // Same size for all years
                     const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
                     const spacing = isMajorYear ? 'mb-6' : 'mb-4';
                     
-                    // Position proportionally from birth year to current year
+                    // Position proportionally from birth year (top) to current year (bottom)
                     const yearsFromBirth = yearData.year - sharedBirthYear;
-                    let topPosition = yearsFromBirth * pixelsPerYear + 50;
+                    let topPosition = (yearsFromBirth * pixelsPerYear) + 50; // Start 50px from top
                     
-                    // Special positioning for current year - align with end of timeline
+                    // Anchor birth year at the top
+                    if (yearData.year === sharedBirthYear) {
+                      topPosition = 50; // Fixed at top with small margin
+                    }
+                    
+                    // Anchor current year at the bottom
                     if (yearData.isCurrentYear) {
-                      topPosition = totalHeight - 100; // Position near end of timeline
+                      topPosition = totalHeight - 150; // Fixed at bottom with margin for content
                     }
                     
                     return (
@@ -1042,7 +1049,10 @@ const Timeline = () => {
                 <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg">
                   <div className="text-xs text-muted-foreground mb-2 px-2">Jump to:</div>
                   <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mini-scrollbar">
-                    {timelineData.slice().reverse().map((yearData) => (
+                    {timelineData
+                      .slice()
+                      .sort((a, b) => b.year - a.year) // Reverse chronological for navigation (newest first)
+                      .map((yearData) => (
                       <Button
                         key={yearData.year}
                         variant="ghost"
