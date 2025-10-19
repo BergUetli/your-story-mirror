@@ -115,26 +115,31 @@ const Archive = () => {
     }
   };
 
-  // Filter recordings based on search
+  // Filter and sort recordings
   const filterRecordings = (query: string) => {
-    if (!query.trim()) {
-      setFilteredRecordings(recordings);
-      return;
-    }
-
-    const queryLower = query.toLowerCase();
-    const filtered = recordings.filter(recording => {
-      const searchText = [
-        recording.transcript_text || '',
-        recording.conversation_summary || '',
-        ...(recording.topics || []),
-        ...(recording.memory_titles || [])
-      ].join(' ').toLowerCase();
-      
-      return searchText.includes(queryLower);
-    });
+    console.log('🔍 filterRecordings called:', { query, recordingsLength: recordings.length, sortBy });
     
-    setFilteredRecordings(filtered);
+    let filtered = recordings;
+    
+    if (query.trim()) {
+      const queryLower = query.toLowerCase();
+      filtered = recordings.filter(recording => {
+        const searchText = [
+          recording.transcript_text || '',
+          recording.conversation_summary || '',
+          ...(recording.topics || []),
+          ...(recording.memory_titles || [])
+        ].join(' ').toLowerCase();
+        
+        return searchText.includes(queryLower);
+      });
+    }
+    
+    // Apply sorting
+    const sorted = sortRecordings(filtered, sortBy);
+    
+    console.log('📊 Final result - filtered:', filtered.length, 'sorted:', sorted.length);
+    setFilteredRecordings(sorted);
   };
 
   // Sort recordings
@@ -161,12 +166,9 @@ const Archive = () => {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔄 Filter and sort effect triggered');
     filterRecordings(searchQuery);
-  }, [searchQuery, recordings]);
-
-  useEffect(() => {
-    setFilteredRecordings(prev => sortRecordings(prev, sortBy));
-  }, [sortBy]);
+  }, [searchQuery, recordings, sortBy]);
 
 
 
