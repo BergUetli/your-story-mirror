@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus, ChevronUp, ChevronDown, Play, Pause, Search } from 'lucide-react';
+import { EnhancedVoiceSearch } from '@/components/EnhancedVoiceSearch';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
@@ -205,11 +206,6 @@ const Timeline = () => {
   
   // Voice search state
   const [showVoiceSearch, setShowVoiceSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
   const fetchTimelineData = useCallback(async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000';
@@ -708,160 +704,7 @@ const Timeline = () => {
     }
   };
 
-  // Voice search functions
-  const performVoiceSearch = async () => {
-    if (!user?.id || !searchQuery.trim()) return;
 
-    setIsSearching(true);
-    try {
-      const query = searchQuery.trim().toLowerCase();
-      
-      // Search in voice recordings transcripts
-      const { data: recordings, error } = await supabase
-        .from('voice_recordings')
-        .select(`
-          id,
-          audio_path,
-          transcript,
-          session_summary,
-          duration_ms,
-          created_at,
-          memory_id,
-          memory_ids
-        `)
-        .eq('user_id', user.id)
-        .not('audio_path', 'is', null);
-
-      if (error) throw error;
-
-      // Filter recordings that contain the search query
-      const matchingRecordings = recordings?.filter(recording => {
-        const searchText = [
-          recording.transcript,
-          recording.session_summary
-        ].join(' ').toLowerCase();
-        
-        return searchText.includes(query);
-      }) || [];
-
-      // Also search audio artifacts
-      const { data: audioArtifacts, error: artifactError } = await supabase
-        .from('memory_artifacts')
-        .select(`
-          artifacts (
-            id,
-            file_name,
-            storage_path,
-            artifact_type,
-            created_at
-          ),
-          memory_id,
-          memories (
-            id,
-            title,
-            text
-          )
-        `)
-        .eq('artifacts.artifact_type', 'audio');
-
-      const matchingArtifacts = audioArtifacts?.filter(ma => {
-        const memory = ma.memories;
-        const artifact = ma.artifacts;
-        if (!memory || !artifact) return false;
-        
-        const searchText = [
-          memory.title,
-          memory.text,
-          artifact.file_name
-        ].join(' ').toLowerCase();
-        
-        return searchText.includes(query);
-      }) || [];
-
-      setSearchResults([
-        ...matchingRecordings.map(r => ({ ...r, type: 'recording' })),
-        ...matchingArtifacts.map(a => ({ ...a, type: 'artifact' }))
-      ]);
-
-      toast({
-        title: 'Search Complete',
-        description: `Found ${matchingRecordings.length} voice recordings and ${matchingArtifacts.length} audio files`,
-      });
-    } catch (error) {
-      console.error('Voice search error:', error);
-      toast({
-        title: 'Search Error',
-        description: 'Failed to search voice recordings',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const playSearchAudio = async (result: any) => {
-    try {
-      // Stop any currently playing audio
-      if (audioElement) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
-
-      const audioPath = result.type === 'recording' ? result.audio_path : result.artifacts.storage_path;
-      const bucket = result.type === 'recording' ? 'voice-recordings' : 'memory-images';
-
-      // Get signed URL
-      const { data: urlData } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(audioPath, 3600);
-
-      if (!urlData?.signedUrl) {
-        throw new Error('Failed to get audio URL');
-      }
-
-      // Create and play audio
-      const audio = new Audio(urlData.signedUrl);
-      audio.onended = () => {
-        setPlayingAudio(null);
-        setAudioElement(null);
-      };
-      
-      audio.onerror = () => {
-        toast({
-          title: 'Audio Error',
-          description: 'Failed to play audio',
-          variant: 'destructive'
-        });
-        setPlayingAudio(null);
-        setAudioElement(null);
-      };
-
-      await audio.play();
-      setPlayingAudio(result.id);
-      setAudioElement(audio);
-
-      toast({
-        title: 'Playing Audio',
-        description: result.type === 'recording' ? 'Voice recording playing' : 'Audio file playing',
-      });
-    } catch (error) {
-      console.error('Audio playback error:', error);
-      toast({
-        title: 'Playback Error',
-        description: 'Unable to play audio',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const stopSearchAudio = () => {
-    if (audioElement) {
-      audioElement.pause();
-      audioElement.currentTime = 0;
-    }
-    setPlayingAudio(null);
-    setAudioElement(null);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -1251,105 +1094,11 @@ const Timeline = () => {
         />
       )}
 
-      {/* Voice Search Dialog */}
-      <Dialog open={showVoiceSearch} onOpenChange={setShowVoiceSearch}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
-              Voice Search
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Search Input */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Search voice recordings and audio files..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && performVoiceSearch()}
-                className="flex-1"
-              />
-              <Button 
-                onClick={performVoiceSearch}
-                disabled={isSearching || !searchQuery.trim()}
-              >
-                {isSearching ? 'Searching...' : 'Search'}
-              </Button>
-            </div>
-
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-medium">Search Results ({searchResults.length})</h3>
-                {searchResults.map((result) => (
-                  <div key={`${result.type}-${result.id}`} className="border rounded-lg p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">
-                          {result.type === 'recording' ? (
-                            `Recording from ${new Date(result.created_at).toLocaleDateString()}`
-                          ) : (
-                            result.artifacts?.file_name || 'Audio File'
-                          )}
-                        </h4>
-                        <div className="text-sm text-muted-foreground">
-                          {result.type === 'recording' ? (
-                            <>
-                              {result.duration_ms && `${Math.round(result.duration_ms / 1000)}s • `}
-                              {result.session_summary && (
-                                <span className="truncate">{result.session_summary.slice(0, 100)}...</span>
-                              )}
-                            </>
-                          ) : (
-                            <>
-                              {result.memories?.title && (
-                                <span>From memory: {result.memories.title}</span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => playingAudio === result.id ? stopSearchAudio() : playSearchAudio(result)}
-                        className="flex-shrink-0 ml-2"
-                      >
-                        {playingAudio === result.id ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                    
-                    {/* Show transcript excerpt if available */}
-                    {result.transcript && (
-                      <div className="text-xs bg-muted/30 p-2 rounded">
-                        <strong>Transcript excerpt:</strong> {result.transcript.slice(0, 200)}...
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {searchResults.length === 0 && searchQuery && !isSearching && (
-              <div className="text-center py-8 text-muted-foreground">
-                No voice recordings or audio files found for "{searchQuery}"
-              </div>
-            )}
-
-            {!searchQuery && (
-              <div className="text-center py-8 text-muted-foreground">
-                Enter a search term to find voice recordings and audio files
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Enhanced Voice Search Dialog */}
+      <EnhancedVoiceSearch
+        open={showVoiceSearch}
+        onOpenChange={setShowVoiceSearch}
+      />
     </div>
   );
 };

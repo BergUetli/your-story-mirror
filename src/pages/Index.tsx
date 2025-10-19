@@ -1725,7 +1725,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           
           // Add AI message to voice recording transcript
           if (isRecording) {
-            voiceRecordingService.addTranscript(`AI: ${msg.delta}`);
+            voiceRecordingService.addTranscript(msg.delta, 'ai');
           }
         } else if (msg.source === 'user' && msg.message) {
           const userMessage = msg.message;
@@ -1733,7 +1733,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           
           // Add user message to voice recording transcript
           if (isRecording) {
-            voiceRecordingService.addTranscript(`User: ${userMessage}`);
+            voiceRecordingService.addTranscript(userMessage, 'user');
           }
           
           // Extract topics from user messages for smarter context
@@ -1749,7 +1749,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           
           // Add AI message to voice recording transcript
           if (isRecording) {
-            voiceRecordingService.addTranscript(`AI: ${msg.message}`);
+            voiceRecordingService.addTranscript(msg.message, 'ai');
           }
         }
       }
@@ -1993,6 +1993,19 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           if (conversation.status !== 'disconnected') {
             console.log('🔄 Force disconnecting...');
             conversation.disconnect();
+          }
+          
+          // Stop voice recording if active
+          if (isRecording && recordingSessionId) {
+            try {
+              console.log('🛑 Stopping voice recording due to conversation end...');
+              await voiceRecordingService.stopRecording();
+              setIsRecording(false);
+              setRecordingSessionId(null);
+              console.log('✅ Voice recording stopped and saved');
+            } catch (error) {
+              console.error('⚠️ Failed to stop voice recording:', error);
+            }
           }
           
           // Clear all conversation state

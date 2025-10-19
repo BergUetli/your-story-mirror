@@ -14,6 +14,12 @@ export interface RecordingConfig {
   channelCount: number;
 }
 
+export interface TranscriptEntry {
+  timestamp: number; // Milliseconds from session start
+  speaker: 'user' | 'ai';
+  text: string;
+}
+
 export interface RecordingSession {
   sessionId: string;
   userId: string;
@@ -22,7 +28,7 @@ export interface RecordingSession {
   mediaRecorder: MediaRecorder | null;
   audioChunks: Blob[];
   isRecording: boolean;
-  conversationTranscript: string[];
+  conversationTranscript: TranscriptEntry[];
   memoryIds: string[];
 }
 
@@ -152,11 +158,16 @@ export class VoiceRecordingService {
   }
 
   /**
-   * Add transcript text to current session
+   * Add transcript text to current session with timestamp
    */
-  addTranscript(text: string): void {
-    if (this.currentSession) {
-      this.currentSession.conversationTranscript.push(text);
+  addTranscript(text: string, speaker: 'user' | 'ai' = 'user'): void {
+    if (this.currentSession && text.trim()) {
+      const timestamp = Date.now() - this.currentSession.startTime.getTime();
+      this.currentSession.conversationTranscript.push({
+        timestamp,
+        speaker,
+        text: text.trim()
+      });
     }
   }
 
@@ -244,9 +255,12 @@ export class VoiceRecordingService {
       console.log('✅ Audio uploaded successfully:', uploadData.path);
 
       // Prepare transcript and topics
-      const fullTranscript = session.conversationTranscript.join(' ');
-      const topics = this.extractTopics(fullTranscript);
-      const summary = this.generateSummary(fullTranscript, session.memoryIds.length);
+      const fullTranscript = session.conversationTranscript
+        .map(entry => `[${Math.floor(entry.timestamp / 1000)}s] ${entry.speaker.toUpperCase()}: ${entry.text}`)
+        .join('\n');
+      const plainText = session.conversationTranscript.map(entry => entry.text).join(' ');
+      const topics = this.extractTopics(plainText);
+      const summary = this.generateSummary(plainText, session.memoryIds.length);
 
       // Save metadata to database
       const metadata: VoiceRecordingMetadata = {
