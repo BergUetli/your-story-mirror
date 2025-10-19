@@ -14,6 +14,39 @@ const DatabaseCleanup = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  const resetOnboardingOnly = async () => {
+    if (!user) {
+      setError('Must be logged in to reset onboarding');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Resetting onboarding status...');
+
+    try {
+      const { error: onboardingError } = await supabase
+        .from('users')
+        .update({ onboarding_completed: false })
+        .eq('user_id', user.id);
+
+      if (onboardingError) {
+        throw onboardingError;
+      }
+
+      setResults(['✅ Onboarding status reset successfully!', '🎯 First Conversation will trigger on next page visit']);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Onboarding reset failed:', err);
+      setError(`Onboarding reset failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
   const clearDatabase = async () => {
     if (!user) {
       setError('Must be logged in to perform cleanup');
@@ -82,7 +115,21 @@ const DatabaseCleanup = () => {
         setResults(prev => [...prev, '✅ Voice recordings cleared']);
       }
 
-      // Step 5: Verify cleanup
+      // Step 5: Reset onboarding status to trigger First Conversation
+      setClearingStep('Resetting onboarding status...');
+      const { error: onboardingError } = await supabase
+        .from('users')
+        .update({ onboarding_completed: false })
+        .eq('user_id', user.id);
+
+      if (onboardingError) {
+        console.warn('Onboarding reset error:', onboardingError);
+        setResults(prev => [...prev, `⚠️ Onboarding reset: ${onboardingError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ Onboarding status reset - First Conversation will trigger']);
+      }
+
+      // Step 6: Verify cleanup
       setClearingStep('Verifying cleanup...');
       
       const { count: memoryCount } = await supabase
@@ -101,7 +148,7 @@ const DatabaseCleanup = () => {
 
       if ((memoryCount || 0) === 0 && (artifactCount || 0) === 0) {
         setSuccess(true);
-        setResults(prev => [...prev, '🎉 Database cleanup completed successfully!']);
+        setResults(prev => [...prev, '🎉 Database cleanup completed successfully!', '🎯 First Conversation onboarding will trigger on next page visit']);
       } else {
         setResults(prev => [...prev, '⚠️ Some data may still remain. Check timeline.']);
       }
@@ -157,6 +204,7 @@ const DatabaseCleanup = () => {
                 <li>• All artifacts (photos, documents, etc.)</li>
                 <li>• All memory-artifact relationships</li>
                 <li>• All voice recordings</li>
+                <li>• Onboarding status (First Conversation will trigger)</li>
               </ul>
             </div>
 
@@ -169,24 +217,35 @@ const DatabaseCleanup = () => {
               </ul>
             </div>
 
-            <Button 
-              onClick={clearDatabase} 
-              disabled={isClearing}
-              variant="destructive" 
-              className="w-full"
-            >
-              {isClearing ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {clearingStep || 'Clearing database...'}
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Clear All Data
-                </>
-              )}
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={clearDatabase} 
+                disabled={isClearing}
+                variant="destructive" 
+                className="w-full"
+              >
+                {isClearing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {clearingStep || 'Clearing database...'}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear All Data
+                  </>
+                )}
+              </Button>
+
+              <Button 
+                onClick={resetOnboardingOnly} 
+                disabled={isClearing}
+                variant="outline" 
+                className="w-full"
+              >
+                Reset Onboarding Only
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
