@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -169,6 +169,21 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
       loadVoiceRecordings();
     }
   }, [open, memory?.id]);
+
+  // Keyboard shortcut for saving (Ctrl/Cmd + S)
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (isEditing && (event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault();
+      handleSaveEdit();
+    }
+  }, [isEditing]);
+
+  useEffect(() => {
+    if (open) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [open, handleKeyDown]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -442,10 +457,10 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
-                  className="gap-2 border-2 border-primary/30 hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="gap-2 border-2 border-primary/40 text-primary hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md font-medium"
                 >
                   <Edit2 className="w-4 h-4" />
-                  Edit
+                  Edit Memory
                 </Button>
                 <Button
                   variant="outline"
@@ -457,6 +472,11 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                   <Trash2 className="w-4 h-4" />
                   {isDeleting ? 'Deleting...' : 'Delete'}
                 </Button>
+              </div>
+            )}
+            {isEditing && (
+              <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/20 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800">
+                💡 <strong>Editing mode:</strong> Make your changes below and click "Save Memory" when finished.
               </div>
             )}
           </div>
@@ -516,15 +536,19 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                 />
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-4 border-t border-border/50">
                 <Button
                   onClick={handleSaveEdit}
                   disabled={isSaving}
-                  className="gap-2 border-2 border-primary hover:border-primary/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="flex-1 sm:flex-none gap-2 bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-primary hover:border-primary/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg font-medium"
+                  size="lg"
                 >
-                  <Save className="w-4 h-4" />
-                  {isSaving ? 'Saving...' : 'Save Changes'}
+                  <Save className="w-5 h-5" />
+                  {isSaving ? 'Saving Changes...' : 'Save Memory'}
                 </Button>
+                <div className="hidden sm:block text-xs text-muted-foreground ml-2">
+                  Ctrl/Cmd + S
+                </div>
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -536,7 +560,8 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                     setEditTags(memory.tags || []);
                   }}
                   disabled={isSaving}
-                  className="border-2 border-muted-foreground/20 hover:border-muted-foreground hover:bg-muted/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                  className="border-2 border-muted-foreground/30 hover:border-muted-foreground hover:bg-muted/50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                  size="lg"
                 >
                   Cancel
                 </Button>
