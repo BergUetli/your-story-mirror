@@ -75,11 +75,7 @@ const AppContent = () => {
             <Timeline />
           </ProtectedRoute>
         } />
-        <Route path="/archive" element={
-          <ProtectedRoute>
-            <Archive />
-          </ProtectedRoute>
-        } />
+        <Route path="/archive" element={<Archive />} />
         <Route path="/story" element={
           <ProtectedRoute>
             <Story />
