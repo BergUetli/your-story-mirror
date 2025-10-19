@@ -83,10 +83,14 @@ export class VoiceRecordingService {
       });
 
       // Create MediaRecorder with compression
+      console.log('📹 Creating MediaRecorder with config:', this.DEFAULT_CONFIG);
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: this.DEFAULT_CONFIG.mimeType,
         audioBitsPerSecond: this.DEFAULT_CONFIG.audioBitsPerSecond
       });
+      
+      console.log('✅ MediaRecorder created successfully');
+      console.log('🎤 MediaRecorder state:', mediaRecorder.state);
 
       // Initialize session
       this.currentSession = {
@@ -113,10 +117,18 @@ export class VoiceRecordingService {
       };
 
       // Start recording
+      console.log('🔴 Starting MediaRecorder...');
       mediaRecorder.start(5000); // Collect chunks every 5 seconds
       this.currentSession.isRecording = true;
 
-      console.log('✅ Voice recording started:', sessionId);
+      console.log('✅ Voice recording started successfully!');
+      console.log('🎤 Session details:', {
+        sessionId,
+        userId,
+        sessionMode,
+        recorderState: mediaRecorder.state,
+        isRecording: this.currentSession.isRecording
+      });
       return sessionId;
 
     } catch (error) {
@@ -253,6 +265,7 @@ export class VoiceRecordingService {
       }
 
       console.log('✅ Audio uploaded successfully:', uploadData.path);
+      console.log('📁 File details:', { size: audioBlob.size, duration, type: audioBlob.type });
 
       // Prepare transcript and topics
       const fullTranscript = session.conversationTranscript
@@ -263,6 +276,7 @@ export class VoiceRecordingService {
       const summary = this.generateSummary(plainText, session.memoryIds.length);
 
       // Save metadata to database
+      console.log('💾 Preparing database record...');
       const metadata: VoiceRecordingMetadata = {
         sessionId: session.sessionId,
         recordingType: session.memoryIds.length > 0 ? 'memory_creation' : 'conversation',
@@ -276,6 +290,16 @@ export class VoiceRecordingService {
         conversationPhase: 'completed'
       };
 
+      console.log('💾 Saving to voice_recordings table...');
+      console.log('📝 Database payload:', {
+        user_id: session.userId,
+        session_id: session.sessionId,
+        recording_type: metadata.recordingType,
+        storage_path: uploadData.path,
+        duration_seconds: metadata.duration,
+        file_size_bytes: audioBlob.size
+      });
+      
       const { data: dbData, error: dbError } = await supabase
         .from('voice_recordings')
         .insert([{
