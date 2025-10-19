@@ -954,37 +954,38 @@ const Story = () => {
             <span className="text-xs text-slate-600 font-medium mr-2">
               Ctrl+Wheel to zoom • Shift+Drag to pan • Arrow keys to turn pages
             </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleZoomOut}
-            disabled={zoomLevel <= 0.5}
-            className="text-slate-600 border-slate-300"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </Button>
-          <span className="text-sm text-slate-600 font-medium min-w-[60px] text-center">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleZoomIn}
-            disabled={zoomLevel >= 2}
-            className="text-slate-600 border-slate-300"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </Button>
-          {(zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={handleResetZoom}
-              className="text-slate-600"
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              className="text-slate-600 border-slate-300"
             >
-              <RefreshCw className="w-4 h-4" />
+              <ZoomOut className="w-4 h-4" />
             </Button>
-          )}
+            <span className="text-sm text-slate-600 font-medium min-w-[60px] text-center">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 2}
+              className="text-slate-600 border-slate-300"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+            {(zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetZoom}
+                className="text-slate-600"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </nav>
 
