@@ -10,6 +10,7 @@ import { MetricsPanel } from '@/components/admin/MetricsPanel';
 import { SystemStatusPanel } from '@/components/admin/SystemStatusPanel';
 import { PerformancePanel } from '@/components/admin/PerformancePanel';
 import DatabaseManagementPanel from '@/components/admin/DatabaseManagementPanel';
+import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -24,7 +25,8 @@ import {
   Clock,
   AlertTriangle,
   CheckCircle,
-  Trash2
+  Trash2,
+  Cog
 } from 'lucide-react';
 
 const Admin = () => {
@@ -192,7 +194,7 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-6 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
               Diagnostics
@@ -208,6 +210,10 @@ const Admin = () => {
             <TabsTrigger value="system" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Settings className="w-4 h-4" />
               System Status
+            </TabsTrigger>
+            <TabsTrigger value="config" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Cog className="w-4 h-4" />
+              Configuration
             </TabsTrigger>
             <TabsTrigger value="database" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Trash2 className="w-4 h-4" />
@@ -229,6 +235,10 @@ const Admin = () => {
 
           <TabsContent value="system" className="space-y-6">
             <SystemStatusPanel systemStatus={systemStatus} />
+          </TabsContent>
+
+          <TabsContent value="config" className="space-y-6">
+            <ConfigurationPanel />
           </TabsContent>
 
           <TabsContent value="database" className="space-y-6">

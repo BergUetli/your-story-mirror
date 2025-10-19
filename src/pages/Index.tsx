@@ -12,6 +12,7 @@ import { voiceRecordingService } from '@/services/voiceRecording';
 import { soundEffects } from '@/services/soundEffects';
 import { FirstConversationDialog } from '@/components/FirstConversationDialog';
 import { userProfileService } from '@/services/userProfileService';
+import { configurationService } from '@/services/configurationService';
 // Dummy mode removed - always use real authentication
 import { 
   Heart, 
@@ -1980,9 +1981,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       setIsEndingConversation(true);
       
       // Show immediate feedback
+      const timeoutSeconds = Math.round(configurationService.getConversationEndTimeout() / 1000);
       toast({ 
         title: 'Ending conversation...', 
-        description: 'Solin will say goodbye and wrap up naturally. The session will end automatically when Solin finishes speaking.',
+        description: `Solin will say goodbye and wrap up naturally. The session will end automatically when Solin finishes speaking (max ${timeoutSeconds}s).`,
         duration: 6000
       });
       
@@ -2045,7 +2047,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           console.error('Error in forced session end:', endError);
           setIsEndingConversation(false);
         }
-      }, 120000); // 2 minute timeout
+      }, configurationService.getConversationEndTimeout()); // Use configurable timeout
       
       // Also monitor for when Solin finishes speaking naturally
       const checkSpeakingStatus = () => {
@@ -2055,7 +2057,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         if (!conversation.isSpeaking && conversation.status === 'connected') {
           console.log('🎯 Solin finished speaking - ending conversation gracefully...');
           
-          // Wait 5 more seconds after Solin stops speaking to ensure natural completion
+          // Wait configured grace period after Solin stops speaking to ensure natural completion
           setTimeout(() => {
             if (hasEnded) return;
             hasEnded = true;
@@ -2097,15 +2099,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 description: 'Session saved. Check your Timeline for memories!' 
               });
             }
-          }, 5000); // 5 second grace period after Solin stops speaking
+          }, configurationService.getNaturalEndGracePeriod()); // Use configurable grace period
         } else {
-          // Check again in 1 second
-          setTimeout(checkSpeakingStatus, 1000);
+          // Check again at configured interval
+          setTimeout(checkSpeakingStatus, configurationService.getSpeakingCheckInterval());
         }
       };
       
       // Start monitoring Solin's speaking status
-      setTimeout(checkSpeakingStatus, 3000); // Start checking after 3 seconds
+      setTimeout(checkSpeakingStatus, configurationService.getSpeakingCheckInterval()); // Start checking at configured interval
       
     } catch (error) {
       console.error('Error ending conversation:', error);
