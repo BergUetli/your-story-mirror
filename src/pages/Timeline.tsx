@@ -275,14 +275,40 @@ const Timeline = () => {
         
         // Fetch voice recordings that reference these memories
         const memoryIds = memories.map(m => m.id);
-        const { data: voiceRecordings } = await supabase
+        
+        // Try both memory_id and memory_ids fields to handle different schema versions
+        const { data: voiceRecordingsById } = await supabase
+          .from('voice_recordings')
+          .select('memory_id')
+          .eq('user_id', userId)
+          .not('memory_id', 'is', null)
+          .in('memory_id', memoryIds);
+          
+        const { data: voiceRecordingsByIds } = await supabase
           .from('voice_recordings')
           .select('memory_ids')
           .eq('user_id', userId)
           .not('memory_ids', 'is', null);
         
-        if (voiceRecordings) {
-          for (const recording of voiceRecordings) {
+        console.log('🎤 Timeline: Voice recordings debug:', {
+          memoryIds,
+          voiceRecordingsById,
+          voiceRecordingsByIds,
+          userCount: memories.length
+        });
+        
+        // Add recordings from memory_id field (singular)
+        if (voiceRecordingsById) {
+          for (const recording of voiceRecordingsById) {
+            if (recording.memory_id) {
+              voiceRecordingSet.add(recording.memory_id);
+            }
+          }
+        }
+        
+        // Add recordings from memory_ids field (plural array)
+        if (voiceRecordingsByIds) {
+          for (const recording of voiceRecordingsByIds) {
             if (recording.memory_ids && Array.isArray(recording.memory_ids)) {
               for (const memoryId of recording.memory_ids) {
                 if (memoryIds.includes(memoryId)) {

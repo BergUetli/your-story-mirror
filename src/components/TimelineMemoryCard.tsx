@@ -19,6 +19,18 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
   hasVoiceRecording = false
 }) => {
   const { signedUrl } = useArtifactImage(artifact?.storage_path || null);
+  
+  // Debug logging to see what data we're getting
+  console.log('🎴 TimelineMemoryCard Debug:', {
+    title: memory.title,
+    hasVoiceRecording,
+    artifact: artifact ? {
+      type: artifact.artifact_type,
+      path: artifact.storage_path
+    } : null,
+    imageUrls: memory.image_urls,
+    imageUrlsLength: memory.image_urls?.length || 0
+  });
 
   return (
     <Card
@@ -55,28 +67,32 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
                 {memory.title}
               </h3>
               
-              {/* Media indicators */}
+              {/* Media indicators - Made more visible */}
               <div className="flex items-center gap-1 flex-shrink-0">
                 {/* Voice recording indicator */}
                 {hasVoiceRecording && (
-                  <Music 
-                    className="w-3 h-3 text-primary" 
-                    title="This memory has voice recording"
-                  />
+                  <div className="w-4 h-4 rounded-sm bg-purple-100 flex items-center justify-center" title="This memory has voice recording">
+                    <Music className="w-3 h-3 text-purple-600" />
+                  </div>
                 )}
                 
                 {/* Image indicator */}
                 {(memory.image_urls?.length > 0 || artifact?.artifact_type === 'image') && (
-                  <div className="w-3 h-3 rounded-sm bg-blue-100 flex items-center justify-center">
-                    <span className="text-[8px] text-blue-600 font-bold">📷</span>
+                  <div className="w-4 h-4 rounded-sm bg-blue-100 flex items-center justify-center" title="This memory has images">
+                    <span className="text-[10px] text-blue-600 font-bold">📷</span>
                   </div>
                 )}
                 
                 {/* Audio file indicator (different from voice recording) */}
                 {artifact?.artifact_type === 'audio' && (
-                  <div className="w-3 h-3 rounded-sm bg-green-100 flex items-center justify-center">
-                    <span className="text-[8px] text-green-600 font-bold">🎵</span>
+                  <div className="w-4 h-4 rounded-sm bg-green-100 flex items-center justify-center" title="This memory has audio files">
+                    <span className="text-[10px] text-green-600 font-bold">🎵</span>
                   </div>
+                )}
+                
+                {/* Debug indicator - shows if we have any media data */}
+                {(hasVoiceRecording || memory.image_urls?.length > 0 || artifact) && (
+                  <div className="w-2 h-2 rounded-full bg-red-500" title="DEBUG: Media detected" />
                 )}
               </div>
             </div>
