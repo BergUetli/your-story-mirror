@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2, Play, Pause } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,6 +40,53 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [editLocation, setEditLocation] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Voice recording and audio playback state
+  const [voiceRecordings, setVoiceRecordings] = useState<any[]>([]);
+  const [loadingRecordings, setLoadingRecordings] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+
+  // Load voice recordings for this memory
+  const loadVoiceRecordings = async () => {
+    if (!memory?.id) return;
+    
+    setLoadingRecordings(true);
+    try {
+      // Check both memory_id and memory_ids fields
+      const { data: recordingsById, error: error1 } = await supabase
+        .from('voice_recordings')
+        .select('*')
+        .eq('memory_id', memory.id);
+        
+      const { data: recordingsByIds, error: error2 } = await supabase
+        .from('voice_recordings')
+        .select('*')
+        .contains('memory_ids', [memory.id]);
+
+      if (error1 && error2) {
+        console.error('Failed to load voice recordings:', error1, error2);
+        return;
+      }
+
+      const allRecordings = [
+        ...(recordingsById || []),
+        ...(recordingsByIds || [])
+      ];
+
+      // Remove duplicates based on ID
+      const uniqueRecordings = allRecordings.filter((recording, index, self) =>
+        index === self.findIndex((r) => r.id === recording.id)
+      );
+
+      setVoiceRecordings(uniqueRecordings);
+      console.log('🎤 Loaded voice recordings for memory:', uniqueRecordings);
+    } catch (error) {
+      console.error('Failed to load voice recordings:', error);
+    } finally {
+      setLoadingRecordings(false);
+    }
+  };
 
   // Load artifacts and their signed URLs when dialog opens
   const loadArtifacts = async () => {
@@ -115,10 +162,11 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
     }
   }, [memory]);
 
-  // Load artifacts when dialog opens
+  // Load artifacts and voice recordings when dialog opens
   useEffect(() => {
     if (open && memory?.id) {
       loadArtifacts();
+      loadVoiceRecordings();
     }
   }, [open, memory?.id]);
 
@@ -309,6 +357,68 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
     }
   };
 
+  // Audio playback functions
+  const playAudio = async (audioPath: string, recordingId: string) => {
+    try {
+      // Stop any currently playing audio
+      if (audioElement) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
+
+      // Get signed URL for the audio file
+      const { data: urlData } = await supabase.storage
+        .from('voice-recordings')
+        .createSignedUrl(audioPath, 3600);
+
+      if (!urlData?.signedUrl) {
+        throw new Error('Failed to get audio URL');
+      }
+
+      // Create new audio element
+      const audio = new Audio(urlData.signedUrl);
+      audio.onended = () => {
+        setPlayingAudio(null);
+        setAudioElement(null);
+      };
+      
+      audio.onerror = () => {
+        toast({
+          title: 'Audio Error',
+          description: 'Failed to play audio recording',
+          variant: 'destructive'
+        });
+        setPlayingAudio(null);
+        setAudioElement(null);
+      };
+
+      await audio.play();
+      setPlayingAudio(recordingId);
+      setAudioElement(audio);
+
+      toast({
+        title: 'Playing Audio',
+        description: 'Voice recording is now playing',
+      });
+    } catch (error) {
+      console.error('Audio playback error:', error);
+      toast({
+        title: 'Playback Error', 
+        description: 'Unable to play audio recording',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const stopAudio = () => {
+    if (audioElement) {
+      audioElement.pause();
+      audioElement.currentTime = 0;
+    }
+    setPlayingAudio(null);
+    setAudioElement(null);
+  };
+
   const getArtifactIcon = (type: string) => {
     switch (type) {
       case 'image': return <ImageIcon className="w-4 h-4" />;
@@ -471,6 +581,44 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
             </>
           )}
 
+          {/* Voice Recordings Section */}
+          {voiceRecordings.length > 0 && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                <FileAudio className="w-4 h-4" />
+                Voice Recordings ({voiceRecordings.length})
+              </h3>
+              <div className="space-y-2">
+                {voiceRecordings.map((recording) => (
+                  <div key={recording.id} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => playingAudio === recording.id ? stopAudio() : playAudio(recording.audio_path, recording.id)}
+                      className="flex-shrink-0"
+                    >
+                      {playingAudio === recording.id ? (
+                        <Pause className="w-4 h-4" />
+                      ) : (
+                        <Play className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        Recording from {new Date(recording.created_at).toLocaleString()}
+                      </div>
+                      {recording.duration_ms && (
+                        <div className="text-xs text-muted-foreground">
+                          Duration: {Math.round(recording.duration_ms / 1000)}s
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Existing Images */}
           {memory.image_urls && memory.image_urls.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -549,6 +697,44 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                     );
                   }
 
+                  // Handle audio artifacts with playback
+                  if (artifact.artifact_type === 'audio') {
+                    return (
+                      <div
+                        key={artifact.id}
+                        className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group"
+                      >
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => playingAudio === `artifact-${artifact.id}` ? stopAudio() : playAudio(artifact.storage_path, `artifact-${artifact.id}`)}
+                          className="flex-shrink-0"
+                        >
+                          {playingAudio === `artifact-${artifact.id}` ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm block truncate">{artifact.file_name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {(artifact.file_size / 1024).toFixed(1)} KB • Audio File
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                          onClick={() => handleDeleteArtifact(artifact.id)}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  // Handle other artifact types
                   return (
                     <div
                       key={artifact.id}

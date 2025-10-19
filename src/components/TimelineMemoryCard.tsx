@@ -20,17 +20,7 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
 }) => {
   const { signedUrl } = useArtifactImage(artifact?.storage_path || null);
   
-  // Debug logging to see what data we're getting
-  console.log('🎴 TimelineMemoryCard Debug:', {
-    title: memory.title,
-    hasVoiceRecording,
-    artifact: artifact ? {
-      type: artifact.artifact_type,
-      path: artifact.storage_path
-    } : null,
-    imageUrls: memory.image_urls,
-    imageUrlsLength: memory.image_urls?.length || 0
-  });
+
 
   return (
     <Card
@@ -90,10 +80,7 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
                   </div>
                 )}
                 
-                {/* Debug indicator - shows if we have any media data */}
-                {(hasVoiceRecording || memory.image_urls?.length > 0 || artifact) && (
-                  <div className="w-2 h-2 rounded-full bg-red-500" title="DEBUG: Media detected" />
-                )}
+
               </div>
             </div>
             <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
