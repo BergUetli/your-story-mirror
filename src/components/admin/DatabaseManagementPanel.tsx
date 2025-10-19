@@ -11,10 +11,13 @@ import {
   RefreshCw, 
   Database,
   User,
-  RotateCcw 
+  RotateCcw,
+  Settings,
+  ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { databaseSetup } from '@/services/databaseSetup';
 
 const DatabaseManagementPanel = () => {
   const { user, checkOnboardingStatus } = useAuth();
@@ -269,32 +272,13 @@ const DatabaseManagementPanel = () => {
     setClearingStep('Checking voice_recordings table...');
 
     try {
-      // Try to query the voice_recordings table
-      const { data, error } = await supabase
-        .from('voice_recordings')
-        .select('id')
-        .limit(1);
-
-      if (error) {
-        if (error.message.includes('voice_recordings') && 
-            (error.message.includes('does not exist') || 
-             error.message.includes('not found') ||
-             error.message.includes('schema cache'))) {
-          setResults([
-            '❌ voice_recordings table does not exist',
-            '🔧 The Archive feature requires this table to be created',
-            '📋 Use the "Create Voice Recordings Table" button below to fix this issue'
-          ]);
-        } else {
-          throw error;
-        }
-      } else {
-        setResults([
-          '✅ voice_recordings table exists and is accessible',
-          `📊 Table is ready for Archive feature`,
-          '🎯 Archive page should work properly now'
-        ]);
+      const result = await databaseSetup.checkVoiceRecordingsTable();
+      
+      if (result.success) {
+        setResults(result.details || [result.message]);
         setSuccess(true);
+      } else {
+        setResults(result.details || [result.message]);
       }
     } catch (err: any) {
       console.error('Table check failed:', err);
@@ -303,6 +287,46 @@ const DatabaseManagementPanel = () => {
       setIsClearing(false);
       setClearingStep('');
     }
+  };
+
+  const checkAllTables = async () => {
+    if (!user) {
+      setError('Must be logged in as admin');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Checking all required tables...');
+
+    try {
+      const result = await databaseSetup.checkAllRequiredTables();
+      
+      if (result.success) {
+        setResults(result.details || [result.message]);
+        setSuccess(true);
+      } else {
+        setResults(result.details || [result.message]);
+      }
+    } catch (err: any) {
+      console.error('Table check failed:', err);
+      setError(`Table check failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
+  const getSetupInstructions = () => {
+    setIsClearing(false);
+    setError(null);
+    setClearingStep('');
+    
+    const result = databaseSetup.getSetupInstructions();
+    setResults(result.details || [result.message]);
+    setSuccess(false);
   };
 
   return (
@@ -433,43 +457,66 @@ const DatabaseManagementPanel = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert className="border-red-500/20 bg-red-500/10">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+            <AlertDescription className="text-red-200">
+              <strong>Archive Load Failed Fix:</strong> If you're seeing "Archive Load Failed" errors, 
+              the voice_recordings table is missing and needs to be created manually in Supabase.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <Button 
+              onClick={checkVoiceRecordingsTable} 
+              disabled={isClearing}
+              variant="outline" 
+              className="w-full"
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Check Archive Table
+            </Button>
+            
+            <Button 
+              onClick={checkAllTables} 
+              disabled={isClearing}
+              variant="outline" 
+              className="w-full"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Check All Tables
+            </Button>
+            
+            <Button 
+              onClick={getSetupInstructions} 
+              disabled={isClearing}
+              variant="secondary" 
+              className="w-full"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Get Fix Instructions
+            </Button>
+          </div>
+          
           <div className="space-y-3">
-            <h4 className="font-semibold text-slate-200">Voice Archive Feature Setup</h4>
-            <p className="text-sm text-slate-300">
-              The Archive page requires a voice_recordings table to store conversation metadata.
-              Use this tool to check if the table exists and create it if needed.
-            </p>
-            
-            <div className="grid gap-3 md:grid-cols-2">
-              <Button 
-                onClick={checkVoiceRecordingsTable} 
-                disabled={isClearing}
-                variant="outline" 
-                className="w-full"
-              >
-                <Database className="h-4 w-4 mr-2" />
-                Check Voice Recordings Table
-              </Button>
-              
-              <Alert className="border-yellow-500/20 bg-yellow-500/10 p-3">
-                <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                <AlertDescription className="text-yellow-200 text-xs">
-                  <strong>Note:</strong> If the table doesn't exist, you'll need to create it manually 
-                  in the Supabase SQL Editor using the provided SQL file.
-                </AlertDescription>
-              </Alert>
-            </div>
-            
-            <div className="mt-4 p-3 bg-slate-900/50 rounded-lg">
-              <p className="text-sm text-slate-300 mb-2">
-                <strong>Quick Fix Instructions:</strong>
-              </p>
-              <ol className="text-xs text-slate-400 space-y-1 ml-4">
-                <li>1. Go to your Supabase Dashboard → SQL Editor</li>
-                <li>2. Copy contents from: <code className="bg-slate-800 px-1 rounded">fix_voice_recordings.sql</code></li>
-                <li>3. Run the SQL to create the voice_recordings table</li>
-                <li>4. Return here and click "Check Voice Recordings Table"</li>
-              </ol>
+            <div className="p-4 bg-slate-900/50 rounded-lg border border-slate-600">
+              <h4 className="font-semibold text-slate-200 mb-2 flex items-center gap-2">
+                🚨 Quick Fix for "Archive Load Failed"
+              </h4>
+              <div className="text-sm text-slate-300 space-y-2">
+                <p><strong>Problem:</strong> voice_recordings table doesn't exist in database</p>
+                <p><strong>Solution:</strong> Create table manually using SQL script</p>
+                
+                <div className="mt-3 p-3 bg-slate-800 rounded text-xs">
+                  <p className="text-green-400 font-medium mb-1">STEPS TO FIX:</p>
+                  <ol className="space-y-1 text-slate-300">
+                    <li>1. Open <span className="text-blue-300">Supabase Dashboard</span></li>
+                    <li>2. Go to <span className="text-blue-300">SQL Editor</span></li>
+                    <li>3. Copy contents from <code className="bg-slate-700 px-1 rounded">fix_voice_recordings.sql</code></li>
+                    <li>4. Run the SQL script</li>
+                    <li>5. Click "Check Archive Table" above to verify</li>
+                  </ol>
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>

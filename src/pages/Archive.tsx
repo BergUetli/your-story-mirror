@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ArrowLeft, 
   Database, 
@@ -13,7 +14,9 @@ import {
   SortDesc,
   Archive as ArchiveIcon,
   FileAudio,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +33,7 @@ const Archive = () => {
   const [filteredRecordings, setFilteredRecordings] = useState<VoiceSearchResult[]>([]);
   const [selectedRecording, setSelectedRecording] = useState<VoiceSearchResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'memories'>('date');
   
@@ -38,6 +42,7 @@ const Archive = () => {
     if (!user?.id) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       console.log('📚 Loading all voice recordings for Archive...');
       const allRecordings = await aiVoiceSearch.getAllVoiceRecordings(user.id);
@@ -63,12 +68,14 @@ const Archive = () => {
                             errorMessage.includes('schema cache'));
       
       if (isTableMissing) {
+        setError('Archive Feature Not Set Up');
         toast({
           title: 'Archive Feature Not Set Up',
-          description: 'The voice recordings table needs to be created. Please contact an administrator to set up the Archive feature.',
+          description: 'The voice recordings table needs to be created. Please see the instructions on this page.',
           variant: 'destructive'
         });
       } else {
+        setError(errorMessage);
         toast({
           title: 'Archive Load Failed',
           description: errorMessage,
@@ -228,6 +235,70 @@ const Archive = () => {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 <span className="ml-2 text-muted-foreground">Loading voice archive...</span>
+              </div>
+            ) : error && error.includes('Archive Feature Not Set Up') ? (
+              <div className="text-center py-12 px-6">
+                <Database className="w-16 h-16 text-red-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-4 text-red-400">
+                  Archive Feature Setup Required
+                </h3>
+                <div className="max-w-2xl mx-auto space-y-4">
+                  <Alert className="border-red-500/20 bg-red-500/10 text-left">
+                    <AlertTriangle className="h-4 w-4 text-red-400" />
+                    <AlertDescription className="text-red-200">
+                      <strong>Missing Database Table:</strong> The voice_recordings table doesn't exist in the database.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="bg-slate-900/50 p-4 rounded-lg text-left">
+                    <h4 className="font-semibold mb-3 text-green-400">🛠️ Quick Fix Steps:</h4>
+                    <ol className="space-y-2 text-sm text-slate-300">
+                      <li className="flex gap-2">
+                        <span className="bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center flex-shrink-0">1</span>
+                        Go to your <strong>Supabase Dashboard</strong>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center flex-shrink-0">2</span>
+                        Navigate to <strong>SQL Editor</strong>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center flex-shrink-0">3</span>
+                        Copy contents from <code className="bg-slate-800 px-2 py-1 rounded">fix_voice_recordings.sql</code> in project root
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center flex-shrink-0">4</span>
+                        Run the SQL script to create the table
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="bg-blue-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center flex-shrink-0">5</span>
+                        Refresh this page - Archive will work immediately!
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={() => window.location.reload()} 
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Refresh Page
+                    </Button>
+                    <Button 
+                      onClick={() => window.open('https://supabase.com/dashboard/projects', '_blank')} 
+                      className="flex items-center gap-2"
+                    >
+                      <Database className="w-4 h-4" />
+                      Open Supabase Dashboard
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-slate-400 mt-4">
+                    <strong>Why manual setup?</strong> Database table creation requires admin privileges 
+                    and is done through Supabase's secure SQL Editor for security reasons.
+                  </p>
+                </div>
               </div>
             ) : filteredRecordings.length === 0 ? (
               <div className="text-center py-12">
