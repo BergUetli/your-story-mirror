@@ -39,6 +39,10 @@ const Archive = () => {
   
   // Load all voice recordings
   const loadRecordings = async () => {
+    console.log('🚀 loadRecordings function called');
+    console.log('👤 Current user state:', user);
+    console.log('🆔 User ID:', user?.id);
+    
     setIsLoading(true);
     setError(null);
     try {
@@ -47,10 +51,25 @@ const Archive = () => {
       // If no user is logged in, load demo recordings for testing
       if (!user?.id) {
         console.log('👤 No user logged in, loading demo recordings...');
+        console.log('🔍 Attempting to call aiVoiceSearch.getDemoRecordings()...');
         const allRecordings = await aiVoiceSearch.getDemoRecordings();
+        console.log('📊 getDemoRecordings returned:', allRecordings);
+        console.log(`📈 Number of recordings: ${allRecordings.length}`);
         setRecordings(allRecordings);
         setFilteredRecordings(allRecordings);
         console.log(`✅ Demo Archive loaded: ${allRecordings.length} demo recordings`);
+        
+        if (allRecordings.length === 0) {
+          toast({
+            title: 'No demo recordings found',
+            description: 'Demo recordings may need to be created in the database.',
+          });
+        } else {
+          toast({
+            title: 'Demo Archive Loaded',
+            description: `Loaded ${allRecordings.length} demo recordings for testing!`,
+          });
+        }
         return;
       }
       
@@ -137,8 +156,9 @@ const Archive = () => {
 
   // Effects
   useEffect(() => {
+    console.log('🔄 Archive useEffect triggered, user?.id:', user?.id);
     loadRecordings();
-  }, [user?.id]);
+  }, [user]);
 
   useEffect(() => {
     filterRecordings(searchQuery);

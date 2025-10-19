@@ -94,7 +94,28 @@ export const AudioPlayer = ({ recording, searchQuery = '', autoSeekToMatch = fal
 
       console.log('🎵 Loading audio for playback:', recording.storage_path);
       
-      // Get signed URL for audio
+      // Check if this is a demo recording (no actual audio file)
+      if (recording.storage_path.startsWith('demo/')) {
+        console.log('🎭 Demo recording detected - using text-based playback');
+        
+        // Set duration from metadata and prepare for text-based "playback"
+        setDuration(recording.duration_seconds || 60);
+        setIsLoading(false);
+        
+        // Parse transcript for this recording
+        const segments = parseTranscript(recording.transcript_text || '');
+        const highlightedSegments = highlightMatches(segments, searchQuery);
+        setTranscript(highlightedSegments);
+        
+        toast({
+          title: 'Demo Recording Loaded',
+          description: 'This demo uses text-based playback. Click play to scroll through the transcript!',
+        });
+        
+        return;
+      }
+      
+      // Get signed URL for audio (real recordings)
       const audioUrl = await voiceRecordingService.getAudioUrl(recording.storage_path);
       
       // Create new audio element
@@ -157,8 +178,53 @@ export const AudioPlayer = ({ recording, searchQuery = '', autoSeekToMatch = fal
     }
   };
 
+  // Demo playback simulation for recordings without audio files
+  const startDemoPlayback = () => {
+    const totalDuration = recording.duration_seconds || 60;
+    const stepSize = totalDuration / 100; // 100 steps for smooth progress
+    
+    setIsPlaying(true);
+    if (timeUpdateIntervalRef.current) {
+      clearInterval(timeUpdateIntervalRef.current);
+    }
+    
+    timeUpdateIntervalRef.current = setInterval(() => {
+      setCurrentTime(prev => {
+        const newTime = prev + stepSize;
+        if (newTime >= totalDuration) {
+          clearInterval(timeUpdateIntervalRef.current!);
+          setIsPlaying(false);
+          return 0; // Reset to start
+        }
+        return newTime;
+      });
+    }, 100); // Update every 100ms for smooth progress
+  };
+
+  const stopDemoPlayback = () => {
+    setIsPlaying(false);
+    if (timeUpdateIntervalRef.current) {
+      clearInterval(timeUpdateIntervalRef.current);
+    }
+  };
+
   // Play/pause audio
   const togglePlayPause = async () => {
+    // Handle demo recordings (no actual audio file)
+    if (recording?.storage_path?.startsWith('demo/')) {
+      if (isPlaying) {
+        stopDemoPlayback();
+      } else {
+        startDemoPlayback();
+        toast({
+          title: 'Demo Playback Started',
+          description: 'Simulating audio playback with transcript display',
+        });
+      }
+      return;
+    }
+
+    // Handle real audio recordings
     if (!currentAudio) {
       await loadAudio();
       return;

@@ -384,6 +384,7 @@ export class AIVoiceSearchService {
   async getDemoRecordings(): Promise<VoiceSearchResult[]> {
     try {
       console.log('🎭 Loading demo recordings for testing...');
+  console.log('📡 Making Supabase query for demo recordings...');
 
       const { data: recordings, error } = await supabase
         .from('voice_recordings')
