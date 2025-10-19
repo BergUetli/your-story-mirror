@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, Bot, AlertCircle, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Heart, MapPin, Calendar, Sparkles, Bot, AlertCircle, ZoomIn, ZoomOut, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +32,11 @@ const Story = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const zoomLevelRef = useRef(1);
   const panOffsetRef = useRef({ x: 0, y: 0 });
+  
+  // Pagination functionality
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pageTransition, setPageTransition] = useState('');
 
   // Simplified and safe grammar checking functions
   const grammarCheck = (text: string, userName: string = ''): string => {
@@ -544,6 +549,104 @@ const Story = () => {
     return grammarCheck(paragraph, name);
   };
 
+  // Pagination logic - Split content into readable pages
+  const splitContentIntoPages = (narrative: any) => {
+    if (!narrative) return [];
+    
+    const wordsPerPage = 400; // Approximate words per page for comfortable reading
+    const pages = [];
+    
+    // Page 1: Title + Introduction
+    const titleContent = {
+      type: 'title',
+      content: {
+        title: userProfile?.name ? `The Life Story of ${userProfile.name}` : 'A Life Story',
+        subtitle: memories.length > 0 ? `Based on ${memories.length} preserved memories` : '',
+        introduction: narrative.introduction
+      }
+    };
+    pages.push(titleContent);
+    
+    // Split chapters into pages
+    let currentPageContent = [];
+    let currentWordCount = 0;
+    
+    narrative.chapters.forEach((chapter: any, index: number) => {
+      const chapterWords = chapter.content.split(' ').length;
+      
+      if (currentWordCount + chapterWords > wordsPerPage && currentPageContent.length > 0) {
+        // Start new page
+        pages.push({
+          type: 'content',
+          content: currentPageContent
+        });
+        currentPageContent = [chapter];
+        currentWordCount = chapterWords;
+      } else {
+        // Add to current page
+        currentPageContent.push(chapter);
+        currentWordCount += chapterWords;
+      }
+    });
+    
+    // Add remaining content
+    if (currentPageContent.length > 0) {
+      pages.push({
+        type: 'content',
+        content: currentPageContent
+      });
+    }
+    
+    // Add conclusion page if it exists
+    if (narrative.conclusion) {
+      pages.push({
+        type: 'conclusion',
+        content: {
+          conclusion: narrative.conclusion
+        }
+      });
+    }
+    
+    return pages;
+  };
+
+  // Page navigation functions
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setPageTransition('next');
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1);
+        setPageTransition('');
+      }, 150);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setPageTransition('prev');
+      setTimeout(() => {
+        setCurrentPage(prev => prev - 1);
+        setPageTransition('');
+      }, 150);
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        prevPage();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        nextPage();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentPage, totalPages]);
+
 
 
   // Fetch story data (with offline fallback)
@@ -778,6 +881,28 @@ const Story = () => {
   };
 
   const narrative = generateDynamicNarrative(memories, userProfile);
+  const pages = splitContentIntoPages(narrative);
+  
+  // Update total pages when content changes
+  useEffect(() => {
+    setTotalPages(pages.length || 1);
+    if (currentPage > pages.length) {
+      setCurrentPage(1);
+    }
+  }, [pages.length, currentPage]);
+  
+  // Get current page content
+  const getCurrentPageContent = () => {
+    if (pages.length === 0) {
+      return {
+        type: 'empty',
+        content: {}
+      };
+    }
+    return pages[currentPage - 1] || pages[0];
+  };
+  
+  const currentPageContent = getCurrentPageContent();
 
   if (loading) {
     return (
@@ -815,11 +940,20 @@ const Story = () => {
           </Button>
         </Link>
         
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
-          <span className="text-xs text-slate-600 font-medium mr-2">
-            Ctrl+Wheel to zoom • Shift+Drag to pan
-          </span>
+        {/* Zoom Controls and Page Info */}
+        <div className="flex items-center gap-4">
+          {/* Page Navigation Info */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+            <span className="text-sm text-slate-600 font-medium">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+            <span className="text-xs text-slate-600 font-medium mr-2">
+              Ctrl+Wheel to zoom • Shift+Drag to pan • Arrow keys to turn pages
+            </span>
           <Button
             variant="outline"
             size="sm"
@@ -870,7 +1004,10 @@ const Story = () => {
         {/* Paper Document Container with Transform */}
         <div className="min-h-screen flex items-center justify-center p-8">
           <div 
-            className="max-w-4xl w-full bg-white shadow-2xl relative transition-transform duration-100 ease-out"
+            className={`max-w-4xl w-full bg-white shadow-2xl relative transition-all duration-300 ease-out ${
+              pageTransition === 'next' ? 'translate-x-4 opacity-80' : 
+              pageTransition === 'prev' ? '-translate-x-4 opacity-80' : ''
+            }`}
             style={{
               minHeight: '90vh',
               transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
@@ -892,79 +1029,117 @@ const Story = () => {
               `
             }}
           >
-          {/* Paper Content */}
-          <div className="px-16 py-20 space-y-8">
             
-            {/* Title */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-serif text-slate-800 mb-2">
-                {userProfile?.name ? `The Life Story of ${userProfile.name}` : 'A Life Story'}
-              </h1>
-              <div className="w-32 h-px bg-slate-300 mx-auto mt-4"></div>
-              {memories.length > 0 && (
-                <p className="text-sm text-slate-500 mt-4 font-light">
-                  Based on {memories.length} preserved memories
-                </p>
-              )}
-            </div>
+            {/* Left Page Turn Button */}
+            {currentPage > 1 && (
+              <button
+                onClick={prevPage}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-12 h-20 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-l-lg shadow-lg hover:bg-slate-50 transition-all duration-200 flex items-center justify-center group z-10"
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="w-6 h-6 text-slate-600 group-hover:text-slate-800 transition-colors" />
+              </button>
+            )}
             
-            {/* Introduction Paragraph */}
-            <div className="text-justify">
-              <p className="text-lg leading-8 text-slate-700 font-light first-letter:text-6xl first-letter:font-serif first-letter:float-left first-letter:mr-2 first-letter:mt-1 first-letter:leading-none first-letter:text-slate-600">
-                {narrative.introduction}
-              </p>
-            </div>
+            {/* Right Page Turn Button */}
+            {currentPage < totalPages && (
+              <button
+                onClick={nextPage}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-12 h-20 bg-white/90 backdrop-blur-sm border border-slate-200 rounded-r-lg shadow-lg hover:bg-slate-50 transition-all duration-200 flex items-center justify-center group z-10"
+                aria-label="Next page"
+              >
+                <ChevronRight className="w-6 h-6 text-slate-600 group-hover:text-slate-800 transition-colors" />
+              </button>
+            )}
+          {/* Paper Content - Paginated */}
+          <div className="px-16 py-20 space-y-8 min-h-[80vh] flex flex-col">
             
-            {/* Chapter Content - Pure Text Flow */}
-            {narrative.chapters.length > 0 && (
-              <div className="space-y-6">
-                {narrative.chapters.map((chapter, index) => (
-                  <div key={index} className="text-justify">
-                    <p className="text-lg leading-8 text-slate-700 font-light">
-                      {chapter.content}
+            {/* Render current page content */}
+            {currentPageContent.type === 'title' && (
+              <>
+                {/* Title Page */}
+                <div className="text-center mb-12 flex-grow flex flex-col justify-center">
+                  <h1 className="text-4xl font-serif text-slate-800 mb-2">
+                    {currentPageContent.content.title}
+                  </h1>
+                  <div className="w-32 h-px bg-slate-300 mx-auto mt-4"></div>
+                  {currentPageContent.content.subtitle && (
+                    <p className="text-sm text-slate-500 mt-4 font-light">
+                      {currentPageContent.content.subtitle}
                     </p>
-                  </div>
-                ))}
-              </div>
+                  )}
+                  {currentPageContent.content.introduction && (
+                    <div className="text-justify mt-12 max-w-3xl mx-auto">
+                      <p className="text-lg leading-8 text-slate-700 font-light first-letter:text-6xl first-letter:font-serif first-letter:float-left first-letter:mr-2 first-letter:mt-1 first-letter:leading-none first-letter:text-slate-600">
+                        {currentPageContent.content.introduction}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             
-            {/* Conclusion Paragraph */}
-            {narrative.conclusion && (
-              <div className="text-justify mt-8">
-                <p className="text-lg leading-8 text-slate-700 font-light italic">
-                  {narrative.conclusion}
-                </p>
-              </div>
+            {currentPageContent.type === 'content' && (
+              <>
+                {/* Content Pages */}
+                <div className="space-y-6 flex-grow">
+                  {currentPageContent.content.map((chapter: any, index: number) => (
+                    <div key={index} className="text-justify">
+                      <p className="text-lg leading-8 text-slate-700 font-light">
+                        {chapter.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
-
-            {/* No memories state - Clean version */}
-            {memories.length === 0 && !loading && (
-              <div className="text-center py-16 space-y-6">
-                <div className="max-w-2xl mx-auto">
-                  <h2 className="text-2xl font-serif text-slate-700 mb-4">
-                    Your Story Awaits
-                  </h2>
-                  <p className="text-lg leading-8 text-slate-600 font-light mb-8">
-                    Every life has a story worth telling. Share your memories to create a beautiful, 
-                    flowing biography that captures the essence of your journey through life.
+            
+            {currentPageContent.type === 'conclusion' && (
+              <>
+                {/* Conclusion Page */}
+                <div className="text-justify flex-grow flex flex-col justify-center">
+                  <p className="text-lg leading-8 text-slate-700 font-light italic text-center max-w-3xl mx-auto">
+                    {currentPageContent.content.conclusion}
                   </p>
-                  <Link to="/">
-                    <Button className="bg-slate-700 hover:bg-slate-800 text-white px-8 py-2">
-                      Begin Your Story
-                    </Button>
-                  </Link>
+                  
+                  {/* Signature on final page */}
+                  <div className="text-center mt-16 pt-8 border-t border-slate-200">
+                    <div className="text-sm text-slate-400 font-light">
+                      Preserved with care by Solin One • Digital Memory Sanctuary
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
-
-            {/* Subtle signature line */}
-            {memories.length > 0 && (
-              <div className="text-center mt-16 pt-8 border-t border-slate-200">
-                <div className="text-sm text-slate-400 font-light">
-                  Preserved with care by Solin One • Digital Memory Sanctuary
+            
+            {currentPageContent.type === 'empty' && (
+              <>
+                {/* No memories state */}
+                <div className="text-center py-16 space-y-6 flex-grow flex flex-col justify-center">
+                  <div className="max-w-2xl mx-auto">
+                    <h2 className="text-2xl font-serif text-slate-700 mb-4">
+                      Your Story Awaits
+                    </h2>
+                    <p className="text-lg leading-8 text-slate-600 font-light mb-8">
+                      Every life has a story worth telling. Share your memories to create a beautiful, 
+                      flowing biography that captures the essence of your journey through life.
+                    </p>
+                    <Link to="/">
+                      <Button className="bg-slate-700 hover:bg-slate-800 text-white px-8 py-2">
+                        Begin Your Story
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              </>
             )}
+            
+            {/* Page number indicator at bottom */}
+            <div className="text-center pt-4 mt-auto">
+              <div className="text-xs text-slate-400 font-light">
+                {totalPages > 1 && `${currentPage} / ${totalPages}`}
+              </div>
+            </div>
           </div>
 
           {/* Paper aging effects */}
@@ -981,6 +1156,15 @@ const Story = () => {
           </div>
         </div>
       </div>
+      
+      {/* Page Navigation Hints - Only show on first visit */}
+      {totalPages > 1 && currentPage === 1 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800/90 text-white px-4 py-2 rounded-lg backdrop-blur-sm animate-pulse">
+          <div className="text-sm text-center">
+            Use <span className="font-semibold">←→ keys</span> or <span className="font-semibold">click sides</span> to turn pages
+          </div>
+        </div>
+      )}
     </div>
   );
 };
