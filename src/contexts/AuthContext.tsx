@@ -153,7 +153,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (error) throw error;
       
-      setNeedsOnboarding(!data || !data.onboarding_completed);
+      const needsOnboarding = !data || !data.onboarding_completed;
+      console.log('🔍 Onboarding check:', {
+        user_id: user.id,
+        data,
+        onboarding_completed: data?.onboarding_completed,
+        needsOnboarding
+      });
+      setNeedsOnboarding(needsOnboarding);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
       setNeedsOnboarding(false);

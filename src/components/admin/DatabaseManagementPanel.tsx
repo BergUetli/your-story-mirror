@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 const DatabaseManagementPanel = () => {
-  const { user } = useAuth();
+  const { user, checkOnboardingStatus } = useAuth();
   const [isClearing, setIsClearing] = useState(false);
   const [clearingStep, setClearingStep] = useState('');
   const [results, setResults] = useState<string[]>([]);
@@ -104,6 +104,8 @@ const DatabaseManagementPanel = () => {
         setResults(prev => [...prev, `⚠️ Onboarding reset: ${onboardingError.message}`]);
       } else {
         setResults(prev => [...prev, '✅ All user onboarding status reset']);
+        // Refresh current user's onboarding status
+        await checkOnboardingStatus();
       }
 
       // Step 6: Verify cleanup
@@ -161,7 +163,10 @@ const DatabaseManagementPanel = () => {
         throw onboardingError;
       }
 
-      setResults(['✅ All user onboarding status reset successfully!', '🎯 First Conversation will trigger for all users on next login']);
+      // Refresh current user's onboarding status
+      await checkOnboardingStatus();
+
+      setResults(['✅ All user onboarding status reset successfully!', '🎯 First Conversation will trigger for all users (including you) immediately!']);
       setSuccess(true);
     } catch (err: any) {
       console.error('Onboarding reset failed:', err);
@@ -194,11 +199,34 @@ const DatabaseManagementPanel = () => {
         throw onboardingError;
       }
 
-      setResults(['✅ Your onboarding status reset successfully!', '🎯 First Conversation will trigger on next page visit']);
+      // Refresh current user's onboarding status
+      setClearingStep('Refreshing onboarding status...');
+      await checkOnboardingStatus();
+
+      setResults(['✅ Your onboarding status reset successfully!', '🎯 First Conversation should trigger immediately!', '🔄 Navigate to any page to see First Conversation dialog']);
       setSuccess(true);
     } catch (err: any) {
       console.error('User onboarding reset failed:', err);
       setError(`User onboarding reset failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
+  const forceRefreshOnboarding = async () => {
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setClearingStep('Checking current onboarding status...');
+
+    try {
+      await checkOnboardingStatus();
+      setResults(['✅ Onboarding status refreshed!', '🎯 If reset was done, First Conversation should trigger now']);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Refresh failed:', err);
+      setError(`Refresh failed: ${err.message}`);
     } finally {
       setIsClearing(false);
       setClearingStep('');
@@ -298,15 +326,27 @@ const DatabaseManagementPanel = () => {
               <p className="text-sm text-slate-300">
                 Reset only your onboarding status to test the First Conversation flow.
               </p>
-              <Button 
-                onClick={resetUserOnboarding} 
-                disabled={isClearing}
-                variant="outline" 
-                className="w-full"
-              >
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset My Onboarding
-              </Button>
+              <div className="space-y-2">
+                <Button 
+                  onClick={resetUserOnboarding} 
+                  disabled={isClearing}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset My Onboarding
+                </Button>
+                <Button 
+                  onClick={forceRefreshOnboarding} 
+                  disabled={isClearing}
+                  variant="ghost" 
+                  size="sm"
+                  className="w-full text-xs"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Force Refresh Status
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
