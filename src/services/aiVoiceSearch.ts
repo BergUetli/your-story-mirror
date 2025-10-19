@@ -384,8 +384,9 @@ export class AIVoiceSearchService {
   async getGuestRecordings(): Promise<VoiceSearchResult[]> {
     try {
       console.log('👤 Loading guest recordings from current session...');
-      console.log('📁 Making Supabase query for guest recordings...');
+      console.log('📁 Making Supabase query for recent recordings...');
 
+      // Get recent recordings that are not demo records
       const { data: recordings, error } = await supabase
         .from('voice_recordings')
         .select(`
@@ -401,31 +402,32 @@ export class AIVoiceSearchService {
           session_mode,
           created_at
         `)
-        .like('user_id', 'guest-%')
+        .gte('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Last 2 hours
+        .not('session_id', 'like', 'demo-%') // Exclude demo records
         .order('created_at', { ascending: false })
-        .limit(10); // Limit to recent guest recordings
+        .limit(5); // Limit to recent recordings
 
       if (error) {
-        console.warn('⚠️ Could not load guest recordings:', error);
+        console.warn('⚠️ Could not load recent recordings:', error);
         return [];
       }
 
       if (!recordings || recordings.length === 0) {
-        console.log('📝 No guest recordings found yet');
+        console.log('📝 No recent recordings found');
         return [];
       }
 
       // Enrich with memory titles (guest records might not have real memories)
       const enrichedRecordings = recordings.map(recording => ({
         ...recording,
-        memory_titles: [] // Guest records typically don't have linked memories yet
+        memory_titles: [] // Recent records might not have linked memories yet
       }));
       
-      console.log(`✅ Guest recordings loaded: ${enrichedRecordings.length} records`);
+      console.log(`✅ Recent recordings loaded: ${enrichedRecordings.length} records`);
       return enrichedRecordings;
 
     } catch (error) {
-      console.error('❌ Failed to load guest recordings:', error);
+      console.error('❌ Failed to load recent recordings:', error);
       return [];
     }
   }
