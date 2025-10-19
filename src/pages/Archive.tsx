@@ -161,12 +161,19 @@ const Archive = () => {
   }, [user]);
 
   useEffect(() => {
+    console.log('🔍 Filter useEffect: searchQuery:', searchQuery, 'recordings.length:', recordings.length);
     filterRecordings(searchQuery);
   }, [searchQuery, recordings]);
 
   useEffect(() => {
+    console.log('📊 Sort useEffect: sortBy:', sortBy, 'filteredRecordings.length before sort:', filteredRecordings.length);
     setFilteredRecordings(prev => sortRecordings(prev, sortBy));
   }, [sortBy]);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('🎯 STATE DEBUG - recordings:', recordings.length, 'filteredRecordings:', filteredRecordings.length, 'isLoading:', isLoading, 'error:', error);
+  }, [recordings, filteredRecordings, isLoading, error]);
 
   // Format duration
   const formatDuration = (seconds: number) => {
@@ -178,6 +185,18 @@ const Archive = () => {
   // Calculate total stats
   const totalDuration = recordings.reduce((sum, r) => sum + r.duration_seconds, 0);
   const totalMemories = recordings.reduce((sum, r) => sum + (r.memory_titles?.length || 0), 0);
+
+  // RENDER DEBUG - Log exactly what will be rendered
+  console.log('🎨 RENDER DEBUG:', {
+    isLoading,
+    hasError: !!error,
+    recordingsLength: recordings.length,
+    filteredRecordingsLength: filteredRecordings.length,
+    errorMessage: error,
+    willShowNoRecordings: recordings.length === 0 && !isLoading,
+    willShowNoFiltered: filteredRecordings.length === 0,
+    willShowRecordingsList: filteredRecordings.length > 0
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,6 +279,26 @@ const Archive = () => {
             </div>
 
             {/* Recordings List */}
+            {(() => {
+              console.log('🎪 RENDERING DECISION:', { isLoading, error, recordingsLength: recordings.length, filteredRecordingsLength: filteredRecordings.length });
+              
+              if (isLoading) {
+                console.log('🔄 Rendering: LOADING STATE');
+                return null; // Will render loading below
+              } else if (error && (error.includes('Archive Feature Not Set Up') || error.includes('voice_recordings') || error.includes('schema cache'))) {
+                console.log('❌ Rendering: ERROR STATE');
+                return null; // Will render error below
+              } else if (recordings.length === 0 && !isLoading) {
+                console.log('📭 Rendering: NO RECORDINGS STATE');
+                return null; // Will render no recordings below
+              } else if (filteredRecordings.length === 0) {
+                console.log('🔍 Rendering: NO FILTERED STATE');
+                return null; // Will render no filtered below
+              } else {
+                console.log('🎉 Rendering: RECORDINGS LIST with', filteredRecordings.length, 'recordings');
+                return null; // Will render list below
+              }
+            })()}
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -374,7 +413,25 @@ const Archive = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {filteredRecordings.map((recording) => (
+                {(() => {
+                  console.log('📋 MAPPING RECORDINGS:', filteredRecordings.length);
+                  filteredRecordings.forEach((recording, idx) => {
+                    console.log(`🎯 Recording ${idx + 1}:`, {
+                      id: recording.id,
+                      created_at: recording.created_at,
+                      conversation_summary: recording.conversation_summary?.substring(0, 100),
+                      duration_seconds: recording.duration_seconds,
+                      session_mode: recording.session_mode,
+                      hasMemoryTitles: !!recording.memory_titles,
+                      hasTopics: !!recording.topics
+                    });
+                  });
+                  return null;
+                })()}
+                {filteredRecordings.map((recording, index) => {
+                  try {
+                    console.log(`🃏 Rendering card ${index + 1} for recording ID: ${recording.id}`);
+                    return (
                   <Card 
                     key={recording.id}
                     className={`cursor-pointer transition-all hover:shadow-md ${
@@ -453,7 +510,16 @@ const Archive = () => {
                       </div>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                  } catch (error) {
+                    console.error(`❌ Error rendering card ${index + 1}:`, error);
+                    return (
+                      <div key={recording.id} className="p-4 bg-red-100 text-red-800 rounded">
+                        Error rendering recording {index + 1}: {String(error)}
+                      </div>
+                    );
+                  }
+                })}
               </div>
             )}
           </div>
