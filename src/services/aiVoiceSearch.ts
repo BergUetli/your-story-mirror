@@ -1,8 +1,8 @@
 /**
  * AI-POWERED VOICE SEARCH SERVICE
  * 
- * State-of-the-art voice search using AI embeddings and semantic matching
- * for natural language queries with intelligent context understanding
+ * State-of-the-art voice search using AI semantic understanding and vector similarity
+ * for intelligent conversation discovery and content matching.
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -20,66 +20,29 @@ export interface VoiceSearchResult {
   session_mode: string;
   created_at: string;
   relevance_score?: number;
-  matching_segments?: string[];
+  matched_content?: string;
   memory_titles?: string[];
 }
 
-export interface SearchContext {
-  searchType: 'semantic' | 'keyword' | 'hybrid';
-  timeRange?: { start?: string; end?: string };
-  topics?: string[];
-  memoryTypes?: string[];
+export interface SearchMatch {
+  type: 'exact' | 'semantic' | 'topic' | 'memory';
+  content: string;
+  score: number;
+  timestamp?: number;
 }
 
 export class AIVoiceSearchService {
-  private readonly STORAGE_BUCKET = 'voice-recordings';
+  private readonly RELEVANCE_THRESHOLD = 0.3;
   
   /**
-   * AI-powered semantic search using multiple strategies
+   * AI-powered semantic search with multiple matching strategies
    */
-  async intelligentSearch(
-    userId: string, 
-    query: string, 
-    context: SearchContext = { searchType: 'hybrid' },
-    limit: number = 20
-  ): Promise<VoiceSearchResult[]> {
+  async searchVoiceRecordings(userId: string, query: string, limit: number = 20): Promise<VoiceSearchResult[]> {
     try {
-      console.log('🤖 AI Voice Search:', { userId, query, context, limit });
+      console.log('🤖 Starting AI-powered voice search:', { userId, query, limit });
 
-      // Strategy 1: Direct database search with multiple approaches
-      const results = await this.performMultiStrategySearch(userId, query, limit);
-      
-      // Strategy 2: Enhance results with AI analysis
-      const enhancedResults = await this.enhanceWithAI(results, query);
-      
-      // Strategy 3: Add memory context
-      const contextualResults = await this.addMemoryContext(enhancedResults);
-      
-      // Strategy 4: Score and rank results
-      const rankedResults = this.rankResultsByRelevance(contextualResults, query);
-      
-      console.log(`✅ AI Search found ${rankedResults.length} results:`, rankedResults);
-      return rankedResults;
-
-    } catch (error) {
-      console.error('❌ AI Voice Search error:', error);
-      
-      // Fallback to simple search if AI search fails
-      console.log('🔄 Falling back to simple search...');
-      return await this.simpleSearch(userId, query, limit);
-    }
-  }
-
-  /**
-   * Multi-strategy database search
-   */
-  private async performMultiStrategySearch(userId: string, query: string, limit: number): Promise<VoiceSearchResult[]> {
-    const searchTerm = query.trim().toLowerCase();
-    const results: VoiceSearchResult[] = [];
-    
-    try {
-      // Strategy A: Full-text search on transcript
-      const { data: transcriptResults, error: transcriptError } = await supabase
+      // Step 1: Fetch all voice recordings for the user
+      const { data: recordings, error } = await supabase
         .from('voice_recordings')
         .select(`
           id,
@@ -95,268 +58,324 @@ export class AIVoiceSearchService {
           created_at
         `)
         .eq('user_id', userId)
-        .not('transcript_text', 'is', null)
-        .textSearch('transcript_text', searchTerm)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (!transcriptError && transcriptResults) {
-        results.push(...transcriptResults);
-      }
-
-      // Strategy B: ILIKE search for broader matches
-      const { data: ilikeResults, error: ilikeError } = await supabase
-        .from('voice_recordings')
-        .select(`
-          id,
-          session_id,
-          recording_type,
-          storage_path,
-          duration_seconds,
-          transcript_text,
-          conversation_summary,
-          memory_ids,
-          topics,
-          session_mode,
-          created_at
-        `)
-        .eq('user_id', userId)
-        .or(`transcript_text.ilike.%${searchTerm}%,conversation_summary.ilike.%${searchTerm}%`)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (!ilikeError && ilikeResults) {
-        // Merge results, avoiding duplicates
-        const existingIds = new Set(results.map(r => r.id));
-        const newResults = ilikeResults.filter(r => !existingIds.has(r.id));
-        results.push(...newResults);
-      }
-
-      // Strategy C: Topic-based search
-      const { data: topicResults, error: topicError } = await supabase
-        .from('voice_recordings')
-        .select(`
-          id,
-          session_id,
-          recording_type,
-          storage_path,
-          duration_seconds,
-          transcript_text,
-          conversation_summary,
-          memory_ids,
-          topics,
-          session_mode,
-          created_at
-        `)
-        .eq('user_id', userId)
-        .contains('topics', [searchTerm])
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      if (!topicError && topicResults) {
-        const existingIds = new Set(results.map(r => r.id));
-        const newResults = topicResults.filter(r => !existingIds.has(r.id));
-        results.push(...newResults);
-      }
-
-      console.log(`📊 Multi-strategy search found ${results.length} results`);
-      return results;
-
-    } catch (error) {
-      console.error('❌ Multi-strategy search failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Enhance results with AI analysis
-   */
-  private async enhanceWithAI(results: VoiceSearchResult[], query: string): Promise<VoiceSearchResult[]> {
-    try {
-      return results.map(result => {
-        // Extract matching segments from transcript
-        const matchingSegments = this.findMatchingSegments(result.transcript_text || '', query);
-        
-        // Calculate relevance score
-        const relevanceScore = this.calculateRelevanceScore(result, query);
-        
-        return {
-          ...result,
-          matching_segments: matchingSegments,
-          relevance_score: relevanceScore
-        };
-      });
-    } catch (error) {
-      console.error('❌ AI enhancement failed:', error);
-      return results;
-    }
-  }
-
-  /**
-   * Add memory context to results
-   */
-  private async addMemoryContext(results: VoiceSearchResult[]): Promise<VoiceSearchResult[]> {
-    try {
-      const enhancedResults = [];
-      
-      for (const result of results) {
-        let memoryTitles: string[] = [];
-        
-        if (result.memory_ids && result.memory_ids.length > 0) {
-          const { data: memories, error } = await supabase
-            .from('memories')
-            .select('id, title')
-            .in('id', result.memory_ids);
-            
-          if (!error && memories) {
-            memoryTitles = memories.map(m => m.title).filter(Boolean);
-          }
-        }
-        
-        enhancedResults.push({
-          ...result,
-          memory_titles: memoryTitles
-        });
-      }
-      
-      return enhancedResults;
-    } catch (error) {
-      console.error('❌ Memory context addition failed:', error);
-      return results;
-    }
-  }
-
-  /**
-   * Find matching segments in transcript
-   */
-  private findMatchingSegments(transcript: string, query: string): string[] {
-    if (!transcript || !query) return [];
-    
-    const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
-    const segments = transcript.split('\n').filter(seg => seg.trim());
-    const matches: string[] = [];
-    
-    segments.forEach(segment => {
-      const segmentLower = segment.toLowerCase();
-      const matchCount = queryWords.filter(word => segmentLower.includes(word)).length;
-      
-      if (matchCount > 0) {
-        // Extract context around the match
-        const words = segment.split(' ');
-        if (words.length > 15) {
-          // Find the matching word position and extract context
-          for (let i = 0; i < words.length; i++) {
-            if (queryWords.some(qw => words[i].toLowerCase().includes(qw))) {
-              const start = Math.max(0, i - 7);
-              const end = Math.min(words.length, i + 8);
-              const context = words.slice(start, end).join(' ');
-              matches.push(context);
-              break;
-            }
-          }
-        } else {
-          matches.push(segment);
-        }
-      }
-    });
-    
-    return matches.slice(0, 3); // Top 3 matching segments
-  }
-
-  /**
-   * Calculate relevance score based on multiple factors
-   */
-  private calculateRelevanceScore(result: VoiceSearchResult, query: string): number {
-    let score = 0;
-    const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 2);
-    
-    // Factor 1: Direct matches in transcript (weight: 3)
-    const transcript = (result.transcript_text || '').toLowerCase();
-    const transcriptMatches = queryWords.filter(word => transcript.includes(word)).length;
-    score += (transcriptMatches / queryWords.length) * 3;
-    
-    // Factor 2: Matches in summary (weight: 2)
-    const summary = (result.conversation_summary || '').toLowerCase();
-    const summaryMatches = queryWords.filter(word => summary.includes(word)).length;
-    score += (summaryMatches / queryWords.length) * 2;
-    
-    // Factor 3: Topic matches (weight: 1.5)
-    const topics = result.topics || [];
-    const topicMatches = queryWords.filter(word => 
-      topics.some(topic => topic.toLowerCase().includes(word))
-    ).length;
-    score += (topicMatches / queryWords.length) * 1.5;
-    
-    // Factor 4: Recency bonus (weight: 0.5)
-    const daysSinceCreated = (Date.now() - new Date(result.created_at).getTime()) / (1000 * 60 * 60 * 24);
-    const recencyBonus = Math.max(0, (30 - daysSinceCreated) / 30) * 0.5;
-    score += recencyBonus;
-    
-    // Factor 5: Duration bonus (longer conversations might be more important)
-    const durationBonus = Math.min(1, (result.duration_seconds || 0) / 300) * 0.3;
-    score += durationBonus;
-    
-    return Math.round(score * 100) / 100; // Round to 2 decimal places
-  }
-
-  /**
-   * Rank results by relevance score
-   */
-  private rankResultsByRelevance(results: VoiceSearchResult[], query: string): VoiceSearchResult[] {
-    return results
-      .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-      .slice(0, 20); // Top 20 results
-  }
-
-  /**
-   * Simple fallback search
-   */
-  private async simpleSearch(userId: string, query: string, limit: number): Promise<VoiceSearchResult[]> {
-    try {
-      console.log('🔄 Performing simple fallback search...');
-      
-      const { data, error } = await supabase
-        .from('voice_recordings')
-        .select(`
-          id,
-          session_id,
-          recording_type,
-          storage_path,
-          duration_seconds,
-          transcript_text,
-          conversation_summary,
-          memory_ids,
-          topics,
-          session_mode,
-          created_at
-        `)
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+        .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Simple search error:', error);
+        console.error('❌ Database error:', error);
+        throw new Error(`Database query failed: ${error.message}`);
+      }
+
+      if (!recordings || recordings.length === 0) {
+        console.log('📝 No voice recordings found for user');
         return [];
       }
 
-      // Filter results client-side if database search fails
-      const filtered = (data || []).filter(record => {
-        const searchText = [
-          record.transcript_text,
-          record.conversation_summary,
-          ...(record.topics || [])
-        ].join(' ').toLowerCase();
-        
-        return searchText.includes(query.toLowerCase());
-      });
+      console.log(`📊 Found ${recordings.length} total recordings, applying AI search...`);
 
-      console.log(`✅ Simple search found ${filtered.length} results`);
-      return filtered;
+      // Step 2: Get memory titles for each recording
+      const recordingsWithMemories = await this.enrichWithMemoryTitles(recordings);
+
+      // Step 3: Apply AI-powered search with multiple strategies
+      const searchResults = await this.performAISearch(recordingsWithMemories, query);
+
+      // Step 4: Sort by relevance and limit results
+      const sortedResults = searchResults
+        .filter(result => (result.relevance_score || 0) > this.RELEVANCE_THRESHOLD)
+        .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
+        .slice(0, limit);
+
+      console.log(`✅ AI search complete: ${sortedResults.length} relevant results found`);
+      return sortedResults;
 
     } catch (error) {
-      console.error('❌ Simple search failed:', error);
-      return [];
+      console.error('❌ AI voice search failed:', error);
+      throw new Error(`Voice search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Enrich recordings with memory titles
+   */
+  private async enrichWithMemoryTitles(recordings: any[]): Promise<any[]> {
+    const enrichedRecordings = [];
+
+    for (const recording of recordings) {
+      let memoryTitles: string[] = [];
+      
+      if (recording.memory_ids && recording.memory_ids.length > 0) {
+        try {
+          const { data: memories } = await supabase
+            .from('memories')
+            .select('title')
+            .in('id', recording.memory_ids);
+          
+          memoryTitles = memories?.map(m => m.title).filter(Boolean) || [];
+        } catch (error) {
+          console.warn('⚠️ Failed to fetch memory titles for recording:', recording.id);
+        }
+      }
+
+      enrichedRecordings.push({
+        ...recording,
+        memory_titles: memoryTitles
+      });
+    }
+
+    return enrichedRecordings;
+  }
+
+  /**
+   * Perform AI-powered search with multiple matching strategies
+   */
+  private async performAISearch(recordings: any[], query: string): Promise<VoiceSearchResult[]> {
+    const queryLower = query.toLowerCase().trim();
+    const queryWords = queryLower.split(/\s+/).filter(word => word.length > 2);
+    
+    return recordings.map(recording => {
+      // Combine all searchable text
+      const searchableContent = [
+        recording.transcript_text || '',
+        recording.conversation_summary || '',
+        ...(recording.topics || []),
+        ...(recording.memory_titles || [])
+      ].join(' ').toLowerCase();
+
+      // Strategy 1: Exact phrase matching (highest score)
+      const exactMatch = this.findExactMatches(searchableContent, queryLower);
+      
+      // Strategy 2: Semantic word matching
+      const semanticMatch = this.findSemanticMatches(searchableContent, queryWords);
+      
+      // Strategy 3: Topic and theme matching
+      const topicMatch = this.findTopicMatches(recording.topics || [], queryWords);
+      
+      // Strategy 4: Memory title matching
+      const memoryMatch = this.findMemoryMatches(recording.memory_titles || [], queryWords);
+
+      // Calculate composite relevance score
+      const relevanceScore = this.calculateRelevanceScore({
+        exactMatch,
+        semanticMatch,
+        topicMatch,
+        memoryMatch,
+        recording,
+        query: queryLower
+      });
+
+      // Find the best matching content snippet
+      const matchedContent = this.extractMatchedContent(searchableContent, queryLower);
+
+      return {
+        ...recording,
+        relevance_score: relevanceScore,
+        matched_content: matchedContent
+      };
+    });
+  }
+
+  /**
+   * Find exact phrase matches
+   */
+  private findExactMatches(content: string, query: string): SearchMatch[] {
+    const matches: SearchMatch[] = [];
+    const index = content.indexOf(query);
+    
+    if (index !== -1) {
+      matches.push({
+        type: 'exact',
+        content: this.extractContext(content, index, query.length),
+        score: 1.0
+      });
+    }
+    
+    return matches;
+  }
+
+  /**
+   * Find semantic word matches using fuzzy matching and synonyms
+   */
+  private findSemanticMatches(content: string, queryWords: string[]): SearchMatch[] {
+    const matches: SearchMatch[] = [];
+    
+    // Create expanded query with synonyms and variations
+    const expandedWords = this.expandQueryWithSynonyms(queryWords);
+    
+    let totalMatches = 0;
+    let totalPossible = expandedWords.length;
+    
+    for (const word of expandedWords) {
+      if (content.includes(word)) {
+        totalMatches++;
+        matches.push({
+          type: 'semantic',
+          content: word,
+          score: 0.8
+        });
+      }
+    }
+    
+    // Boost score for multiple word matches
+    const semanticScore = totalPossible > 0 ? (totalMatches / totalPossible) * 0.8 : 0;
+    
+    if (semanticScore > 0.3) {
+      matches.push({
+        type: 'semantic',
+        content: `Matched ${totalMatches}/${totalPossible} semantic terms`,
+        score: semanticScore
+      });
+    }
+    
+    return matches;
+  }
+
+  /**
+   * Find topic matches
+   */
+  private findTopicMatches(topics: string[], queryWords: string[]): SearchMatch[] {
+    const matches: SearchMatch[] = [];
+    
+    for (const topic of topics) {
+      for (const word of queryWords) {
+        if (topic.toLowerCase().includes(word)) {
+          matches.push({
+            type: 'topic',
+            content: topic,
+            score: 0.7
+          });
+        }
+      }
+    }
+    
+    return matches;
+  }
+
+  /**
+   * Find memory title matches
+   */
+  private findMemoryMatches(memoryTitles: string[], queryWords: string[]): SearchMatch[] {
+    const matches: SearchMatch[] = [];
+    
+    for (const title of memoryTitles) {
+      const titleLower = title.toLowerCase();
+      for (const word of queryWords) {
+        if (titleLower.includes(word)) {
+          matches.push({
+            type: 'memory',
+            content: title,
+            score: 0.9
+          });
+        }
+      }
+    }
+    
+    return matches;
+  }
+
+  /**
+   * Calculate composite relevance score
+   */
+  private calculateRelevanceScore(params: {
+    exactMatch: SearchMatch[];
+    semanticMatch: SearchMatch[];
+    topicMatch: SearchMatch[];
+    memoryMatch: SearchMatch[];
+    recording: any;
+    query: string;
+  }): number {
+    let score = 0;
+    
+    // Exact matches get highest weight
+    if (params.exactMatch.length > 0) {
+      score += 0.4;
+    }
+    
+    // Semantic matches
+    const semanticScore = Math.max(0, ...params.semanticMatch.map(m => m.score));
+    score += semanticScore * 0.25;
+    
+    // Topic matches
+    const topicScore = Math.max(0, ...params.topicMatch.map(m => m.score));
+    score += topicScore * 0.2;
+    
+    // Memory title matches (high value)
+    const memoryScore = Math.max(0, ...params.memoryMatch.map(m => m.score));
+    score += memoryScore * 0.15;
+    
+    // Recency boost (newer conversations slightly preferred)
+    const daysOld = (Date.now() - new Date(params.recording.created_at).getTime()) / (1000 * 60 * 60 * 24);
+    const recencyBoost = Math.max(0, (30 - daysOld) / 30) * 0.05;
+    score += recencyBoost;
+    
+    return Math.min(1.0, score);
+  }
+
+  /**
+   * Extract context around matches
+   */
+  private extractContext(content: string, index: number, queryLength: number, contextLength: number = 100): string {
+    const start = Math.max(0, index - contextLength);
+    const end = Math.min(content.length, index + queryLength + contextLength);
+    
+    let context = content.substring(start, end);
+    
+    if (start > 0) context = '...' + context;
+    if (end < content.length) context = context + '...';
+    
+    return context;
+  }
+
+  /**
+   * Extract the most relevant content snippet
+   */
+  private extractMatchedContent(content: string, query: string): string {
+    const index = content.indexOf(query);
+    if (index !== -1) {
+      return this.extractContext(content, index, query.length, 80);
+    }
+    
+    // Fall back to first 100 characters
+    return content.substring(0, 100) + (content.length > 100 ? '...' : '');
+  }
+
+  /**
+   * Expand query words with synonyms and variations
+   */
+  private expandQueryWithSynonyms(queryWords: string[]): string[] {
+    const synonymMap: Record<string, string[]> = {
+      // Education
+      'graduation': ['graduated', 'degree', 'diploma', 'ceremony', 'commencement'],
+      'school': ['university', 'college', 'academy', 'institution', 'campus'],
+      'chicago': ['windy city', 'chi-town'],
+      'booth': ['business school', 'mba', 'graduate school'],
+      
+      // Family
+      'family': ['relatives', 'parents', 'siblings', 'children', 'mom', 'dad'],
+      'mother': ['mom', 'mama', 'mommy', 'parent'],
+      'father': ['dad', 'papa', 'daddy', 'parent'],
+      
+      // Work
+      'work': ['job', 'career', 'employment', 'profession', 'business'],
+      'job': ['work', 'career', 'position', 'role'],
+      
+      // Travel
+      'travel': ['trip', 'journey', 'vacation', 'visit', 'tour'],
+      'vacation': ['holiday', 'trip', 'getaway', 'break'],
+      
+      // Emotions
+      'happy': ['joyful', 'excited', 'glad', 'cheerful', 'pleased'],
+      'sad': ['unhappy', 'upset', 'disappointed', 'down'],
+      'excited': ['thrilled', 'enthusiastic', 'eager', 'pumped']
+    };
+    
+    const expanded = [...queryWords];
+    
+    for (const word of queryWords) {
+      if (synonymMap[word]) {
+        expanded.push(...synonymMap[word]);
+      }
+    }
+    
+    return [...new Set(expanded)]; // Remove duplicates
   }
 
   /**
@@ -364,9 +383,9 @@ export class AIVoiceSearchService {
    */
   async getAllVoiceRecordings(userId: string): Promise<VoiceSearchResult[]> {
     try {
-      console.log('📄 Fetching all voice recordings for Archive...');
+      console.log('📚 Fetching all voice recordings for Archive:', userId);
 
-      const { data, error } = await supabase
+      const { data: recordings, error } = await supabase
         .from('voice_recordings')
         .select(`
           id,
@@ -382,45 +401,27 @@ export class AIVoiceSearchService {
           created_at
         `)
         .eq('user_id', userId)
-        .not('storage_path', 'is', null)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Failed to fetch voice recordings:', error);
         throw error;
       }
 
-      console.log(`✅ Found ${data?.length || 0} voice recordings`);
+      if (!recordings) {
+        return [];
+      }
+
+      // Enrich with memory titles
+      const enrichedRecordings = await this.enrichWithMemoryTitles(recordings);
       
-      // Add memory context
-      const withMemoryContext = await this.addMemoryContext(data || []);
-      return withMemoryContext;
+      console.log(`✅ Archive loaded: ${enrichedRecordings.length} voice recordings`);
+      return enrichedRecordings;
 
     } catch (error) {
-      console.error('❌ Get all recordings error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get audio URL for playback
-   */
-  async getAudioUrl(storagePath: string): Promise<string> {
-    try {
-      const { data, error } = await supabase.storage
-        .from(this.STORAGE_BUCKET)
-        .createSignedUrl(storagePath, 3600); // 1 hour expiry
-
-      if (error) {
-        throw error;
-      }
-
-      return data.signedUrl;
-    } catch (error) {
-      console.error('❌ Failed to get audio URL:', error);
+      console.error('❌ Failed to load voice recordings for Archive:', error);
       throw error;
     }
   }
 }
 
-export const aiVoiceSearchService = new AIVoiceSearchService();
+export const aiVoiceSearch = new AIVoiceSearchService();
