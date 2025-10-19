@@ -1,0 +1,359 @@
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Trash2, 
+  AlertTriangle, 
+  CheckCircle, 
+  Loader2, 
+  RefreshCw, 
+  Database,
+  User,
+  RotateCcw 
+} from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+const DatabaseManagementPanel = () => {
+  const { user } = useAuth();
+  const [isClearing, setIsClearing] = useState(false);
+  const [clearingStep, setClearingStep] = useState('');
+  const [results, setResults] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const clearDatabase = async () => {
+    if (!user) {
+      setError('Must be logged in as admin to perform cleanup');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      // Step 1: Clear memory-artifact relationships
+      setClearingStep('Clearing memory-artifact relationships...');
+      const { error: memArtError } = await supabase
+        .from('memory_artifacts')
+        .delete()
+        .neq('memory_id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (memArtError && memArtError.code !== '42703') {
+        console.warn('Memory-artifact error:', memArtError);
+        setResults(prev => [...prev, `⚠️ Memory-artifacts: ${memArtError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ Memory-artifact relationships cleared']);
+      }
+
+      // Step 2: Clear all memories
+      setClearingStep('Clearing all memories...');
+      const { error: memoriesError } = await supabase
+        .from('memories')
+        .delete()
+        .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (memoriesError) {
+        console.warn('Memories error:', memoriesError);
+        setResults(prev => [...prev, `⚠️ Memories: ${memoriesError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ All memories cleared']);
+      }
+
+      // Step 3: Clear all artifacts
+      setClearingStep('Clearing all artifacts...');
+      const { error: artifactsError } = await supabase
+        .from('artifacts')
+        .delete()
+        .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (artifactsError) {
+        console.warn('Artifacts error:', artifactsError);
+        setResults(prev => [...prev, `⚠️ Artifacts: ${artifactsError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ All artifacts cleared']);
+      }
+
+      // Step 4: Clear voice recordings if table exists
+      setClearingStep('Clearing voice recordings...');
+      const { error: voiceError } = await supabase
+        .from('voice_recordings')
+        .delete()
+        .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (voiceError && voiceError.code !== 'PGRST205') {
+        console.warn('Voice recordings error:', voiceError);
+        setResults(prev => [...prev, `⚠️ Voice recordings: ${voiceError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ Voice recordings cleared']);
+      }
+
+      // Step 5: Reset all user onboarding status
+      setClearingStep('Resetting all user onboarding status...');
+      const { error: onboardingError } = await supabase
+        .from('users')
+        .update({ onboarding_completed: false })
+        .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Reset all users
+
+      if (onboardingError) {
+        console.warn('Onboarding reset error:', onboardingError);
+        setResults(prev => [...prev, `⚠️ Onboarding reset: ${onboardingError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ All user onboarding status reset']);
+      }
+
+      // Step 6: Verify cleanup
+      setClearingStep('Verifying cleanup...');
+      
+      const { count: memoryCount } = await supabase
+        .from('memories')
+        .select('*', { count: 'exact', head: true });
+      
+      const { count: artifactCount } = await supabase
+        .from('artifacts')
+        .select('*', { count: 'exact', head: true });
+
+      setResults(prev => [
+        ...prev,
+        `📊 Remaining memories: ${memoryCount || 0}`,
+        `📊 Remaining artifacts: ${artifactCount || 0}`,
+      ]);
+
+      if ((memoryCount || 0) === 0 && (artifactCount || 0) === 0) {
+        setSuccess(true);
+        setResults(prev => [...prev, '🎉 Complete database cleanup successful!', '🎯 All users will get First Conversation onboarding']);
+      } else {
+        setResults(prev => [...prev, '⚠️ Some data may still remain. Check manually.']);
+      }
+
+    } catch (err: any) {
+      console.error('Cleanup failed:', err);
+      setError(`Cleanup failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
+  const resetOnboardingAll = async () => {
+    if (!user) {
+      setError('Must be logged in as admin to reset onboarding');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Resetting onboarding for all users...');
+
+    try {
+      const { error: onboardingError } = await supabase
+        .from('users')
+        .update({ onboarding_completed: false })
+        .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Reset all users
+
+      if (onboardingError) {
+        throw onboardingError;
+      }
+
+      setResults(['✅ All user onboarding status reset successfully!', '🎯 First Conversation will trigger for all users on next login']);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Onboarding reset failed:', err);
+      setError(`Onboarding reset failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
+  const resetUserOnboarding = async () => {
+    if (!user) {
+      setError('Must be logged in as admin');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Resetting current user onboarding...');
+
+    try {
+      const { error: onboardingError } = await supabase
+        .from('users')
+        .update({ onboarding_completed: false })
+        .eq('user_id', user.id);
+
+      if (onboardingError) {
+        throw onboardingError;
+      }
+
+      setResults(['✅ Your onboarding status reset successfully!', '🎯 First Conversation will trigger on next page visit']);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('User onboarding reset failed:', err);
+      setError(`User onboarding reset failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Database Cleanup Section */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-red-400">
+            <Database className="h-5 w-5" />
+            Complete Database Cleanup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert className="border-red-500/20 bg-red-500/10">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+            <AlertDescription className="text-red-200">
+              <strong>DANGER:</strong> This will permanently delete ALL memories, artifacts, and voice recordings 
+              for ALL users while preserving user accounts. This action cannot be undone.
+            </AlertDescription>
+          </Alert>
+
+          <div className="space-y-2">
+            <h4 className="font-semibold text-slate-200">What will be cleared:</h4>
+            <ul className="text-sm text-slate-300 space-y-1 ml-4">
+              <li>• All memories and their content (ALL USERS)</li>
+              <li>• All artifacts (photos, documents, etc.)</li>
+              <li>• All memory-artifact relationships</li>
+              <li>• All voice recordings</li>
+              <li>• Reset onboarding status for all users</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-semibold text-slate-200">What will be preserved:</h4>
+            <ul className="text-sm text-slate-300 space-y-1 ml-4">
+              <li>• User accounts and login credentials</li>
+              <li>• User profile information</li>
+              <li>• Authentication settings</li>
+            </ul>
+          </div>
+
+          <Button 
+            onClick={clearDatabase} 
+            disabled={isClearing}
+            variant="destructive" 
+            className="w-full"
+          >
+            {isClearing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {clearingStep || 'Clearing database...'}
+              </>
+            ) : (
+              <>
+                <Trash2 className="h-4 w-4 mr-2" />
+                CLEAR ALL DATABASE DATA
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Separator className="bg-slate-700" />
+
+      {/* Onboarding Management Section */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-400">
+            <User className="h-5 w-5" />
+            Onboarding Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-slate-200">Reset All Users Onboarding</h4>
+              <p className="text-sm text-slate-300">
+                Reset onboarding status for ALL users. First Conversation will trigger for everyone.
+              </p>
+              <Button 
+                onClick={resetOnboardingAll} 
+                disabled={isClearing}
+                variant="outline" 
+                className="w-full"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset All Users Onboarding
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-slate-200">Reset Your Onboarding</h4>
+              <p className="text-sm text-slate-300">
+                Reset only your onboarding status to test the First Conversation flow.
+              </p>
+              <Button 
+                onClick={resetUserOnboarding} 
+                disabled={isClearing}
+                variant="outline" 
+                className="w-full"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reset My Onboarding
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Section */}
+      {(results.length > 0 || error) && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-slate-200">
+              {success ? (
+                <CheckCircle className="h-5 w-5 text-green-400" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-orange-400" />
+              )}
+              Operation Results
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert className="mb-4 border-red-500/20 bg-red-500/10">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <AlertDescription className="text-red-200">{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-2 text-sm font-mono bg-slate-900/50 p-4 rounded-lg max-h-60 overflow-y-auto">
+              {results.map((result, index) => (
+                <div key={index} className="text-slate-300">{result}</div>
+              ))}
+            </div>
+
+            {success && (
+              <div className="mt-4">
+                <Alert className="border-green-500/20 bg-green-500/10">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                  <AlertDescription className="text-green-200">
+                    Operation completed successfully! Changes will be reflected immediately.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default DatabaseManagementPanel;

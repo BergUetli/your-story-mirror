@@ -9,6 +9,8 @@ import { DiagnosticsPanel } from '@/components/admin/DiagnosticsPanel';
 import { MetricsPanel } from '@/components/admin/MetricsPanel';
 import { SystemStatusPanel } from '@/components/admin/SystemStatusPanel';
 import { PerformancePanel } from '@/components/admin/PerformancePanel';
+import DatabaseManagementPanel from '@/components/admin/DatabaseManagementPanel';
+import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
   BarChart3,
@@ -21,7 +23,8 @@ import {
   Brain,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Trash2
 } from 'lucide-react';
 
 const Admin = () => {
@@ -41,8 +44,8 @@ const Admin = () => {
     errorRate: 0
   });
 
-  // Check if user has admin privileges (for now, just check if authenticated)
-  const isAdmin = !!user || isDummyMode();
+  // Check if user has admin privileges using proper admin role checking
+  const isAdmin = hasAdminAccess(user) || isDummyMode();
 
   useEffect(() => {
     // Simulate real-time metrics updates
@@ -72,7 +75,13 @@ const Admin = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Please log in with an administrator account to continue.
+              Only authorized administrator accounts can access this dashboard. 
+              {user && (
+                <>
+                  <br />
+                  Current user: <span className="font-mono">{user.email}</span>
+                </>
+              )}
             </p>
           </CardContent>
         </Card>
@@ -183,14 +192,14 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
-              Real-Time Diagnostics
+              Diagnostics
             </TabsTrigger>
             <TabsTrigger value="metrics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <BarChart3 className="w-4 h-4" />
-              Metrics & Analytics
+              Metrics
             </TabsTrigger>
             <TabsTrigger value="performance" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Zap className="w-4 h-4" />
@@ -199,6 +208,10 @@ const Admin = () => {
             <TabsTrigger value="system" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Settings className="w-4 h-4" />
               System Status
+            </TabsTrigger>
+            <TabsTrigger value="database" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Trash2 className="w-4 h-4" />
+              Database Mgmt
             </TabsTrigger>
           </TabsList>
 
@@ -216,6 +229,10 @@ const Admin = () => {
 
           <TabsContent value="system" className="space-y-6">
             <SystemStatusPanel systemStatus={systemStatus} />
+          </TabsContent>
+
+          <TabsContent value="database" className="space-y-6">
+            <DatabaseManagementPanel />
           </TabsContent>
         </Tabs>
 

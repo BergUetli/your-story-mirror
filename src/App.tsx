@@ -15,7 +15,6 @@ import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
 import Archive from "./pages/Archive";
-import DatabaseCleanup from "./pages/DatabaseCleanup";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -111,11 +110,6 @@ const AppContent = () => {
         <Route path="/admin" element={
           <ProtectedRoute>
             <Admin />
-          </ProtectedRoute>
-        } />
-        <Route path="/database-cleanup" element={
-          <ProtectedRoute>
-            <DatabaseCleanup />
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
