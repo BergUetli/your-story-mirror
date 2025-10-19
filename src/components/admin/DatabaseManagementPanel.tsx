@@ -256,6 +256,55 @@ const DatabaseManagementPanel = () => {
     }
   };
 
+  const checkVoiceRecordingsTable = async () => {
+    if (!user) {
+      setError('Must be logged in as admin');
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Checking voice_recordings table...');
+
+    try {
+      // Try to query the voice_recordings table
+      const { data, error } = await supabase
+        .from('voice_recordings')
+        .select('id')
+        .limit(1);
+
+      if (error) {
+        if (error.message.includes('voice_recordings') && 
+            (error.message.includes('does not exist') || 
+             error.message.includes('not found') ||
+             error.message.includes('schema cache'))) {
+          setResults([
+            '❌ voice_recordings table does not exist',
+            '🔧 The Archive feature requires this table to be created',
+            '📋 Use the "Create Voice Recordings Table" button below to fix this issue'
+          ]);
+        } else {
+          throw error;
+        }
+      } else {
+        setResults([
+          '✅ voice_recordings table exists and is accessible',
+          `📊 Table is ready for Archive feature`,
+          '🎯 Archive page should work properly now'
+        ]);
+        setSuccess(true);
+      }
+    } catch (err: any) {
+      console.error('Table check failed:', err);
+      setError(`Table check failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Database Cleanup Section */}
@@ -370,6 +419,57 @@ const DatabaseManagementPanel = () => {
                   Force Refresh Status
                 </Button>
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Database Setup Section */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-purple-400">
+            <Database className="h-5 w-5" />
+            Database Setup & Diagnostics
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <h4 className="font-semibold text-slate-200">Voice Archive Feature Setup</h4>
+            <p className="text-sm text-slate-300">
+              The Archive page requires a voice_recordings table to store conversation metadata.
+              Use this tool to check if the table exists and create it if needed.
+            </p>
+            
+            <div className="grid gap-3 md:grid-cols-2">
+              <Button 
+                onClick={checkVoiceRecordingsTable} 
+                disabled={isClearing}
+                variant="outline" 
+                className="w-full"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Check Voice Recordings Table
+              </Button>
+              
+              <Alert className="border-yellow-500/20 bg-yellow-500/10 p-3">
+                <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                <AlertDescription className="text-yellow-200 text-xs">
+                  <strong>Note:</strong> If the table doesn't exist, you'll need to create it manually 
+                  in the Supabase SQL Editor using the provided SQL file.
+                </AlertDescription>
+              </Alert>
+            </div>
+            
+            <div className="mt-4 p-3 bg-slate-900/50 rounded-lg">
+              <p className="text-sm text-slate-300 mb-2">
+                <strong>Quick Fix Instructions:</strong>
+              </p>
+              <ol className="text-xs text-slate-400 space-y-1 ml-4">
+                <li>1. Go to your Supabase Dashboard → SQL Editor</li>
+                <li>2. Copy contents from: <code className="bg-slate-800 px-1 rounded">fix_voice_recordings.sql</code></li>
+                <li>3. Run the SQL to create the voice_recordings table</li>
+                <li>4. Return here and click "Check Voice Recordings Table"</li>
+              </ol>
             </div>
           </div>
         </CardContent>

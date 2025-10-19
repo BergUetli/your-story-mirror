@@ -419,6 +419,18 @@ export class AIVoiceSearchService {
 
     } catch (error) {
       console.error('❌ Failed to load voice recordings for Archive:', error);
+      
+      // Provide more helpful error messages for common issues
+      if (error && typeof error === 'object' && 'message' in error) {
+        const errorMessage = (error as any).message;
+        if (errorMessage.includes('voice_recordings') && 
+            (errorMessage.includes('does not exist') || 
+             errorMessage.includes('not found') ||
+             errorMessage.includes('schema cache'))) {
+          throw new Error('The voice recordings feature has not been set up yet. Please contact an administrator to create the voice_recordings table in the database.');
+        }
+      }
+      
       throw error;
     }
   }

@@ -54,11 +54,27 @@ const Archive = () => {
       }
     } catch (error) {
       console.error('❌ Failed to load Archive:', error);
-      toast({
-        title: 'Archive Load Failed',
-        description: error instanceof Error ? error.message : 'Failed to load voice recordings',
-        variant: 'destructive'
-      });
+      
+      // Check if this is a table not found error
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load voice recordings';
+      const isTableMissing = errorMessage.includes('voice_recordings') && 
+                           (errorMessage.includes('does not exist') || 
+                            errorMessage.includes('not found') ||
+                            errorMessage.includes('schema cache'));
+      
+      if (isTableMissing) {
+        toast({
+          title: 'Archive Feature Not Set Up',
+          description: 'The voice recordings table needs to be created. Please contact an administrator to set up the Archive feature.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Archive Load Failed',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      }
     } finally {
       setIsLoading(false);
     }
