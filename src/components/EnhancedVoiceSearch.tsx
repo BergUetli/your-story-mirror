@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { voiceRecordingService } from '@/services/voiceRecording';
+import { aiVoiceSearchService } from '@/services/aiVoiceSearch';
 
 interface VoiceSearchResult {
   id: string;
@@ -34,6 +35,9 @@ interface VoiceSearchResult {
   topics: string[];
   session_mode: string;
   created_at: string;
+  relevance_score?: number;
+  matching_segments?: string[];
+  memory_titles?: string[];
 }
 
 interface TranscriptSegment {
@@ -103,31 +107,37 @@ export const EnhancedVoiceSearch = ({ open, onOpenChange }: EnhancedVoiceSearchP
     }));
   };
 
-  // Search voice recordings
+  // AI-powered voice search
   const handleSearch = async () => {
     if (!user?.id || !searchQuery.trim()) return;
 
     setIsSearching(true);
     try {
-      console.log('🔍 Searching voice recordings for:', searchQuery);
+      console.log('🤖 AI Voice Search for:', searchQuery);
 
-      // Use the voice recording service search function
-      const results = await voiceRecordingService.searchRecordings(user.id, searchQuery.trim(), 20);
+      // Use AI-powered search service
+      const results = await aiVoiceSearchService.intelligentSearch(
+        user.id, 
+        searchQuery.trim(),
+        { searchType: 'hybrid' },
+        20
+      );
       
       setSearchResults(results);
-      console.log('✅ Found recordings:', results.length);
+      console.log('✅ AI Search found recordings:', results.length);
 
-      if (results.length === 0) {
-        toast({
-          title: 'No results found',
-          description: `No voice recordings found matching "${searchQuery}"`,
-        });
-      }
-    } catch (error) {
-      console.error('❌ Voice search error:', error);
       toast({
-        title: 'Search failed',
-        description: 'Failed to search voice recordings. Please try again.',
+        title: results.length > 0 ? 'Search Complete' : 'No Results Found',
+        description: results.length > 0 
+          ? `Found ${results.length} voice recordings with AI analysis`
+          : `No voice recordings found matching "${searchQuery}"`,
+        variant: results.length > 0 ? 'default' : 'destructive'
+      });
+    } catch (error) {
+      console.error('❌ AI Voice search error:', error);
+      toast({
+        title: 'Search Failed',
+        description: 'AI voice search encountered an error. Please try a different search term.',
         variant: 'destructive'
       });
     } finally {
@@ -146,8 +156,8 @@ export const EnhancedVoiceSearch = ({ open, onOpenChange }: EnhancedVoiceSearchP
 
       console.log('🎵 Loading audio for playback:', result.storage_path);
       
-      // Get signed URL for audio
-      const audioUrl = await voiceRecordingService.getAudioUrl(result.storage_path);
+      // Get signed URL for audio using AI service
+      const audioUrl = await aiVoiceSearchService.getAudioUrl(result.storage_path);
       
       // Create new audio element
       const audio = new Audio(audioUrl);
@@ -457,6 +467,37 @@ export const EnhancedVoiceSearch = ({ open, onOpenChange }: EnhancedVoiceSearchP
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {result.conversation_summary}
                           </p>
+                          
+                          {/* AI Relevance Score */}
+                          {result.relevance_score && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                AI Score: {result.relevance_score}
+                              </Badge>
+                            </div>
+                          )}
+                          
+                          {/* Memory Titles */}
+                          {result.memory_titles && result.memory_titles.length > 0 && (
+                            <div className="mt-1">
+                              <span className="text-xs text-muted-foreground">Memories: </span>
+                              {result.memory_titles.slice(0, 2).map((title, idx) => (
+                                <Badge key={idx} variant="outline" className="text-xs mr-1">
+                                  {title}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Matching Segments */}
+                          {result.matching_segments && result.matching_segments.length > 0 && (
+                            <div className="mt-2 text-xs">
+                              <span className="font-medium text-muted-foreground">AI Match: </span>
+                              <span className="italic bg-yellow-100 dark:bg-yellow-900/30 px-1 rounded">
+                                "{result.matching_segments[0].slice(0, 80)}..."
+                              </span>
+                            </div>
+                          )}
                           
                           {result.topics && result.topics.length > 0 && (
                             <div className="flex gap-1 mt-2 flex-wrap">

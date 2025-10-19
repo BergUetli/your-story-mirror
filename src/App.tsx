@@ -14,6 +14,7 @@ import Identities from "./pages/Identities";
 import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
+import Archive from "./pages/Archive";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -72,6 +73,11 @@ const AppContent = () => {
         <Route path="/timeline" element={
           <ProtectedRoute>
             <Timeline />
+          </ProtectedRoute>
+        } />
+        <Route path="/archive" element={
+          <ProtectedRoute>
+            <Archive />
           </ProtectedRoute>
         } />
         <Route path="/story" element={
