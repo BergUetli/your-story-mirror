@@ -39,12 +39,21 @@ const Archive = () => {
   
   // Load all voice recordings
   const loadRecordings = async () => {
-    if (!user?.id) return;
-
     setIsLoading(true);
     setError(null);
     try {
       console.log('📚 Loading all voice recordings for Archive...');
+      
+      // If no user is logged in, load demo recordings for testing
+      if (!user?.id) {
+        console.log('👤 No user logged in, loading demo recordings...');
+        const allRecordings = await aiVoiceSearch.getDemoRecordings();
+        setRecordings(allRecordings);
+        setFilteredRecordings(allRecordings);
+        console.log(`✅ Demo Archive loaded: ${allRecordings.length} demo recordings`);
+        return;
+      }
+      
       const allRecordings = await aiVoiceSearch.getAllVoiceRecordings(user.id);
       
       setRecordings(allRecordings);

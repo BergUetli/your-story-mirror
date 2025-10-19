@@ -379,6 +379,56 @@ export class AIVoiceSearchService {
   }
 
   /**
+   * Get demo recordings for testing when no user is logged in
+   */
+  async getDemoRecordings(): Promise<VoiceSearchResult[]> {
+    try {
+      console.log('🎭 Loading demo recordings for testing...');
+
+      const { data: recordings, error } = await supabase
+        .from('voice_recordings')
+        .select(`
+          id,
+          session_id,
+          recording_type,
+          storage_path,
+          duration_seconds,
+          transcript_text,
+          conversation_summary,
+          memory_ids,
+          topics,
+          session_mode,
+          created_at
+        `)
+        .like('session_id', 'demo-%')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('⚠️ Could not load demo recordings:', error);
+        return [];
+      }
+
+      if (!recordings || recordings.length === 0) {
+        console.log('📝 No demo recordings found - they may need to be created');
+        return [];
+      }
+
+      // Enrich with memory titles (demo records won't have real memories)
+      const enrichedRecordings = recordings.map(recording => ({
+        ...recording,
+        memory_titles: [] // Demo records don't have linked memories
+      }));
+      
+      console.log(`✅ Demo recordings loaded: ${enrichedRecordings.length} records`);
+      return enrichedRecordings;
+
+    } catch (error) {
+      console.error('❌ Failed to load demo recordings:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get all voice recordings for Archive page
    */
   async getAllVoiceRecordings(userId: string): Promise<VoiceSearchResult[]> {
