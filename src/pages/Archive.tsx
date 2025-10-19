@@ -48,26 +48,40 @@ const Archive = () => {
     try {
       console.log('📚 Loading all voice recordings for Archive...');
       
-      // If no user is logged in, load demo recordings for testing
+      // If no user is logged in, load demo recordings AND guest recordings
       if (!user?.id) {
-        console.log('👤 No user logged in, loading demo recordings...');
-        console.log('🔍 Attempting to call aiVoiceSearch.getDemoRecordings()...');
-        const allRecordings = await aiVoiceSearch.getDemoRecordings();
-        console.log('📊 getDemoRecordings returned:', allRecordings);
-        console.log(`📈 Number of recordings: ${allRecordings.length}`);
+        console.log('👤 No user logged in, loading demo and guest recordings...');
+        
+        // Load demo recordings
+        console.log('🔍 Loading demo recordings...');
+        const demoRecordings = await aiVoiceSearch.getDemoRecordings();
+        console.log(`🎭 Demo recordings: ${demoRecordings.length}`);
+        
+        // Also load any guest recordings from this session
+        console.log('🔍 Loading recent guest recordings...');
+        const guestRecordings = await aiVoiceSearch.getGuestRecordings();
+        console.log(`👤 Guest recordings: ${guestRecordings.length}`);
+        
+        // Combine demo and guest recordings
+        const allRecordings = [...guestRecordings, ...demoRecordings];
+        console.log(`📈 Total recordings: ${allRecordings.length}`);
+        
         setRecordings(allRecordings);
         setFilteredRecordings(allRecordings);
-        console.log(`✅ Demo Archive loaded: ${allRecordings.length} demo recordings`);
+        console.log(`✅ Archive loaded: ${allRecordings.length} recordings (${guestRecordings.length} guest + ${demoRecordings.length} demo)`);
         
         if (allRecordings.length === 0) {
           toast({
-            title: 'No demo recordings found',
-            description: 'Demo recordings may need to be created in the database.',
+            title: 'No recordings found',
+            description: 'Start a conversation with Solin to create your first recording!',
           });
         } else {
+          const message = guestRecordings.length > 0 
+            ? `Loaded ${guestRecordings.length} new recording(s) + ${demoRecordings.length} demo recordings!`
+            : `Loaded ${demoRecordings.length} demo recordings for testing!`;
           toast({
-            title: 'Demo Archive Loaded',
-            description: `Loaded ${allRecordings.length} demo recordings for testing!`,
+            title: 'Archive Loaded',
+            description: message,
           });
         }
         return;

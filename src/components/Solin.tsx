@@ -393,21 +393,31 @@ const Solin: React.FC<SolinProps> = ({
     processingRef.current = false;
     
     // Start voice recording for conversation archival
-    if (user?.id) {
-      try {
-        const sessionId = await voiceRecordingService.startRecording(user.id, 'solin_conversation');
-        setCurrentSessionId(sessionId);
-        setIsRecordingVoice(true);
-        console.log('🎙️ Started recording Solin conversation:', sessionId);
-      } catch (error) {
-        console.error('❌ Failed to start voice recording:', error);
-        // Continue conversation even if recording fails
+    // Use actual user ID if logged in, or generate temporary guest ID for demo
+    const recordingUserId = user?.id || `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    try {
+      const sessionId = await voiceRecordingService.startRecording(recordingUserId, 'solin_conversation');
+      setCurrentSessionId(sessionId);
+      setIsRecordingVoice(true);
+      console.log('🎙️ Started recording Solin conversation:', { sessionId, userId: recordingUserId, isGuest: !user?.id });
+      
+      if (!user?.id) {
+        console.log('👤 Guest user - voice recording will be stored with temporary ID');
         toast({
-          title: "Recording Notice",
-          description: "Voice recording couldn't start, but you can still have a conversation.",
+          title: "Recording Active",
+          description: "Your conversation is being recorded as a guest session.",
           variant: "default"
         });
       }
+    } catch (error) {
+      console.error('❌ Failed to start voice recording:', error);
+      // Continue conversation even if recording fails
+      toast({
+        title: "Recording Notice",
+        description: "Voice recording couldn't start, but you can still have a conversation.",
+        variant: "default"
+      });
     }
     
     // Give initial greeting based on user mode

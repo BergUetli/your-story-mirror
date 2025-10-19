@@ -379,6 +379,58 @@ export class AIVoiceSearchService {
   }
 
   /**
+   * Get guest recordings created in current session
+   */
+  async getGuestRecordings(): Promise<VoiceSearchResult[]> {
+    try {
+      console.log('👤 Loading guest recordings from current session...');
+      console.log('📁 Making Supabase query for guest recordings...');
+
+      const { data: recordings, error } = await supabase
+        .from('voice_recordings')
+        .select(`
+          id,
+          session_id,
+          recording_type,
+          storage_path,
+          duration_seconds,
+          transcript_text,
+          conversation_summary,
+          memory_ids,
+          topics,
+          session_mode,
+          created_at
+        `)
+        .like('user_id', 'guest-%')
+        .order('created_at', { ascending: false })
+        .limit(10); // Limit to recent guest recordings
+
+      if (error) {
+        console.warn('⚠️ Could not load guest recordings:', error);
+        return [];
+      }
+
+      if (!recordings || recordings.length === 0) {
+        console.log('📝 No guest recordings found yet');
+        return [];
+      }
+
+      // Enrich with memory titles (guest records might not have real memories)
+      const enrichedRecordings = recordings.map(recording => ({
+        ...recording,
+        memory_titles: [] // Guest records typically don't have linked memories yet
+      }));
+      
+      console.log(`✅ Guest recordings loaded: ${enrichedRecordings.length} records`);
+      return enrichedRecordings;
+
+    } catch (error) {
+      console.error('❌ Failed to load guest recordings:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get demo recordings for testing when no user is logged in
    */
   async getDemoRecordings(): Promise<VoiceSearchResult[]> {
