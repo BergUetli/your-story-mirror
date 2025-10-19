@@ -1982,14 +1982,17 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       // Show immediate feedback
       toast({ 
         title: 'Ending conversation...', 
-        description: 'Solin will say goodbye and the session will close shortly',
-        duration: 3000
+        description: 'Solin will say goodbye and wrap up naturally. The session will end automatically when Solin finishes speaking.',
+        duration: 6000
       });
       
-      // Give the agent 2 seconds to say goodbye, then forcefully end the session
-      setTimeout(async () => {
+      // Set up timeout and speaking monitoring for graceful conversation end
+      let hasEnded = false;
+      const endTimeout = setTimeout(async () => {
+        if (hasEnded) return;
+        hasEnded = true;
         try {
-          console.log('🛑 Forcefully ending ElevenLabs session...');
+          console.log('🛑 Timeout reached (2 minutes) - forcefully ending ElevenLabs session...');
           
           // More aggressive session termination
           if (conversation.status === 'connected') {
@@ -2042,7 +2045,67 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           console.error('Error in forced session end:', endError);
           setIsEndingConversation(false);
         }
-      }, 2000); // 2 second delay to let agent say goodbye
+      }, 120000); // 2 minute timeout
+      
+      // Also monitor for when Solin finishes speaking naturally
+      const checkSpeakingStatus = () => {
+        if (hasEnded) return;
+        
+        // If Solin has stopped speaking, wait a bit longer then end gracefully
+        if (!conversation.isSpeaking && conversation.status === 'connected') {
+          console.log('🎯 Solin finished speaking - ending conversation gracefully...');
+          
+          // Wait 5 more seconds after Solin stops speaking to ensure natural completion
+          setTimeout(() => {
+            if (hasEnded) return;
+            hasEnded = true;
+            clearTimeout(endTimeout);
+            
+            // End the conversation naturally since Solin finished speaking
+            console.log('✅ Natural conversation end - Solin finished speaking');
+            
+            // Force end session
+            if (conversation.status === 'connected') {
+              conversation.endSession().catch(console.error);
+            }
+            if (conversation.status !== 'disconnected') {
+              conversation.disconnect();
+            }
+            
+            // Stop voice recording if active
+            if (isRecording && recordingSessionId) {
+              voiceRecordingService.stopRecording().catch(console.error);
+              setIsRecording(false);
+              setRecordingSessionId(null);
+            }
+            
+            // Clear state and navigate
+            setConversationMessages([]);
+            setIsEndingConversation(false);
+            setIsConnected(false);
+            
+            if (lastSavedMemoryId) {
+              navigate(`/timeline?highlight=${lastSavedMemoryId}&new=true`);
+              toast({ 
+                title: 'Conversation ended naturally', 
+                description: 'Session saved. Your new memory is highlighted on the Timeline!' 
+              });
+            } else {
+              navigate('/timeline');
+              toast({ 
+                title: 'Conversation ended', 
+                description: 'Session saved. Check your Timeline for memories!' 
+              });
+            }
+          }, 5000); // 5 second grace period after Solin stops speaking
+        } else {
+          // Check again in 1 second
+          setTimeout(checkSpeakingStatus, 1000);
+        }
+      };
+      
+      // Start monitoring Solin's speaking status
+      setTimeout(checkSpeakingStatus, 3000); // Start checking after 3 seconds
       
     } catch (error) {
       console.error('Error ending conversation:', error);
@@ -2367,7 +2430,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     className="w-full rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-white/20 disabled:opacity-70 disabled:hover:scale-100"
                   >
                     {isEndingConversation ? (
-                      <>⏳ Solin is finishing...</>
+                      <>⏳ Waiting for Solin to finish speaking...</>
                     ) : (
                       <>✨ Save & End Conversation ✨</>
                     )}
