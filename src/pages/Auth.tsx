@@ -19,10 +19,10 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated - send to Sanctuary (Solin) page
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/sanctuary');
     }
   }, [user, navigate]);
 
@@ -62,7 +62,8 @@ const Auth = () => {
           title: "Welcome back!",
           description: "Successfully signed in to your account.",
         });
-        navigate('/');
+        // Redirect signed-in users to the Sanctuary (Solin) page
+        navigate('/sanctuary');
       }
     } catch (error: any) {
       let errorMessage = 'An unexpected error occurred.';

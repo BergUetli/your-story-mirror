@@ -27,6 +27,7 @@ import Admin from "./pages/Admin";
 import Onboarding from "./components/Onboarding";
 import VoiceTest from "./components/VoiceTest";
 import MicImagePreview from "./pages/MicImagePreview";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -44,9 +45,12 @@ const AppContent = () => {
 
   return (
     <div className="pb-16 md:pb-0">
+      <ScrollToTop />
       <Navigation />
       <Routes>
         {/* Authentication-based routing */}
+        {/* Non-signed-in users: Always land on About page */}
+        {/* Signed-in users: Always land on Sanctuary (Solin) page */}
         <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
         <Route path="/about" element={<About />} />
         <Route path="/sanctuary" element={<Index />} />
