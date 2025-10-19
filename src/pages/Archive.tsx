@@ -236,7 +236,7 @@ const Archive = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 <span className="ml-2 text-muted-foreground">Loading voice archive...</span>
               </div>
-            ) : error && error.includes('Archive Feature Not Set Up') ? (
+            ) : error && (error.includes('Archive Feature Not Set Up') || error.includes('voice_recordings') || error.includes('schema cache')) ? (
               <div className="text-center py-12 px-6">
                 <Database className="w-16 h-16 text-red-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-4 text-red-400">
@@ -298,6 +298,36 @@ const Archive = () => {
                     <strong>Why manual setup?</strong> Database table creation requires admin privileges 
                     and is done through Supabase's secure SQL Editor for security reasons.
                   </p>
+                </div>
+              </div>
+            ) : recordings.length === 0 && !isLoading ? (
+              <div className="text-center py-12 px-6">
+                <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-4">
+                  No Voice Recordings Found
+                </h3>
+                <div className="max-w-md mx-auto space-y-4">
+                  <p className="text-muted-foreground">
+                    This could mean either no conversations have been recorded yet, or the voice recordings table needs to be set up.
+                  </p>
+                  
+                  <Alert className="border-blue-500/20 bg-blue-500/10 text-left">
+                    <AlertTriangle className="h-4 w-4 text-blue-400" />
+                    <AlertDescription className="text-blue-200">
+                      <strong>If you're seeing this after having conversations:</strong> The voice_recordings table may need to be created in your database.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="flex gap-3 justify-center">
+                    <Button 
+                      onClick={() => window.location.reload()} 
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Retry Loading
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : filteredRecordings.length === 0 ? (
