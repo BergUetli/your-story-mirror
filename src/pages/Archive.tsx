@@ -263,13 +263,18 @@ const Archive = () => {
               </div>
             </div>
 
-            {/* Recordings List */}
-            {isLoading ? (
+            {/* Recordings List - Using Simple Pattern */}
+            
+            {/* Loading State */}
+            {isLoading && (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 <span className="ml-2 text-muted-foreground">Loading voice archive...</span>
               </div>
-            ) : error && (error.includes('Archive Feature Not Set Up') || error.includes('voice_recordings') || error.includes('schema cache')) ? (
+            )}
+
+            {/* Error State */}
+            {error && (error.includes('Archive Feature Not Set Up') || error.includes('voice_recordings') || error.includes('schema cache')) && (
               <div className="text-center py-12 px-6">
                 <Database className="w-16 h-16 text-red-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-4 text-red-400">
@@ -333,7 +338,10 @@ const Archive = () => {
                   </p>
                 </div>
               </div>
-            ) : recordings.length === 0 && !isLoading ? (
+            )}
+
+            {/* No Recordings State */}
+            {!isLoading && recordings.length === 0 && !error && (
               <div className="text-center py-12 px-6">
                 <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-4">
@@ -363,7 +371,10 @@ const Archive = () => {
                   </div>
                 </div>
               </div>
-            ) : filteredRecordings.length === 0 ? (
+            )}
+
+            {/* No Filtered Results State */}
+            {!isLoading && recordings.length > 0 && filteredRecordings.length === 0 && (
               <div className="text-center py-12">
                 <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">
@@ -376,7 +387,10 @@ const Archive = () => {
                   }
                 </p>
               </div>
-            ) : (
+            )}
+
+            {/* Recordings List */}
+            {!isLoading && filteredRecordings.length > 0 && (
               <div className="space-y-3">
 
                 {filteredRecordings.map((recording) => (
