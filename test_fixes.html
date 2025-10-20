@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone & Memory Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .error { background: #f8d7da; color: #721c24; }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .volume-meter {
+            width: 100%;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .volume-level {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 20px;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196f3;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 Microphone & Memory System Test</h1>
+    
+    <div class="instructions">
+        <h3>📋 Instructions</h3>
+        <ol>
+            <li><strong>First:</strong> Apply the database migration using the instructions in MIGRATION_INSTRUCTIONS.md</li>
+            <li><strong>Then:</strong> Test the microphone functionality below</li>
+            <li><strong>Finally:</strong> Test memory saving in the main app</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🎤 Microphone Test</h2>
+        <p>This test checks if your microphone is working and the volume meter responds correctly.</p>
+        
+        <div id="micStatus" class="status">Ready to test microphone...</div>
+        
+        <div class="volume-meter">
+            <div id="volumeLevel" class="volume-level"></div>
+        </div>
+        <p>Volume: <span id="volumeText">0%</span> | Max: <span id="maxVolumeText">0%</span></p>
+        
+        <button id="startMicTest">Start Microphone Test</button>
+        <button id="stopMicTest" disabled>Stop Test</button>
+        
+        <div id="micResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🗃️ Database Migration Status</h2>
+        <div id="migrationStatus" class="status warning">
+            ⚠️ Database migration needs to be applied manually.<br>
+            See MIGRATION_INSTRUCTIONS.md for step-by-step instructions.
+        </div>
+        <p>After applying the migration, memories will save properly to the database.</p>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ What's Fixed</h2>
+        <ul>
+            <li>✅ <strong>Microphone Test Meter:</strong> Now uses time domain analysis for better sensitivity</li>
+            <li>✅ <strong>Memory Archive Component:</strong> Created comprehensive archive display</li>
+            <li>✅ <strong>Auto-Save Logic:</strong> Conversations auto-save when ended</li>
+            <li>✅ <strong>Timeline Integration:</strong> Fixed queries to work with memory_ids array</li>
+            <li>✅ <strong>Recording-Memory Linking:</strong> Enhanced linking between recordings and memories</li>
+            <li>⏳ <strong>Database Schema:</strong> Migration ready (needs manual application)</li>
+        </ul>
+    </div>
+
+    <script>
+        let mediaStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationFrame = null;
+        let maxVolume = 0;
+
+        const micStatus = document.getElementById('micStatus');
+        const volumeLevel = document.getElementById('volumeLevel');
+        const volumeText = document.getElementById('volumeText');
+        const maxVolumeText = document.getElementById('maxVolumeText');
+        const startBtn = document.getElementById('startMicTest');
+        const stopBtn = document.getElementById('stopMicTest');
+        const resultsDiv = document.getElementById('micResults');
+
+        function updateStatus(message, type = 'warning') {
+            micStatus.textContent = message;
+            micStatus.className = `status ${type}`;
+        }
+
+        function analyzeAudio() {
+            if (!analyser) return;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            
+            // Use time domain data for better volume detection
+            analyser.getByteTimeDomainData(dataArray);
+            
+            // Calculate RMS volume
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+                const amplitude = (dataArray[i] - 128) / 128;
+                sum += amplitude * amplitude;
+            }
+            const rms = Math.sqrt(sum / bufferLength);
+            const volume = Math.min(100, rms * 100 * 5); // Same scaling as component
+
+            // Update display
+            volumeLevel.style.width = volume + '%';
+            volumeText.textContent = volume.toFixed(1) + '%';
+            
+            if (volume > maxVolume) {
+                maxVolume = volume;
+                maxVolumeText.textContent = maxVolume.toFixed(1) + '%';
+            }
+
+            animationFrame = requestAnimationFrame(analyzeAudio);
+        }
+
+        async function startMicrophoneTest() {
+            try {
+                updateStatus('Requesting microphone access...', 'warning');
+                
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: { ideal: 48000 },
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                updateStatus('✅ Microphone access granted! Speak to test the meter.', 'success');
+
+                // Setup audio analysis
+                audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                // Start analysis
+                maxVolume = 0;
+                analyzeAudio();
+
+                // Update UI
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+
+                // Show device info
+                const tracks = mediaStream.getAudioTracks();
+                const deviceLabel = tracks[0]?.label || 'Unknown microphone';
+                resultsDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>Device:</strong> ${deviceLabel}<br>
+                        <strong>Sample Rate:</strong> ${audioContext.sampleRate} Hz<br>
+                        <strong>Status:</strong> Recording... speak to see the meter move!
+                    </div>
+                `;
+
+            } catch (error) {
+                updateStatus('❌ Microphone access denied: ' + error.message, 'error');
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>Error:</strong> ${error.message}<br>
+                        Please check browser permissions and try again.
+                    </div>
+                `;
+            }
+        }
+
+        function stopMicrophoneTest() {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            analyser = null;
+            
+            updateStatus('Test stopped. Maximum volume detected: ' + maxVolume.toFixed(1) + '%', 'success');
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+
+            // Reset meter
+            volumeLevel.style.width = '0%';
+            volumeText.textContent = '0%';
+
+            // Show results
+            if (maxVolume > 5) {
+                resultsDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ <strong>Microphone Test PASSED!</strong><br>
+                        Maximum volume detected: ${maxVolume.toFixed(1)}%<br>
+                        The microphone is working correctly.
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="status warning">
+                        ⚠️ <strong>Low volume detected</strong><br>
+                        Maximum volume: ${maxVolume.toFixed(1)}%<br>
+                        Try speaking louder or checking your microphone settings.
+                    </div>
+                `;
+            }
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startMicrophoneTest);
+        stopBtn.addEventListener('click', stopMicrophoneTest);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', stopMicrophoneTest);
+    </script>
+</body>
+</html>

@@ -385,8 +385,19 @@ const Index = () => {
       // Add memory ID to voice recording if active
       if (isRecording && recordingSessionId) {
         try {
-          voiceRecordingService.addMemoryId(primaryMemoryId);
-          console.log('📝 Added memory ID to voice recording:', primaryMemoryId);
+          // Link memory to both old and new recording services
+          if (recordingMode === 'enhanced') {
+            // For enhanced recording, update the database directly
+            await supabase
+              .from('voice_recordings')
+              .update({ memory_ids: [primaryMemoryId] })
+              .eq('session_id', recordingSessionId);
+            console.log('📝 Added memory ID to enhanced voice recording:', primaryMemoryId);
+          } else {
+            // For standard recording, use the existing service
+            voiceRecordingService.addMemoryId(primaryMemoryId);
+            console.log('📝 Added memory ID to standard voice recording:', primaryMemoryId);
+          }
         } catch (error) {
           console.error('⚠️ Failed to add memory ID to recording:', error);
         }
