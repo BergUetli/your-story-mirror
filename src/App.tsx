@@ -16,6 +16,7 @@ import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
 import Archive from "./pages/Archive";
 import ArchiveSimple from "./pages/ArchiveSimple";
+import TestMemoryRecordings from "./pages/TestMemoryRecordings";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -118,6 +119,11 @@ const AppContent = () => {
         <Route path="/admin" element={
           <ProtectedRoute>
             <Admin />
+          </ProtectedRoute>
+        } />
+        <Route path="/test-memory-recordings" element={
+          <ProtectedRoute>
+            <TestMemoryRecordings />
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

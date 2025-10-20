@@ -25,10 +25,12 @@ import {
   Download,
   Trash2,
   Activity,
-  Eye
+  Eye,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { diagnosticLogger, ArchiveValidationResult, DiagnosticEvent } from '@/services/diagnosticLogger';
+import MemoryRecordingManager from './MemoryRecordingManager';
 
 export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
   const { user } = useAuth();
@@ -329,11 +331,16 @@ export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
       <Tabs defaultValue="recent" className="space-y-4">
         <TabsList className="bg-slate-800/50 border-slate-700">
           <TabsTrigger value="recent">Recent Events</TabsTrigger>
+          <TabsTrigger value="generator">Recording Generator</TabsTrigger>
           <TabsTrigger value="voice">Voice Recording</TabsTrigger>
           <TabsTrigger value="memory">Memory Saving</TabsTrigger>
           <TabsTrigger value="archive">Archive Display</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="generator">
+          <MemoryRecordingManager />
+        </TabsContent>
 
         <TabsContent value="recent">
           <Card className="bg-slate-800/50 border-slate-700">
