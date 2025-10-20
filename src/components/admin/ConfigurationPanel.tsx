@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { configurationService, SystemConfiguration } from '@/services/configurationService';
+import VoiceRecordingTester from './VoiceRecordingTester';
 
 const ConfigurationPanel = () => {
   const [config, setConfig] = useState<SystemConfiguration>(configurationService.getConfig());
@@ -160,6 +161,11 @@ const ConfigurationPanel = () => {
               </p>
             </div>
           </div>
+
+          <Separator className="bg-slate-700" />
+
+          {/* Voice Recording & Audio Testing */}
+          <VoiceRecordingTester />
 
           <Separator className="bg-slate-700" />
 
