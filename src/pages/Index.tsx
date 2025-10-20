@@ -1755,13 +1755,28 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
     onError: onErrorCb,
     onMessage: (message: unknown) => {
       console.log('🗣️ ElevenLabs message:', message);
+      
+      // Enhanced debugging for transcript capture
       if (typeof message === 'object' && message !== null) {
         const msg = message as any;
+        console.log('📝 Message analysis:', {
+          type: msg.type,
+          source: msg.source,
+          hasMessage: !!msg.message,
+          hasDelta: !!msg.delta,
+          isRecording,
+          messageKeys: Object.keys(msg),
+          fullMessage: msg
+        });
+        
+        // Handle different message types for transcript capture
+        let transcriptText = '';
+        let speaker: 'user' | 'ai' | null = null;
+        
         if (msg.type === 'response.audio_transcript.delta' && msg.delta) {
-          // Add to conversation recording transcript
-          if (isRecording) {
-            conversationRecordingService.addTranscriptEntry('ai', msg.delta);
-          }
+          transcriptText = msg.delta;
+          speaker = 'ai';
+          console.log('📝 AI transcript delta captured:', transcriptText);
           
           setConversationMessages(prev => {
             const last = prev[prev.length - 1];
@@ -1770,17 +1785,19 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             }
             return [...prev, { role: 'ai', text: msg.delta }];
           });
+        } else if (msg.type === 'response.audio_transcript.done' && msg.transcript) {
+          transcriptText = msg.transcript;
+          speaker = 'ai';
+          console.log('📝 AI transcript complete captured:', transcriptText);
         } else if (msg.source === 'user' && msg.message) {
-          const userMessage = msg.message;
-          setConversationMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+          transcriptText = msg.message;
+          speaker = 'user';
+          console.log('📝 User message captured:', transcriptText);
           
-          // Add user message to conversation recording transcript
-          if (isRecording) {
-            conversationRecordingService.addTranscriptEntry('user', userMessage);
-          }
+          setConversationMessages(prev => [...prev, { role: 'user', text: msg.message }]);
           
           // Extract topics from user messages for smarter context
-          const topics = userMessage.toLowerCase().match(/\b(family|childhood|school|work|travel|memory|remember|story|time|years?|ago)\b/g) || [];
+          const topics = msg.message.toLowerCase().match(/\b(family|childhood|school|work|travel|memory|remember|story|time|years?|ago)\b/g) || [];
           if (topics.length > 0) {
             setConversationState(prev => ({
               ...prev,
@@ -1788,12 +1805,23 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             }));
           }
         } else if (msg.source === 'ai' && msg.message) {
-          setConversationMessages(prev => [...prev, { role: 'ai', text: msg.message }]);
+          transcriptText = msg.message;
+          speaker = 'ai';
+          console.log('📝 AI message captured:', transcriptText);
           
-          // Add AI message to voice recording transcript
-          if (isRecording) {
-            voiceRecordingService.addTranscript(msg.message, 'ai');
-          }
+          setConversationMessages(prev => [...prev, { role: 'ai', text: msg.message }]);
+        } else if (msg.type === 'user_transcript' && msg.transcript) {
+          transcriptText = msg.transcript;
+          speaker = 'user';
+          console.log('📝 User transcript captured:', transcriptText);
+        }
+        
+        // Add to conversation recording transcript if we have valid content
+        if (transcriptText && speaker && isRecording) {
+          console.log('📝 Adding to conversation transcript:', { speaker, text: transcriptText.substring(0, 50) + '...' });
+          conversationRecordingService.addTranscriptEntry(speaker, transcriptText);
+        } else if (isRecording) {
+          console.log('📝 Transcript not added - missing data:', { hasText: !!transcriptText, hasSpeaker: !!speaker, isRecording });
         }
       }
     },
