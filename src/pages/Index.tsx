@@ -8,6 +8,7 @@ import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
 import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
+import { logMemorySaving, logVoiceRecording, logArchiveDisplay } from '@/services/diagnosticLogger';
 import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
 import { conversationRecordingService } from '@/services/conversationRecording';
 import { enhancedConversationRecordingService } from '@/services/enhancedConversationRecording';
@@ -221,6 +222,15 @@ const Index = () => {
 
     try {
       logHandoff('1️⃣ RECEIVED', { source: 'ElevenLabs voice agent', parameters });
+      logMemorySaving('info', 'memory_save_requested', { 
+        handoffId, 
+        userId: effectiveUser?.id,
+        title: parameters?.title,
+        contentLength: parameters?.content?.length,
+        hasTags: !!parameters?.tags?.length,
+        hasDate: !!parameters?.memory_date,
+        hasLocation: !!parameters?.memory_location
+      });
 
       // Validate required fields from tool call
       const title = parameters?.title?.trim();
@@ -230,6 +240,12 @@ const Index = () => {
       
       if (!title || !content) {
         logHandoff('❌ VALIDATION FAILED', { title, hasContent: !!content });
+        logMemorySaving('error', 'memory_validation_failed', { 
+          handoffId, 
+          hasTitle: !!title, 
+          hasContent: !!content,
+          userId: effectiveUser?.id
+        });
         return 'Missing required fields: title and content. Please ask the user to provide both before saving.';
       }
       
@@ -314,6 +330,14 @@ const Index = () => {
         image_urls: null,
       }));
 
+      logMemorySaving('info', 'memory_database_insert_attempt', {
+        handoffId,
+        userId,
+        chunksToInsert: memoryInserts.length,
+        memoryGroupId: chunks[0].memoryGroupId,
+        sampleInsert: memoryInserts[0]
+      });
+
       const { data, error } = await supabase
         .from('memories')
         .insert(memoryInserts)
@@ -321,6 +345,15 @@ const Index = () => {
 
       if (error) {
         logHandoff('❌ DATABASE ERROR', { error: error.message, code: error.code });
+        logMemorySaving('error', 'memory_database_insert_failed', {
+          handoffId,
+          userId,
+          error: error.message,
+          code: error.code,
+          hint: error.hint,
+          details: error.details,
+          memoryGroupId: chunks[0].memoryGroupId
+        });
         throw error;
       }
 
@@ -328,6 +361,14 @@ const Index = () => {
         chunksStored: data.length, 
         memoryGroupId: chunks[0].memoryGroupId,
         firstChunkId: data[0]?.id 
+      });
+
+      logMemorySaving('info', 'memory_database_insert_success', {
+        handoffId,
+        userId,
+        chunksStored: data.length,
+        memoryGroupId: chunks[0].memoryGroupId,
+        insertedIds: data.map(d => d.id)
       });
       
       // Return success message with memory info

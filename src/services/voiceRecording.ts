@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { logVoiceRecording } from '@/services/diagnosticLogger';
 
 export interface RecordingConfig {
   mimeType: string;
@@ -66,6 +67,13 @@ export class VoiceRecordingService {
       console.log('👤 User ID:', userId);
       console.log('🎙️ Checking MediaRecorder support...');
       
+      logVoiceRecording('info', 'recording_start_requested', { 
+        userId, 
+        sessionMode,
+        hasMediaRecorder: !!window.MediaRecorder,
+        hasGetUserMedia: !!(navigator.mediaDevices?.getUserMedia)
+      });
+      
       // Force cleanup any stale sessions before starting new one
       if (this.currentSession?.isRecording) {
         console.warn('⚠️ Found stale recording session, cleaning up...');
@@ -89,14 +97,17 @@ export class VoiceRecordingService {
 
       // Check MediaRecorder support
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        logVoiceRecording('error', 'mediadevices_unsupported', { userId, sessionMode });
         throw new Error('MediaDevices API not supported');
       }
 
       if (!window.MediaRecorder) {
+        logVoiceRecording('error', 'mediarecorder_unsupported', { userId, sessionMode });
         throw new Error('MediaRecorder API not supported');
       }
 
       console.log('✅ MediaRecorder API supported');
+      logVoiceRecording('info', 'media_apis_supported', { userId, sessionMode });
 
       // Generate unique session ID
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

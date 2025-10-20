@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { aiVoiceSearch, VoiceSearchResult } from '@/services/aiVoiceSearch';
 import { AudioPlayer } from '@/components/AudioPlayer';
 import { MemoryArchive } from '@/components/MemoryArchive';
+import { logArchiveDisplay } from '@/services/diagnosticLogger';
 
 const Archive = () => {
   const { user } = useAuth();
@@ -44,6 +45,12 @@ const Archive = () => {
     console.log('🚀 loadRecordings function called');
     console.log('👤 Current user state:', user);
     console.log('🆔 User ID:', user?.id);
+    
+    logArchiveDisplay('info', 'archive_load_requested', {
+      userId: user?.id,
+      hasUser: !!user,
+      timestamp: new Date().toISOString()
+    });
     
     setIsLoading(true);
     setError(null);
@@ -91,11 +98,23 @@ const Archive = () => {
       
       const allRecordings = await aiVoiceSearch.getAllVoiceRecordings(user.id);
       
+      logArchiveDisplay('info', 'recordings_loaded_success', {
+        userId: user.id,
+        recordingCount: allRecordings.length,
+        sampleRecordings: allRecordings.slice(0, 3).map(r => ({
+          id: r.id,
+          created_at: r.created_at,
+          has_file_url: !!r.file_url,
+          has_transcript: !!r.transcript
+        }))
+      });
+      
       setRecordings(allRecordings);
       setFilteredRecordings(allRecordings);
       console.log(`✅ Archive loaded: ${allRecordings.length} voice recordings`);
       
       if (allRecordings.length === 0) {
+        logArchiveDisplay('warn', 'no_recordings_found', { userId: user.id });
         toast({
           title: 'No recordings found',
           description: 'Start having conversations with Solin to build your voice archive!',
@@ -110,6 +129,14 @@ const Archive = () => {
                            (errorMessage.includes('does not exist') || 
                             errorMessage.includes('not found') ||
                             errorMessage.includes('schema cache'));
+
+      logArchiveDisplay('error', 'archive_load_failed', {
+        userId: user?.id,
+        error: errorMessage,
+        isTableMissing,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       
       if (isTableMissing) {
         setError('Archive Feature Not Set Up');

@@ -12,6 +12,7 @@ import { PerformancePanel } from '@/components/admin/PerformancePanel';
 import DatabaseManagementPanel from '@/components/admin/DatabaseManagementPanel';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { MicrophoneTest } from '@/components/MicrophoneTest';
+import { VoiceArchiveDiagnosticsPanel } from '@/components/admin/VoiceArchiveDiagnosticsPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -208,7 +209,7 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-8 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
               Diagnostics
@@ -236,6 +237,10 @@ const Admin = () => {
             <TabsTrigger value="mictest" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Mic className="w-4 h-4" />
               Microphone Test
+            </TabsTrigger>
+            <TabsTrigger value="voicediag" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Activity className="w-4 h-4" />
+              Voice Diagnostics
             </TabsTrigger>
           </TabsList>
 
@@ -322,6 +327,10 @@ const Admin = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="voicediag" className="space-y-6">
+            <VoiceArchiveDiagnosticsPanel />
           </TabsContent>
         </Tabs>
 
