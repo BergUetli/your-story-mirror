@@ -45,6 +45,9 @@ const Index = () => {
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   
+  // Store authenticated user ID for voice recording
+  const authenticatedUserIdRef = useRef<string | null>(null);
+  
   // Enhanced conversation flow state
   const [isEndingConversation, setIsEndingConversation] = useState(false);
   const [pendingMemoryData, setPendingMemoryData] = useState<{
@@ -477,11 +480,13 @@ const Index = () => {
       console.log('🎤🔍 DEBUG: Checking user context for voice recording...');
       console.log('👤 effectiveUser:', effectiveUser);
       console.log('👤 user from useAuth:', user);
+      console.log('👤 authenticatedUserIdRef.current:', authenticatedUserIdRef.current);
       console.log('👤 effectiveUser?.id:', effectiveUser?.id);
       console.log('👤 user?.id:', user?.id);
       
-      // Use the user from useAuth hook directly as effectiveUser might be stale
-      const recordingUserId = user?.id || effectiveUser?.id;
+      // Use the authenticated user ID from the ref (set during startConversation)
+      // This is more reliable than React state during the callback
+      const recordingUserId = authenticatedUserIdRef.current || user?.id || effectiveUser?.id;
       
       if (recordingUserId) {
         console.log('🎤 Starting voice recording for authenticated user:', recordingUserId);
@@ -492,6 +497,7 @@ const Index = () => {
       } else {
         console.warn('⚠️ No authenticated user found - voice recording skipped');
         console.log('🔍 Auth debug:', { 
+          refUserId: authenticatedUserIdRef.current,
           user, 
           effectiveUser, 
           hasUser: !!user, 
@@ -1840,6 +1846,9 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         throw new Error('Authentication system not available. Please refresh and try again.');
       }
       
+      // Store user ID in ref for voice recording callback
+      authenticatedUserIdRef.current = finalUserId;
+      
       console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🔐 USING USER:`, {
         isAuthenticated,
         userId: finalUserId
@@ -2334,8 +2343,78 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 
                 {/* User authentication indicator */}
                 {user && (
-                  <div className="text-xs bg-green-100 text-green-800 px-3 py-2 rounded-full border border-green-200">
-                    ✅ Signed in as {user.email}
+                  <div className="space-y-2">
+                    <div className="text-xs bg-green-100 text-green-800 px-3 py-2 rounded-full border border-green-200">
+                      ✅ Signed in as {user.email}
+                    </div>
+                    {/* Debug button for testing database access */}
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={async () => {
+                        console.log('🧪 Testing memory database access...');
+                        toast({
+                          title: 'Testing Database',
+                          description: 'Check browser console for results...',
+                        });
+                        
+                        try {
+                          // Test memory insertion with current user
+                          const testMemory = {
+                            user_id: user.id,
+                            title: 'Database Test Memory',
+                            text: 'This is a test memory to verify database access and RLS policies.',
+                            tags: ['test', 'debug'],
+                            memory_date: '2025-10-20',
+                            memory_location: 'Debug Environment'
+                          };
+                          
+                          console.log('🧪 Attempting to insert test memory...', testMemory);
+                          
+                          const { data: newMemory, error: insertError } = await supabase
+                            .from('memories')
+                            .insert(testMemory)
+                            .select();
+                            
+                          if (insertError) {
+                            console.error('❌ Memory insert failed:', insertError);
+                            toast({
+                              title: 'Database Test Failed',
+                              description: `Error: ${insertError.message}`,
+                              variant: 'destructive'
+                            });
+                          } else {
+                            console.log('✅ Memory insert succeeded!', newMemory);
+                            toast({
+                              title: 'Database Test Passed!',
+                              description: 'Memory creation works - voice recording should work too!',
+                            });
+                            
+                            // Clean up test memory
+                            const { error: deleteError } = await supabase
+                              .from('memories')
+                              .delete()
+                              .eq('id', newMemory[0].id);
+                              
+                            if (deleteError) {
+                              console.warn('⚠️ Failed to clean up test memory:', deleteError);
+                            } else {
+                              console.log('🧹 Test memory cleaned up successfully');
+                            }
+                          }
+                        } catch (error) {
+                          console.error('💥 Unexpected error:', error);
+                          toast({
+                            title: 'Database Test Error',
+                            description: 'Check console for details',
+                            variant: 'destructive'
+                          });
+                        }
+                      }}
+                      className="text-xs"
+                    >
+                      🧪 Test Database Access
+                    </Button>
                   </div>
                 )}
                 
