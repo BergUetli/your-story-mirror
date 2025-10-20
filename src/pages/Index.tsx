@@ -473,17 +473,36 @@ const Index = () => {
     setLastSavedMemoryId(null);
     
     // Start voice recording if user is authenticated
-    if (effectiveUser?.id) {
-      try {
-        console.log('🎤 Starting voice recording for session...');
-        const sessionId = await voiceRecordingService.startRecording(effectiveUser.id, 'greeting');
+    try {
+      console.log('🎤🔍 DEBUG: Checking user context for voice recording...');
+      console.log('👤 effectiveUser:', effectiveUser);
+      console.log('👤 user from useAuth:', user);
+      console.log('👤 effectiveUser?.id:', effectiveUser?.id);
+      console.log('👤 user?.id:', user?.id);
+      
+      // Use the user from useAuth hook directly as effectiveUser might be stale
+      const recordingUserId = user?.id || effectiveUser?.id;
+      
+      if (recordingUserId) {
+        console.log('🎤 Starting voice recording for authenticated user:', recordingUserId);
+        const sessionId = await voiceRecordingService.startRecording(recordingUserId, 'elevenlabs_conversation');
         setRecordingSessionId(sessionId);
         setIsRecording(true);
-        console.log('✅ Voice recording started:', sessionId);
-      } catch (error) {
-        console.error('⚠️ Failed to start voice recording (continuing without):', error);
-        // Continue without recording - not critical
+        console.log('✅ Voice recording started successfully:', sessionId);
+      } else {
+        console.warn('⚠️ No authenticated user found - voice recording skipped');
+        console.log('🔍 Auth debug:', { 
+          user, 
+          effectiveUser, 
+          hasUser: !!user, 
+          hasEffectiveUser: !!effectiveUser,
+          userType: typeof user,
+          effectiveUserType: typeof effectiveUser
+        });
       }
+    } catch (error) {
+      console.error('⚠️ Failed to start voice recording (continuing without):', error);
+      // Continue without recording - not critical
     }
     
     // Generate conversation starters based on user's memory history
@@ -497,7 +516,7 @@ const Index = () => {
         ? 'Recording started - Solin will ask what type of conversation you\'d like'
         : 'Solin will ask what type of conversation you\'d like to have'
     });
-  }, [toast, effectiveUser?.id, isRecording]);
+  }, [toast, effectiveUser?.id, user?.id, isRecording]);
 
   const onDisconnectCb = useCallback(async () => {
     const elapsed = Date.now() - lastConnectedAtRef.current;
