@@ -83,13 +83,17 @@ export const MicrophoneTest: React.FC<MicrophoneTestProps> = ({
     const dataArray = new Uint8Array(bufferLength);
     analyzerRef.current.getByteFrequencyData(dataArray);
 
-    // Calculate RMS volume
+    // Use time domain data for better volume detection
+    analyzerRef.current.getByteTimeDomainData(dataArray);
+    
+    // Calculate RMS volume from time domain data
     let sum = 0;
     for (let i = 0; i < bufferLength; i++) {
-      sum += dataArray[i] * dataArray[i];
+      const amplitude = (dataArray[i] - 128) / 128; // Convert to -1 to 1 range
+      sum += amplitude * amplitude;
     }
     const rms = Math.sqrt(sum / bufferLength);
-    const volume = Math.min(100, (rms / 128) * 100); // Convert to 0-100 scale
+    const volume = Math.min(100, rms * 100 * 3); // Scale up for better sensitivity
 
     setCurrentVolume(volume);
     volumeHistoryRef.current.push(volume);

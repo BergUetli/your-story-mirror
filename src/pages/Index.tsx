@@ -585,8 +585,17 @@ const Index = () => {
         setRecordingSessionId(null);
       }
     }
-    
+
+    // AUTO-SAVE: Try to save conversation content when disconnected
+    // Only if this wasn't a quick retry disconnect
     const justConnected = elapsed < 3000;
+    if (!justConnected) {
+      try {
+        await autoSaveConversationContent();
+      } catch (error) {
+        console.error('❌ Auto-save on disconnect failed:', error);
+      }
+    }
 
     if (justConnected) {
       if (retryCountRef.current < 3) {
@@ -2130,6 +2139,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               console.error(`⚠️ Failed to stop ${recordingMode} voice recording:`, error);
             }
           }
+
+          // AUTO-SAVE: Create incomplete memory if conversation had content but no memory was saved
+          await autoSaveConversationContent();
+          
           
           // Clear all conversation state
           setConversationMessages([]);
@@ -2187,10 +2200,17 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             
             // Stop voice recording if active
             if (isRecording && recordingSessionId) {
-              voiceRecordingService.stopRecording().catch(console.error);
+              if (recordingMode === 'enhanced') {
+                enhancedConversationRecordingService.stopEnhancedRecording().catch(console.error);
+              } else {
+                conversationRecordingService.stopConversationRecording().catch(console.error);
+              }
               setIsRecording(false);
               setRecordingSessionId(null);
             }
+
+            // AUTO-SAVE: Create incomplete memory if needed
+            autoSaveConversationContent().catch(console.error);
             
             // Clear state and navigate
             setConversationMessages([]);
@@ -2235,6 +2255,96 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       }
     }
   }, [conversation, toast, navigate]);
+
+  // Auto-save conversation content as incomplete memory when conversation ends
+  const autoSaveConversationContent = useCallback(async () => {
+    try {
+      // Only auto-save if no memory was explicitly saved during this conversation
+      if (lastSavedMemoryId) {
+        console.log('📝 Skipping auto-save - memory already saved:', lastSavedMemoryId);
+        return;
+      }
+
+      // Check if we have meaningful conversation content
+      if (!conversationMessages || conversationMessages.length < 2) {
+        console.log('📝 Skipping auto-save - insufficient conversation content');
+        return;
+      }
+
+      // Get user messages (not AI responses)
+      const userMessages = conversationMessages
+        .filter(msg => msg.role === 'user')
+        .map(msg => msg.text)
+        .join('\n\n');
+
+      // Only save if user contributed meaningful content
+      if (!userMessages || userMessages.trim().length < 10) {
+        console.log('📝 Skipping auto-save - insufficient user content');
+        return;
+      }
+
+      const userId = effectiveUser?.id;
+      if (!userId) {
+        console.log('📝 Skipping auto-save - no user ID');
+        return;
+      }
+
+      console.log('📝 Auto-saving conversation content as incomplete memory...');
+
+      // Create incomplete memory entry
+      const memoryData = {
+        user_id: userId,
+        title: 'Incomplete Conversation Memory',
+        text: `[Auto-saved conversation content]\n\n${userMessages}`,
+        memory_date: null, // No date = incomplete
+        memory_location: null, // No location = incomplete
+        tags: ['auto-saved', 'incomplete'],
+        chunk_sequence: 1,
+        is_primary_chunk: true,
+        source_type: 'conversation_auto_save'
+      };
+
+      const { data: memory, error } = await supabase
+        .from('memories')
+        .insert(memoryData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Auto-save failed:', error);
+        return;
+      }
+
+      console.log('✅ Auto-saved incomplete memory:', memory.id);
+      
+      // Update last saved memory ID so it appears in navigation
+      setLastSavedMemoryId(memory.id);
+
+      // Try to link to voice recording if we have one
+      if (recordingSessionId) {
+        try {
+          await supabase
+            .from('voice_recordings')
+            .update({ memory_ids: [memory.id] })
+            .eq('session_id', recordingSessionId);
+          
+          console.log('✅ Linked auto-saved memory to voice recording');
+        } catch (linkError) {
+          console.warn('⚠️ Failed to link memory to recording:', linkError);
+        }
+      }
+
+      // Show notification about auto-save
+      toast({
+        title: 'Conversation Auto-Saved',
+        description: 'Your conversation has been saved as an incomplete memory. Complete it in the Archive to add it to your Timeline.',
+        duration: 5000,
+      });
+
+    } catch (error) {
+      console.error('❌ Auto-save conversation failed:', error);
+    }
+  }, [conversationMessages, lastSavedMemoryId, effectiveUser?.id, recordingSessionId, supabase, toast]);
 
   useEffect(() => {
     startConversationRef.current = startConversation;
