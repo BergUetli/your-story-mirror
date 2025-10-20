@@ -601,7 +601,7 @@ export const VoiceRecordingTester = () => {
                   🎤 Speak normally into your microphone to test volume levels
                 </p>
               </div>
-            )}</Button>
+            )}
             
             {/* Test Instructions */}
             {!isMicTesting && !micTestResult && (
