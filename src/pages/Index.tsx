@@ -10,6 +10,7 @@ import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
 import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
 import { conversationRecordingService } from '@/services/conversationRecording';
+import { enhancedConversationRecordingService } from '@/services/enhancedConversationRecording';
 import { soundEffects } from '@/services/soundEffects';
 import { FirstConversationDialog } from '@/components/FirstConversationDialog';
 import { userProfileService } from '@/services/userProfileService';
@@ -45,6 +46,7 @@ const Index = () => {
   // Voice recording state
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('standard');
   
   // Store authenticated user ID for voice recording
   const authenticatedUserIdRef = useRef<string | null>(null);
@@ -490,16 +492,36 @@ const Index = () => {
       const recordingUserId = authenticatedUserIdRef.current || user?.id || effectiveUser?.id;
       
       if (recordingUserId) {
-        console.log('🎤 Starting conversation recording for authenticated user:', recordingUserId);
-        const sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'elevenlabs_conversation');
+        console.log(`🎤 Starting ${recordingMode} conversation recording for authenticated user:`, recordingUserId);
+        
+        let sessionId: string;
+        if (recordingMode === 'enhanced') {
+          sessionId = await enhancedConversationRecordingService.startEnhancedRecording(
+            recordingUserId, 
+            'elevenlabs_conversation',
+            { 
+              enableSystemAudio: true, // Always try to capture system audio
+              microphoneGain: 1.0,
+              systemAudioGain: 0.8
+            }
+          );
+        } else {
+          sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'elevenlabs_conversation');
+        }
+        
         setRecordingSessionId(sessionId);
         setIsRecording(true);
-        console.log('✅ Conversation recording started successfully:', sessionId);
+        console.log(`✅ ${recordingMode} conversation recording started successfully:`, sessionId);
         
         // Add periodic status logging
         const statusInterval = setInterval(() => {
-          const status = conversationRecordingService.getRecordingStatus();
-          console.log('🎬 Recording Status:', status);
+          if (recordingMode === 'enhanced') {
+            const status = enhancedConversationRecordingService.getEnhancedRecordingStatus();
+            console.log('🎬 Enhanced Recording Status:', status);
+          } else {
+            const status = conversationRecordingService.getRecordingStatus();
+            console.log('🎬 Standard Recording Status:', status);
+          }
         }, 10000); // Log every 10 seconds
         
         // Clean up interval when conversation ends
@@ -548,13 +570,17 @@ const Index = () => {
     // Stop voice recording if active
     if (isRecording && recordingSessionId) {
       try {
-        console.log('🛑 Stopping conversation recording due to disconnect...');
-        await conversationRecordingService.stopConversationRecording();
+        console.log(`🛑 Stopping ${recordingMode} conversation recording due to disconnect...`);
+        if (recordingMode === 'enhanced') {
+          await enhancedConversationRecordingService.stopEnhancedRecording();
+        } else {
+          await conversationRecordingService.stopConversationRecording();
+        }
         setIsRecording(false);
         setRecordingSessionId(null);
-        console.log('✅ Conversation recording stopped and saved');
+        console.log(`✅ ${recordingMode} conversation recording stopped and saved`);
       } catch (error) {
-        console.error('⚠️ Failed to stop voice recording:', error);
+        console.error(`⚠️ Failed to stop ${recordingMode} voice recording:`, error);
         setIsRecording(false);
         setRecordingSessionId(null);
       }
@@ -1818,10 +1844,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         
         // Add to conversation recording transcript if we have valid content
         if (transcriptText && speaker && isRecording) {
-          console.log('📝 Adding to conversation transcript:', { speaker, text: transcriptText.substring(0, 50) + '...' });
-          conversationRecordingService.addTranscriptEntry(speaker, transcriptText);
+          console.log('📝 Adding to conversation transcript:', { speaker, text: transcriptText.substring(0, 50) + '...', mode: recordingMode });
+          
+          if (recordingMode === 'enhanced') {
+            enhancedConversationRecordingService.addEnhancedTranscriptEntry(speaker, transcriptText, msg.confidence);
+          } else {
+            conversationRecordingService.addTranscriptEntry(speaker, transcriptText);
+          }
         } else if (isRecording) {
-          console.log('📝 Transcript not added - missing data:', { hasText: !!transcriptText, hasSpeaker: !!speaker, isRecording });
+          console.log('📝 Transcript not added - missing data:', { hasText: !!transcriptText, hasSpeaker: !!speaker, isRecording, mode: recordingMode });
         }
       }
     },
@@ -2086,13 +2117,17 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           // Stop voice recording if active
           if (isRecording && recordingSessionId) {
             try {
-              console.log('🛑 Stopping voice recording due to conversation end...');
-              await voiceRecordingService.stopRecording();
+              console.log(`🛑 Stopping ${recordingMode} voice recording due to conversation end...`);
+              if (recordingMode === 'enhanced') {
+                await enhancedConversationRecordingService.stopEnhancedRecording();
+              } else {
+                await conversationRecordingService.stopConversationRecording();
+              }
               setIsRecording(false);
               setRecordingSessionId(null);
-              console.log('✅ Voice recording stopped and saved');
+              console.log(`✅ ${recordingMode} voice recording stopped and saved`);
             } catch (error) {
-              console.error('⚠️ Failed to stop voice recording:', error);
+              console.error(`⚠️ Failed to stop ${recordingMode} voice recording:`, error);
             }
           }
           

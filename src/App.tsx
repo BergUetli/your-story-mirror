@@ -27,6 +27,7 @@ import Admin from "./pages/Admin";
 import Onboarding from "./components/Onboarding";
 import VoiceTest from "./components/VoiceTest";
 import MicImagePreview from "./pages/MicImagePreview";
+import MicTest from "./pages/MicTest";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ const AppContent = () => {
             </div>
           </ProtectedRoute>
         } />
+        <Route path="/mic-test" element={<MicTest />} />
         <Route path="/admin" element={
           <ProtectedRoute>
             <Admin />
