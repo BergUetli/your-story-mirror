@@ -53,7 +53,11 @@ const AppContent = () => {
         {/* Signed-in users: Always land on Sanctuary (Solin) page */}
         <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
         <Route path="/about" element={<About />} />
-        <Route path="/sanctuary" element={<Index />} />
+        <Route path="/sanctuary" element={
+          <ProtectedRoute>
+            <Index />
+          </ProtectedRoute>
+        } />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
         <Route path="/mic-preview" element={<MicImagePreview />} />

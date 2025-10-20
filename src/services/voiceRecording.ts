@@ -66,8 +66,25 @@ export class VoiceRecordingService {
       console.log('👤 User ID:', userId);
       console.log('🎙️ Checking MediaRecorder support...');
       
+      // Force cleanup any stale sessions before starting new one
       if (this.currentSession?.isRecording) {
-        throw new Error('Recording already in progress');
+        console.warn('⚠️ Found stale recording session, cleaning up...');
+        try {
+          // Stop any active MediaRecorder
+          if (this.currentSession.mediaRecorder) {
+            this.currentSession.mediaRecorder.stop();
+            const stream = this.currentSession.mediaRecorder.stream;
+            if (stream) {
+              stream.getTracks().forEach(track => track.stop());
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Error cleaning up stale session:', error);
+        }
+        
+        // Reset session state
+        this.currentSession = null;
+        console.log('✅ Stale session cleaned up, proceeding with new recording');
       }
 
       // Check MediaRecorder support
