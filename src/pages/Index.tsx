@@ -9,6 +9,7 @@ import { intelligentPrompting } from '@/services/intelligentPrompting';
 import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
 import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
+import { conversationRecordingService } from '@/services/conversationRecording';
 import { soundEffects } from '@/services/soundEffects';
 import { FirstConversationDialog } from '@/components/FirstConversationDialog';
 import { userProfileService } from '@/services/userProfileService';
@@ -489,11 +490,20 @@ const Index = () => {
       const recordingUserId = authenticatedUserIdRef.current || user?.id || effectiveUser?.id;
       
       if (recordingUserId) {
-        console.log('🎤 Starting voice recording for authenticated user:', recordingUserId);
-        const sessionId = await voiceRecordingService.startRecording(recordingUserId, 'elevenlabs_conversation');
+        console.log('🎤 Starting conversation recording for authenticated user:', recordingUserId);
+        const sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'elevenlabs_conversation');
         setRecordingSessionId(sessionId);
         setIsRecording(true);
-        console.log('✅ Voice recording started successfully:', sessionId);
+        console.log('✅ Conversation recording started successfully:', sessionId);
+        
+        // Add periodic status logging
+        const statusInterval = setInterval(() => {
+          const status = conversationRecordingService.getRecordingStatus();
+          console.log('🎬 Recording Status:', status);
+        }, 10000); // Log every 10 seconds
+        
+        // Clean up interval when conversation ends
+        setTimeout(() => clearInterval(statusInterval), 300000); // Max 5 minutes
       } else {
         console.warn('⚠️ No authenticated user found - voice recording skipped');
         console.log('🔍 Auth debug:', { 
@@ -538,11 +548,11 @@ const Index = () => {
     // Stop voice recording if active
     if (isRecording && recordingSessionId) {
       try {
-        console.log('🛑 Stopping voice recording due to disconnect...');
-        await voiceRecordingService.stopRecording();
+        console.log('🛑 Stopping conversation recording due to disconnect...');
+        await conversationRecordingService.stopConversationRecording();
         setIsRecording(false);
         setRecordingSessionId(null);
-        console.log('✅ Voice recording stopped and saved');
+        console.log('✅ Conversation recording stopped and saved');
       } catch (error) {
         console.error('⚠️ Failed to stop voice recording:', error);
         setIsRecording(false);
@@ -1748,6 +1758,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       if (typeof message === 'object' && message !== null) {
         const msg = message as any;
         if (msg.type === 'response.audio_transcript.delta' && msg.delta) {
+          // Add to conversation recording transcript
+          if (isRecording) {
+            conversationRecordingService.addTranscriptEntry('ai', msg.delta);
+          }
+          
           setConversationMessages(prev => {
             const last = prev[prev.length - 1];
             if (last && last.role === 'ai') {
@@ -1755,18 +1770,13 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             }
             return [...prev, { role: 'ai', text: msg.delta }];
           });
-          
-          // Add AI message to voice recording transcript
-          if (isRecording) {
-            voiceRecordingService.addTranscript(msg.delta, 'ai');
-          }
         } else if (msg.source === 'user' && msg.message) {
           const userMessage = msg.message;
           setConversationMessages(prev => [...prev, { role: 'user', text: userMessage }]);
           
-          // Add user message to voice recording transcript
+          // Add user message to conversation recording transcript
           if (isRecording) {
-            voiceRecordingService.addTranscript(userMessage, 'user');
+            conversationRecordingService.addTranscriptEntry('user', userMessage);
           }
           
           // Extract topics from user messages for smarter context
