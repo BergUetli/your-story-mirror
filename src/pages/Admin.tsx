@@ -11,6 +11,7 @@ import { SystemStatusPanel } from '@/components/admin/SystemStatusPanel';
 import { PerformancePanel } from '@/components/admin/PerformancePanel';
 import DatabaseManagementPanel from '@/components/admin/DatabaseManagementPanel';
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
+import { MicrophoneTest } from '@/components/MicrophoneTest';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -35,7 +36,8 @@ const Admin = () => {
     voiceAgent: 'operational',
     database: 'operational', 
     elevenlabs: 'unknown',
-    memorySystem: 'operational'
+    memorySystem: 'operational',
+    microphoneTest: 'operational'
   });
   
   const [realTimeMetrics, setRealTimeMetrics] = useState({
@@ -142,7 +144,7 @@ const Admin = () => {
         </div>
 
         {/* Quick Status Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -190,11 +192,23 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">Microphone Test</p>
+                  <StatusIndicator status={systemStatus.microphoneTest} />
+                </div>
+                <Mic className="w-8 h-8 text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-7 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
               Diagnostics
@@ -218,6 +232,10 @@ const Admin = () => {
             <TabsTrigger value="database" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Trash2 className="w-4 h-4" />
               Database Mgmt
+            </TabsTrigger>
+            <TabsTrigger value="mictest" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Mic className="w-4 h-4" />
+              Microphone Test
             </TabsTrigger>
           </TabsList>
 
@@ -243,6 +261,67 @@ const Admin = () => {
 
           <TabsContent value="database" className="space-y-6">
             <DatabaseManagementPanel />
+          </TabsContent>
+
+          <TabsContent value="mictest" className="space-y-6">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Mic className="w-5 h-5" />
+                  Microphone Test & Diagnostics
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  Test microphone functionality and audio input quality for voice conversations.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-slate-900/50 p-4 rounded-lg">
+                  <h3 className="text-white font-medium mb-3">Real-Time Audio Test</h3>
+                  <p className="text-sm text-slate-300 mb-4">
+                    This test uses improved time-domain analysis for better speech detection sensitivity.
+                    Speak normally to see the meter respond - it should detect regular conversation levels.
+                  </p>
+                  <MicrophoneTest 
+                    duration={15}
+                    onTestComplete={(results) => {
+                      console.log('Admin microphone test results:', results);
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                  <div className="bg-slate-900/50 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2">Quick Actions</h4>
+                    <div className="space-y-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full border-slate-600 hover:bg-slate-700"
+                        onClick={() => window.open('/mic-test', '_blank')}
+                      >
+                        Open Full Microphone Test Page
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900/50 p-4 rounded-lg">
+                    <h4 className="text-white font-medium mb-2">Recent Fixes</h4>
+                    <div className="text-sm text-slate-300 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                        <span>Fixed time-domain audio analysis</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                        <span>Improved RMS volume calculation</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                        <span>Enhanced sensitivity scaling (5x)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

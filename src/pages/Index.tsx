@@ -24,7 +24,8 @@ import {
   Users,
   Lock,
   Sparkles,
-  Music
+  Music,
+  Mic
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -2795,6 +2796,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             <Button variant="ghost" asChild>
               <Link to="/how-it-works">How It Works</Link>
             </Button>
+            <Button variant="ghost" asChild>
+              <Link to="/mic-test" className="flex items-center gap-2">
+                <Mic className="h-4 w-4" />
+                Mic Test
+              </Link>
+            </Button>
             {!effectiveUser && (
               <Button variant="outline" size="sm" asChild>
                 <Link to="/auth">Sign In</Link>
@@ -2830,15 +2837,28 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {effectiveUser ? (
               // Authenticated user - show voice agent button
-              <Button 
-                size="lg" 
-                onClick={startConversation}
-                disabled={isConnecting || isConnected}
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
-              >
-                {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start Conversation'}
-                <ArrowRight className="h-5 w-5 ml-2" />
-              </Button>
+              <>
+                <Button 
+                  size="lg" 
+                  onClick={startConversation}
+                  disabled={isConnecting || isConnected}
+                  className="bg-primary hover:bg-primary/90 text-white px-8 py-5 rounded-full font-semibold hover:scale-105 transition-all"
+                >
+                  {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Start Conversation'}
+                  <ArrowRight className="h-5 w-5 ml-2" />
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  asChild
+                  className="px-6 py-3 rounded-full font-medium hover:scale-105 transition-all border-2 flex items-center gap-2"
+                >
+                  <Link to="/mic-test">
+                    <Mic className="h-4 w-4" />
+                    Test Microphone
+                  </Link>
+                </Button>
+              </>
             ) : (
               // Unauthenticated user - show sign up options
               <>
