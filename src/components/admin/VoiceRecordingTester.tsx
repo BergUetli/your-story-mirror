@@ -50,6 +50,12 @@ export const VoiceRecordingTester = () => {
   const [speakerTestResult, setSpeakerTestResult] = useState<AudioTestResult | null>(null);
   const [recordingTestResult, setRecordingTestResult] = useState<AudioTestResult | null>(null);
   
+  // Microphone test state
+  const [isMicTesting, setIsMicTesting] = useState(false);
+  const [micTestTime, setMicTestTime] = useState(0);
+  const [volumeLevel, setVolumeLevel] = useState(0);
+  const [maxVolumeReached, setMaxVolumeReached] = useState(0);
+  
   // Audio state
   const [hasRecording, setHasRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -61,14 +67,24 @@ export const VoiceRecordingTester = () => {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recordingChunks = useRef<Blob[]>([]);
+  const micTestTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const volumeAnalyzerRef = useRef<AnalyserNode | null>(null);
+  const volumeAnimationRef = useRef<number | null>(null);
 
   const MAX_RECORDING_TIME = 10; // 10 seconds max
+  const MIC_TEST_DURATION = 10; // 10 seconds for microphone test
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
+      }
+      if (micTestTimerRef.current) {
+        clearInterval(micTestTimerRef.current);
+      }
+      if (volumeAnimationRef.current) {
+        cancelAnimationFrame(volumeAnimationRef.current);
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -86,9 +102,19 @@ export const VoiceRecordingTester = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Test microphone access
+  // Enhanced microphone test with volume visualization
   const testMicrophone = async () => {
-    setMicTestResult({ type: 'mic', status: 'testing', message: 'Testing microphone access...', timestamp: new Date() });
+    if (isMicTesting) {
+      // Stop current test
+      stopMicTest();
+      return;
+    }
+    
+    setMicTestResult({ type: 'mic', status: 'testing', message: `Testing microphone for ${MIC_TEST_DURATION} seconds... Speak into your microphone!`, timestamp: new Date() });
+    setIsMicTesting(true);
+    setMicTestTime(0);
+    setVolumeLevel(0);
+    setMaxVolumeReached(0);
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -100,51 +126,69 @@ export const VoiceRecordingTester = () => {
         }
       });
       
-      // Test if we can access audio data
+      streamRef.current = stream;
+      
+      // Set up audio analysis
       const audioContext = new AudioContext();
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
+      
+      // Configure analyser for better responsiveness
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      
       source.connect(analyser);
+      volumeAnalyzerRef.current = analyser;
       
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      
-      // Check for audio input for 2 seconds
       let audioDetected = false;
-      const checkAudio = () => {
+      let peakVolume = 0;
+      
+      // Real-time volume monitoring
+      const updateVolume = () => {
+        if (!isMicTesting || !analyser) return;
+        
         analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((acc, val) => acc + val, 0) / dataArray.length;
-        if (average > 10) { // Threshold for detecting audio
+        
+        // Calculate RMS (Root Mean Square) for better volume representation
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i] * dataArray[i];
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        
+        // Convert to percentage (0-100)
+        const volumePercent = Math.min(100, (rms / 128) * 100);
+        setVolumeLevel(volumePercent);
+        
+        // Track peak volume
+        if (volumePercent > peakVolume) {
+          peakVolume = volumePercent;
+          setMaxVolumeReached(peakVolume);
+        }
+        
+        // Consider audio detected if volume is above threshold
+        if (volumePercent > 5) {
           audioDetected = true;
         }
+        
+        volumeAnimationRef.current = requestAnimationFrame(updateVolume);
       };
       
-      const checkInterval = setInterval(checkAudio, 100);
+      // Start volume monitoring
+      updateVolume();
       
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        stream.getTracks().forEach(track => track.stop());
-        audioContext.close();
-        
-        if (audioDetected) {
-          setMicTestResult({ 
-            type: 'mic', 
-            status: 'success', 
-            message: 'Microphone is working! Audio input detected.', 
-            timestamp: new Date() 
-          });
-          toast({
-            title: 'Microphone Test Passed',
-            description: 'Your microphone is working correctly.',
-          });
-        } else {
-          setMicTestResult({ 
-            type: 'mic', 
-            status: 'error', 
-            message: 'Microphone detected but no audio input. Try speaking during the test.', 
-            timestamp: new Date() 
-          });
-        }
-      }, 2000);
+      // Timer for test duration
+      micTestTimerRef.current = setInterval(() => {
+        setMicTestTime(prev => {
+          const newTime = prev + 1;
+          if (newTime >= MIC_TEST_DURATION) {
+            stopMicTest(audioDetected, peakVolume, audioContext);
+            return MIC_TEST_DURATION;
+          }
+          return newTime;
+        });
+      }, 1000);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -154,12 +198,67 @@ export const VoiceRecordingTester = () => {
         message: `Microphone test failed: ${errorMessage}`, 
         timestamp: new Date() 
       });
+      setIsMicTesting(false);
       
       toast({
         title: 'Microphone Test Failed',
         description: 'Please check your microphone permissions and try again.',
         variant: 'destructive'
       });
+    }
+  };
+  
+  // Stop microphone test
+  const stopMicTest = (audioDetected?: boolean, peakVolume?: number, audioContext?: AudioContext) => {
+    setIsMicTesting(false);
+    
+    if (micTestTimerRef.current) {
+      clearInterval(micTestTimerRef.current);
+      micTestTimerRef.current = null;
+    }
+    
+    if (volumeAnimationRef.current) {
+      cancelAnimationFrame(volumeAnimationRef.current);
+      volumeAnimationRef.current = null;
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    
+    if (audioContext) {
+      audioContext.close();
+    }
+    
+    // Only set result if we have the test data (not manual stop)
+    if (audioDetected !== undefined && peakVolume !== undefined) {
+      if (audioDetected && peakVolume > 5) {
+        setMicTestResult({ 
+          type: 'mic', 
+          status: 'success', 
+          message: `Microphone is working perfectly! Peak volume: ${peakVolume.toFixed(1)}%`, 
+          timestamp: new Date() 
+        });
+        toast({
+          title: 'Microphone Test Passed',
+          description: `Peak volume reached: ${peakVolume.toFixed(1)}%`,
+        });
+      } else if (audioDetected) {
+        setMicTestResult({ 
+          type: 'mic', 
+          status: 'success', 
+          message: `Microphone detected audio but volume was low. Peak: ${peakVolume.toFixed(1)}%`, 
+          timestamp: new Date() 
+        });
+      } else {
+        setMicTestResult({ 
+          type: 'mic', 
+          status: 'error', 
+          message: `No audio input detected. Please speak louder or check microphone.`, 
+          timestamp: new Date() 
+        });
+      }
     }
   };
 
@@ -436,22 +535,80 @@ export const VoiceRecordingTester = () => {
           <CardContent className="space-y-3">
             <Button 
               onClick={testMicrophone}
-              disabled={micTestResult?.status === 'testing'}
               className="w-full"
               variant="outline"
             >
-              {micTestResult?.status === 'testing' ? (
+              {isMicTesting ? (
                 <>
-                  <Mic className="h-4 w-4 mr-2 animate-pulse" />
-                  Testing...
+                  <Square className="h-4 w-4 mr-2" />
+                  Stop Test
                 </>
               ) : (
                 <>
                   <Mic className="h-4 w-4 mr-2" />
-                  Test Microphone
+                  Test Microphone ({MIC_TEST_DURATION}s)
                 </>
               )}
             </Button>
+            
+            {/* Live Volume Visualization */}
+            {isMicTesting && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>Volume Level</span>
+                  <span>{micTestTime}s / {MIC_TEST_DURATION}s</span>
+                </div>
+                
+                {/* Volume Meter */}
+                <div className="w-full h-4 bg-slate-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full transition-all duration-75 ${
+                      volumeLevel < 30 ? 'bg-green-500' :
+                      volumeLevel < 70 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${volumeLevel}%` }}
+                  />
+                </div>
+                
+                {/* Volume Indicators */}
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-green-400">Good</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-yellow-400">Loud</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span className="text-red-400">Peak</span>
+                  </div>
+                </div>
+                
+                {/* Current and Peak Volume */}
+                <div className="text-xs text-slate-400 text-center">
+                  Current: {volumeLevel.toFixed(1)}% | Peak: {maxVolumeReached.toFixed(1)}%
+                </div>
+                
+                {/* Test Progress */}
+                <Progress 
+                  value={(micTestTime / MIC_TEST_DURATION) * 100} 
+                  className="w-full h-1"
+                />
+                
+                <p className="text-xs text-blue-300 text-center">
+                  🎤 Speak normally into your microphone to test volume levels
+                </p>
+              </div>
+            )}</Button>
+            
+            {/* Test Instructions */}
+            {!isMicTesting && !micTestResult && (
+              <p className="text-xs text-slate-400">
+                This will test your microphone for {MIC_TEST_DURATION} seconds with real-time volume visualization.
+              </p>
+            )}
             
             {micTestResult && (
               <div className={`flex items-start gap-2 p-2 rounded text-xs ${

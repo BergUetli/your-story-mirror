@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Storage Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Supabase Storage Analysis</h1>
+    <div id="results"></div>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+        
+        const supabaseUrl = 'https://gulydhhzwlltkxbfnclu.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1bHlkaGh6d2xsdGt4YmZuY2x1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwNzQ1ODIsImV4cCI6MjA3MjY1MDU4Mn0.hyegbm0PfIo5D0KdZRYoTHYVJw6k1WTITgoq-g_wFGM';
+        
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const results = document.getElementById('results');
+        
+        function addResult(title, content, className = 'info') {
+            const div = document.createElement('div');
+            div.className = 'test-section';
+            div.innerHTML = `<h3>${title}</h3><div class="${className}">${content}</div>`;
+            results.appendChild(div);
+        }
+        
+        async function analyzeStorage() {
+            try {
+                addResult('🔍 Starting Supabase Storage Analysis...', 'Checking storage configuration and capabilities');
+                
+                // 1. Check authentication status
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    addResult('🔐 Authentication', `✅ Signed in as: ${session.user.email}<br>User ID: ${session.user.id}`, 'success');
+                } else {
+                    addResult('🔐 Authentication', '⚠️ Not signed in - storage tests will be limited', 'warning');
+                }
+                
+                // 2. List available buckets
+                const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+                if (bucketsError) {
+                    addResult('📦 Storage Buckets', `❌ Error: ${bucketsError.message}`, 'error');
+                } else {
+                    const bucketList = buckets.map(b => `• ${b.name} (${b.public ? 'public' : 'private'})`).join('<br>');
+                    addResult('📦 Storage Buckets', `✅ Found ${buckets.length} buckets:<br>${bucketList}`, 'success');
+                    
+                    // Check for voice-recordings bucket specifically
+                    const voiceBucket = buckets.find(b => b.name === 'voice-recordings');
+                    if (voiceBucket) {
+                        addResult('🎤 Voice Recordings Bucket', `✅ Found voice-recordings bucket<br>• Public: ${voiceBucket.public}<br>• ID: ${voiceBucket.id}`, 'success');
+                        
+                        // Test file operations if signed in
+                        if (session) {
+                            await testVoiceRecordingsBucket(session.user.id);
+                        } else {
+                            addResult('🧪 Bucket Tests', '⚠️ Skipped - requires authentication', 'warning');
+                        }
+                    } else {
+                        addResult('🎤 Voice Recordings Bucket', '❌ voice-recordings bucket not found', 'error');
+                    }
+                }
+                
+                // 3. Test database access
+                if (session) {
+                    await testDatabaseAccess(session.user.id);
+                }
+                
+                // 4. Calculate storage requirements and limits
+                calculateStorageRequirements();
+                
+            } catch (error) {
+                addResult('❌ Analysis Failed', `Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testVoiceRecordingsBucket(userId) {
+            try {
+                // Test upload
+                const testBlob = new Blob(['test audio data'], { type: 'audio/webm' });
+                const testPath = `${userId}/test-${Date.now()}.webm`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('voice-recordings')
+                    .upload(testPath, testBlob, { upsert: true });
+                    
+                if (uploadError) {
+                    addResult('📤 Upload Test', `❌ Upload failed: ${uploadError.message}`, 'error');
+                    return;
+                } else {
+                    addResult('📤 Upload Test', `✅ Upload successful: ${uploadData.path}`, 'success');
+                }
+                
+                // Test download
+                const { data: downloadData, error: downloadError } = await supabase.storage
+                    .from('voice-recordings')
+                    .download(testPath);
+                    
+                if (downloadError) {
+                    addResult('📥 Download Test', `❌ Download failed: ${downloadError.message}`, 'error');
+                } else {
+                    addResult('📥 Download Test', `✅ Download successful: ${downloadData.size} bytes`, 'success');
+                }
+                
+                // Test list files
+                const { data: files, error: listError } = await supabase.storage
+                    .from('voice-recordings')
+                    .list(userId, { limit: 10 });
+                    
+                if (listError) {
+                    addResult('📋 List Files Test', `❌ List failed: ${listError.message}`, 'error');
+                } else {
+                    addResult('📋 List Files Test', `✅ Listed ${files.length} files in user folder`, 'success');
+                }
+                
+                // Clean up test file
+                await supabase.storage.from('voice-recordings').remove([testPath]);
+                
+            } catch (error) {
+                addResult('🧪 Bucket Tests', `❌ Test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDatabaseAccess(userId) {
+            try {
+                // Test voice_recordings table access
+                const { data, error } = await supabase
+                    .from('voice_recordings')
+                    .select('*')
+                    .limit(5);
+                    
+                if (error) {
+                    addResult('🗄️ Database Access', `❌ voice_recordings table error: ${error.message}`, 'error');
+                } else {
+                    addResult('🗄️ Database Access', `✅ voice_recordings table accessible (${data.length} records found)`, 'success');
+                }
+            } catch (error) {
+                addResult('🗄️ Database Access', `❌ Database test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function calculateStorageRequirements() {
+            const requirements = `
+                <h4>📊 Voice Recording Storage Requirements Analysis:</h4>
+                
+                <h5>🎯 Recording Specifications:</h5>
+                • Format: WebM with Opus codec (most efficient)<br>
+                • Bitrate: 64 kbps (good quality for speech)<br>
+                • Sample Rate: 48kHz mono<br>
+                • Estimated file size: ~0.5 MB per minute<br><br>
+                
+                <h5>📈 Usage Estimates:</h5>
+                • 5-minute conversation: ~2.5 MB<br>
+                • 10-minute conversation: ~5 MB<br>
+                • 30-minute conversation: ~15 MB<br>
+                • 100 conversations/month: ~250-1500 MB (depending on length)<br><br>
+                
+                <h5>🏗️ Supabase Free Tier Limits:</h5>
+                • Storage: 1 GB total (shared across all files)<br>
+                • Bandwidth: 2 GB/month<br>
+                • File size limit: Configurable (we set 50MB)<br><br>
+                
+                <h5>💰 Supabase Pro Tier ($25/month):</h5>
+                • Storage: 8 GB included, then $0.021/GB<br>
+                • Bandwidth: 250 GB/month included<br>
+                • Much higher limits<br><br>
+                
+                <h5>⚠️ Considerations:</h5>
+                • Auto-deletion after 90 days (configurable)<br>
+                • Compression reduces file sizes significantly<br>
+                • Guest recordings for demos<br>
+                • Test recordings (small impact)
+            `;
+            
+            addResult('📊 Storage Requirements', requirements, 'info');
+            
+            // Recommendations
+            const recommendations = `
+                <h4>✅ Recommendations:</h4>
+                
+                <strong>For Development/Testing:</strong><br>
+                • Supabase Free tier is sufficient<br>
+                • 1GB can handle ~200-400 conversations<br>
+                • Auto-cleanup helps manage space<br><br>
+                
+                <strong>For Production:</strong><br>
+                • Consider Supabase Pro for higher limits<br>
+                • Monitor storage usage in dashboard<br>
+                • Implement user-configurable retention periods<br>
+                • Consider compression optimizations<br><br>
+                
+                <strong>Alternative Solutions (if needed):</strong><br>
+                • AWS S3 (cheaper for large volumes)<br>
+                • Google Cloud Storage<br>
+                • Azure Blob Storage<br>
+                • But Supabase integration is much simpler!
+            `;
+            
+            addResult('💡 Recommendations', recommendations, 'success');
+        }
+        
+        // Start analysis
+        analyzeStorage();
+    </script>
+</body>
+</html>
