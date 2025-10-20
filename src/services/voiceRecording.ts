@@ -635,6 +635,60 @@ export const testGuestRecording = async () => {
   }
 };
 
+// Test function for authenticated users
+export const testAuthenticatedRecording = async () => {
+  try {
+    console.log('🧪 Testing authenticated user recording functionality...');
+    
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      console.error('❌ No authenticated user found:', userError);
+      return { success: false, error: 'No authenticated user' };
+    }
+    
+    console.log('👤 Test authenticated user ID:', user.id);
+    
+    // Test database insertion with authenticated user ID
+    const { data, error } = await supabase
+      .from('voice_recordings')
+      .insert([{
+        user_id: user.id,
+        session_id: 'test-auth-session-123',
+        recording_type: 'test',
+        storage_path: 'test/auth-path.webm',
+        original_filename: 'test-auth.webm',
+        file_size_bytes: 1000,
+        duration_seconds: 10.5,
+        mime_type: 'audio/webm;codecs=opus',
+        transcript_text: 'This is a test recording for authenticated user',
+        conversation_summary: 'Test recording for authenticated user debugging',
+        session_mode: 'test'
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Authenticated test recording failed:', error);
+      return { success: false, error };
+    } else {
+      console.log('✅ Authenticated test recording succeeded:', data);
+      
+      // Clean up test record
+      await supabase
+        .from('voice_recordings')
+        .delete()
+        .eq('id', data.id);
+      
+      console.log('🧹 Authenticated test record cleaned up');
+      return { success: true, data };
+    }
+  } catch (error) {
+    console.error('❌ Authenticated test recording exception:', error);
+    return { success: false, error };
+  }
+};
+
 // Function to check what's actually in the database
 export const checkDatabaseRecordings = async () => {
   try {

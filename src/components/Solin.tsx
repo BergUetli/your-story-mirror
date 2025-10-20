@@ -37,7 +37,7 @@ import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, M
 import { cn } from '@/lib/utils';
 import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
-import { voiceRecordingService, testGuestRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
+import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
@@ -121,11 +121,13 @@ const Solin: React.FC<SolinProps> = ({
   // ===== DEBUG: Expose test functions globally =====
   useEffect(() => {
     (window as any).testGuestRecording = testGuestRecording;
+    (window as any).testAuthenticatedRecording = testAuthenticatedRecording;
     (window as any).checkDatabaseRecordings = checkDatabaseRecordings;
     (window as any).checkGuestRecordings = checkGuestRecordings;
     (window as any).voiceRecordingService = voiceRecordingService;
     console.log('🔧 Debug functions exposed:', {
       testGuestRecording: 'Test guest recording insertion',
+      testAuthenticatedRecording: 'Test authenticated user recording insertion',
       checkDatabaseRecordings: 'Check all recordings in database', 
       checkGuestRecordings: 'Check guest recordings specifically',
       voiceRecordingService: 'Full voice recording service'
