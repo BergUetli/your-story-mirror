@@ -189,7 +189,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check onboarding status when user changes
   useEffect(() => {
-    checkOnboardingStatus();
+    // TEMPORARY: Skip onboarding for voice recording testing
+    console.log('🚧 TEMPORARY: Skipping onboarding check for voice recording testing');
+    setNeedsOnboarding(false);
+    // checkOnboardingStatus();
   }, [user]);
 
   const value = {
