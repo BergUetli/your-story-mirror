@@ -37,7 +37,7 @@ import { MessageCircle, X, Send, Sparkles, Volume2, VolumeX, Play, Pause, Mic, M
 import { cn } from '@/lib/utils';
 import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
-import { voiceRecordingService, testGuestRecording } from '@/services/voiceRecording';
+import { voiceRecordingService, testGuestRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
@@ -118,10 +118,18 @@ const Solin: React.FC<SolinProps> = ({
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);  // Whether voice is being recorded
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);  // Current recording session ID
   
-  // ===== DEBUG: Expose test function globally =====
+  // ===== DEBUG: Expose test functions globally =====
   useEffect(() => {
     (window as any).testGuestRecording = testGuestRecording;
+    (window as any).checkDatabaseRecordings = checkDatabaseRecordings;
+    (window as any).checkGuestRecordings = checkGuestRecordings;
     (window as any).voiceRecordingService = voiceRecordingService;
+    console.log('🔧 Debug functions exposed:', {
+      testGuestRecording: 'Test guest recording insertion',
+      checkDatabaseRecordings: 'Check all recordings in database', 
+      checkGuestRecordings: 'Check guest recordings specifically',
+      voiceRecordingService: 'Full voice recording service'
+    });
   }, []);
   const { 
     isListening, 
@@ -402,7 +410,15 @@ const Solin: React.FC<SolinProps> = ({
     // Use actual user ID if logged in, or generate temporary guest ID for demo
     const recordingUserId = user?.id || `guest-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
+    console.log('🎬 Solin conversation starting with recording setup:', {
+      recordingUserId,
+      isAuthenticated: !!user?.id,
+      isGuest: !user?.id,
+      userObject: user
+    });
+    
     try {
+      console.log('🎤 Calling voiceRecordingService.startRecording...');
       const sessionId = await voiceRecordingService.startRecording(recordingUserId, 'solin_conversation');
       setCurrentSessionId(sessionId);
       setIsRecordingVoice(true);

@@ -63,15 +63,30 @@ export class VoiceRecordingService {
   async startRecording(userId: string, sessionMode: string): Promise<string> {
     try {
       console.log('🎤 Starting voice recording for session mode:', sessionMode);
+      console.log('👤 User ID:', userId);
+      console.log('🎙️ Checking MediaRecorder support...');
       
       if (this.currentSession?.isRecording) {
         throw new Error('Recording already in progress');
       }
 
+      // Check MediaRecorder support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('MediaDevices API not supported');
+      }
+
+      if (!window.MediaRecorder) {
+        throw new Error('MediaRecorder API not supported');
+      }
+
+      console.log('✅ MediaRecorder API supported');
+
       // Generate unique session ID
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🆔 Generated session ID:', sessionId);
 
       // Get user media with optimized settings
+      console.log('🎧 Requesting microphone access...');
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: this.DEFAULT_CONFIG.channelCount,
@@ -80,6 +95,13 @@ export class VoiceRecordingService {
           noiseSuppression: true,
           autoGainControl: true
         }
+      });
+
+      console.log('🎧 Microphone access granted');
+      console.log('🔊 Audio stream details:', {
+        tracks: stream.getAudioTracks().length,
+        active: stream.active,
+        settings: stream.getAudioTracks()[0]?.getSettings()
       });
 
       // Create MediaRecorder with compression
@@ -91,6 +113,7 @@ export class VoiceRecordingService {
       
       console.log('✅ MediaRecorder created successfully');
       console.log('🎤 MediaRecorder state:', mediaRecorder.state);
+      console.log('🎵 MediaRecorder mimeType:', mediaRecorder.mimeType);
 
       // Initialize session
       this.currentSession = {
@@ -107,19 +130,32 @@ export class VoiceRecordingService {
 
       // Setup event handlers
       mediaRecorder.ondataavailable = (event) => {
+        console.log('📊 Data available event:', {
+          dataSize: event.data.size,
+          dataType: event.data.type,
+          currentChunks: this.currentSession?.audioChunks.length || 0
+        });
         if (event.data.size > 0 && this.currentSession) {
           this.currentSession.audioChunks.push(event.data);
+          console.log(`📦 Audio chunk added (${event.data.size} bytes). Total chunks: ${this.currentSession.audioChunks.length}`);
         }
       };
 
       mediaRecorder.onstop = () => {
+        console.log('🛑 MediaRecorder stop event fired');
         this.handleRecordingStop();
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('❌ MediaRecorder error:', event);
       };
 
       // Start recording
       console.log('🔴 Starting MediaRecorder...');
       mediaRecorder.start(5000); // Collect chunks every 5 seconds
       this.currentSession.isRecording = true;
+      
+      console.log('🎤 MediaRecorder started. State:', mediaRecorder.state);
 
       console.log('✅ Voice recording started successfully!');
       console.log('🎤 Session details:', {
@@ -216,17 +252,28 @@ export class VoiceRecordingService {
    */
   private async handleRecordingStop(): Promise<VoiceRecordingMetadata | null> {
     if (!this.currentSession) {
+      console.log('⚠️ No current session when trying to stop recording');
       return null;
     }
 
     try {
-      console.log('📦 Processing recorded audio:', this.currentSession.sessionId);
+      console.log('📦 Processing recorded audio for session:', this.currentSession.sessionId);
+      console.log('📊 Session details before processing:', {
+        sessionId: this.currentSession.sessionId,
+        userId: this.currentSession.userId,
+        sessionMode: this.currentSession.sessionMode,
+        audioChunks: this.currentSession.audioChunks.length,
+        transcript: this.currentSession.conversationTranscript.length,
+        memoryIds: this.currentSession.memoryIds.length
+      });
       
       const session = this.currentSession;
       const endTime = new Date();
       const duration = (endTime.getTime() - session.startTime.getTime()) / 1000;
+      console.log('⏱️ Recording duration:', duration, 'seconds');
 
       // Combine audio chunks into single blob
+      console.log('🔧 Combining audio chunks...');
       const audioBlob = new Blob(session.audioChunks, { 
         type: this.DEFAULT_CONFIG.mimeType 
       });
@@ -234,15 +281,23 @@ export class VoiceRecordingService {
       console.log('🎵 Audio blob created:', {
         size: audioBlob.size,
         duration: duration,
-        type: audioBlob.type
+        type: audioBlob.type,
+        chunksUsed: session.audioChunks.length
       });
 
       // Skip upload if recording is too short or too small
       if (duration < 5 || audioBlob.size < 1000) {
-        console.log('⏭️ Skipping upload: recording too short or small');
+        console.log('⏭️ Skipping upload: recording too short or small', {
+          duration,
+          audioSize: audioBlob.size,
+          minDuration: 5,
+          minSize: 1000
+        });
         this.currentSession = null;
         return null;
       }
+      
+      console.log('✅ Recording meets minimum requirements, proceeding with upload');
 
       // Generate storage path
       const timestamp = session.startTime.toISOString().replace(/[:.]/g, '-');
@@ -576,6 +631,76 @@ export const testGuestRecording = async () => {
     }
   } catch (error) {
     console.error('❌ Test recording exception:', error);
+    return { success: false, error };
+  }
+};
+
+// Function to check what's actually in the database
+export const checkDatabaseRecordings = async () => {
+  try {
+    console.log('🔍 Checking all voice recordings in database...');
+    
+    const { data, error } = await supabase
+      .from('voice_recordings')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    
+    if (error) {
+      console.error('❌ Database query failed:', error);
+      return { success: false, error };
+    }
+    
+    console.log(`📊 Found ${data?.length || 0} recordings in database:`);
+    data?.forEach((recording, index) => {
+      console.log(`📝 Recording ${index + 1}:`, {
+        id: recording.id,
+        user_id: recording.user_id,
+        session_id: recording.session_id,
+        recording_type: recording.recording_type,
+        duration: recording.duration_seconds,
+        size: recording.file_size_bytes,
+        created_at: recording.created_at,
+        storage_path: recording.storage_path
+      });
+    });
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Database check exception:', error);
+    return { success: false, error };
+  }
+};
+
+// Function to check guest recordings specifically
+export const checkGuestRecordings = async () => {
+  try {
+    console.log('👤 Checking guest recordings specifically...');
+    
+    const { data, error } = await supabase
+      .from('voice_recordings')
+      .select('*')
+      .like('user_id', 'guest-%')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ Guest recordings query failed:', error);
+      return { success: false, error };
+    }
+    
+    console.log(`👤 Found ${data?.length || 0} guest recordings:`);
+    data?.forEach((recording, index) => {
+      console.log(`📝 Guest Recording ${index + 1}:`, {
+        id: recording.id,
+        user_id: recording.user_id,
+        session_id: recording.session_id,
+        created_at: recording.created_at
+      });
+    });
+    
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ Guest recordings check exception:', error);
     return { success: false, error };
   }
 };
