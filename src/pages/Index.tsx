@@ -8,7 +8,7 @@ import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
 import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
-import { voiceRecordingService } from '@/services/voiceRecording';
+import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
 import { soundEffects } from '@/services/soundEffects';
 import { FirstConversationDialog } from '@/components/FirstConversationDialog';
 import { userProfileService } from '@/services/userProfileService';
@@ -1772,6 +1772,16 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
   useEffect(() => {
     console.log('🛰️ Conversation status:', conversation.status, 'speaking:', conversation.isSpeaking);
   }, [conversation.status, conversation.isSpeaking]);
+
+  // ===== DEBUG: Expose voice recording test functions globally =====
+  useEffect(() => {
+    (window as any).testGuestRecording = testGuestRecording;
+    (window as any).testAuthenticatedRecording = testAuthenticatedRecording;
+    (window as any).checkDatabaseRecordings = checkDatabaseRecordings;
+    (window as any).checkGuestRecordings = checkGuestRecordings;
+    (window as any).voiceRecordingService = voiceRecordingService;
+    console.log('🔧 DEBUG: Voice recording test functions exposed to window object');
+  }, []);
 
   const startConversation = useCallback(async () => {
     console.log('🚀 START CONVERSATION: Function called');
