@@ -209,32 +209,41 @@ class DiagnosticLoggerService {
 
   private async validateVoiceRecordingsTable(result: ArchiveValidationResult, userId?: string) {
     try {
-      // Check table structure
-      const { data: columns, error: structureError } = await supabase.rpc('get_table_columns', { 
-        table_name: 'voice_recordings' 
-      });
-      
-      if (structureError) {
-        result.databaseErrors.push(`Voice recordings table structure error: ${structureError.message}`);
-        this.logError('database', 'table_structure_error', { 
-          table: 'voice_recordings',
-          error: structureError.message 
-        });
-      }
-
-      // Count recordings
+      // Count recordings and get sample data
       let query = supabase.from('voice_recordings').select('*', { count: 'exact' });
       if (userId) {
         query = query.eq('user_id', userId);
       }
 
-      const { data, error, count } = await query;
+      const { data, error, count } = await query.limit(5);
       
       if (error) {
         result.databaseErrors.push(`Voice recordings query error: ${error.message}`);
         this.logError('voice_recording', 'query_failed', { error: error.message, userId });
       } else {
         result.voiceRecordingCount = count || 0;
+        
+        // Check if recordings have required fields
+        if (data && data.length > 0) {
+          const sampleRecording = data[0];
+          const requiredFields = ['id', 'created_at'];
+          const optionalFields = ['file_url', 'transcript', 'user_id'];
+          
+          const missingRequired = requiredFields.filter(field => !(field in sampleRecording));
+          const availableOptional = optionalFields.filter(field => field in sampleRecording);
+          
+          this.logInfo('voice_recording', 'table_structure_analyzed', {
+            requiredFields: requiredFields,
+            missingRequired: missingRequired,
+            availableOptional: availableOptional,
+            sampleFields: Object.keys(sampleRecording)
+          });
+          
+          if (missingRequired.length > 0) {
+            result.databaseErrors.push(`Voice recordings missing required fields: ${missingRequired.join(', ')}`);
+          }
+        }
+        
         this.logInfo('voice_recording', 'count_retrieved', { 
           count: result.voiceRecordingCount, 
           userId,
@@ -250,36 +259,60 @@ class DiagnosticLoggerService {
 
   private async validateMemoriesTable(result: ArchiveValidationResult, userId?: string) {
     try {
-      // Check if table has required columns
-      const { data: tableInfo, error: infoError } = await supabase
-        .from('information_schema.columns')
-        .select('column_name, data_type')
-        .eq('table_name', 'memories')
-        .eq('table_schema', 'public');
+      // Test table access and schema by doing a sample insert/rollback
+      const testMemory = {
+        user_id: '00000000-0000-0000-0000-000000000000', // Test UUID
+        title: 'Schema Validation Test',
+        text: 'Testing schema validation',
+        is_primary_chunk: true,
+        source_type: 'validation_test'
+      };
 
-      if (infoError) {
-        result.databaseErrors.push(`Memories table info error: ${infoError.message}`);
-        this.logError('memory_saving', 'table_info_failed', { error: infoError.message });
-      } else {
-        const columnNames = tableInfo?.map(col => col.column_name) || [];
-        const requiredColumns = ['is_primary_chunk', 'source_type'];
-        const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
-        
-        if (missingColumns.length > 0) {
-          result.databaseErrors.push(`Missing required columns: ${missingColumns.join(', ')}`);
-          this.logError('memory_saving', 'missing_columns', { missingColumns, availableColumns: columnNames });
+      // Try to insert (this will fail due to foreign key, but will reveal schema issues)
+      const { data: insertData, error: insertError } = await supabase
+        .from('memories')
+        .insert([testMemory])
+        .select();
+
+      if (insertError) {
+        // Check the type of error to determine schema status
+        if (insertError.message.includes('is_primary_chunk') || 
+            insertError.message.includes('source_type')) {
+          result.databaseErrors.push(`Missing required columns: Schema validation failed - ${insertError.message}`);
+          this.logError('memory_saving', 'missing_columns', { 
+            error: insertError.message,
+            testInsert: testMemory 
+          });
+        } else if (insertError.message.includes('foreign key') || 
+                   insertError.message.includes('violates not-null constraint') ||
+                   insertError.message.includes('auth.users')) {
+          // This is expected - foreign key constraint means schema is OK
+          this.logInfo('memory_saving', 'table_structure_valid', { 
+            message: 'Schema validation passed (foreign key constraint expected)',
+            error: insertError.message 
+          });
         } else {
-          this.logInfo('memory_saving', 'table_structure_valid', { columns: columnNames });
+          // Other unexpected error
+          result.databaseErrors.push(`Memories table validation error: ${insertError.message}`);
+          this.logError('memory_saving', 'table_validation_error', { error: insertError.message });
         }
+      } else if (insertData && insertData.length > 0) {
+        // Successful insert - clean it up
+        this.logInfo('memory_saving', 'table_structure_valid', { 
+          message: 'Schema validation passed (insert successful)' 
+        });
+        
+        // Clean up test record
+        await supabase.from('memories').delete().eq('id', insertData[0].id);
       }
 
-      // Count memories
+      // Count existing memories
       let query = supabase.from('memories').select('*', { count: 'exact' });
       if (userId) {
         query = query.eq('user_id', userId);
       }
 
-      const { data, error, count } = await query;
+      const { data, error, count } = await query.limit(5);
       
       if (error) {
         result.databaseErrors.push(`Memories query error: ${error.message}`);
@@ -355,15 +388,46 @@ class DiagnosticLoggerService {
       // Validate recording structure
       if (recordings.length > 0) {
         const sampleRecording = recordings[0];
-        const requiredFields = ['id', 'created_at', 'file_url'];
-        const missingFields = requiredFields.filter(field => !(field in sampleRecording));
+        const requiredFields = ['id', 'created_at'];
+        const audioFields = ['file_url', 'storage_path']; // Either is acceptable
+        const optionalFields = ['transcript_text', 'conversation_summary', 'user_id', 'duration_seconds'];
         
-        if (missingFields.length > 0) {
-          result.archiveDisplayErrors.push(`Recording missing required fields: ${missingFields.join(', ')}`);
+        const missingRequired = requiredFields.filter(field => !(field in sampleRecording));
+        const availableOptional = optionalFields.filter(field => field in sampleRecording && sampleRecording[field] !== null);
+        const hasAudioPath = audioFields.some(field => field in sampleRecording && sampleRecording[field]);
+        
+        if (missingRequired.length > 0) {
+          result.archiveDisplayErrors.push(`Recording missing required fields: ${missingRequired.join(', ')}`);
           this.logError('archive_display', 'invalid_recording_structure', { 
-            missingFields, 
+            missingRequired, 
             sampleRecording 
           });
+        } else {
+          this.logInfo('archive_display', 'recording_structure_valid', {
+            requiredFieldsPresent: requiredFields,
+            availableOptionalFields: availableOptional,
+            totalFields: Object.keys(sampleRecording).length,
+            hasAudioPath: hasAudioPath,
+            audioPathField: hasAudioPath ? audioFields.find(f => sampleRecording[f]) : null,
+            hasTranscript: !!(sampleRecording.transcript_text || sampleRecording.transcript),
+            hasSummary: !!(sampleRecording.conversation_summary || sampleRecording.summary)
+          });
+          
+          // Info about audio path availability
+          if (!hasAudioPath) {
+            this.logWarn('archive_display', 'missing_audio_path', {
+              recordingId: sampleRecording.id,
+              message: 'Recording exists but has no file_url or storage_path - audio may not be playable',
+              availableFields: Object.keys(sampleRecording)
+            });
+          } else {
+            const audioPath = sampleRecording.file_url || sampleRecording.storage_path;
+            this.logInfo('archive_display', 'audio_path_available', {
+              recordingId: sampleRecording.id,
+              audioPath: audioPath,
+              pathType: sampleRecording.file_url ? 'file_url' : 'storage_path'
+            });
+          }
         }
       }
 

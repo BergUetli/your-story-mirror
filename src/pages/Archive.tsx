@@ -104,8 +104,10 @@ const Archive = () => {
         sampleRecordings: allRecordings.slice(0, 3).map(r => ({
           id: r.id,
           created_at: r.created_at,
-          has_file_url: !!r.file_url,
-          has_transcript: !!r.transcript
+          has_storage_path: !!r.storage_path,
+          has_file_url: !!r.file_url, // Keep for compatibility
+          has_transcript: !!(r.transcript_text || r.transcript),
+          has_summary: !!(r.conversation_summary || r.summary)
         }))
       });
       
