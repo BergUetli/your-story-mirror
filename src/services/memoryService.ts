@@ -21,15 +21,22 @@ class MemoryService {
       const { data, error } = await this.supabase
         .from('memories')
         .select('*')
-        .order('created_at', { ascending: false });
+        // Only get complete memories for Timeline - must have date AND location
+        .not('memory_date', 'is', null)
+        .not('memory_location', 'is', null)
+        .eq('chunk_sequence', 1) // Only primary chunks to avoid duplicates
+        .order('memory_date', { ascending: false });
 
       if (error) throw error;
+      
+      console.log(`📊 Timeline memories loaded: ${data?.length || 0} complete memories`);
       
       // Map database schema (text) to interface schema (content)
       return (data || []).map((mem: any) => ({
         ...mem,
         content: mem.text,
-        date: mem.created_at
+        date: mem.memory_date || mem.created_at, // Use memory_date for Timeline ordering
+        location: mem.memory_location
       }));
     } catch (error) {
       console.error('Error fetching memories from Supabase, falling back to localStorage:', error);

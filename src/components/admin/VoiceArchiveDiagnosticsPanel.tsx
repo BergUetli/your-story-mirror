@@ -136,6 +136,43 @@ export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
     }
   };
 
+  const getBusinessFriendlyMessage = (event: DiagnosticEvent): { title: string; description?: string } => {
+    // Convert technical events to user-friendly messages
+    switch (event.event) {
+      case 'memory_save_requested':
+        return { title: 'Memory save started', description: 'User created a new memory' };
+      case 'memory_database_insert_success':
+        return { title: 'Memory saved successfully', description: 'Memory stored in archive' };
+      case 'memory_database_insert_failed':
+        return { title: 'Memory save failed', description: 'Unable to save memory - check connection' };
+      case 'recording_start_requested':
+        return { title: 'Voice recording started', description: 'Microphone recording activated' };
+      case 'media_apis_supported':
+        return { title: 'Microphone ready', description: 'Browser supports voice recording' };
+      case 'microphone_permission_granted':
+        return { title: 'Microphone access granted', description: 'User allowed microphone use' };
+      case 'microphone_permission_denied':
+        return { title: 'Microphone access denied', description: 'User blocked microphone - check browser settings' };
+      case 'recordings_loaded_success':
+        return { title: 'Archive loaded successfully', description: `Found ${event.details.recordingCount || 0} recordings` };
+      case 'archive_load_failed':
+        return { title: 'Archive loading failed', description: 'Unable to load voice recordings' };
+      case 'connectivity_success':
+        return { title: 'Database connected', description: 'System is online and ready' };
+      case 'validation_started':
+        return { title: 'System check started', description: 'Running voice archive diagnostics' };
+      case 'validation_completed':
+        return { title: 'System check completed', description: event.details.success ? 'All systems working' : 'Issues found' };
+      default:
+        // Fallback: make technical names more readable
+        const readable = event.event
+          .replace(/_/g, ' ')
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .toLowerCase();
+        return { title: readable.charAt(0).toUpperCase() + readable.slice(1) };
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header & Actions */}
@@ -331,17 +368,24 @@ export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-medium">{event.event}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {event.category}
+                          <span className="text-white font-medium">
+                            {getBusinessFriendlyMessage(event).title}
+                          </span>
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {event.category.replace('_', ' ')}
                           </Badge>
                           <span className="text-xs text-slate-400">
                             {new Date(event.timestamp).toLocaleTimeString()}
                           </span>
                         </div>
-                        {Object.keys(event.details).length > 0 && (
-                          <div className="text-sm text-slate-300 font-mono bg-slate-800 p-2 rounded text-xs overflow-x-auto">
-                            {JSON.stringify(event.details, null, 2)}
+                        {getBusinessFriendlyMessage(event).description && (
+                          <div className="text-sm text-slate-300 mb-2">
+                            {getBusinessFriendlyMessage(event).description}
+                          </div>
+                        )}
+                        {event.level === 'error' && Object.keys(event.details).length > 0 && (
+                          <div className="text-xs text-red-300 bg-red-900/20 p-2 rounded border border-red-600/30">
+                            <strong>Error details:</strong> {event.details.error || 'Technical issue occurred'}
                           </div>
                         )}
                       </div>
