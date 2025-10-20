@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { aiVoiceSearch, VoiceSearchResult } from '@/services/aiVoiceSearch';
 import { AudioPlayer } from '@/components/AudioPlayer';
+import { MemoryArchive } from '@/components/MemoryArchive';
 
 const Archive = () => {
   const { user } = useAuth();
@@ -36,6 +37,7 @@ const Archive = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'memories'>('date');
+  const [activeTab, setActiveTab] = useState<'recordings' | 'memories'>('recordings');
   
   // Load all voice recordings
   const loadRecordings = async () => {
@@ -208,7 +210,7 @@ const Archive = () => {
             </Link>
             <div className="flex items-center gap-2">
               <ArchiveIcon className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-semibold">Voice Archive</h1>
+              <h1 className="text-xl font-semibold">Archive</h1>
             </div>
           </div>
           
@@ -231,7 +233,31 @@ const Archive = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-1 mb-6 bg-muted/30 p-1 rounded-lg w-fit">
+          <Button
+            variant={activeTab === 'recordings' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('recordings')}
+            className="flex items-center gap-2"
+          >
+            <FileAudio className="w-4 h-4" />
+            Voice Recordings
+          </Button>
+          <Button
+            variant={activeTab === 'memories' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setActiveTab('memories')}
+            className="flex items-center gap-2"
+          >
+            <Database className="w-4 h-4" />
+            Memory Archive
+          </Button>
+        </div>
+
+        {/* Voice Recordings Tab */}
+        {activeTab === 'recordings' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Panel: Controls and List */}
           <div className="lg:col-span-2 space-y-4">
             {/* Search and Controls */}
@@ -517,6 +543,12 @@ const Archive = () => {
             )}
           </div>
         </div>
+        )}
+
+        {/* Memory Archive Tab */}
+        {activeTab === 'memories' && (
+          <MemoryArchive />
+        )}
       </div>
     </div>
   );
