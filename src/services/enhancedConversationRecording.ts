@@ -81,13 +81,18 @@ export class EnhancedConversationRecordingService {
 
       const sessionId = `enhanced_conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create high-quality audio context
-      const audioContext = new AudioContext({
+      // Create high-quality audio context with browser compatibility
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContextClass({
         sampleRate: 48000,
         latencyHint: 'interactive'
       });
       
-      await audioContext.resume(); // Ensure context is active
+      // Resume AudioContext if suspended (required by browser policy)
+      if (audioContext.state === 'suspended') {
+        console.log('⚠️ Enhanced AudioContext suspended, resuming...');
+        await audioContext.resume();
+      }
       
       console.log('🎵 Enhanced AudioContext created:', {
         sampleRate: audioContext.sampleRate,

@@ -128,8 +128,13 @@ export const VoiceRecordingTester = () => {
       
       streamRef.current = stream;
       
-      // Set up audio analysis
-      const audioContext = new AudioContext();
+      // Set up audio analysis with proper browser compatibility
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume AudioContext if suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       
@@ -267,8 +272,13 @@ export const VoiceRecordingTester = () => {
     setSpeakerTestResult({ type: 'speakers', status: 'testing', message: 'Playing test tone...', timestamp: new Date() });
     
     try {
-      // Create a simple test tone
-      const audioContext = new AudioContext();
+      // Create a simple test tone with proper browser compatibility
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume AudioContext if suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       

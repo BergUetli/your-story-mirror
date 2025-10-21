@@ -1992,15 +1992,23 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
       // Proactively unlock audio on mobile/desktop to avoid autoplay policies blocking TTS
       try {
+        console.log(`🔌 [${sessionHandoffId}] CONNECTION HANDOFF: 🎵 UNLOCKING AUDIO CONTEXT`);
         const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx) {
           const ctx = new AudioCtx();
-          await ctx.resume();
-          await new Promise(r => setTimeout(r, 10));
+          console.log(`🔌 [${sessionHandoffId}] AudioContext state before resume:`, ctx.state);
+          
+          if (ctx.state === 'suspended') {
+            await ctx.resume();
+            console.log(`🔌 [${sessionHandoffId}] AudioContext resumed, new state:`, ctx.state);
+          }
+          
+          await new Promise(r => setTimeout(r, 50)); // Longer delay for mobile
           await ctx.close();
+          console.log(`🔌 [${sessionHandoffId}] AudioContext closed successfully`);
         }
       } catch (e) {
-        console.warn('⚠️ AudioContext unlock failed (safe to ignore):', e);
+        console.warn(`🔌 [${sessionHandoffId}] ⚠️ AudioContext unlock failed (safe to ignore):`, e);
       }
 
       let data, error;

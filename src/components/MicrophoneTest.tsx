@@ -141,8 +141,14 @@ export const MicrophoneTest: React.FC<MicrophoneTestProps> = ({
         settings: tracks[0]?.getSettings()
       });
 
-      // Set up audio analysis
-      const audioContext = new AudioContext();
+      // Set up audio analysis - ensure AudioContext is created after user gesture
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume AudioContext if it's suspended (required by browser policy)
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
       audioContextRef.current = audioContext;
 
       const source = audioContext.createMediaStreamSource(stream);

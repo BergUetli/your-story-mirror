@@ -57,8 +57,15 @@ export class ConversationRecordingService {
 
       const sessionId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Create audio context
-      const audioContext = new AudioContext();
+      // Create audio context (ensure compatibility and proper user gesture handling)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume AudioContext if suspended (required by browser policy)
+      if (audioContext.state === 'suspended') {
+        console.log('⚠️ AudioContext suspended, resuming...');
+        await audioContext.resume();
+      }
+      
       console.log('🎵 AudioContext created:', {
         sampleRate: audioContext.sampleRate,
         state: audioContext.state
