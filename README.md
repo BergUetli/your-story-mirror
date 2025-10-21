@@ -1,14 +1,18 @@
 # You, Remembered 🌟
 
-A digital memory preservation application that helps users capture and preserve their life stories through AI-powered voice conversations with Solon, an empathetic AI companion.
+A comprehensive digital memory preservation platform that helps users capture, preserve, and relive their life stories through AI-powered voice conversations with Solin, an empathetic AI companion.
 
 ## 🎯 Overview
 
 **You, Remembered** enables users to:
-- Record memories through natural voice conversations with Solon (ElevenLabs AI agent)
-- Organize and search through their life stories
-- Create a lasting digital legacy for future generations
-- Control access to different memories (private, family, friends)
+- 🎙️ **Record conversations** with Solin through natural voice interactions (ElevenLabs AI agent)
+- 📚 **Archive & playback** complete voice recordings with searchable transcripts
+- 🔍 **Search memories** intelligently with AI-powered semantic understanding
+- 📖 **Generate voice recordings** from existing text memories using conversation styles
+- 📊 **Diagnostic tools** for comprehensive system monitoring and troubleshooting
+- 🗂️ **Organize timeline** with complete vs incomplete memory filtering
+- 🎭 **Multiple conversation styles** (reflection, interview, storytelling, discussion)
+- 🔐 **Control access** to different memories (private, family, friends)
 
 ## 🏗️ Architecture
 
@@ -34,23 +38,34 @@ A digital memory preservation application that helps users capture and preserve 
 ```
 src/
 ├── components/
-│   ├── AnimatedOrb.tsx           # Visual feedback for Solon's state
-│   ├── ElevenLabsVoiceAgent.tsx  # Standalone voice agent component
-│   └── auth/                     # Authentication components
+│   ├── AnimatedOrb.tsx              # Visual feedback for Solin's state
+│   ├── ModernVoiceAgent.tsx         # Primary conversation interface
+│   ├── AudioPlayer.tsx              # Voice recording playback with transcript sync
+│   ├── MicrophoneTest.tsx           # Advanced microphone diagnostics
+│   ├── MemoryArchive.tsx            # Archive display for text memories
+│   └── admin/
+│       ├── VoiceArchiveDiagnosticsPanel.tsx    # Comprehensive diagnostics
+│       ├── MemoryRecordingManager.tsx          # Bulk voice generation
+│       └── VoiceRecordingTester.tsx            # Recording system tests
 ├── pages/
-│   ├── Index.tsx                 # Main landing/conversation page
-│   ├── Dashboard.tsx             # User dashboard
-│   ├── Timeline.tsx              # Memory timeline view
-│   └── Journal.tsx               # Memory journal view
+│   ├── Index.tsx                    # Main conversation interface (/sanctuary)
+│   ├── Timeline.tsx                 # Complete/incomplete memory timeline
+│   ├── Archive.tsx                  # Voice recordings + memory archive
+│   ├── Admin.tsx                    # System diagnostics and management
+│   └── TestMemoryRecordings.tsx     # Memory recording generator testing
 ├── services/
-│   ├── orchestratorService.ts    # Backend orchestration layer
-│   ├── voiceService.ts           # Text-to-speech service
-│   └── memoryService.ts          # Memory operations
+│   ├── conversationRecording.ts     # Standard voice recording
+│   ├── enhancedConversationRecording.ts  # Enhanced recording with system audio
+│   ├── memoryRecordingGenerator.ts  # Generate recordings from text memories
+│   ├── aiVoiceSearch.ts            # AI-powered voice search & archive
+│   ├── diagnosticLogger.ts         # System monitoring and validation
+│   ├── voiceService.ts             # Text-to-speech service
+│   └── memoryService.ts            # Memory operations
 ├── hooks/
-│   ├── useMemories.ts            # Memory data fetching
-│   └── useSpeechRecognition.ts   # Speech-to-text
+│   ├── useMemories.ts              # Memory data fetching
+│   └── useSpeechRecognition.ts     # Speech-to-text
 └── contexts/
-    └── AuthContext.tsx           # Authentication state
+    └── AuthContext.tsx             # Authentication state
 
 supabase/
 ├── functions/
@@ -120,6 +135,65 @@ bun dev
 
 Visit `http://localhost:8080`
 
+## 🎙️ Voice Recording & Archive System
+
+### Archive Features
+- **Complete Voice Archive** at `/archive` with dual-tab interface:
+  - 🎵 **Voice Recordings**: Playback with synchronized transcript highlighting
+  - 📚 **Memory Archive**: Text memories with filtering (complete vs incomplete)
+- **Intelligent Search**: AI-powered semantic search across recordings and transcripts
+- **Audio Player**: Advanced playback controls with transcript synchronization
+- **Memory Linking**: Voice recordings automatically linked to related memories
+- **Demo Mode**: Graceful fallback to demo recordings for unauthenticated users
+
+### Voice Recording Modes
+#### Standard Recording (`conversationRecording.ts`)
+- **Microphone-only capture** with high-quality audio (48kHz, Opus compression)
+- **Conversation transcripts** with timestamp synchronization
+- **Automatic saving** to Supabase storage with metadata
+- **Compatible** with all browsers and devices
+
+#### Enhanced Recording (`enhancedConversationRecording.ts`) 
+- **Dual audio capture**: User microphone + system audio (ElevenLabs responses)
+- **Complete conversations** captured when screen sharing enabled
+- **Separate gain controls** for microphone and system audio
+- **Quality monitoring** with real-time signal analysis
+- **Fallback support** to standard mode when system audio unavailable
+
+### Memory Recording Generator
+**Generate voice recordings from existing text memories** - addresses user request for recorded conversations of stored memories.
+
+**Core Features:**
+- 🔍 **Memory Detection**: Scans database for text memories without recordings
+- 🎭 **Conversation Styles**: 
+  - **Reflection**: Personal introspective format ("I've been reflecting on...")
+  - **Interview**: Q&A style conversation between interviewer and speaker
+  - **Storytelling**: Narrative presentation format ("Let me tell you a story...")
+  - **Discussion**: Two-person dialogue about the memory
+- 🔗 **Auto-Linking**: Generated recordings linked to original memories
+- 📊 **Bulk Generation**: Process multiple memories with progress tracking
+- 🎛️ **Customization**: Voice model selection, metadata inclusion options
+
+**Access Points:**
+- `/test-memory-recordings` - Full interface and testing
+- `/admin` → 'Recording Generator' tab - Integrated with diagnostics
+- Built into existing admin panel for system management
+
+### Microphone Testing & Diagnostics
+#### Advanced Microphone Test (`/mic-test`)
+- **Real-time volume visualization** with 30-second quality assessment
+- **Quality scoring system** with automatic recommendations
+- **Troubleshooting guides** for common microphone issues
+- **Browser compatibility testing** across Chrome, Firefox, Safari
+- **Audio context validation** with proper user gesture handling
+
+#### Comprehensive Diagnostics (`/admin`)
+- **System Health Monitoring**: Database, recording services, archive display
+- **Real-time Event Logging**: Categorized diagnostic events with business-friendly messages
+- **Validation Testing**: Complete voice archiving system validation
+- **Performance Metrics**: Recording counts, memory statistics, error tracking
+- **Export Capabilities**: Diagnostic data export for troubleshooting
+
 ## 🎤 Voice Agent Architecture
 
 ### ElevenLabs Integration (Primary Conversation Handler)
@@ -162,8 +236,46 @@ For complex operations that don't require instant response:
 - tags (text[], GIN indexed)
 - recipient (text, nullable)
 - image_urls (text[], nullable) - Array of storage paths for memory images
+- chunk_sequence (integer, default 1) - For memory chunking system
+- is_primary_chunk (boolean, default true) - Primary chunk identifier
+- source_type (text, default 'manual') - Origin: manual, conversation_auto_save, etc.
 - created_at (timestamp, indexed)
 - updated_at (timestamp)
+```
+
+### voice_recordings
+```sql
+- id (uuid, primary key)
+- user_id (uuid, indexed) - References auth.users(id)
+- session_id (text) - Recording session identifier
+- recording_type (text) - Type: conversation, memory_recreation, etc.
+- storage_path (text) - Supabase storage path to audio file
+- file_url (text, nullable) - Alternative URL storage (compatibility)
+- duration_seconds (numeric) - Audio duration
+- file_size_bytes (bigint) - File size
+- transcript_text (text) - Complete conversation transcript
+- conversation_summary (text) - AI-generated summary
+- memory_ids (text[], nullable) - Linked memory IDs
+- memory_titles (text[], nullable) - Linked memory titles (for display)
+- topics (text[], nullable) - Extracted conversation topics
+- session_mode (text) - Mode: elevenlabs_conversation, memory_recreation, etc.
+- mime_type (text, default 'audio/webm')
+- compression_type (text, default 'opus')
+- sample_rate (integer, default 48000)
+- bit_rate (integer, default 64000)
+- created_at (timestamp, indexed)
+- updated_at (timestamp)
+```
+
+### diagnostic_logs
+```sql
+- id (uuid, primary key)
+- user_id (uuid, nullable) - Optional user context
+- category (text) - Event category: voice_recording, memory_saving, etc.
+- level (text) - Severity: info, warn, error
+- event (text) - Event name/identifier  
+- details (jsonb) - Event-specific data
+- timestamp (timestamp, indexed)
 ```
 
 **Date Handling:**
@@ -218,12 +330,41 @@ All tables have RLS policies ensuring users can only access their own data.
 ```bash
 # Start dev server
 npm run dev
-# Navigate to specific routes to test pages:
-# / - Landing/conversation page
-# /dashboard - User dashboard
-# /timeline - Memory timeline
-# /journal - Memory journal
+# Navigate to specific routes to test functionality:
+# /sanctuary - Main conversation interface with Solin
+# /timeline - Memory timeline with complete/incomplete filtering
+# /archive - Voice recordings + memory archive with search
+# /admin - Comprehensive diagnostics and system management
+# /mic-test - Advanced microphone testing and diagnostics
+# /test-memory-recordings - Memory recording generator interface
 ```
+
+### Test Voice Recording System
+#### Standard Voice Recording
+1. **Start Conversation**: Visit `/sanctuary` → Click "Start Conversation"
+2. **Permission Check**: Allow microphone access when prompted
+3. **Recording Test**: Speak naturally → Verify Solin responds  
+4. **Archive Check**: Visit `/archive` → Verify recording appears with transcript
+5. **Playback Test**: Click recording → Verify audio plays with transcript sync
+
+#### Enhanced Recording (Advanced)
+1. **Enable Enhanced Mode**: In conversation settings, select "Enhanced Recording"
+2. **Screen Share**: Accept screen sharing prompt for system audio capture
+3. **Complete Conversation**: Recording captures both user voice AND Solin's responses
+4. **Quality Check**: Verify both audio streams in final recording
+
+#### Memory Recording Generator
+1. **Access Interface**: Visit `/test-memory-recordings` or `/admin` → Recording Generator
+2. **View Existing Memories**: Check database scan results and memory counts
+3. **Configure Options**: Select conversation style (Reflection/Interview/etc.)
+4. **Generate Test**: Click "Generate" for single memory or bulk generation
+5. **Verify Results**: Check `/archive` for newly generated conversation recordings
+
+### Test Diagnostic System
+1. **System Validation**: Visit `/admin` → Run full system validation
+2. **Monitor Events**: Check real-time diagnostic event logging
+3. **Performance Metrics**: Review recording counts, memory statistics
+4. **Export Data**: Test diagnostic data export functionality
 
 ### Test Edge Functions
 1. Open [Supabase Dashboard](https://supabase.com/dashboard/project/gulydhhzwlltkxbfnclu/functions)
@@ -297,7 +438,7 @@ Every memory save operation is tracked with unique handoff IDs. See [HANDOFF_DIA
 
 **Quick Debug**: Open browser console and filter by "HANDOFF" to track memory save operations through all 13+ stages.
 
-### Voice Agent Issues
+### Voice Agent & Recording Issues
 
 **Session disconnects quickly:**
 1. Check browser console for WebSocket errors
@@ -307,16 +448,36 @@ Every memory save operation is tracked with unique handoff IDs. See [HANDOFF_DIA
 5. Verify memory context size is < 1500 chars
 6. Check if timeout is being triggered (look for "Connection timed out")
 
-**No audio output:**
-1. Check browser audio permissions
-2. Verify ElevenLabs agent is configured correctly
-3. Check console for WebSocket connection status
-4. Test with different browser (Chrome/Firefox)
+**AudioContext warnings ('AudioContext was not allowed to start'):**
+1. ✅ **Fixed**: AudioContext creation now properly deferred until user gesture
+2. If issues persist: Check console for any remaining premature AudioContext creation
+3. Verify soundEffects service waits for user interaction before initialization
 
 **Microphone not working:**
-1. Check browser permissions (Settings → Privacy → Microphone)
-2. Try different browser
-3. Check console for getUserMedia errors
+1. **Use diagnostic tools**: Visit `/mic-test` for comprehensive testing
+2. Check browser permissions (Settings → Privacy → Microphone)
+3. Test different browsers (Chrome recommended for best compatibility)
+4. Check console for getUserMedia errors
+5. Verify AudioContext state and initialization
+
+**Voice recordings not appearing in Archive:**
+1. **Check authentication**: User must be logged in to see personal recordings
+2. **Verify database**: Check `voice_recordings` table in Supabase dashboard
+3. **Test recording system**: Use `/admin` diagnostics to validate recording pipeline
+4. **Check RLS policies**: Ensure user can access their own recordings
+5. **Demo mode**: Unauthenticated users see demo recordings only
+
+**Archive loading issues:**
+1. **Database table missing**: Archive requires `voice_recordings` table - run migrations
+2. **Permission errors**: Check RLS policies on voice_recordings table
+3. **Storage access**: Verify Supabase storage bucket permissions
+4. **Network issues**: Check console for storage download failures
+
+**Memory recording generator not working:**
+1. **Check existing memories**: Generator needs text memories in database to work
+2. **Authentication required**: Feature requires logged-in user with stored memories
+3. **TTS integration**: Currently uses mock generation (ready for real TTS integration)
+4. **Database schema**: Verify memories table has required columns (is_primary_chunk, source_type)
 
 ### Memory Operations
 
@@ -459,6 +620,93 @@ MIT License - feel free to use for personal or commercial projects
 
 ## 📚 Advanced Features
 
+### Voice Recording & Archive System
+#### Comprehensive Archive Interface
+- **Dual-mode archive** at `/archive` with separate tabs for voice recordings and text memories
+- **Intelligent search** across transcripts, summaries, topics, and memory titles
+- **Audio synchronization** between playback and transcript highlighting
+- **Memory linking** shows which memories are connected to each recording
+- **Advanced filtering** by conversation mode, duration, topics, and date ranges
+
+#### Smart Recording Detection
+- **Automatic categorization** by session mode (elevenlabs_conversation, memory_recreation, etc.)
+- **Topic extraction** from conversation content using natural language processing
+- **Summary generation** for each recording with key conversation points
+- **Metadata enrichment** including duration, file size, quality metrics
+
+### Memory Recording Generator
+#### Conversation Style Engine
+The generator creates natural conversation formats from existing text memories:
+
+**Reflection Style** (Default):
+```
+"I've been reflecting on a memory I call 'First Day at College'. 
+This happened on September 3rd, 2019. I was in Boston at the time. 
+Let me share what I remember.
+
+[Original memory content]
+
+This memory continues to resonate with me..."
+```
+
+**Interview Style**:
+```
+"Interviewer: Today I'm speaking with someone about their memory titled 'First Day at College'. Can you tell me about this experience?
+
+Speaker: [Original memory content]
+
+Interviewer: What made this experience particularly meaningful to you?"
+```
+
+**Storytelling Style**:
+```
+"Let me tell you a story. It's called 'First Day at College'. 
+This story begins on September 3rd, 2019...
+
+[Original memory content as narrative]
+
+And that's the story of 'First Day at College'..."
+```
+
+**Discussion Style**:
+```
+"Person A: I wanted to discuss a memory with you about 'First Day at College'...
+Person B: I'd love to hear about it. What do you remember?
+Person A: [Original memory content]..."
+```
+
+#### Smart Processing Features
+- **Duplicate prevention**: Only generates recordings for memories without existing voice recordings
+- **Metadata integration**: Includes dates, locations, and context when available
+- **Batch processing**: Generate recordings for multiple memories with progress tracking
+- **Quality assurance**: Validates memory content and handles edge cases gracefully
+
+### Diagnostic & Monitoring System
+#### Real-time System Health
+- **Multi-category logging**: voice_recording, memory_saving, archive_display, database
+- **Event severity levels**: info, warn, error with appropriate handling
+- **Business-friendly messages**: Technical events translated to user-understandable descriptions
+- **Performance tracking**: Response times, success rates, resource usage
+
+#### Comprehensive Validation
+- **Database connectivity**: Tests all required tables and permissions
+- **Recording pipeline**: Validates microphone access, audio processing, storage uploads
+- **Archive functionality**: Ensures proper display and search capabilities
+- **Memory system**: Verifies save/retrieve operations and schema compliance
+
+### Enhanced Memory Management
+#### Timeline Intelligence
+- **Complete vs Incomplete filtering**: Memories with full date/location vs partial information
+- **Source tracking**: Differentiates manual entries from conversation auto-saves
+- **Chunk management**: Handles long memories split across multiple database records
+- **Voice integration**: Shows which memories have associated voice recordings
+
+#### Auto-save System
+- **Conversation preservation**: Automatically saves memory fragments during conversations
+- **Completion tracking**: Distinguishes between complete memories and conversation snippets  
+- **Recovery capabilities**: Prevents data loss during conversation interruptions
+- **Quality validation**: Ensures saved content meets minimum quality thresholds
+
 ### Memory Chunking System
 The application automatically handles long memories by intelligently splitting them into manageable chunks:
 - **Automatic Detection**: Memories over 8KB are automatically chunked
@@ -506,10 +754,62 @@ REACT_APP_BIOGRAPHY_TONE_PREFERENCE=optimistic
 
 #### Memory Chunking Schema
 ```sql
--- New fields in memories table
-memory_group_id UUID      -- Groups related chunks
-chunk_sequence INTEGER    -- Order within group (1, 2, 3...)  
-total_chunks INTEGER      -- Total chunks in group
+-- Enhanced fields in memories table
+memory_group_id UUID         -- Groups related chunks
+chunk_sequence INTEGER       -- Order within group (1, 2, 3...)  
+total_chunks INTEGER         -- Total chunks in group
+is_primary_chunk BOOLEAN     -- TRUE for main/first chunk (required for filtering)
+source_type TEXT            -- 'manual', 'conversation_auto_save', 'memory_recreation'
+```
+
+#### Voice Recording Schema
+```sql
+-- Complete voice_recordings table
+CREATE TABLE voice_recordings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  session_id TEXT NOT NULL,
+  recording_type TEXT NOT NULL,
+  storage_path TEXT NOT NULL,
+  file_url TEXT,
+  duration_seconds NUMERIC NOT NULL,
+  file_size_bytes BIGINT,
+  transcript_text TEXT,
+  conversation_summary TEXT,
+  memory_ids TEXT[],
+  memory_titles TEXT[],
+  topics TEXT[],
+  session_mode TEXT,
+  mime_type TEXT DEFAULT 'audio/webm',
+  compression_type TEXT DEFAULT 'opus',
+  sample_rate INTEGER DEFAULT 48000,
+  bit_rate INTEGER DEFAULT 64000,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- RLS policies for voice_recordings
+ALTER TABLE voice_recordings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can access own recordings" ON voice_recordings FOR ALL USING (auth.uid() = user_id);
+```
+
+#### Diagnostic Logging Schema
+```sql
+-- diagnostic_logs table for system monitoring
+CREATE TABLE diagnostic_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  category TEXT NOT NULL,
+  level TEXT NOT NULL CHECK (level IN ('info', 'warn', 'error')),
+  event TEXT NOT NULL,
+  details JSONB DEFAULT '{}',
+  timestamp TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_diagnostic_logs_category ON diagnostic_logs(category);
+CREATE INDEX idx_diagnostic_logs_level ON diagnostic_logs(level);
+CREATE INDEX idx_diagnostic_logs_timestamp ON diagnostic_logs(timestamp);
 ```
 
 #### Biography Topics Table

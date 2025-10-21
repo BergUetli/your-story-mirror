@@ -16,7 +16,9 @@ import {
   FileAudio,
   Loader2,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Mic,
+  Users
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -262,6 +264,19 @@ const Archive = () => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Authentication Notice for Guests */}
+        {!user && (
+          <Alert className="mb-6 border-blue-500/20 bg-blue-500/10">
+            <AlertTriangle className="h-4 w-4 text-blue-400" />
+            <AlertDescription className="text-blue-200">
+              <strong>Viewing Demo Archive:</strong> You're currently viewing sample recordings. 
+              <Link to="/auth" className="underline text-blue-300 hover:text-blue-100 ml-1">
+                Sign in to access your personal voice recordings and memories.
+              </Link>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Tab Navigation */}
         <div className="flex items-center gap-1 mb-6 bg-muted/30 p-1 rounded-lg w-fit">
           <Button
@@ -271,7 +286,7 @@ const Archive = () => {
             className="flex items-center gap-2"
           >
             <FileAudio className="w-4 h-4" />
-            Voice Recordings
+            {user ? 'Your Voice Recordings' : 'Demo Voice Recordings'}
           </Button>
           <Button
             variant={activeTab === 'memories' ? 'default' : 'ghost'}
@@ -280,7 +295,7 @@ const Archive = () => {
             className="flex items-center gap-2"
           >
             <Database className="w-4 h-4" />
-            Memory Archive
+            {user ? 'Your Memory Archive' : 'Demo Memory Archive'}
           </Button>
         </div>
 
@@ -411,30 +426,61 @@ const Archive = () => {
               <div className="text-center py-12 px-6">
                 <ArchiveIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-4">
-                  No Voice Recordings Found
+                  {user ? 'No Voice Recordings Found' : 'No Demo Recordings Available'}
                 </h3>
                 <div className="max-w-md mx-auto space-y-4">
-                  <p className="text-muted-foreground">
-                    This could mean either no conversations have been recorded yet, or the voice recordings table needs to be set up.
-                  </p>
-                  
-                  <Alert className="border-blue-500/20 bg-blue-500/10 text-left">
-                    <AlertTriangle className="h-4 w-4 text-blue-400" />
-                    <AlertDescription className="text-blue-200">
-                      <strong>If you're seeing this after having conversations:</strong> The voice_recordings table may need to be created in your database.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="flex gap-3 justify-center">
-                    <Button 
-                      onClick={() => window.location.reload()} 
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Retry Loading
-                    </Button>
-                  </div>
+                  {user ? (
+                    <>
+                      <p className="text-muted-foreground">
+                        You haven't recorded any conversations yet. Start talking with Solin to create your first voice recording!
+                      </p>
+                      
+                      <div className="flex gap-3 justify-center">
+                        <Link to="/sanctuary">
+                          <Button className="flex items-center gap-2">
+                            <Mic className="w-4 h-4" />
+                            Start First Conversation
+                          </Button>
+                        </Link>
+                        <Link to="/mic-test">
+                          <Button variant="outline" className="flex items-center gap-2">
+                            <Mic className="w-4 h-4" />
+                            Test Microphone
+                          </Button>
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-muted-foreground">
+                        No demo recordings are currently available. Sign in to access your personal voice archive.
+                      </p>
+                      
+                      <Alert className="border-blue-500/20 bg-blue-500/10 text-left">
+                        <AlertTriangle className="h-4 w-4 text-blue-400" />
+                        <AlertDescription className="text-blue-200">
+                          <strong>Get Started:</strong> Create an account to record conversations with Solin and build your personal voice archive.
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <div className="flex gap-3 justify-center">
+                        <Link to="/auth">
+                          <Button className="flex items-center gap-2">
+                            <Users className="w-4 h-4" />
+                            Sign Up / Sign In
+                          </Button>
+                        </Link>
+                        <Button 
+                          onClick={() => window.location.reload()} 
+                          variant="outline"
+                          className="flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          Retry Loading
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
