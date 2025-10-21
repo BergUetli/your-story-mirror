@@ -15,14 +15,16 @@ export class SoundEffectsService {
   }
 
   private constructor() {
-    this.initializeAudioContext();
+    // Don't initialize AudioContext until needed - this prevents the browser warning
+    // about AudioContext being created before user gesture
   }
 
   private initializeAudioContext() {
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log('🎵 SoundEffects: AudioContext created after user gesture');
     } catch (error) {
-      console.warn('Audio context not available:', error);
+      console.warn('🎵 SoundEffects: Audio context not available:', error);
     }
   }
 
@@ -33,9 +35,11 @@ export class SoundEffectsService {
     
     if (this.audioContext?.state === 'suspended') {
       try {
+        console.log('🎵 SoundEffects: Resuming suspended AudioContext');
         await this.audioContext.resume();
+        console.log('🎵 SoundEffects: AudioContext resumed successfully');
       } catch (error) {
-        console.warn('Failed to resume audio context:', error);
+        console.warn('🎵 SoundEffects: Failed to resume audio context:', error);
       }
     }
   }
