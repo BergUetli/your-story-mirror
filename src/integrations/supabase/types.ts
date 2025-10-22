@@ -52,53 +52,60 @@ export type Database = {
       }
       memories: {
         Row: {
+          chunk_sequence: number | null
           created_at: string
           id: string
           image_urls: string[] | null
+          is_primary_chunk: boolean | null
           memory_date: string | null
+          memory_group_id: string | null
           memory_location: string | null
           recipient: string | null
+          source_type: string | null
           tags: string[] | null
           text: string
           title: string
+          total_chunks: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          chunk_sequence?: number | null
           created_at?: string
           id?: string
           image_urls?: string[] | null
+          is_primary_chunk?: boolean | null
           memory_date?: string | null
+          memory_group_id?: string | null
           memory_location?: string | null
           recipient?: string | null
+          source_type?: string | null
           tags?: string[] | null
           text: string
           title: string
+          total_chunks?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          chunk_sequence?: number | null
           created_at?: string
           id?: string
           image_urls?: string[] | null
+          is_primary_chunk?: boolean | null
           memory_date?: string | null
+          memory_group_id?: string | null
           memory_location?: string | null
           recipient?: string | null
+          source_type?: string | null
           tags?: string[] | null
           text?: string
           title?: string
+          total_chunks?: number | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "memories_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
+        Relationships: []
       }
       memory_artifacts: {
         Row: {
@@ -132,6 +139,144 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_configuration: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          age: number | null
+          career_history: Json | null
+          close_friends: Json | null
+          communication_style: string | null
+          core_values: string[] | null
+          created_at: string
+          cultural_background: string[] | null
+          cultural_influences: string[] | null
+          education_background: string | null
+          family_members: Json | null
+          fears_concerns: string[] | null
+          first_conversation_completed: boolean | null
+          first_conversation_completed_at: string | null
+          hobbies_interests: string[] | null
+          hometown: string | null
+          id: string
+          languages_spoken: string[] | null
+          life_goals: string[] | null
+          location: string | null
+          major_life_events: Json | null
+          occupation: string | null
+          onboarding_completed: boolean | null
+          personality_traits: string[] | null
+          political_views: string | null
+          preferred_name: string | null
+          profile_completeness_score: number
+          relationship_status: string | null
+          religious_spiritual_beliefs: string | null
+          sensitive_topics: string[] | null
+          significant_others: Json | null
+          social_causes: string[] | null
+          topics_of_interest: string[] | null
+          travel_experiences: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          career_history?: Json | null
+          close_friends?: Json | null
+          communication_style?: string | null
+          core_values?: string[] | null
+          created_at?: string
+          cultural_background?: string[] | null
+          cultural_influences?: string[] | null
+          education_background?: string | null
+          family_members?: Json | null
+          fears_concerns?: string[] | null
+          first_conversation_completed?: boolean | null
+          first_conversation_completed_at?: string | null
+          hobbies_interests?: string[] | null
+          hometown?: string | null
+          id?: string
+          languages_spoken?: string[] | null
+          life_goals?: string[] | null
+          location?: string | null
+          major_life_events?: Json | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
+          personality_traits?: string[] | null
+          political_views?: string | null
+          preferred_name?: string | null
+          profile_completeness_score?: number
+          relationship_status?: string | null
+          religious_spiritual_beliefs?: string | null
+          sensitive_topics?: string[] | null
+          significant_others?: Json | null
+          social_causes?: string[] | null
+          topics_of_interest?: string[] | null
+          travel_experiences?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          career_history?: Json | null
+          close_friends?: Json | null
+          communication_style?: string | null
+          core_values?: string[] | null
+          created_at?: string
+          cultural_background?: string[] | null
+          cultural_influences?: string[] | null
+          education_background?: string | null
+          family_members?: Json | null
+          fears_concerns?: string[] | null
+          first_conversation_completed?: boolean | null
+          first_conversation_completed_at?: string | null
+          hobbies_interests?: string[] | null
+          hometown?: string | null
+          id?: string
+          languages_spoken?: string[] | null
+          life_goals?: string[] | null
+          location?: string | null
+          major_life_events?: Json | null
+          occupation?: string | null
+          onboarding_completed?: boolean | null
+          personality_traits?: string[] | null
+          political_views?: string | null
+          preferred_name?: string | null
+          profile_completeness_score?: number
+          relationship_status?: string | null
+          religious_spiritual_beliefs?: string | null
+          sensitive_topics?: string[] | null
+          significant_others?: Json | null
+          social_causes?: string[] | null
+          topics_of_interest?: string[] | null
+          travel_experiences?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -175,15 +320,93 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_recordings: {
+        Row: {
+          bit_rate: number | null
+          compression_type: string | null
+          conversation_phase: string | null
+          conversation_summary: string | null
+          created_at: string
+          duration_seconds: number | null
+          expires_at: string | null
+          file_size_bytes: number | null
+          id: string
+          is_compressed: boolean | null
+          memory_ids: string[] | null
+          memory_titles: string[] | null
+          mime_type: string | null
+          original_filename: string | null
+          recording_type: string
+          retention_days: number | null
+          sample_rate: number | null
+          session_id: string
+          session_mode: string | null
+          storage_path: string
+          topics: string[] | null
+          transcript_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bit_rate?: number | null
+          compression_type?: string | null
+          conversation_phase?: string | null
+          conversation_summary?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          is_compressed?: boolean | null
+          memory_ids?: string[] | null
+          memory_titles?: string[] | null
+          mime_type?: string | null
+          original_filename?: string | null
+          recording_type?: string
+          retention_days?: number | null
+          sample_rate?: number | null
+          session_id: string
+          session_mode?: string | null
+          storage_path: string
+          topics?: string[] | null
+          transcript_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bit_rate?: number | null
+          compression_type?: string | null
+          conversation_phase?: string | null
+          conversation_summary?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          expires_at?: string | null
+          file_size_bytes?: number | null
+          id?: string
+          is_compressed?: boolean | null
+          memory_ids?: string[] | null
+          memory_titles?: string[] | null
+          mime_type?: string | null
+          original_filename?: string | null
+          recording_type?: string
+          retention_days?: number | null
+          sample_rate?: number | null
+          session_id?: string
+          session_mode?: string | null
+          storage_path?: string
+          topics?: string[] | null
+          transcript_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      user_owns_memory: {
-        Args: { memory_id: string }
-        Returns: boolean
-      }
+      user_owns_memory: { Args: { memory_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
