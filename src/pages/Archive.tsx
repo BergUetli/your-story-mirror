@@ -107,9 +107,9 @@ const Archive = () => {
           id: r.id,
           created_at: r.created_at,
           has_storage_path: !!r.storage_path,
-          has_file_url: !!r.file_url, // Keep for compatibility
-          has_transcript: !!(r.transcript_text || r.transcript),
-          has_summary: !!(r.conversation_summary || r.summary)
+          has_file_url: !!(r as any).file_url, // Keep for compatibility
+          has_transcript: !!((r as any).transcript_text || (r as any).transcript),
+          has_summary: !!((r as any).conversation_summary || (r as any).summary)
         }))
       });
       

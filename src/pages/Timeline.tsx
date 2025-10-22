@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 // Extend window interface for scroll timeout
 declare global {
   interface Window {
-    scrollTimeout: NodeJS.Timeout;
+    scrollTimeout: number;
   }
 }
 import { Button } from '@/components/ui/button';
@@ -265,8 +265,8 @@ const Timeline = () => {
             .eq('memory_id', memory.id)
             .limit(1);
           
-          if (artifactLinks && artifactLinks.length > 0 && artifactLinks[0].artifacts) {
-            const artifact = artifactLinks[0].artifacts;
+          if (artifactLinks && artifactLinks.length > 0 && (artifactLinks[0] as any).artifacts) {
+            const artifact = (artifactLinks[0] as any).artifacts;
             // Get signed URL for the artifact
             const { data: urlData } = await supabase.storage
               .from('memory-images')
@@ -835,9 +835,9 @@ const Timeline = () => {
                 // Use dedicated overlap checker module with generous spacing for readability
                 const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
                 
-                console.log(`🎯 FULL PAGE TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
+                console.log(`🎯 FULL PAGE TIMELINE: ${Math.round(baseHeight)}px → ${Math.round((overlapCheck as any).finalHeight)}px (${Math.round((overlapCheck as any).finalHeight / viewportHeight * 100)}% of screen)`);
                 
-                return overlapCheck.finalHeight;
+                return (overlapCheck as any).finalHeight;
               })()
             }}
           >
@@ -852,8 +852,8 @@ const Timeline = () => {
               const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
               
               // Final sizing - guaranteed to match container
-              const pixelsPerYear = overlapCheck.finalHeight / totalYears;
-              const totalHeight = overlapCheck.finalHeight;
+              const pixelsPerYear = (overlapCheck as any).finalHeight / totalYears;
+              const totalHeight = (overlapCheck as any).finalHeight;
 
               return (
                 <>

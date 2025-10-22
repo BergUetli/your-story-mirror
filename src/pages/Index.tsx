@@ -2178,11 +2178,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             await conversation.endSession();
           }
           
-          // Force disconnect if still connected
-          if (conversation.status !== 'disconnected') {
-            console.log('🔄 Force disconnecting...');
-            conversation.disconnect();
-          }
+          // Note: conversation will auto-disconnect when endSession completes
           
           // Stop voice recording if active
           if (isRecording && recordingSessionId) {
@@ -2208,7 +2204,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           // Clear all conversation state
           setConversationMessages([]);
           setIsEndingConversation(false);
-          setIsConnected(false);
           
           console.log('✅ Session ended successfully');
           
@@ -2255,9 +2250,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             if (conversation.status === 'connected') {
               conversation.endSession().catch(console.error);
             }
-            if (conversation.status !== 'disconnected') {
-              conversation.disconnect();
-            }
             
             // Stop voice recording if active
             if (isRecording && recordingSessionId) {
@@ -2276,7 +2268,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             // Clear state and navigate
             setConversationMessages([]);
             setIsEndingConversation(false);
-            setIsConnected(false);
             
             if (lastSavedMemoryId) {
               navigate(`/timeline?highlight=${lastSavedMemoryId}&new=true`);

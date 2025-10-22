@@ -116,7 +116,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
       // Fetch signed URLs for all artifacts
       const urlsMap: Record<string, string | null> = {};
-      for (const artifact of loadedArtifacts) {
+      for (const artifact of loadedArtifacts as any[]) {
         const url = await getSignedUrl('memory-images', artifact.storage_path, 3600);
         urlsMap[artifact.id] = url;
       }

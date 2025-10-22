@@ -15,8 +15,7 @@ export default defineConfig(({ mode }) => ({
       "localhost",
       "127.0.0.1",
       "0.0.0.0",
-      ".sandbox.novita.ai",
-      /.*-.*\.sandbox\.novita\.ai$/
+      ".sandbox.novita.ai"
     ],
     strictPort: false,
     hmr: {

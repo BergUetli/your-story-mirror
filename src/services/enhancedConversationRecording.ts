@@ -56,7 +56,7 @@ interface EnhancedRecordingSession {
 export class EnhancedConversationRecordingService {
   private currentSession: EnhancedRecordingSession | null = null;
   private readonly STORAGE_BUCKET = 'voice-recordings';
-  private qualityAnalysisTimer: number | null = null;
+  private qualityAnalysisTimer: NodeJS.Timeout | null = null;
 
   /**
    * Start enhanced conversation recording with system audio capture
@@ -174,8 +174,7 @@ export class EnhancedConversationRecordingService {
           sampleRate: { ideal: 48000 },
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: false, // Better manual control
-          latency: { ideal: 0.01 } // Low latency for real-time mixing
+          autoGainControl: false // Better manual control
         }
       });
 
@@ -215,7 +214,6 @@ export class EnhancedConversationRecordingService {
           autoGainControl: false
         },
         video: {
-          mediaSource: 'tab', // Prefer tab capture
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }

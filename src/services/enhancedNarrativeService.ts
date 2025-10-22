@@ -513,7 +513,7 @@ As this chapter closes, another begins—filled with promise, possibility, and t
 
   private memoryMatchesTheme(memory: GroupedMemory, theme: string): boolean {
     const lowerTheme = theme.toLowerCase();
-    const memoryText = (memory.title + ' ' + memory.content).toLowerCase();
+    const memoryText = (memory.title + ' ' + (memory as any).content).toLowerCase();
     
     // Simple keyword matching - could be enhanced with NLP
     const themeKeywords: Record<string, string[]> = {
@@ -591,7 +591,7 @@ As this chapter closes, another begins—filled with promise, possibility, and t
 
     // Extract key elements from memory
     const title = memory.title;
-    const content = memory.content;
+    const content = (memory as any).content;
     
     // Transform into narrative prose
     return `In a ${modifier} turn of events, ${title.toLowerCase()}. ${content} This experience became a defining moment, illustrating the way life's unexpected gifts often come disguised as ordinary moments.`;

@@ -38,7 +38,7 @@ export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [recentEvents, setRecentEvents] = useState<DiagnosticEvent[]>([]);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState<number | null>(null);
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Load initial events
