@@ -1196,14 +1196,7 @@ export const VoiceArchiveDiagnosticsPanel: React.FC = () => {
                               session_mode: 'audio_file_test',
                               conversation_phase: 'completed',
                               memory_ids: [],
-                              topics: ['audio_test', 'file_save', 'diagnostics'],
-                              // Add metadata about the audio content
-                              metadata: {
-                                testType: 'audio_save_verification',
-                                audioContent: 'multi-tone_test_signal',
-                                frequencies: [440, 880],
-                                createdBy: 'admin_diagnostics'
-                              }
+                              topics: ['audio_test', 'file_save', 'diagnostics', 'multi-tone_test_signal', 'audio_save_verification']
                             })
                             .select()
                             .single();
