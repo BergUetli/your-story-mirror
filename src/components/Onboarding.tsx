@@ -3,12 +3,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, ArrowRight, Calendar, MapPin, Home, User } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Heart, ArrowRight, Calendar, MapPin, Home, User, Briefcase, Users, Globe, Target, Sparkles, Book } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface OnboardingProps {
   onComplete: () => void;
+}
+
+interface StepData {
+  title: string;
+  subtitle: string;
+  icon: any;
+  field: string;
+  type: string;
+  placeholder: string;
+  required: boolean;
+  options?: string[];
 }
 
 const Onboarding = ({ onComplete }: OnboardingProps) => {
@@ -17,21 +29,40 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
+    // Basic Information (Step 1-5)
     name: '',
     age: '',
     birthDate: '',
     birthPlace: '',
-    currentLocation: ''
+    currentLocation: '',
+    
+    // Professional & Personal (Step 6-7)
+    occupation: '',
+    relationshipStatus: '',
+    
+    // Cultural Background (Step 8)
+    culturalBackground: '',
+    languagesSpoken: '',
+    
+    // Life & Interests (Step 9-10)
+    hobbiesInterests: '',
+    majorLifeEvent: '',
+    
+    // Values & Personality (Step 11-12)
+    coreValues: '',
+    lifeGoals: ''
   });
 
-  const steps = [
+  const steps: StepData[] = [
+    // Basic Identity
     {
       title: "What's your name?",
       subtitle: "The name you'd like to be remembered by",
       icon: User,
       field: 'name',
       type: 'text',
-      placeholder: 'Enter your name...'
+      placeholder: 'Enter your name...',
+      required: true
     },
     {
       title: "How old are you?",
@@ -39,7 +70,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       icon: Calendar,
       field: 'age',
       type: 'number',
-      placeholder: 'Enter your age...'
+      placeholder: 'Enter your age...',
+      required: true
     },
     {
       title: "When were you born?",
@@ -47,7 +79,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       icon: Calendar,
       field: 'birthDate',
       type: 'date',
-      placeholder: ''
+      placeholder: '',
+      required: true
     },
     {
       title: "Where were you born?",
@@ -55,7 +88,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       icon: MapPin,
       field: 'birthPlace',
       type: 'text',
-      placeholder: 'City, Country...'
+      placeholder: 'City, Country...',
+      required: true
     },
     {
       title: "Where do you live now?",
@@ -63,7 +97,94 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       icon: Home,
       field: 'currentLocation',
       type: 'text',
-      placeholder: 'City, Country...'
+      placeholder: 'City, Country...',
+      required: true
+    },
+    
+    // Professional Life
+    {
+      title: "What do you do for a living?",
+      subtitle: "Your work or what keeps you busy",
+      icon: Briefcase,
+      field: 'occupation',
+      type: 'text',
+      placeholder: 'e.g., Software Engineer, Teacher, Student, Retired...',
+      required: true
+    },
+    
+    // Personal Life
+    {
+      title: "What's your relationship status?",
+      subtitle: "Helps us understand your life context",
+      icon: Heart,
+      field: 'relationshipStatus',
+      type: 'select',
+      placeholder: 'Select one...',
+      options: ['Single', 'In a relationship', 'Engaged', 'Married', 'Divorced', 'Widowed', 'It\'s complicated', 'Prefer not to say'],
+      required: false
+    },
+    
+    // Cultural Background
+    {
+      title: "What's your cultural background?",
+      subtitle: "The cultures and traditions that shaped you",
+      icon: Globe,
+      field: 'culturalBackground',
+      type: 'text',
+      placeholder: 'e.g., Indian, Chinese-American, Brazilian...',
+      required: false
+    },
+    
+    {
+      title: "What languages do you speak?",
+      subtitle: "All the languages you're comfortable with",
+      icon: Book,
+      field: 'languagesSpoken',
+      type: 'text',
+      placeholder: 'e.g., English, Spanish, Mandarin...',
+      required: false
+    },
+    
+    // Life & Interests
+    {
+      title: "What do you love doing?",
+      subtitle: "Your hobbies, passions, and interests",
+      icon: Sparkles,
+      field: 'hobbiesInterests',
+      type: 'textarea',
+      placeholder: 'e.g., Reading, hiking, cooking, playing guitar, photography...',
+      required: false
+    },
+    
+    {
+      title: "Share a moment that defined you",
+      subtitle: "A major life event that shaped who you are today",
+      icon: Calendar,
+      field: 'majorLifeEvent',
+      type: 'textarea',
+      placeholder: 'e.g., Graduating college, moving to a new country, starting a family, a career change...',
+      required: false
+    },
+    
+    // Values & Goals
+    {
+      title: "What matters most to you?",
+      subtitle: "Your core values and principles",
+      icon: Heart,
+      field: 'coreValues',
+      type: 'textarea',
+      placeholder: 'e.g., Family, honesty, creativity, kindness, learning, helping others...',
+      required: false
+    },
+    
+    {
+      title: "What are you working towards?",
+      subtitle: "Your dreams, aspirations, and life goals",
+      icon: Target,
+      field: 'lifeGoals',
+      type: 'textarea',
+      placeholder: 'e.g., Build a successful career, travel the world, start a family, learn new skills...',
+      required: false
     }
   ];
 
@@ -71,7 +192,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
   const handleNext = () => {
     const currentValue = formData[currentStepData.field as keyof typeof formData];
-    if (!currentValue.trim()) {
+    
+    // Only validate required fields
+    if (currentStepData.required && !currentValue?.toString().trim()) {
       toast({
         title: "Please fill in this field",
         description: "We need this information to create your timeline.",
@@ -106,21 +229,50 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         throw new Error('No user found');
       }
 
-      const profileData = {
-        user_id: user.id,
-        preferred_name: formData.name,  // name → preferred_name
-        age: parseInt(formData.age),
-        location: formData.currentLocation,  // current_location → location
-        hometown: formData.birthPlace,  // birth_place → hometown
-        onboarding_completed: true,
-        first_conversation_completed: false,
-        profile_completeness_score: 25,
+      // Helper to split comma-separated strings into arrays
+      const splitToArray = (str: string) => {
+        return str ? str.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
       };
 
-      console.log('📝 Saving onboarding data to user_profiles:', profileData);
-      console.log('📝 Form data:', formData);
-      console.log('📝 User ID:', user.id);
-      console.log('📝 Age parsed:', parseInt(formData.age), 'from', formData.age);
+      // Calculate completeness score based on filled fields
+      const filledFields = Object.values(formData).filter(v => v && v.toString().trim()).length;
+      const totalFields = Object.keys(formData).length;
+      const completenessScore = Math.round((filledFields / totalFields) * 100);
+
+      const profileData = {
+        user_id: user.id,
+        
+        // Basic Information
+        preferred_name: formData.name,
+        age: parseInt(formData.age),
+        location: formData.currentLocation,
+        hometown: formData.birthPlace,
+        occupation: formData.occupation || null,
+        relationship_status: formData.relationshipStatus || null,
+        
+        // Cultural Background
+        cultural_background: splitToArray(formData.culturalBackground),
+        languages_spoken: splitToArray(formData.languagesSpoken),
+        
+        // Life & Interests
+        hobbies_interests: splitToArray(formData.hobbiesInterests),
+        major_life_events: formData.majorLifeEvent ? [{
+          event: formData.majorLifeEvent,
+          significance: "Shared during onboarding",
+          year: new Date().getFullYear()
+        }] : [],
+        
+        // Values & Goals
+        core_values: splitToArray(formData.coreValues),
+        life_goals: splitToArray(formData.lifeGoals),
+        
+        // Metadata
+        onboarding_completed: true,
+        first_conversation_completed: false,
+        profile_completeness_score: completenessScore,
+      };
+
+      console.log('📝 Saving comprehensive onboarding data:', profileData);
 
       // Use user_profiles table with correct column mappings
       const { data: upsertData, error: upsertError } = await supabase
@@ -130,17 +282,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         })
         .select();
 
-      console.log('📝 Upsert response data:', upsertData);
-      console.log('📝 Upsert response error:', upsertError);
-
       if (upsertError) {
         console.error('❌ Profile upsert error:', upsertError);
-        console.error('❌ Error details:', {
-          message: upsertError.message,
-          details: upsertError.details,
-          hint: upsertError.hint,
-          code: upsertError.code
-        });
         throw upsertError;
       }
 
@@ -148,21 +291,18 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
       toast({
         title: "Welcome to Memory Scape! 🌟",
-        description: "Your sanctuary has been created. Start preserving your memories.",
+        description: `Your sanctuary has been created. Profile ${completenessScore}% complete!`,
       });
 
       onComplete();
     } catch (error) {
-      console.error('❌ Onboarding error (full object):', error);
-      console.error('❌ Error type:', typeof error);
-      console.error('❌ Error JSON:', JSON.stringify(error, null, 2));
+      console.error('❌ Onboarding error:', error);
       
       // Show detailed error to help debugging
       let errorMessage = 'Unknown error occurred';
       let errorDetails = '';
       
       if (error && typeof error === 'object') {
-        // PostgrestError from Supabase
         if ('message' in error) {
           errorMessage = String(error.message);
         }
@@ -172,15 +312,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         if ('hint' in error) {
           errorDetails += (errorDetails ? ' | ' : '') + String(error.hint);
         }
-        if ('code' in error) {
-          errorDetails += (errorDetails ? ' | ' : '') + `Code: ${error.code}`;
-        }
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
-      console.error('❌ Parsed error message:', errorMessage);
-      console.error('❌ Parsed error details:', errorDetails);
       
       toast({
         title: "Couldn't save your profile",
@@ -237,17 +371,49 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
           <div className="space-y-2">
             <Label htmlFor={currentStepData.field} className="text-foreground">
-              Your {currentStepData.field === 'currentLocation' ? 'current location' : currentStepData.field}
+              {currentStepData.required && <span className="text-destructive mr-1">*</span>}
+              {currentStepData.title}
             </Label>
-            <Input
-              id={currentStepData.field}
-              type={currentStepData.type}
-              placeholder={currentStepData.placeholder}
-              value={formData[currentStepData.field as keyof typeof formData]}
-              onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
-              className="bg-background/50 border-primary/30"
-              autoFocus
-            />
+            
+            {currentStepData.type === 'textarea' ? (
+              <Textarea
+                id={currentStepData.field}
+                placeholder={currentStepData.placeholder}
+                value={formData[currentStepData.field as keyof typeof formData]}
+                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
+                className="bg-background/50 border-primary/30 min-h-[120px] resize-none"
+                autoFocus
+              />
+            ) : currentStepData.type === 'select' ? (
+              <select
+                id={currentStepData.field}
+                value={formData[currentStepData.field as keyof typeof formData]}
+                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
+                className="w-full px-3 py-2 bg-background/50 border border-primary/30 rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              >
+                <option value="">{currentStepData.placeholder}</option>
+                {currentStepData.options?.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                id={currentStepData.field}
+                type={currentStepData.type}
+                placeholder={currentStepData.placeholder}
+                value={formData[currentStepData.field as keyof typeof formData]}
+                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
+                className="bg-background/50 border-primary/30"
+                autoFocus
+              />
+            )}
+            
+            {!currentStepData.required && (
+              <p className="text-xs text-muted-foreground">Optional - but helps us know you better</p>
+            )}
           </div>
 
           <div className="space-y-3">
