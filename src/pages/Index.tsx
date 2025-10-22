@@ -66,6 +66,9 @@ const Index = () => {
   const [needsFirstConversation, setNeedsFirstConversation] = useState(false);
   const [showFirstConversation, setShowFirstConversation] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  
+  // User's name from database
+  const [userName, setUserName] = useState<string | null>(null);
 
   // Biography topics tool for collecting general information about the user
   const saveBiographyTopicTool = useCallback(async (parameters: {
@@ -2413,6 +2416,18 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
       try {
         console.log('🔍 Checking first conversation status...');
+        
+        // Fetch user's name from database
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', effectiveUser.id)
+          .single();
+        
+        if (userData?.name) {
+          setUserName(userData.name);
+        }
+        
         const needsFirstConv = await userProfileService.needsFirstConversation(effectiveUser.id);
         
         console.log(`👤 User needs first conversation: ${needsFirstConv}`);
@@ -2558,7 +2573,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {user && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-foreground mb-1">
-                      Welcome, {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend'}!
+                      Welcome, {userName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend'}!
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Ready to continue your memory journey with Solin?
