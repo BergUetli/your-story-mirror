@@ -47,7 +47,7 @@ export const MicrophoneTest: React.FC<MicrophoneTestProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const testTimerRef = useRef<number | null>(null);
+  const testTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Volume tracking
   const volumeHistoryRef = useRef<number[]>([]);

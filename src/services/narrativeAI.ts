@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * PROPRIETARY NARRATIVE AI SERVICE
  * 

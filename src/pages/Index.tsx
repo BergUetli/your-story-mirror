@@ -53,9 +53,6 @@ const Index = () => {
   // Store authenticated user ID for voice recording
   const authenticatedUserIdRef = useRef<string | null>(null);
   
-  // User profile state for personalized welcome
-  const [userPreferredName, setUserPreferredName] = useState<string | null>(null);
-  
   // Enhanced conversation flow state
   const [isEndingConversation, setIsEndingConversation] = useState(false);
   const [pendingMemoryData, setPendingMemoryData] = useState<{
@@ -69,6 +66,9 @@ const Index = () => {
   const [needsFirstConversation, setNeedsFirstConversation] = useState(false);
   const [showFirstConversation, setShowFirstConversation] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  
+  // User's name from database
+  const [userName, setUserName] = useState<string | null>(null);
 
   // Biography topics tool for collecting general information about the user
   const saveBiographyTopicTool = useCallback(async (parameters: {
@@ -428,14 +428,6 @@ const Index = () => {
       }));
 
       // Add memory ID to voice recording if active
-      console.log('📝🚨 MEMORY-RECORDING LINK DEBUG:', {
-        isRecording,
-        recordingSessionId,
-        recordingMode,
-        primaryMemoryId,
-        willLinkMemory: isRecording && recordingSessionId
-      });
-      
       if (isRecording && recordingSessionId) {
         try {
           // Link memory to both old and new recording services
@@ -445,39 +437,15 @@ const Index = () => {
               .from('voice_recordings')
               .update({ memory_ids: [primaryMemoryId] })
               .eq('session_id', recordingSessionId);
-            console.log('📝✅ Added memory ID to enhanced voice recording:', primaryMemoryId);
-            
-            toast({
-              title: "📝 Memory Linked to Recording",
-              description: `Memory "${memoryTitle}" linked to enhanced recording session`,
-              variant: "default"
-            });
+            console.log('📝 Added memory ID to enhanced voice recording:', primaryMemoryId);
           } else {
-            // For standard conversation recording, use the conversation recording service
-            conversationRecordingService.addMemory(primaryMemoryId, memoryTitle);
-            console.log('📝✅ Added memory to conversation recording:', { primaryMemoryId, memoryTitle });
-            
-            toast({
-              title: "📝 Memory Linked to Recording",
-              description: `Memory "${memoryTitle}" linked to conversation recording`,
-              variant: "default"
-            });
+            // For standard recording, use the existing service
+            voiceRecordingService.addMemoryId(primaryMemoryId);
+            console.log('📝 Added memory ID to standard voice recording:', primaryMemoryId);
           }
         } catch (error) {
           console.error('⚠️ Failed to add memory ID to recording:', error);
-          toast({
-            title: "⚠️ Memory Link Failed",
-            description: `Could not link memory to recording: ${error}`,
-            variant: "destructive"
-          });
         }
-      } else {
-        console.warn('🚨 RECORDING NOT ACTIVE - Memory will not be linked to voice recording');
-        toast({
-          title: "⚠️ No Active Recording",
-          description: "Memory saved but not linked to voice recording (recording not active)",
-          variant: "default"
-        });
       }
 
       // Play success chime for memory save
@@ -580,15 +548,7 @@ const Index = () => {
       const recordingUserId = authenticatedUserIdRef.current || user?.id || effectiveUser?.id;
       
       if (recordingUserId) {
-        console.log('🎤🚨 CRITICAL DEBUG: Starting conversation recording!');
         console.log(`🎤 Starting ${recordingMode} conversation recording for authenticated user:`, recordingUserId);
-        
-        // Show user notification that recording is starting
-        toast({
-          title: "🎤 Voice Recording Started",
-          description: `${recordingMode === 'enhanced' ? 'Enhanced' : 'Standard'} conversation recording is now active. You may be prompted to share tab audio for complete conversation recording.`,
-          variant: "default"
-        });
         
         let sessionId: string;
         if (recordingMode === 'enhanced') {
@@ -607,14 +567,7 @@ const Index = () => {
         
         setRecordingSessionId(sessionId);
         setIsRecording(true);
-        console.log(`✅🚨 CRITICAL: ${recordingMode} conversation recording started successfully:`, sessionId);
-        
-        // Additional notification with session details
-        toast({
-          title: "📝 Recording Session Active",
-          description: `Session ID: ${sessionId} - Memories will be linked to this recording`,
-          variant: "default"
-        });
+        console.log(`✅ ${recordingMode} conversation recording started successfully:`, sessionId);
         
         // Add periodic status logging
         const statusInterval = setInterval(() => {
@@ -630,12 +583,7 @@ const Index = () => {
         // Clean up interval when conversation ends
         setTimeout(() => clearInterval(statusInterval), 300000); // Max 5 minutes
       } else {
-        console.warn('⚠️🚨 No authenticated user found - voice recording skipped');
-        toast({
-          title: "⚠️ Recording Skipped",
-          description: "Voice recording not started - please log in for recording functionality",
-          variant: "default"
-        });
+        console.warn('⚠️ No authenticated user found - voice recording skipped');
         console.log('🔍 Auth debug:', { 
           refUserId: authenticatedUserIdRef.current,
           user, 
@@ -678,14 +626,7 @@ const Index = () => {
     // Stop voice recording if active
     if (isRecording && recordingSessionId) {
       try {
-        console.log(`🛑🚨 CRITICAL: Stopping ${recordingMode} conversation recording due to disconnect...`);
-        
-        toast({
-          title: "🛑 Stopping Recording",
-          description: `Processing and saving ${recordingMode} conversation recording...`,
-          variant: "default"
-        });
-        
+        console.log(`🛑 Stopping ${recordingMode} conversation recording due to disconnect...`);
         if (recordingMode === 'enhanced') {
           await enhancedConversationRecordingService.stopEnhancedRecording();
         } else {
@@ -693,21 +634,12 @@ const Index = () => {
         }
         setIsRecording(false);
         setRecordingSessionId(null);
-        console.log(`✅🚨 CRITICAL: ${recordingMode} conversation recording stopped and saved`);
-        
-        // Notification will be shown by the recording service itself when save completes
+        console.log(`✅ ${recordingMode} conversation recording stopped and saved`);
       } catch (error) {
         console.error(`⚠️ Failed to stop ${recordingMode} voice recording:`, error);
-        toast({
-          title: "❌ Recording Stop Failed",
-          description: `Failed to save ${recordingMode} recording: ${error}`,
-          variant: "destructive"
-        });
         setIsRecording(false);
         setRecordingSessionId(null);
       }
-    } else {
-      console.log('🚨 No active recording to stop');
     }
 
     // AUTO-SAVE: Try to save conversation content when disconnected
@@ -1127,13 +1059,7 @@ VOICE SEARCH EXAMPLES:
 - "Show me recordings from last week"
 - "What did I say about work stress?"
 
-FAREWELL DETECTION:
-- Watch for goodbye phrases: "bye", "goodbye", "see you", "thanks Solin", "gotta go", "talk later", "that's all", "I'm done", "time to go", etc.
-- When detected, offer a brief, warm goodbye and IMMEDIATELY use close_conversation tool
-- Don't ask follow-ups or try to extend - respect their desire to end
-- Example: "Goodbye! It was wonderful talking with you. Take care!" then close_conversation
-
-Keep responses brief and conversational. Make memory and voice interaction feel natural and powerful. Always end gracefully when farewells are detected.`;
+Keep responses brief and conversational. Make memory and voice interaction feel natural and powerful.`;
 
   // Enhanced conversation closing tool for ElevenLabs agent communication
   const closeConversationTool = useCallback(async (parameters: {
@@ -1961,29 +1887,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           
           setConversationMessages(prev => [...prev, { role: 'user', text: msg.message }]);
           
-          // Check for goodbye/farewell phrases to automatically end conversation
-          const goodbyePatterns = [
-            /\b(bye|goodbye|see you|farewell|talk to you later|ttyl|gotta go|have to go)\b/i,
-            /\b(thank you.*solin|thanks.*solin).*\b(bye|goodbye|see you)/i,
-            /\b(that's all|that's it|i'm done|we're done|end conversation)\b/i,
-            /\b(i need to go|time to go|got to run)\b/i
-          ];
-          
-          const isGoodbye = goodbyePatterns.some(pattern => pattern.test(msg.message));
-          
-          if (isGoodbye && !isEndingConversation) {
-            console.log('👋 Detected goodbye phrase from user:', msg.message);
-            console.log('🤖 Triggering automatic conversation end...');
-            
-            // Delay slightly to let the current message processing finish
-            setTimeout(() => {
-              if (!isEndingConversation) {
-                console.log('🚀 Auto-ending conversation due to goodbye detection');
-                endConversation();
-              }
-            }, 500);
-          }
-          
           // Extract topics from user messages for smarter context
           const topics = msg.message.toLowerCase().match(/\b(family|childhood|school|work|travel|memory|remember|story|time|years?|ago)\b/g) || [];
           if (topics.length > 0) {
@@ -2006,13 +1909,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         
         // Add to conversation recording transcript if we have valid content
         if (transcriptText && speaker && isRecording) {
-          console.log('📝 Adding to conversation transcript:', { 
-            speaker, 
-            text: transcriptText.substring(0, 50) + '...', 
-            mode: recordingMode,
-            sessionId: recordingSessionId,
-            fullTextLength: transcriptText.length 
-          });
+          console.log('📝 Adding to conversation transcript:', { speaker, text: transcriptText.substring(0, 50) + '...', mode: recordingMode });
           
           if (recordingMode === 'enhanced') {
             enhancedConversationRecordingService.addEnhancedTranscriptEntry(speaker, transcriptText, msg.confidence);
@@ -2020,22 +1917,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             conversationRecordingService.addTranscriptEntry(speaker, transcriptText);
           }
         } else if (isRecording) {
-          console.log('📝 Transcript not added - missing data:', { 
-            hasText: !!transcriptText, 
-            hasSpeaker: !!speaker, 
-            isRecording, 
-            mode: recordingMode,
-            sessionId: recordingSessionId,
-            msgType: msg.type,
-            msgSource: msg.source 
-          });
-        } else if (transcriptText && speaker) {
-          console.log('📝 Transcript available but not recording:', { 
-            speaker, 
-            text: transcriptText.substring(0, 30) + '...', 
-            isRecording, 
-            sessionId: recordingSessionId 
-          });
+          console.log('📝 Transcript not added - missing data:', { hasText: !!transcriptText, hasSpeaker: !!speaker, isRecording, mode: recordingMode });
         }
       }
     },
@@ -2059,25 +1941,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
     (window as any).voiceRecordingService = voiceRecordingService;
     console.log('🔧 DEBUG: Voice recording test functions exposed to window object');
   }, []);
-  
-  // Load user profile for personalized welcome message
-  useEffect(() => {
-    const loadUserProfile = async () => {
-      if (user?.id) {
-        try {
-          const profile = await userProfileService.getProfile(user.id);
-          if (profile?.preferred_name) {
-            setUserPreferredName(profile.preferred_name);
-            console.log('✅ Loaded user preferred name:', profile.preferred_name);
-          }
-        } catch (error) {
-          console.error('⚠️ Failed to load user profile:', error);
-          // Silently fail - welcome message will use fallback
-        }
-      }
-    };
-    loadUserProfile();
-  }, [user?.id]);
 
   const startConversation = useCallback(async () => {
     console.log('🚀 START CONVERSATION: Function called');
@@ -2239,9 +2102,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         console.warn('⚠️ setVolume failed (safe to ignore):', e);
       }
       
-      // Note: Conversation recording is automatically started by onConnectCb
-      console.log('✅ ElevenLabs session started - recording will be handled by onConnect callback');
-      
     } catch (error) {
       console.log('🚀 CATCH BLOCK: Error caught in try-catch');
       const errorMsg = error instanceof Error ? error.message : 'Could not start';
@@ -2321,11 +2181,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             await conversation.endSession();
           }
           
-          // Force disconnect if still connected
-          if (conversation.status !== 'disconnected') {
-            console.log('🔄 Force disconnecting...');
-            conversation.disconnect();
-          }
+          // Note: conversation will auto-disconnect when endSession completes
           
           // Stop voice recording if active
           if (isRecording && recordingSessionId) {
@@ -2351,7 +2207,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           // Clear all conversation state
           setConversationMessages([]);
           setIsEndingConversation(false);
-          setIsConnected(false);
           
           console.log('✅ Session ended successfully');
           
@@ -2398,9 +2253,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             if (conversation.status === 'connected') {
               conversation.endSession().catch(console.error);
             }
-            if (conversation.status !== 'disconnected') {
-              conversation.disconnect();
-            }
             
             // Stop voice recording if active
             if (isRecording && recordingSessionId) {
@@ -2419,7 +2271,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             // Clear state and navigate
             setConversationMessages([]);
             setIsEndingConversation(false);
-            setIsConnected(false);
             
             if (lastSavedMemoryId) {
               navigate(`/timeline?highlight=${lastSavedMemoryId}&new=true`);
@@ -2459,126 +2310,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       }
     }
   }, [conversation, toast, navigate]);
-
-  /**
-   * End conversation and save to archive ONLY (no timeline entry)
-   * Used when user wants to terminate without creating a memory
-   */
-  const endConversationArchiveOnly = useCallback(async () => {
-    try {
-      console.log('📦 Archive-only conversation end requested...');
-      setIsEndingConversation(true);
-      
-      // Show immediate feedback
-      toast({ 
-        title: '📦 Ending conversation...', 
-        description: 'Recording will be saved to Archive only (no timeline entry)',
-        duration: 4000
-      });
-      
-      // Force immediate disconnection (no goodbye needed)
-      let hasEnded = false;
-      
-      const forceEnd = async () => {
-        if (hasEnded) return;
-        hasEnded = true;
-        
-        try {
-          console.log('🛑 Forcefully ending session for archive-only save...');
-          
-          // End ElevenLabs session immediately
-          if (conversation.status === 'connected') {
-            await conversation.endSession();
-          }
-          
-          // Force disconnect
-          if (conversation.status !== 'disconnected') {
-            console.log('🔄 Force disconnecting...');
-            conversation.disconnect();
-          }
-          
-          // Stop voice recording and mark as archive-only
-          if (isRecording && recordingSessionId) {
-            try {
-              console.log(`🛑 Stopping ${recordingMode} voice recording (archive-only mode)...`);
-              
-              // Stop recording service
-              if (recordingMode === 'enhanced') {
-                await enhancedConversationRecordingService.stopEnhancedRecording();
-              } else {
-                await conversationRecordingService.stopConversationRecording();
-              }
-              
-              setIsRecording(false);
-              setRecordingSessionId(null);
-              console.log(`✅ ${recordingMode} voice recording stopped and saved to archive`);
-              
-              toast({
-                title: '✅ Recording Saved to Archive',
-                description: 'Conversation saved - available in Archive page',
-                variant: 'default'
-              });
-              
-            } catch (error) {
-              console.error(`⚠️ Failed to stop ${recordingMode} voice recording:`, error);
-              toast({
-                title: '⚠️ Recording Save Issue',
-                description: 'There may have been an issue saving the recording',
-                variant: 'destructive'
-              });
-            }
-          } else {
-            // No recording active - just inform user
-            toast({
-              title: 'ℹ️ No Active Recording',
-              description: 'Conversation ended without recording',
-              variant: 'default'
-            });
-          }
-          
-          // DO NOT create any memory - this is archive-only mode
-          console.log('📦 Archive-only mode: Skipping memory creation');
-          
-          // Clear conversation state
-          setConversationMessages([]);
-          setIsEndingConversation(false);
-          setIsConnected(false);
-          
-          console.log('✅ Archive-only session ended successfully');
-          
-          // Navigate to Archive page instead of Timeline
-          setTimeout(() => {
-            navigate('/archive');
-            toast({ 
-              title: '📦 Conversation archived', 
-              description: 'Recording saved - check Archive page to listen'
-            });
-          }, 500);
-          
-        } catch (endError) {
-          console.error('Error in archive-only session end:', endError);
-          setIsEndingConversation(false);
-          toast({
-            title: '❌ End Session Error',
-            description: 'Failed to end session cleanly',
-            variant: 'destructive'
-          });
-        }
-      };
-      
-      // Execute immediate force end (no waiting for Solin)
-      await forceEnd();
-      
-    } catch (error) {
-      console.error('Failed to end conversation (archive-only):', error);
-      setIsEndingConversation(false);
-      toast({ 
-        title: 'Error ending conversation', 
-        description: 'Please try again or refresh the page', 
-        variant: 'destructive' 
-      });
-    }
-  }, [conversation, isRecording, recordingSessionId, recordingMode, toast, navigate]);
 
   // Auto-save conversation content as incomplete memory when conversation ends
   const autoSaveConversationContent = useCallback(async () => {
@@ -2685,6 +2416,18 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
       try {
         console.log('🔍 Checking first conversation status...');
+        
+        // Fetch user's name from database
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', effectiveUser.id)
+          .single();
+        
+        if (userData?.name) {
+          setUserName(userData.name);
+        }
+        
         const needsFirstConv = await userProfileService.needsFirstConversation(effectiveUser.id);
         
         console.log(`👤 User needs first conversation: ${needsFirstConv}`);
@@ -2830,7 +2573,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {user && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-foreground mb-1">
-                      Welcome, {userPreferredName || user.user_metadata?.full_name?.split(' ')[0] || user.user_metadata?.first_name || user.email?.split('@')[0] || 'Friend'}!
+                      Welcome, {userName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend'}!
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Ready to continue your memory journey with Solin?
@@ -3039,47 +2782,19 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     </p>
                   </div>
                   
-                  {/* Two-button layout: Save & End + End Conversation */}
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Save & End Button - Creates memory if possible */}
-                    <Button 
-                      onClick={endConversation} 
-                      size="lg"
-                      disabled={isEndingConversation}
-                      className="w-full rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-white/20 disabled:opacity-70 disabled:hover:scale-100"
-                    >
-                      {isEndingConversation ? (
-                        <>⏳ Ending...</>
-                      ) : (
-                        <>✨ Save & End</>
-                      )}
-                    </Button>
-
-                    {/* End Conversation Button - Archives without timeline */}
-                    <Button 
-                      onClick={endConversationArchiveOnly} 
-                      size="lg"
-                      disabled={isEndingConversation}
-                      variant="outline"
-                      className="w-full rounded-lg bg-white hover:bg-gray-50 text-gray-700 font-semibold shadow-md hover:shadow-lg transition-all hover:scale-[1.02] border-2 border-gray-300 disabled:opacity-70 disabled:hover:scale-100"
-                    >
-                      {isEndingConversation ? (
-                        <>⏳ Ending...</>
-                      ) : (
-                        <>📦 End Conversation</>
-                      )}
-                    </Button>
-                  </div>
-                  
-                  {/* Explanation text */}
-                  <div className="text-center space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">Save & End:</span> Creates memory + saves to timeline
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">End Conversation:</span> Archives recording only (no timeline entry)
-                    </p>
-                  </div>
+                  {/* Prominent Save & End Button */}
+                  <Button 
+                    onClick={endConversation} 
+                    size="lg"
+                    disabled={isEndingConversation}
+                    className="w-full rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-white/20 disabled:opacity-70 disabled:hover:scale-100"
+                  >
+                    {isEndingConversation ? (
+                      <>⏳ Waiting for Solin to finish speaking...</>
+                    ) : (
+                      <>✨ Save & End Conversation ✨</>
+                    )}
+                  </Button>
                   
                   {/* Session info */}
                   {conversationState.totalMemoriesSaved > 0 && (

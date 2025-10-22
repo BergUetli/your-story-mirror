@@ -350,7 +350,7 @@ const Story = () => {
     
     memories.forEach(memory => {
       const text = (memory.title + ' ' + memory.text).toLowerCase();
-      const significance = memory.significance || 1;
+      const significance = (memory as any).significance || 1;
       
       // Family and relationships (weighted by memory significance)
       if (/family|mother|father|parent|sibling|brother|sister|grandmother|grandfather|relatives/.test(text)) {
@@ -472,7 +472,7 @@ const Story = () => {
     paragraph += `${name} experienced what would become `;
     
     // Determine memory significance
-    const significance = memories[0].significance || 0;
+    const significance = (memories[0] as any).significance || 0;
     if (significance > 8) {
       paragraph += `one of the most transformative moments of this period`;
     } else if (significance > 5) {

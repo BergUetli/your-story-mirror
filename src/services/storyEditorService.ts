@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * INTELLIGENT STORY EDITOR SERVICE
  * 

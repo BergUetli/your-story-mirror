@@ -31,7 +31,7 @@ const About = () => {
           </div>
           
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            Replicate your memories.
+            Replicate your presence.
             <br />
             <span className="bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-transparent">
               Take the journey to make your story last forever.
