@@ -47,7 +47,7 @@ const About = () => {
             {!user ? (
               <div className="space-y-4">
                 <p className="text-lg text-white/80">
-                  Sign in to access your personal collection of memories and conversations with Solin.
+                  Create your account to start preserving memories and having conversations with Solin.
                 </p>
                 <div className="flex gap-4 justify-center">
                   <Button 
@@ -55,7 +55,17 @@ const About = () => {
                     onClick={() => setIsAuthModalOpen(true)}
                     className="bg-white/20 hover:bg-white/30 text-white border-2 border-white/30 hover:border-white/50 backdrop-blur-sm px-12 py-6 rounded-full text-lg font-semibold transition-all hover:scale-105 shadow-lg"
                   >
-                    Enter Your Sanctuary
+                    Create Your Sanctuary
+                  </Button>
+                  <Button 
+                    asChild
+                    variant="outline"
+                    size="lg" 
+                    className="bg-transparent hover:bg-white/10 text-white border-2 border-white/50 hover:border-white/70 backdrop-blur-sm px-8 py-6 rounded-full text-lg font-semibold transition-all hover:scale-105"
+                  >
+                    <Link to="/signup">
+                      Sign Up
+                    </Link>
                   </Button>
                 </div>
               </div>

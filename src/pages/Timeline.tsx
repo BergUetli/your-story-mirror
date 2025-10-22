@@ -782,7 +782,7 @@ const Timeline = () => {
           }}
         >
           <div
-            className="max-w-4xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
+            className="max-w-4xl mx-auto px-8 py-32 transition-transform duration-100 ease-out"
             style={{ 
               transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
               transformOrigin: '0 0',
@@ -821,23 +821,65 @@ const Timeline = () => {
             className="relative animate-fade-in"
             style={{
               minHeight: (() => {
-                // FULL PAGE DEFAULT: Always start with one full page height minimum
+                // TIMELINE CONTAINER HEIGHT: Must match the actual timeline content height
                 const currentYear = new Date().getFullYear();
                 const sharedBirthYear = timelineProfile?.birth_date 
                   ? new Date(timelineProfile.birth_date).getFullYear() 
                   : timelineData[0]?.year || new Date().getFullYear();
                 const totalYears = currentYear - sharedBirthYear;
                 
-                // ALWAYS ONE PAGE MINIMUM: Ensure timeline fills viewport height
+                // Start with viewport-based minimum height
                 const viewportHeight = window.innerHeight - 200;
-                const baseHeight = Math.max(viewportHeight * 0.9, 800); // Always at least 90% of screen or 800px minimum
+                const baseHeight = Math.max(viewportHeight * 0.9, 800);
                 
-                // Use dedicated overlap checker module with generous spacing for readability
+                // Use overlap checker for initial spacing
                 const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
+                const pixelsPerYear = overlapCheck.finalHeight / totalYears;
                 
-                console.log(`🎯 FULL PAGE TIMELINE: ${Math.round(baseHeight)}px → ${Math.round(overlapCheck.finalHeight)}px (${Math.round(overlapCheck.finalHeight / viewportHeight * 100)}% of screen)`);
+                // Calculate actual maximum position needed (same as timeline elements)
+                let actualMaxHeight = overlapCheck.finalHeight;
                 
-                return overlapCheck.finalHeight;
+                for (const yearData of timelineData) {
+                  const yearsFromBirth = yearData.year - sharedBirthYear;
+                  let topPosition = (yearsFromBirth * pixelsPerYear) + 50;
+                  
+                  // Apply positioning logic
+                  if (yearData.year === sharedBirthYear) {
+                    topPosition = 50;
+                  }
+                  
+                  if (yearData.isCurrentYear) {
+                    const bottomAnchor = overlapCheck.finalHeight - 150;
+                    if (topPosition < bottomAnchor) {
+                      topPosition = bottomAnchor;
+                    }
+                  }
+                  
+                  // Track maximum position + content height
+                  actualMaxHeight = Math.max(actualMaxHeight, topPosition + 200);
+                }
+                
+                // Add padding for smooth scrolling to start/end points
+                const finalContainerHeight = actualMaxHeight + 200; // Extra padding for viewport visibility
+                
+                console.log(`🎯 TIMELINE CONTAINER: Base ${Math.round(baseHeight)}px → Overlap ${Math.round(overlapCheck.finalHeight)}px → Actual ${Math.round(actualMaxHeight)}px → Final ${Math.round(finalContainerHeight)}px`);
+                
+                // Debug current year positioning
+                const currentYearData = timelineData.find(y => y.isCurrentYear);
+                if (currentYearData) {
+                  const yearsFromBirth = currentYearData.year - sharedBirthYear;
+                  const calculatedPos = (yearsFromBirth * pixelsPerYear) + 50;
+                  const bottomAnchor = overlapCheck.finalHeight - 150;
+                  const finalPos = calculatedPos < bottomAnchor ? bottomAnchor : calculatedPos;
+                  console.log(`🎯 CURRENT YEAR (${currentYearData.year}) POSITIONING:`, {
+                    calculatedPos: Math.round(calculatedPos),
+                    bottomAnchor: Math.round(bottomAnchor),
+                    finalPos: Math.round(finalPos),
+                    actualMaxHeight: Math.round(actualMaxHeight)
+                  });
+                }
+                
+                return finalContainerHeight;
               })()
             }}
           >
@@ -855,12 +897,57 @@ const Timeline = () => {
               const pixelsPerYear = overlapCheck.finalHeight / totalYears;
               const totalHeight = overlapCheck.finalHeight;
 
+              // Calculate timeline line height - must reach the furthest positioned year
+              let maxYearPosition = 0;
+              let currentYearPosition = 0;
+              
+              for (const yearData of timelineData) {
+                const yearsFromBirth = yearData.year - sharedBirthYear;
+                let topPosition = (yearsFromBirth * pixelsPerYear) + 50;
+                
+                // Apply same positioning logic as year elements
+                if (yearData.year === sharedBirthYear) {
+                  topPosition = 50;
+                }
+                
+                if (yearData.isCurrentYear) {
+                  const bottomAnchor = totalHeight - 150;
+                  if (topPosition < bottomAnchor) {
+                    topPosition = bottomAnchor;
+                  }
+                  currentYearPosition = topPosition;
+                }
+                
+                // Track the maximum position of any year
+                maxYearPosition = Math.max(maxYearPosition, topPosition);
+              }
+              
+              // Timeline line MUST extend to at least the current year position + generous margin
+              // The line should visually connect to the current year marker
+              const lineEndPosition = Math.max(
+                currentYearPosition + 100, // Current year + margin
+                maxYearPosition + 100,     // Any other year + margin  
+                totalHeight                // Base container height
+              );
+              
+              const actualLineHeight = lineEndPosition;
+              
+              console.log('🎯 TIMELINE LINE CALCULATION:', {
+                totalHeight: Math.round(totalHeight),
+                currentYearPosition: Math.round(currentYearPosition),
+                maxYearPosition: Math.round(maxYearPosition),
+                lineEndPosition: Math.round(lineEndPosition),
+                actualLineHeight: Math.round(actualLineHeight),
+                currentYear: timelineData.find(y => y.isCurrentYear)?.year,
+                pixelsPerYear: Math.round(pixelsPerYear * 100) / 100
+              });
+
               return (
                 <>
-                  {/* Timeline Line - centered */}
+                  {/* Timeline Line - extends to cover all positioned elements */}
                   <div 
                     className="absolute left-1/4 top-0 w-1 bg-black"
-                    style={{ height: `${totalHeight}px` }}
+                    style={{ height: `${actualLineHeight}px` }}
                   />
 
                   {/* Timeline Content with proportional spacing - CHRONOLOGICAL ORDER */}
@@ -877,14 +964,33 @@ const Timeline = () => {
                     const yearsFromBirth = yearData.year - sharedBirthYear;
                     let topPosition = (yearsFromBirth * pixelsPerYear) + 50; // Start 50px from top
                     
+                    // DEBUG: Log positioning calculations
+                    console.log(`🎯 Timeline Position Debug:`, {
+                      year: yearData.year,
+                      sharedBirthYear,
+                      yearsFromBirth,
+                      pixelsPerYear: pixelsPerYear.toFixed(2),
+                      calculatedTop: topPosition.toFixed(2),
+                      isCurrentYear: yearData.isCurrentYear,
+                      memories: yearData.memories.map(m => ({ title: m.title, date: m.memory_date || m.date }))
+                    });
+                    
                     // Anchor birth year at the top
                     if (yearData.year === sharedBirthYear) {
                       topPosition = 50; // Fixed at top with small margin
+                      console.log(`🎯 Birth year anchored at top:`, { year: yearData.year, topPosition });
                     }
                     
-                    // Anchor current year at the bottom
+                    // Anchor current year at the bottom ONLY if it would be positioned higher than calculated
                     if (yearData.isCurrentYear) {
-                      topPosition = totalHeight - 150; // Fixed at bottom with margin for content
+                      const bottomAnchor = totalHeight - 150; // Bottom position with margin
+                      if (topPosition < bottomAnchor) {
+                        // Only anchor if calculated position is above the bottom - otherwise use calculated position
+                        topPosition = bottomAnchor;
+                        console.log(`🎯 Current year anchored at bottom:`, { year: yearData.year, topPosition, totalHeight, reason: 'calculated position was above bottom' });
+                      } else {
+                        console.log(`🎯 Current year using calculated position:`, { year: yearData.year, topPosition, bottomAnchor, reason: 'calculated position is already at/below bottom' });
+                      }
                     }
                     
                     return (

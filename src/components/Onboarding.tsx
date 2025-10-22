@@ -87,52 +87,64 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     }
   };
 
+  const handleSkip = () => {
+    if (confirm('Are you sure you want to skip this setup? You can complete it later from your profile settings.')) {
+      toast({
+        title: "Setup skipped",
+        description: "You can complete your profile anytime from settings.",
+      });
+      onComplete();
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
     try {
       const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error('No user found');
-
-      // Ensure a profile exists; create if missing, otherwise update
-      const { data: existing, error: fetchErr } = await supabase
-        .from('users')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (fetchErr) throw fetchErr;
-
-      let upsertError = null;
-      if (!existing) {
-        const { error: insertErr } = await supabase
-          .from('users')
-          .insert({
-            user_id: user.id,
-            email: user.email,
-            name: formData.name,
-            age: parseInt(formData.age),
-            birth_date: formData.birthDate,
-            birth_place: formData.birthPlace,
-            current_location: formData.currentLocation,
-            onboarding_completed: true,
-          });
-        upsertError = insertErr;
-      } else {
-        const { error: updateErr } = await supabase
-          .from('users')
-          .update({
-            name: formData.name,
-            age: parseInt(formData.age),
-            birth_date: formData.birthDate,
-            birth_place: formData.birthPlace,
-            current_location: formData.currentLocation,
-            onboarding_completed: true,
-          })
-          .eq('user_id', user.id);
-        upsertError = updateErr;
+      if (!user) {
+        throw new Error('No user found');
       }
 
-      if (upsertError) throw upsertError;
+      const profileData = {
+        user_id: user.id,
+        preferred_name: formData.name,  // name → preferred_name
+        age: parseInt(formData.age),
+        location: formData.currentLocation,  // current_location → location
+        hometown: formData.birthPlace,  // birth_place → hometown
+        onboarding_completed: true,
+        first_conversation_completed: false,
+        profile_completeness_score: 25,
+      };
+
+      console.log('📝 Saving onboarding data to user_profiles:', profileData);
+      console.log('📝 Form data:', formData);
+      console.log('📝 User ID:', user.id);
+      console.log('📝 Age parsed:', parseInt(formData.age), 'from', formData.age);
+
+      // Use user_profiles table with correct column mappings
+      const { data: upsertData, error: upsertError } = await supabase
+        .from('user_profiles')
+        .upsert(profileData, { 
+          onConflict: 'user_id' 
+        })
+        .select();
+
+      console.log('📝 Upsert response data:', upsertData);
+      console.log('📝 Upsert response error:', upsertError);
+
+      if (upsertError) {
+        console.error('❌ Profile upsert error:', upsertError);
+        console.error('❌ Error details:', {
+          message: upsertError.message,
+          details: upsertError.details,
+          hint: upsertError.hint,
+          code: upsertError.code
+        });
+        throw upsertError;
+      }
+
+      console.log('✅ Onboarding data saved successfully:', upsertData);
 
       toast({
         title: "Welcome to Memory Scape! 🌟",
@@ -141,12 +153,46 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
       onComplete();
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('❌ Onboarding error (full object):', error);
+      console.error('❌ Error type:', typeof error);
+      console.error('❌ Error JSON:', JSON.stringify(error, null, 2));
+      
+      // Show detailed error to help debugging
+      let errorMessage = 'Unknown error occurred';
+      let errorDetails = '';
+      
+      if (error && typeof error === 'object') {
+        // PostgrestError from Supabase
+        if ('message' in error) {
+          errorMessage = String(error.message);
+        }
+        if ('details' in error) {
+          errorDetails = String(error.details);
+        }
+        if ('hint' in error) {
+          errorDetails += (errorDetails ? ' | ' : '') + String(error.hint);
+        }
+        if ('code' in error) {
+          errorDetails += (errorDetails ? ' | ' : '') + `Code: ${error.code}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      console.error('❌ Parsed error message:', errorMessage);
+      console.error('❌ Parsed error details:', errorDetails);
+      
       toast({
-        title: "Something went wrong",
-        description: "Please try again.",
+        title: "Couldn't save your profile",
+        description: errorDetails || errorMessage,
         variant: "destructive"
       });
+      
+      // Don't keep user stuck - offer to skip
+      const shouldSkip = confirm(`There was an error saving your profile:\n\n${errorMessage}\n${errorDetails}\n\nWould you like to skip this step and continue? You can complete your profile later from settings.`);
+      if (shouldSkip) {
+        onComplete();
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -222,16 +268,26 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
               )}
             </Button>
             
-            {currentStep > 1 && (
+            <div className="flex gap-2">
+              {currentStep > 1 && (
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  className="flex-1 text-muted-foreground hover:text-foreground"
+                  disabled={isSubmitting}
+                >
+                  Back
+                </Button>
+              )}
               <Button 
-                variant="ghost" 
-                onClick={() => setCurrentStep(currentStep - 1)}
-                className="w-full text-muted-foreground hover:text-foreground"
+                variant="outline" 
+                onClick={handleSkip}
+                className="flex-1 text-muted-foreground hover:text-foreground border-primary/30"
                 disabled={isSubmitting}
               >
-                Back
+                Skip for Now
               </Button>
-            )}
+            </div>
           </div>
 
           <div className="w-full bg-primary/10 rounded-full h-2">

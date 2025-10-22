@@ -81,18 +81,50 @@ const DatabaseManagementPanel = () => {
         setResults(prev => [...prev, '✅ All artifacts cleared']);
       }
 
-      // Step 4: Clear voice recordings if table exists
+      // Step 4: Clear voice recordings and storage files
       setClearingStep('Clearing voice recordings...');
+      
+      // First, get all voice recordings to find their storage paths
+      const { data: voiceRecordings, error: voiceSelectError } = await supabase
+        .from('voice_recordings')
+        .select('storage_path, user_id')
+        .neq('user_id', '00000000-0000-0000-0000-000000000000');
+      
+      let storageDeletedCount = 0;
+      
+      // Delete storage files first (if any exist)
+      if (voiceRecordings && voiceRecordings.length > 0) {
+        setClearingStep(`Deleting ${voiceRecordings.length} voice recording files from storage...`);
+        
+        const storagePaths = voiceRecordings.map(r => r.storage_path).filter(Boolean);
+        
+        if (storagePaths.length > 0) {
+          const { error: storageDeleteError } = await supabase.storage
+            .from('voice-recordings')
+            .remove(storagePaths);
+          
+          if (storageDeleteError) {
+            console.warn('Storage deletion error:', storageDeleteError);
+            setResults(prev => [...prev, `⚠️ Storage files: ${storageDeleteError.message}`]);
+          } else {
+            storageDeletedCount = storagePaths.length;
+            setResults(prev => [...prev, `✅ ${storageDeletedCount} storage files deleted`]);
+          }
+        }
+      }
+      
+      // Then delete database records
       const { error: voiceError } = await supabase
         .from('voice_recordings')
         .delete()
         .neq('user_id', '00000000-0000-0000-0000-000000000000'); // Delete all
       
       if (voiceError && voiceError.code !== 'PGRST205') {
-        console.warn('Voice recordings error:', voiceError);
-        setResults(prev => [...prev, `⚠️ Voice recordings: ${voiceError.message}`]);
+        console.warn('Voice recordings database error:', voiceError);
+        setResults(prev => [...prev, `⚠️ Voice recordings database: ${voiceError.message}`]);
       } else {
-        setResults(prev => [...prev, '✅ Voice recordings cleared']);
+        const recordCount = voiceRecordings ? voiceRecordings.length : 0;
+        setResults(prev => [...prev, `✅ ${recordCount} voice recordings cleared from database`]);
       }
 
       // Step 5: Reset all user onboarding status

@@ -30,6 +30,7 @@ export const VOICES: Voice[] = [
 class VoiceService {
   private currentAudio: HTMLAudioElement | null = null;
   private elevenLabsEnabled: boolean = false;
+  private audioStreamCallbacks: ((audioElement: HTMLAudioElement) => void)[] = [];
 
   constructor() {
     console.log('✅ VoiceService initialized with Supabase client');
@@ -197,6 +198,18 @@ class VoiceService {
       this.currentAudio.addEventListener('canplay', () => console.log('✅ Audio can play'));
       this.currentAudio.addEventListener('error', (e) => console.error('❌ Audio element error:', e));
       
+      // Notify registered callbacks about the new audio element
+      if (this.audioStreamCallbacks.length > 0) {
+        console.log(`🎵 Notifying ${this.audioStreamCallbacks.length} callback(s) about new ElevenLabs audio element`);
+        this.audioStreamCallbacks.forEach(callback => {
+          try {
+            callback(this.currentAudio!);
+          } catch (error) {
+            console.error('❌ Audio stream callback error:', error);
+          }
+        });
+      }
+      
       console.log('✅ Playing ElevenLabs audio');
       
       return new Promise((resolve, reject) => {
@@ -231,6 +244,24 @@ class VoiceService {
 
   isPlaying(): boolean {
     return this.currentAudio && !this.currentAudio.paused;
+  }
+
+  /**
+   * Register a callback to be notified when ElevenLabs audio starts playing
+   * This enables conversation recording services to capture the audio stream
+   */
+  onAudioElementCreated(callback: (audioElement: HTMLAudioElement) => void): void {
+    this.audioStreamCallbacks.push(callback);
+  }
+
+  /**
+   * Unregister an audio stream callback
+   */
+  offAudioElementCreated(callback: (audioElement: HTMLAudioElement) => void): void {
+    const index = this.audioStreamCallbacks.indexOf(callback);
+    if (index !== -1) {
+      this.audioStreamCallbacks.splice(index, 1);
+    }
   }
 }
 

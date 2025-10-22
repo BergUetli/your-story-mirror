@@ -133,65 +133,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           </DialogTitle>
         </DialogHeader>
         
-        <Tabs defaultValue="signin" className="w-full" onValueChange={resetForm}>
+        <Tabs defaultValue="signup" className="w-full" onValueChange={resetForm}>
           <TabsList className="grid w-full grid-cols-2 bg-muted/50">
-            <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
             <TabsTrigger value="signup" className="text-sm">Sign Up</TabsTrigger>
+            <TabsTrigger value="signin" className="text-sm">Sign In</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="signin" className="space-y-4 mt-6">
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-background/50"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-background/50"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-accent to-primary hover:opacity-90"
-              >
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign In
-              </Button>
-            </form>
-            
-            <Button
-              variant="ghost"
-              onClick={handleResetPassword}
-              disabled={isLoading}
-              className="w-full text-sm text-muted-foreground hover:text-foreground"
-            >
-              Forgot your password?
-            </Button>
-          </TabsContent>
           
           <TabsContent value="signup" className="space-y-4 mt-6">
             <form onSubmit={handleSignUp} className="space-y-4">
@@ -253,6 +199,60 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 Create Account
               </Button>
             </form>
+          </TabsContent>
+          
+          <TabsContent value="signin" className="space-y-4 mt-6">
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 bg-background/50"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 bg-background/50"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-accent to-primary hover:opacity-90"
+              >
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Sign In
+              </Button>
+            </form>
+            
+            <Button
+              variant="ghost"
+              onClick={handleResetPassword}
+              disabled={isLoading}
+              className="w-full text-sm text-muted-foreground hover:text-foreground"
+            >
+              Forgot your password?
+            </Button>
           </TabsContent>
         </Tabs>
         

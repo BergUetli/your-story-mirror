@@ -386,7 +386,10 @@ export class AIVoiceSearchService {
       console.log('👤 Loading guest recordings from current session...');
       console.log('📁 Making Supabase query for recent recordings...');
 
-      // Get recent recordings that are not demo records
+      // Get recent recordings that are not demo records (last 24 hours for better consistency)
+      const timeWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      console.log('🕒 Time window for guest recordings:', timeWindow);
+      
       const { data: recordings, error } = await supabase
         .from('voice_recordings')
         .select(`
@@ -402,10 +405,18 @@ export class AIVoiceSearchService {
           session_mode,
           created_at
         `)
-        .gte('created_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Last 2 hours
+        .gte('created_at', timeWindow) // Last 24 hours for consistency
         .not('session_id', 'like', 'demo-%') // Exclude demo records
         .order('created_at', { ascending: false })
-        .limit(5); // Limit to recent recordings
+        .limit(10); // Increased limit for better coverage
+
+      console.log('🔍 Guest recordings query result:', { 
+        error: error?.message, 
+        recordingCount: recordings?.length || 0,
+        sessionIds: recordings?.map(r => r.session_id) || [],
+        timeWindow,
+        query: 'NOT session_id LIKE demo-% AND created_at >= timeWindow'
+      });
 
       if (error) {
         console.warn('⚠️ Could not load recent recordings:', error);
@@ -438,7 +449,7 @@ export class AIVoiceSearchService {
   async getDemoRecordings(): Promise<VoiceSearchResult[]> {
     try {
       console.log('🎭 Loading demo recordings for testing...');
-  console.log('📡 Making Supabase query for demo recordings...');
+      console.log('📡 Making Supabase query for demo recordings...');
 
       const { data: recordings, error } = await supabase
         .from('voice_recordings')
@@ -457,6 +468,13 @@ export class AIVoiceSearchService {
         `)
         .like('session_id', 'demo-%')
         .order('created_at', { ascending: false });
+
+      console.log('🔍 Demo recordings query result:', { 
+        error: error?.message, 
+        recordingCount: recordings?.length || 0,
+        sessionIds: recordings?.map(r => r.session_id) || [],
+        query: 'session_id LIKE demo-%'
+      });
 
       if (error) {
         console.warn('⚠️ Could not load demo recordings:', error);
@@ -538,6 +556,95 @@ export class AIVoiceSearchService {
       
       throw error;
     }
+  }
+
+  /**
+   * Delete a voice recording (both database record and storage file)
+   */
+  async deleteVoiceRecording(userId: string, recordingId: string): Promise<void> {
+    try {
+      console.log('🗑️ Deleting voice recording:', { userId, recordingId });
+
+      // First, get the recording to find the storage path
+      const { data: recording, error: fetchError } = await supabase
+        .from('voice_recordings')
+        .select('storage_path, session_id')
+        .eq('id', recordingId)
+        .eq('user_id', userId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Failed to fetch recording for deletion:', fetchError);
+        throw new Error(`Failed to find recording: ${fetchError.message}`);
+      }
+
+      if (!recording) {
+        throw new Error('Recording not found or you do not have permission to delete it.');
+      }
+
+      // Delete the storage file if it exists
+      if (recording.storage_path) {
+        console.log('🗄️ Deleting storage file:', recording.storage_path);
+        
+        const { error: storageError } = await supabase.storage
+          .from('voice-recordings')
+          .remove([recording.storage_path]);
+
+        if (storageError) {
+          console.warn('⚠️ Failed to delete storage file (continuing with database deletion):', storageError);
+        } else {
+          console.log('✅ Storage file deleted successfully');
+        }
+      }
+
+      // Delete the database record
+      const { error: dbError } = await supabase
+        .from('voice_recordings')
+        .delete()
+        .eq('id', recordingId)
+        .eq('user_id', userId);
+
+      if (dbError) {
+        console.error('❌ Failed to delete recording from database:', dbError);
+        throw new Error(`Failed to delete recording: ${dbError.message}`);
+      }
+
+      console.log('✅ Voice recording deleted successfully:', {
+        recordingId,
+        sessionId: recording.session_id,
+        storagePath: recording.storage_path
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to delete voice recording:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete multiple voice recordings in batch
+   */
+  async deleteMultipleRecordings(userId: string, recordingIds: string[]): Promise<{ success: number; failed: number; errors: string[] }> {
+    console.log('🗑️ Batch deleting voice recordings:', { userId, count: recordingIds.length });
+    
+    let success = 0;
+    let failed = 0;
+    const errors: string[] = [];
+
+    for (const recordingId of recordingIds) {
+      try {
+        await this.deleteVoiceRecording(userId, recordingId);
+        success++;
+      } catch (error) {
+        failed++;
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`Recording ${recordingId}: ${errorMsg}`);
+        console.warn(`⚠️ Failed to delete recording ${recordingId}:`, error);
+      }
+    }
+
+    console.log(`✅ Batch deletion completed: ${success} successful, ${failed} failed`);
+    return { success, failed, errors };
   }
 }
 

@@ -4,6 +4,23 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { 
   ArrowLeft, 
   Database, 
@@ -18,7 +35,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Mic,
-  Users
+  Users,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,17 +60,17 @@ const Archive = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'memories'>('date');
   const [activeTab, setActiveTab] = useState<'recordings' | 'memories'>('recordings');
+  const [deletingRecordings, setDeletingRecordings] = useState<Set<string>>(new Set());
   
   // Load all voice recordings
-  const loadRecordings = async () => {
-    console.log('🚀 loadRecordings function called');
-    console.log('👤 Current user state:', user);
-    console.log('🆔 User ID:', user?.id);
+  const loadRecordings = async (isRefresh = false) => {
+    console.log('🚀 loadRecordings function called', { isRefresh, userId: user?.id });
     
     logArchiveDisplay('info', 'archive_load_requested', {
       userId: user?.id,
       hasUser: !!user,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      isRefresh
     });
     
     setIsLoading(true);
@@ -59,41 +78,42 @@ const Archive = () => {
     try {
       console.log('📚 Loading all voice recordings for Archive...');
       
-      // If no user is logged in, load demo recordings AND guest recordings
+      // If no user is logged in, load demo recordings only (for consistent behavior)
       if (!user?.id) {
-        console.log('👤 No user logged in, loading demo and guest recordings...');
+        console.log('👤 No user logged in, loading demo recordings for consistent experience...');
         
-        // Load demo recordings
+        // Load demo recordings only - skip guest recordings to avoid time-based inconsistencies
         console.log('🔍 Loading demo recordings...');
         const demoRecordings = await aiVoiceSearch.getDemoRecordings();
-        console.log(`🎭 Demo recordings: ${demoRecordings.length}`);
+        console.log(`🎭 Demo recordings loaded:`, { 
+          count: demoRecordings.length, 
+          sessionIds: demoRecordings.map(r => r.session_id),
+          isRefresh 
+        });
         
-        // Also load any guest recordings from this session
-        console.log('🔍 Loading recent guest recordings...');
-        const guestRecordings = await aiVoiceSearch.getGuestRecordings();
-        console.log(`👤 Guest recordings: ${guestRecordings.length}`);
+        setRecordings(demoRecordings);
+        setFilteredRecordings(demoRecordings);
+        console.log(`✅ Archive loaded: ${demoRecordings.length} demo recordings`);
         
-        // Combine demo and guest recordings
-        const allRecordings = [...guestRecordings, ...demoRecordings];
-        console.log(`📈 Total recordings: ${allRecordings.length}`);
-        
-        setRecordings(allRecordings);
-        setFilteredRecordings(allRecordings);
-        console.log(`✅ Archive loaded: ${allRecordings.length} recordings (${guestRecordings.length} guest + ${demoRecordings.length} demo)`);
-        
-        if (allRecordings.length === 0) {
-          toast({
-            title: 'No recordings found',
-            description: 'Start a conversation with Solin to create your first recording!',
-          });
+        if (demoRecordings.length === 0) {
+          if (!isRefresh) {
+            toast({
+              title: 'No recordings found',
+              description: 'Demo recordings not available. Please sign in to create your own recordings!',
+            });
+          }
         } else {
-          const message = guestRecordings.length > 0 
-            ? `Loaded ${guestRecordings.length} new recording(s) + ${demoRecordings.length} demo recordings!`
-            : `Loaded ${demoRecordings.length} demo recordings for testing!`;
-          toast({
-            title: 'Archive Loaded',
-            description: message,
-          });
+          if (isRefresh) {
+            toast({
+              title: 'Archive Refreshed',
+              description: `Found ${demoRecordings.length} demo recording${demoRecordings.length === 1 ? '' : 's'} in storage`,
+            });
+          } else {
+            toast({
+              title: 'Demo Archive Loaded',
+              description: `Loaded ${demoRecordings.length} demo recordings for testing!`,
+            });
+          }
         }
         return;
       }
@@ -113,16 +133,63 @@ const Archive = () => {
         }))
       });
       
-      setRecordings(allRecordings);
-      setFilteredRecordings(allRecordings);
+      // Check if recordings have valid storage paths
+      const recordingsWithStatus = allRecordings.map(recording => ({
+        ...recording,
+        hasValidStorage: !!recording.storage_path
+      }));
+
+      // DEBUG: Log all recording storage status for user visibility
+      console.log('🎯 ARCHIVE DEBUG - All recordings with storage status:', recordingsWithStatus.map(r => ({
+        id: r.id.substring(0, 8),
+        created_at: r.created_at,
+        storage_path: r.storage_path,
+        hasValidStorage: r.hasValidStorage,
+        session_id: r.session_id?.substring(0, 8)
+      })));
+      
+      // Count missing storage for user visibility
+      const missingStorageCount = recordingsWithStatus.filter(r => !r.hasValidStorage).length;
+      console.log(`🎯 ARCHIVE DEBUG - Found ${recordingsWithStatus.length} total recordings, ${missingStorageCount} missing storage paths`);
+      
+      console.log('🔍 Recording storage status:', recordingsWithStatus.map(r => ({
+        id: r.id.substring(0, 8),
+        session_id: r.session_id,
+        has_storage_path: !!r.storage_path,
+        storage_path: r.storage_path,
+        created_at: r.created_at
+      })));
+      
+      setRecordings(recordingsWithStatus);
+      setFilteredRecordings(recordingsWithStatus);
       console.log(`✅ Archive loaded: ${allRecordings.length} voice recordings`);
+      
+      // Show warning if some recordings have missing audio files
+      const missingAudioCount = recordingsWithStatus.filter(r => !r.storage_path).length;
+      if (missingAudioCount > 0 && isRefresh) {
+        toast({
+          title: 'Some Audio Files Missing',
+          description: `${missingAudioCount} recording${missingAudioCount === 1 ? '' : 's'} found in database but audio file${missingAudioCount === 1 ? ' is' : 's are'} missing from storage.`,
+          variant: 'default'
+        });
+      }
+      
+      // Show refresh feedback for manual refresh actions
+      if (isRefresh) {
+        toast({
+          title: 'Archive Refreshed',
+          description: `Found ${allRecordings.length} voice recording${allRecordings.length === 1 ? '' : 's'} in storage`,
+        });
+      }
       
       if (allRecordings.length === 0) {
         logArchiveDisplay('warn', 'no_recordings_found', { userId: user.id });
-        toast({
-          title: 'No recordings found',
-          description: 'Start having conversations with Solin to build your voice archive!',
-        });
+        if (!isRefresh) {
+          toast({
+            title: 'No recordings found',
+            description: 'Start having conversations with Solin to build your voice archive!',
+          });
+        }
       }
     } catch (error) {
       console.error('❌ Failed to load Archive:', error);
@@ -207,6 +274,20 @@ const Archive = () => {
     console.log('🔄 Archive useEffect triggered - loading recordings directly');
     loadRecordings();
   }, []); // Remove user dependency to match ArchiveSimple pattern
+  
+  // Add keyboard shortcut for refresh (Ctrl+R / Cmd+R)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'r' && !isLoading) {
+        event.preventDefault();
+        console.log('🔄 Keyboard shortcut refresh triggered');
+        loadRecordings(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLoading]);
 
   useEffect(() => {
     filterRecordings(searchQuery);
@@ -219,6 +300,56 @@ const Archive = () => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  };
+
+  // Delete recording function
+  const deleteRecording = async (recordingId: string, recordingTitle: string) => {
+    if (!user?.id) {
+      toast({
+        title: 'Authentication Required',
+        description: 'You must be signed in to delete recordings.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Add to deleting set
+    setDeletingRecordings(prev => new Set(prev).add(recordingId));
+
+    try {
+      await aiVoiceSearch.deleteVoiceRecording(user.id, recordingId);
+      
+      // Remove from local state
+      setRecordings(prev => prev.filter(r => r.id !== recordingId));
+      setFilteredRecordings(prev => prev.filter(r => r.id !== recordingId));
+      
+      // Clear selection if it was the deleted recording
+      if (selectedRecording?.id === recordingId) {
+        setSelectedRecording(null);
+      }
+      
+      toast({
+        title: 'Recording Deleted',
+        description: `"${recordingTitle}" has been permanently deleted.`,
+        variant: 'default'
+      });
+      
+    } catch (error) {
+      console.error('Failed to delete recording:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      toast({
+        title: 'Delete Failed',
+        description: `Could not delete recording: ${errorMsg}`,
+        variant: 'destructive'
+      });
+    } finally {
+      // Remove from deleting set
+      setDeletingRecordings(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(recordingId);
+        return newSet;
+      });
+    }
   };
 
   // Calculate total stats
@@ -316,6 +447,20 @@ const Archive = () => {
                     className="pl-10"
                   />
                 </div>
+                
+                {/* Refresh Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadRecordings(true)}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 shrink-0"
+                  title="Refresh recordings from storage"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+                
                 <div className="flex items-center gap-2">
                   <SortDesc className="w-4 h-4 text-muted-foreground" />
                   <select 
@@ -530,17 +675,40 @@ const Archive = () => {
                                 year: 'numeric'
                               })}
                             </span>
+                            <Clock className="w-4 h-4 text-muted-foreground ml-1" />
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(recording.created_at).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
                             <Badge variant="outline" className="text-xs">
                               {formatDuration(recording.duration_seconds)}
                             </Badge>
                             <Badge variant="secondary" className="text-xs capitalize">
                               {recording.session_mode?.replace('_', ' ')}
                             </Badge>
+                            {/* Audio Status Badge - Always show for debugging */}
+                            {!recording.storage_path ? (
+                              <Badge variant="destructive" className="text-xs">
+                                🔇 Audio Missing
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs opacity-50">
+                                ✅ Audio OK
+                              </Badge>
+                            )}
                           </div>
 
                           {/* Summary */}
                           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                             {recording.conversation_summary}
+                            {!recording.storage_path && (
+                              <span className="block text-xs text-red-500 mt-1 italic">
+                                ⚠️ Audio file missing from storage - transcript only
+                              </span>
+                            )}
                           </p>
 
                           {/* Memory Titles */}
@@ -576,13 +744,75 @@ const Archive = () => {
                           )}
                         </div>
 
-                        <Button
-                          variant={selectedRecording?.id === recording.id ? "default" : "outline"}
-                          size="sm"
-                          className="flex-shrink-0"
-                        >
-                          {selectedRecording?.id === recording.id ? 'Selected' : 'Play'}
-                        </Button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                            variant={selectedRecording?.id === recording.id ? "default" : "outline"}
+                            size="sm"
+                            disabled={!recording.storage_path}
+                            title={!recording.storage_path ? 'Audio file missing - cannot play' : undefined}
+                          >
+                            {!recording.storage_path ? 'No Audio' : 
+                             selectedRecording?.id === recording.id ? 'Selected' : 'Play'}
+                          </Button>
+                          
+                          {/* Delete Button - Only for authenticated users */}
+                          {user && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="w-8 h-8 p-0"
+                                  disabled={deletingRecordings.has(recording.id)}
+                                >
+                                  {deletingRecordings.has(recording.id) ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <MoreVertical className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem 
+                                      onSelect={(e) => e.preventDefault()}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete Recording
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Voice Recording?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to permanently delete this recording?
+                                        <br /><br />
+                                        <strong>Recording:</strong> {recording.conversation_summary || 'Untitled recording'}
+                                        <br />
+                                        <strong>Duration:</strong> {formatDuration(recording.duration_seconds)}
+                                        <br />
+                                        <strong>Date:</strong> {new Date(recording.created_at).toLocaleDateString()}
+                                        <br /><br />
+                                        This action cannot be undone. The audio file and all associated data will be permanently deleted.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteRecording(recording.id, recording.conversation_summary || 'Recording')}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete Permanently
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
