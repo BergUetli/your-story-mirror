@@ -13,6 +13,8 @@ A comprehensive digital memory preservation platform that helps users capture, p
 - 🗂️ **Organize timeline** with complete vs incomplete memory filtering
 - 🎭 **Multiple conversation styles** (reflection, interview, storytelling, discussion)
 - 🔐 **Control access** to different memories (private, family, friends)
+- 📝 **Comprehensive onboarding** with 13-question profile setup for personalized experience
+- 🔧 **Admin dashboard** with voice recording diagnostics and database management
 
 ## 🏗️ Architecture
 
@@ -43,6 +45,7 @@ src/
 │   ├── AudioPlayer.tsx              # Voice recording playback with transcript sync
 │   ├── MicrophoneTest.tsx           # Advanced microphone diagnostics
 │   ├── MemoryArchive.tsx            # Archive display for text memories
+│   ├── Onboarding.tsx               # 13-step onboarding questionnaire
 │   └── admin/
 │       ├── VoiceArchiveDiagnosticsPanel.tsx    # Comprehensive diagnostics
 │       ├── MemoryRecordingManager.tsx          # Bulk voice generation
@@ -134,6 +137,25 @@ bun dev
 ```
 
 Visit `http://localhost:8080`
+
+### First-Time User Experience
+
+New users will go through a comprehensive onboarding flow:
+
+1. **Sign Up**: Create account with email and password
+2. **Onboarding**: 13-question profile questionnaire covering:
+   - Personal Information (name, age, birth date/place, location)
+   - Professional Life (occupation, relationship status)
+   - Cultural Background (heritage, languages spoken)
+   - Life Details (hobbies, major life events)
+   - Values & Goals (core values, life goals)
+3. **Profile Completion**: Tracked with completeness score (0-100%)
+4. **First Conversation**: Initial chat with Solin to build Memory Scape
+
+**Testing Onboarding Without Real Emails:**
+- Use `test-onboarding.html` standalone page (no auth required)
+- See `TESTING_GUIDE.md` for Gmail plus addressing and temp email services
+- Admin users can populate test profiles using `populate_apoorva_only.sql`
 
 ## 🎙️ Voice Recording & Archive System
 
@@ -228,7 +250,7 @@ For complex operations that don't require instant response:
 ### memories
 ```sql
 - id (uuid, primary key)
-- user_id (uuid, indexed)
+- user_id (uuid, indexed) - References auth.users(id) with foreign key constraint
 - title (text)
 - text (text)
 - memory_date (date, nullable) - User-provided date (YYYY-MM-DD, YYYY-MM, or YYYY)
@@ -293,17 +315,29 @@ For complex operations that don't require instant response:
 - `idx_memories_tags` - GIN index for tag search
 - `idx_memories_text_search` - Full-text search index
 
-### users
+### user_profiles
 ```sql
-- id (uuid, primary key)
-- user_id (uuid, indexed)
-- name (text)
-- email (text)
+- user_id (uuid, primary key) - References auth.users(id) with foreign key constraint
+- preferred_name (text)
 - age (integer)
-- birth_date (text) - Required for timeline (YYYY-MM-DD format)
-- birth_place (text) - Required, shown on timeline with birth event
+- birth_date (date)
+- birth_place (text)
 - current_location (text)
+- occupation (text)
+- relationship_status (text)
+- cultural_background (text[])
+- languages_spoken (text[])
+- hometown (text)
+- hobbies_interests (text[])
+- major_life_events (jsonb)
+- career_history (jsonb)
+- core_values (text[])
+- personality_traits (text[])
+- life_goals (text[])
+- fears_concerns (text[])
 - onboarding_completed (boolean)
+- first_conversation_completed (boolean)
+- profile_completeness_score (integer) - 0-100 based on filled fields
 - created_at (timestamp)
 - updated_at (timestamp)
 ```
@@ -313,6 +347,13 @@ For complex operations that don't require instant response:
 - Current date is always shown as the last marker with a "Today" badge
 - Each memory on the timeline displays its date and location (if provided)
 - Demo user has pre-populated data (born December 1, 1980 in San Francisco, CA)
+
+**Onboarding System:**
+- New users go through 13-question comprehensive profile setup
+- Questions cover personal info, cultural background, life events, values, and goals
+- Profile completeness score calculated and displayed (0-100%)
+- Multiple exit options: X button, Skip for Now, or Sign Out
+- Onboarding can be completed later if skipped
 
 All tables have RLS policies ensuring users can only access their own data.
 
@@ -428,6 +469,35 @@ git push origin feature/your-feature-name
 
 ## 🐛 Debugging
 
+### Diagnostic Files & Tools
+
+**Recent Updates (October 2025):**
+- ✅ **DIAGNOSTIC_USER_ISSUES.sql** - Comprehensive SQL diagnostic script for user account verification
+- ✅ **MEMORY_AND_VOICE_RECORDING_ISSUES.md** - Complete guide for memory save and voice recording issues
+- ✅ **ADMIN_AUDIO_FIX.md** - Documentation for fixed metadata column issue in voice recordings
+- ✅ **ONBOARDING_FLOW_SUMMARY.md** - Complete onboarding questionnaire documentation
+- ✅ **TESTING_GUIDE.md** - Guide for testing without real email addresses
+
+**Common Diagnostic Workflows:**
+
+1. **Memory Save Issues**: 
+   - Run `DIAGNOSTIC_USER_ISSUES.sql` in Supabase SQL Editor
+   - Replace email address placeholders (6 occurrences)
+   - Check if user exists in `auth.users` table
+   - See `MEMORY_AND_VOICE_RECORDING_ISSUES.md` for solutions
+
+2. **Voice Recordings Not Appearing**:
+   - Same root cause as memory save issues (missing auth.users entry)
+   - Use admin dashboard → Voice Diagnostics tab
+   - Run "Test Audio File Save & Retrieval" button
+   - Check browser console for RLS policy errors
+
+3. **Admin Dashboard Tests**:
+   - Navigate to `/admin` → Voice Diagnostics
+   - Click "Test Audio File Save & Retrieval" - should pass ✅
+   - Click "Test RLS Policies" - should pass ✅
+   - Click "Full Diagnostic" - shows all buckets and connection status
+
 ### Handoff Diagnostics
 
 Every memory save operation is tracked with unique handoff IDs. See [HANDOFF_DIAGNOSTICS.md](./HANDOFF_DIAGNOSTICS.md) for:
@@ -466,6 +536,14 @@ Every memory save operation is tracked with unique handoff IDs. See [HANDOFF_DIA
 3. **Test recording system**: Use `/admin` diagnostics to validate recording pipeline
 4. **Check RLS policies**: Ensure user can access their own recordings
 5. **Demo mode**: Unauthenticated users see demo recordings only
+6. **Run diagnostics**: Use `DIAGNOSTIC_USER_ISSUES.sql` to verify user exists in auth.users
+
+**Memory save failing with foreign key constraint error:**
+1. **Root cause**: User account doesn't exist in `auth.users` table
+2. **Error message**: `violates foreign key constraint "memories_user_id_fkey"`
+3. **Solution**: Run `DIAGNOSTIC_USER_ISSUES.sql` to verify user exists
+4. **If user missing**: Sign up fresh through the app to create proper auth entry
+5. **Documentation**: See `MEMORY_AND_VOICE_RECORDING_ISSUES.md` for complete guide
 
 **Archive loading issues:**
 1. **Database table missing**: Archive requires `voice_recordings` table - run migrations
@@ -825,17 +903,58 @@ source TEXT               -- How collected ('solin_conversation')
 created_at TIMESTAMP
 ```
 
+## 🔄 Recent Updates (October 2025)
+
+### Onboarding System Enhancement
+- ✅ Expanded from 5 to **13 comprehensive questions**
+- ✅ All questions map to `user_profiles` database columns
+- ✅ Profile completeness scoring (0-100%)
+- ✅ Multiple exit options (X button, Skip, Sign Out)
+- ✅ Integrated into main app flow with authentication checks
+- 📄 Documentation: `ONBOARDING_FLOW_SUMMARY.md`, `TESTING_GUIDE.md`
+
+### Admin Dashboard Fixes
+- ✅ Fixed metadata column issue in `voice_recordings` table
+- ✅ "Test Audio File Save & Retrieval" now works correctly
+- ✅ Removed non-existent `metadata` field from database inserts
+- ✅ Comprehensive voice recording diagnostics panel
+- 📄 Documentation: `ADMIN_AUDIO_FIX.md`
+
+### Diagnostic Tools
+- ✅ Created `DIAGNOSTIC_USER_ISSUES.sql` for user account verification
+- ✅ Comprehensive troubleshooting guide in `MEMORY_AND_VOICE_RECORDING_ISSUES.md`
+- ✅ Identifies foreign key constraint violations
+- ✅ Detects missing auth.users entries
+- ✅ Helps resolve voice recording visibility issues
+
+### Database Schema Updates
+- ✅ Expanded `user_profiles` table to 30+ columns
+- ✅ Added profile completeness scoring
+- ✅ Enhanced foreign key documentation
+- ✅ Clarified auth.users relationships
+
+### Known Issues & Solutions
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Memory save fails with FK error | User missing from auth.users | Run DIAGNOSTIC_USER_ISSUES.sql, sign up fresh |
+| Voice recordings don't appear | User missing from auth.users | Same as above - verify user exists |
+| Onboarding doesn't show | User already completed | Check user_profiles.onboarding_completed flag |
+| Admin audio test fails | Metadata column removed | Already fixed in latest commit |
+
 ## 🙋‍♂️ Support
 
 For questions or issues:
 1. **Check the debugging section** above
-2. **Review logs**: Supabase Dashboard → Edge Functions → Logs
-3. **Check console**: Browser DevTools → Console
-4. **Open an issue** on GitHub with:
+2. **Run diagnostic SQL**: Use `DIAGNOSTIC_USER_ISSUES.sql` for account issues
+3. **Review logs**: Supabase Dashboard → Edge Functions → Logs
+4. **Check console**: Browser DevTools → Console
+5. **Read documentation**: See diagnostic files in project root
+6. **Open an issue** on GitHub with:
    - Steps to reproduce
    - Console logs
    - Edge function logs (if applicable)
-5. **Contact the team** via GitHub issues
+   - Results from diagnostic SQL
+7. **Contact the team** via GitHub issues
 
 ---
 
