@@ -48,7 +48,7 @@ const Index = () => {
   // Voice recording state
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('standard');
+  const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('enhanced'); // Use enhanced mode to capture both user and agent voice
   
   // Store authenticated user ID for voice recording
   const authenticatedUserIdRef = useRef<string | null>(null);

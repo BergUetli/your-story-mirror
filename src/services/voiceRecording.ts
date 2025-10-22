@@ -364,7 +364,6 @@ export class VoiceRecordingService {
         console.error('❌ Upload failed:', uploadError);
         console.error('❌ Upload error details:', {
           message: uploadError.message,
-          statusCode: uploadError.statusCode,
           bucket: this.STORAGE_BUCKET,
           path: storagePath,
           fileSize: audioBlob.size

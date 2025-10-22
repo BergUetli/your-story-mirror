@@ -21,7 +21,7 @@ interface ConversationRecordingSession {
   audioContext: AudioContext;
   microphoneStream: MediaStream | null;
   microphoneSource: MediaStreamAudioSourceNode | null;
-  speakerSource: MediaStreamAudioSourceNode | null;
+  speakerSource: MediaStreamAudioSourceNode | MediaElementAudioSourceNode | null;
   
   // Recording setup
   mixerNode: GainNode;
@@ -865,11 +865,13 @@ This is a browser limitation, not an application issue.
 
       // Stop display/system audio stream (if it was captured)
       if (this.currentSession.speakerSource) {
-        // Find and stop the display stream
-        const displayStream = this.currentSession.speakerSource.mediaStream;
-        if (displayStream) {
-          displayStream.getTracks().forEach(track => track.stop());
-          console.log('🔊 System audio capture stopped');
+        // Check if it's a MediaStreamAudioSourceNode (has mediaStream property)
+        if ('mediaStream' in this.currentSession.speakerSource) {
+          const displayStream = this.currentSession.speakerSource.mediaStream;
+          if (displayStream) {
+            displayStream.getTracks().forEach(track => track.stop());
+            console.log('🔊 System audio capture stopped');
+          }
         }
       }
 
@@ -1002,7 +1004,6 @@ This is a browser limitation, not an application issue.
         console.error('❌ Conversation recording upload failed:', uploadError);
         console.error('❌ Upload error details:', {
           message: uploadError.message,
-          statusCode: uploadError.statusCode,
           bucket: this.STORAGE_BUCKET,
           path: filePath,
           fileSize: audioBlob.size
