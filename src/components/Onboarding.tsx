@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Heart, ArrowRight, Calendar, MapPin, Home, User, Briefcase, Users, Globe, Target, Sparkles, Book } from 'lucide-react';
+import { Heart, ArrowRight, Calendar, MapPin, Home, User, Briefcase, Users, Globe, Target, Sparkles, Book, X, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -27,6 +28,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { signOut } = useAuth();
   
   const [formData, setFormData] = useState({
     // Basic Information (Step 1-5)
@@ -220,6 +222,16 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     }
   };
 
+  const handleSignOut = async () => {
+    if (confirm('Are you sure you want to sign out? You can complete this setup when you sign in again.')) {
+      await signOut();
+      toast({
+        title: "Signed out",
+        description: "You've been signed out. See you next time!",
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
@@ -343,7 +355,18 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-memory/10 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md bg-card/95 backdrop-blur-md border-primary/30 shadow-cosmic">
+      <Card className="w-full max-w-md bg-card/95 backdrop-blur-md border-primary/30 shadow-cosmic relative">
+        {/* Close button in top-right corner */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleSkip}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+          title="Skip setup"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+
         <CardHeader className="text-center pb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-primary/30 to-memory/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/30">
             <Heart className="w-8 h-8 text-primary" />
@@ -461,6 +484,19 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
               className="bg-gradient-to-r from-primary to-memory h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / steps.length) * 100}%` }}
             />
+          </div>
+
+          {/* Sign out option */}
+          <div className="pt-4 border-t border-primary/20">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="w-full text-xs text-muted-foreground hover:text-foreground"
+              disabled={isSubmitting}
+            >
+              <LogOut className="w-3 h-3 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </CardContent>
       </Card>
