@@ -64,6 +64,8 @@ const AppContent = () => {
         <Route path="/visitor/:userId" element={<Visitor />} />
         <Route path="/mic-preview" element={<MicImagePreview />} />
         <Route path="/auth" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
+        <Route path="/signup" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
+        <Route path="/signin" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={

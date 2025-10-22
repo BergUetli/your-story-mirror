@@ -179,9 +179,12 @@ const Story = () => {
       };
     }
 
-    const name = profile?.name || 'This person';
-    const birthPlace = profile?.birth_place;
-    const currentLocation = profile?.current_location;
+    const name = profile?.preferred_name || profile?.name || 'This person';
+    const birthPlace = profile?.hometown || profile?.birth_place;
+    const currentLocation = profile?.location || profile?.current_location;
+    const age = profile?.age;
+    const occupation = profile?.occupation;
+    const hobbies = profile?.hobbies_interests;
     
     // Enhanced memory significance scoring for better narrative content
     const getMemorySignificance = (memory: Memory): number => {
@@ -245,14 +248,31 @@ const Story = () => {
     const memoryThemes = extractThemes(narrativeMemories);
     let introduction = `${name}'s life story unfolds through ${narrativeMemories.length} significant memories`;
     
+    // Add age and occupation context if available
+    if (age && occupation) {
+      introduction += `. At ${age} years old, ${name} has built a life as a ${occupation.toLowerCase()}`;
+    } else if (occupation) {
+      introduction += `. ${name} has built a life as a ${occupation.toLowerCase()}`;
+    } else if (age) {
+      introduction += `. At ${age} years old, ${name}'s journey`;
+    }
+    
     if (birthPlace && currentLocation) {
       // Properly format location names
       const formattedBirthPlace = formatLocationName(birthPlace);
       const formattedCurrentLocation = formatLocationName(currentLocation);
-      introduction += `, spanning from ${formattedBirthPlace} to ${formattedCurrentLocation}`;
+      if (age || occupation) {
+        introduction += `, with roots in ${formattedBirthPlace} and now making a home in ${formattedCurrentLocation}`;
+      } else {
+        introduction += `, spanning from ${formattedBirthPlace} to ${formattedCurrentLocation}`;
+      }
     } else if (currentLocation) {
       const formattedLocation = formatLocationName(currentLocation);
-      introduction += `, rooted in ${formattedLocation}`;
+      if (age || occupation) {
+        introduction += ` in ${formattedLocation}`;
+      } else {
+        introduction += `, rooted in ${formattedLocation}`;
+      }
     }
     
     if (memoryThemes.length > 0) {
@@ -295,7 +315,19 @@ const Story = () => {
       }
     }
     
-    conclusion += `ensuring that the experiences that shaped ${name} will be remembered and cherished for generations to come.`;
+    // Add interests/hobbies context to make it more personal
+    if (hobbies && hobbies.length > 0) {
+      const hobbyList = hobbies.slice(0, 3);
+      if (hobbyList.length === 1) {
+        conclusion += `shaped by a love for ${hobbyList[0].toLowerCase()}. `;
+      } else if (hobbyList.length === 2) {
+        conclusion += `enriched by passions for ${hobbyList[0].toLowerCase()} and ${hobbyList[1].toLowerCase()}. `;
+      } else {
+        conclusion += `enriched by passions for ${hobbyList[0].toLowerCase()}, ${hobbyList[1].toLowerCase()}, and ${hobbyList[2].toLowerCase()}. `;
+      }
+    }
+    
+    conclusion += `These experiences that shaped ${name} will be remembered and cherished for generations to come.`;
 
     // Final document-level grammar check with name protection
     const finalIntroduction = finalGrammarCheck(introduction, name);
@@ -724,7 +756,7 @@ const Story = () => {
         .order('created_at', { ascending: false });
 
       const profilePromise = supabase
-        .from('users')
+        .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();

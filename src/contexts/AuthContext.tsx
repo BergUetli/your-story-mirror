@@ -168,8 +168,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error = fallback.error;
       }
 
-      // If there's an error or no profile, user needs onboarding
-      const needsOnboarding = !data || !data.onboarding_completed || !data.first_conversation_completed;
+      // User needs onboarding only if they haven't completed the Memory Scape setup
+      // first_conversation_completed is optional and handled separately in the app
+      const needsOnboarding = !data || !data.onboarding_completed;
       
       console.log('🔍 Onboarding check:', {
         user_id: user.id,
@@ -189,11 +190,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check onboarding status when user changes
   useEffect(() => {
-    // TEMPORARY: Skip onboarding for voice recording testing
-    console.log('🚧 TEMPORARY: Skipping onboarding check for voice recording testing');
-    setNeedsOnboarding(false);
-    // checkOnboardingStatus();
-  }, [user]);
+    checkOnboardingStatus();
+  }, [user, checkOnboardingStatus]);
 
   const value = {
     user,

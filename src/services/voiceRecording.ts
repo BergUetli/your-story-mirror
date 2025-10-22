@@ -7,6 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { logVoiceRecording } from '@/services/diagnosticLogger';
+import { toast } from '@/hooks/use-toast';
 
 export interface RecordingConfig {
   mimeType: string;
@@ -334,7 +335,24 @@ export class VoiceRecordingService {
 
       console.log('☁️ Uploading to storage:', storagePath);
 
+      // Check if bucket exists (but don't try to create due to RLS)
+      console.log('🔍 Verifying storage bucket exists...');
+      const { data: buckets, error: bucketListError } = await supabase.storage.listBuckets();
+      
+      if (bucketListError) {
+        console.warn('⚠️ Could not list buckets (this may be normal in RLS environments):', bucketListError);
+      } else {
+        const voiceBucket = buckets?.find(b => b.name === this.STORAGE_BUCKET);
+        if (!voiceBucket) {
+          console.warn('⚠️ Storage bucket "' + this.STORAGE_BUCKET + '" not found in bucket list');
+          console.warn('⚠️ This may cause upload failures. Contact administrator to create the bucket.');
+        } else {
+          console.log('✅ Storage bucket confirmed to exist');
+        }
+      }
+
       // Upload to Supabase Storage
+      console.log('☁️ Uploading audio file...');
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from(this.STORAGE_BUCKET)
         .upload(storagePath, audioBlob, {
@@ -344,7 +362,30 @@ export class VoiceRecordingService {
 
       if (uploadError) {
         console.error('❌ Upload failed:', uploadError);
-        throw uploadError;
+        console.error('❌ Upload error details:', {
+          message: uploadError.message,
+          statusCode: uploadError.statusCode,
+          bucket: this.STORAGE_BUCKET,
+          path: storagePath,
+          fileSize: audioBlob.size
+        });
+        
+        // Provide helpful error message for common issues
+        let userFriendlyError = uploadError.message;
+        if (uploadError.message?.includes('Bucket not found')) {
+          userFriendlyError = `Storage bucket "${this.STORAGE_BUCKET}" does not exist. Please contact your administrator to create this bucket with audio file permissions.`;
+        } else if (uploadError.message?.includes('policy')) {
+          userFriendlyError = 'Upload blocked by security policy. Check your permissions or contact administrator.';
+        }
+        
+        // Show user-friendly notification
+        toast({
+          title: "❌ Recording Upload Failed",
+          description: userFriendlyError,
+          variant: "destructive"
+        });
+        
+        throw new Error(userFriendlyError);
       }
 
       console.log('✅ Audio uploaded successfully:', uploadData.path);
@@ -423,8 +464,23 @@ export class VoiceRecordingService {
           is_guest: session.userId.startsWith('guest-')
         });
         // Don't throw - audio is already uploaded
+        
+        // Show error notification
+        toast({
+          title: "❌ Recording Save Failed",
+          description: `Failed to save recording metadata: ${dbError.message}`,
+          variant: "destructive"
+        });
       } else {
         console.log('✅ Recording metadata saved:', dbData.id);
+        
+        // Show success notification
+        const fileExtension = this.DEFAULT_CONFIG.mimeType.includes('webm') ? '.webm' : '.audio';
+        toast({
+          title: "✅ Voice Recording Saved",
+          description: `Recording ${filename} successfully saved! Duration: ${metadata.duration}s, Size: ${(audioBlob.size / 1024).toFixed(1)}KB`,
+          variant: "default"
+        });
       }
 
       // Clear current session

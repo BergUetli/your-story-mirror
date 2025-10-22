@@ -220,8 +220,21 @@ export const FirstConversationDialog: React.FC<FirstConversationDialogProps> = (
     await moveToNextQuestion();
   };
   
+  // Allow closing the dialog
+  const handleClose = () => {
+    if (conversationStep === 'completing') {
+      // If stuck in completing, force complete
+      onComplete();
+    } else {
+      // Allow user to skip onboarding
+      if (confirm('Are you sure you want to skip this setup? You can always complete it later from your profile settings.')) {
+        onComplete();
+      }
+    }
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
@@ -278,7 +291,10 @@ export const FirstConversationDialog: React.FC<FirstConversationDialogProps> = (
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={handleClose}>
+                Skip for Now
+              </Button>
               <Button onClick={startConversation} className="gap-2">
                 Let's Begin <ArrowRight className="w-4 h-4" />
               </Button>
@@ -387,6 +403,11 @@ export const FirstConversationDialog: React.FC<FirstConversationDialogProps> = (
             </div>
             <div className="w-32 mx-auto">
               <Progress value={100} className="h-2" />
+            </div>
+            <div className="mt-6">
+              <Button variant="outline" onClick={handleClose}>
+                Continue to Solin
+              </Button>
             </div>
           </div>
         )}

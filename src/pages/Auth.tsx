@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const location = useLocation();
+  
+  // Determine initial mode based on route
+  const getInitialMode = () => {
+    if (location.pathname === '/signin') return false; // Sign-in mode
+    if (location.pathname === '/signup') return true;  // Sign-up mode  
+    return true; // Default to sign-up for new users
+  };
+  
+  const [isSignUp, setIsSignUp] = useState(getInitialMode());
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,6 +27,11 @@ const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Update mode when route changes
+  useEffect(() => {
+    setIsSignUp(getInitialMode());
+  }, [location.pathname]);
 
   // Redirect if already authenticated - send to Sanctuary (Solin) page
   useEffect(() => {

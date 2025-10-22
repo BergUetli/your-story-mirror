@@ -9,15 +9,44 @@ import { supabase } from '@/integrations/supabase/client';
 interface ElevenLabsVoiceAgentProps {
   agentId: string;
   onSpeakingChange?: (isSpeaking: boolean) => void;
+  onAudioStreamAvailable?: (audioStream: MediaStream) => void;
 }
 
-export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVoiceAgentProps) {
+export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamAvailable }: ElevenLabsVoiceAgentProps) {
   const { toast } = useToast();
   const [isConnecting, setIsConnecting] = useState(false);
 
   const conversation = useConversation({
     onConnect: () => {
       console.log('✅ Connected to ElevenLabs Conversational AI');
+      console.log('🔍 Conversation object properties:', Object.keys(conversation));
+      console.log('🎵 Checking for audio streams in conversation:', {
+        hasAudioContext: !!(conversation as any).audioContext,
+        hasAudioStream: !!(conversation as any).audioStream,
+        hasMediaStream: !!(conversation as any).mediaStream,
+        hasOutputStream: !!(conversation as any).outputStream,
+        hasSpeakerStream: !!(conversation as any).speakerStream
+      });
+      
+      // Try to extract audio stream from various possible sources
+      const audioStream = (conversation as any).audioStream || 
+                         (conversation as any).mediaStream || 
+                         (conversation as any).outputStream ||
+                         (conversation as any).speakerStream;
+      
+      if (audioStream && audioStream instanceof MediaStream) {
+        console.log('🎵 Found ElevenLabs audio stream!', {
+          id: audioStream.id,
+          audioTracks: audioStream.getAudioTracks().length,
+          trackLabels: audioStream.getAudioTracks().map(t => t.label)
+        });
+        onAudioStreamAvailable?.(audioStream);
+      } else {
+        console.log('⚠️ No direct audio stream found, will use fallback audio detection methods');
+        // Trigger enhanced audio element detection
+        setTimeout(() => detectElevenLabsAudioElements(), 1000);
+      }
+      
       toast({
         title: "Connected",
         description: "Voice agent is ready to chat",
@@ -97,6 +126,74 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange }: ElevenLabsVo
       setIsConnecting(false);
     }
   }, [agentId, conversation, toast]);
+
+  const detectElevenLabsAudioElements = useCallback(() => {
+    console.log('🔍 Scanning for ElevenLabs audio elements...');
+    
+    // Look for audio elements that might be created by ElevenLabs
+    const audioElements = document.querySelectorAll('audio');
+    
+    audioElements.forEach((audioElement, index) => {
+      console.log(`🎵 Found audio element ${index}:`, {
+        src: audioElement.src,
+        currentSrc: audioElement.currentSrc,
+        networkState: audioElement.networkState,
+        readyState: audioElement.readyState,
+        paused: audioElement.paused
+      });
+      
+      // Try to capture this audio element if it seems active
+      if (audioElement.src || audioElement.currentSrc) {
+        try {
+          // Create MediaStream from audio element
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const source = audioContext.createMediaElementSource(audioElement);
+          const destination = audioContext.createMediaStreamDestination();
+          
+          // Connect source to destination to create a stream
+          source.connect(destination);
+          // Also connect back to output so audio still plays
+          source.connect(audioContext.destination);
+          
+          console.log(`✅ Successfully created MediaStream from audio element ${index}`);
+          onAudioStreamAvailable?.(destination.stream);
+          
+        } catch (error) {
+          console.warn(`⚠️ Failed to capture audio element ${index}:`, error);
+        }
+      }
+    });
+    
+    // If no audio elements found yet, set up observer for future elements
+    if (audioElements.length === 0) {
+      console.log('👀 No audio elements found yet, setting up observer...');
+      setupAudioElementObserver();
+    }
+  }, [onAudioStreamAvailable]);
+
+  const setupAudioElementObserver = useCallback(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+            if (element.tagName === 'AUDIO' || element.querySelector('audio')) {
+              console.log('🎵 New audio element detected by observer!');
+              setTimeout(() => detectElevenLabsAudioElements(), 500);
+            }
+          }
+        });
+      });
+    });
+    
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true 
+    });
+    
+    // Clean up observer after 30 seconds
+    setTimeout(() => observer.disconnect(), 30000);
+  }, [detectElevenLabsAudioElements]);
 
   const endConversation = useCallback(async () => {
     await conversation.endSession();
