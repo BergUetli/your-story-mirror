@@ -50,6 +50,51 @@ export type Database = {
         }
         Relationships: []
       }
+      characters: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          important_dates: Json | null
+          is_user: boolean | null
+          linked_user_id: string | null
+          name: string
+          personality_traits: string[] | null
+          relationship: string
+          shared_memories: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          important_dates?: Json | null
+          is_user?: boolean | null
+          linked_user_id?: string | null
+          name: string
+          personality_traits?: string[] | null
+          relationship: string
+          shared_memories?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          important_dates?: Json | null
+          is_user?: boolean | null
+          linked_user_id?: string | null
+          name?: string
+          personality_traits?: string[] | null
+          relationship?: string
+          shared_memories?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           chunk_sequence: number | null
@@ -139,6 +184,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      solin_conversations: {
+        Row: {
+          context_used: Json | null
+          created_at: string
+          id: string
+          message: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          context_used?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          context_used?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       system_configuration: {
         Row: {

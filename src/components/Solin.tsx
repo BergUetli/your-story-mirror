@@ -271,13 +271,12 @@ const Solin: React.FC<SolinProps> = ({
     try {
       const relevantMemories = getRelevantMemories();
       
-      // Generate AI response with memory context and conversation history
+      // Generate AI response with memory context
       const solinResponse = await solinService.chat({
         mode,
         message: userMessage,
         memories: relevantMemories,
         visitorPermissions,
-        conversationHistory: newHistory, // Pass conversation context for continuity
       });
       
       setResponse(solinResponse);

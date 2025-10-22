@@ -20,7 +20,6 @@ interface SolinRequest {
   message?: string;
   memories: Memory[];
   visitorPermissions?: string[];
-  conversationHistory?: Array<{role: 'user' | 'solin', content: string}>;
 }
 
 class SolinService {
@@ -61,11 +60,10 @@ class SolinService {
   }
 
   private getFallbackResponse(request: SolinRequest): SolinResponse {
-    const { mode, message, memories, conversationHistory = [] } = request;
+    const { mode, message } = request;
     
     // Analyze the user's message for more contextual responses
     const userMessage = message?.toLowerCase() || '';
-    const conversationLength = conversationHistory.length;
     
     // Generate more contextual, shorter responses based on user input
     // Memory-related responses
@@ -122,26 +120,12 @@ class SolinService {
       };
     }
     
-    // Contextual responses based on conversation length - much shorter, more listening-focused
-    if (conversationLength === 0) {
-      return {
-        quote: "",
-        reflection: "I'm here to listen. What's on your mind?",
-        followUp: ""
-      };
-    } else if (conversationLength < 4) {
-      return {
-        quote: "",
-        reflection: "I'm listening. Tell me more about that.",
-        followUp: ""
-      };
-    } else {
-      return {
-        quote: "",
-        reflection: "That's interesting. What else comes to mind about that?",
-        followUp: ""
-      };
-    }
+    // Default contextual response
+    return {
+      quote: "",
+      reflection: "I'm listening. Tell me more about that.",
+      followUp: ""
+    };
   }
 
   // Get memories from mock data (replace with actual data source later)

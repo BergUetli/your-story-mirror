@@ -15,6 +15,20 @@ interface Memory {
   recipient?: string;
 }
 
+interface Character {
+  id: string;
+  name: string;
+  relationship: string;
+  description?: string;
+  personality_traits?: string[];
+}
+
+interface ConversationTurn {
+  role: 'user' | 'solin';
+  message: string;
+  created_at: string;
+}
+
 interface SolonRequest {
   mode: 'user' | 'visitor';
   message?: string;
@@ -69,10 +83,56 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    // Fetch user profile for context
+    const { data: profile } = await supabaseClient
+      .from('user_profiles')
+      .select('preferred_name, age, location, occupation, hobbies_interests, core_values, family_members, close_friends')
+      .eq('user_id', user.id)
+      .single();
+
+    // Fetch recent conversation history (last 10 exchanges)
+    const { data: recentConversations } = await supabaseClient
+      .from('solin_conversations')
+      .select('role, message, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    // Fetch characters (people in user's life)
+    const { data: characters } = await supabaseClient
+      .from('characters')
+      .select('id, name, relationship, description, personality_traits')
+      .eq('user_id', user.id);
+
     // Create context from memories
     const memoryContext = memories.map(m => 
       `Memory from ${m.date}: "${m.content}" ${m.recipient ? `(shared with ${m.recipient})` : ''}`
     ).join('\n');
+
+    // Build context strings
+    const profileContext = profile ? `
+User Profile:
+- Preferred name: ${profile.preferred_name || 'Not set'}
+- Age: ${profile.age || 'Not shared'}
+- Location: ${profile.location || 'Not shared'}
+- Occupation: ${profile.occupation || 'Not shared'}
+- Hobbies/Interests: ${profile.hobbies_interests?.join(', ') || 'Not shared'}
+- Core values: ${profile.core_values?.join(', ') || 'Not shared'}
+- Family: ${profile.family_members ? JSON.stringify(profile.family_members).substring(0, 200) : 'Not shared'}
+- Close friends: ${profile.close_friends ? JSON.stringify(profile.close_friends).substring(0, 200) : 'Not shared'}` : '';
+
+    const conversationContext = recentConversations && recentConversations.length > 0 
+      ? `\nRecent conversation history (most recent first):\n${recentConversations
+          .reverse()
+          .map(c => `${c.role === 'user' ? 'User' : 'Solon'}: ${c.message}`)
+          .join('\n')}` 
+      : '';
+
+    const charactersContext = characters && characters.length > 0
+      ? `\nPeople in ${profile?.preferred_name || 'the user'}'s life:\n${characters
+          .map(c => `- ${c.name} (${c.relationship})${c.description ? ': ' + c.description : ''}`)
+          .join('\n')}`
+      : '';
 
     let systemPrompt = '';
     let userPrompt = '';
@@ -83,10 +143,18 @@ serve(async (req) => {
 Your personality:
 - Warm, gentle, and timeless like a wise narrator
 - Emotionally intelligent and empathetic
+- Remember details from past conversations and reference them naturally
+- Use the user's preferred name when appropriate
+- Remember people in their life and ask about them
+- Build on previous conversations to deepen understanding
 - Never hallucinate or guess - only speak based on what the user has shared
 - Focus on emotional safety, clarity, and truth
 - Ask thoughtful memory prompts
 - Reflect on values and emotions in shared memories
+
+${profileContext}
+${conversationContext}
+${charactersContext}
 
 Always respond in this exact JSON structure:
 {
@@ -170,6 +238,18 @@ ${visitorContext}`;
         reflection: "Every memory shared is a gift to those who will remember you.",
         followUp: "What memory would you like to explore today?"
       };
+    }
+
+    // Save conversation to history (fire and forget)
+    if (message && mode === 'user') {
+      await supabaseClient.from('solin_conversations').insert([
+        { user_id: user.id, role: 'user', message, context_used: null },
+        { user_id: user.id, role: 'solin', message: solonResponse.reflection, context_used: { 
+          hasProfile: !!profile, 
+          conversationCount: recentConversations?.length || 0,
+          charactersCount: characters?.length || 0 
+        }}
+      ]);
     }
 
     return new Response(
