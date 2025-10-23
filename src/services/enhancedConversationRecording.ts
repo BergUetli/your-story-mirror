@@ -553,11 +553,33 @@ export class EnhancedConversationRecordingService {
     if (!this.currentSession?.isRecording) return;
 
     const timestamp = Date.now() - this.currentSession.startTime.getTime();
+    
+    // Correlate with audio timestamps if configured and agent is speaking
+    const config = configurationService.getConfig();
+    let audioTimestamp: number | undefined;
+    
+    if (config.audio_timestamp_correlation && speaker === 'ai' && this.agentAudioChunks.length > 0) {
+      // Find the closest audio chunk timestamp to this transcript entry
+      const currentTime = Date.now();
+      const closestChunk = this.agentAudioChunks.reduce((closest, chunk) => {
+        const chunkDiff = Math.abs(chunk.timestamp - currentTime);
+        const closestDiff = Math.abs(closest.timestamp - currentTime);
+        return chunkDiff < closestDiff ? chunk : closest;
+      });
+      audioTimestamp = closestChunk.relativeTime;
+      console.log('🔗 Correlated transcript with audio chunk:', {
+        transcriptTime: timestamp,
+        audioTime: audioTimestamp,
+        diff: Math.abs(timestamp - audioTimestamp)
+      });
+    }
+    
     const entry = {
       timestamp: Math.floor(timestamp / 1000),
       speaker,
       text,
-      confidence
+      confidence,
+      ...(audioTimestamp !== undefined && { audioTimestamp: Math.floor(audioTimestamp / 1000) })
     };
 
     this.currentSession.conversationTranscript.push(entry);
@@ -566,6 +588,7 @@ export class EnhancedConversationRecordingService {
       speaker,
       text: text.substring(0, 50) + '...',
       confidence,
+      audioTimestamp: audioTimestamp !== undefined ? Math.floor(audioTimestamp / 1000) : 'none',
       totalEntries: this.currentSession.conversationTranscript.length
     });
   }
@@ -698,7 +721,7 @@ export class EnhancedConversationRecordingService {
         titleCount
       });
       
-      let summary = `Enhanced ElevenLabs conversation (${duration.toFixed(1)}s, ${session.recordingMode} mode)`;
+      let summary = `Enhanced ElevenLabs conversation (${duration.toFixed(1)}s, ${session.recordingMode === 'mixed' ? 'full duplex' : session.recordingMode} mode)`;
       if (memoryCount === 1 && titleCount === 1) {
         summary = session.memoryTitles[0];
       } else if (memoryCount > 1 && titleCount > 0) {
@@ -870,6 +893,13 @@ export class EnhancedConversationRecordingService {
         // Also to destination for playback
         source.connect(audioContext.destination);
         this.capturedAudioElements.add(audioElement);
+        
+        // CRITICAL FIX: Update recording mode to indicate we're capturing agent audio
+        if (this.currentSession!.recordingMode === 'microphone_only') {
+          this.currentSession!.recordingMode = 'mixed';
+          console.log('✅ Recording mode updated to "mixed" - capturing both user and agent audio');
+        }
+        
         console.log('🔊 Enhanced recorder captured ElevenLabs audio element and routed to mixer');
       } catch (err) {
         console.error('❌ Enhanced recorder failed to capture audio element:', err);
