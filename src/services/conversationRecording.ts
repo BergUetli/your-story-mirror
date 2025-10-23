@@ -42,6 +42,10 @@ interface ConversationRecordingSession {
   
   // State
   isRecording: boolean;
+  
+  // Processing completion tracking
+  processingComplete?: Promise<void>;
+  processingResolver?: () => void;
 }
 
 export class ConversationRecordingService {
@@ -95,7 +99,12 @@ export class ConversationRecordingService {
       const microphoneSource = audioContext.createMediaStreamSource(microphoneStream);
       const mixerNode = audioContext.createGain();
       
-      // Set up initial session
+      // Set up initial session with processing promise
+      let processingResolver: () => void;
+      const processingComplete = new Promise<void>((resolve) => {
+        processingResolver = resolve;
+      });
+
       this.currentSession = {
         sessionId,
         userId,
@@ -111,7 +120,9 @@ export class ConversationRecordingService {
         conversationTranscript: [],
         memoryIds: [],
         memoryTitles: [],
-        isRecording: false
+        isRecording: false,
+        processingComplete,
+        processingResolver: processingResolver!
       };
 
       // Connect microphone to mixer
@@ -147,9 +158,11 @@ export class ConversationRecordingService {
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         console.log('🛑 Conversation recording stopped');
-        this.processConversationRecording();
+        await this.processConversationRecording();
+        // Signal that processing is complete
+        this.currentSession?.processingResolver?.();
       };
 
       // Start recording
@@ -847,9 +860,19 @@ This is a browser limitation, not an application issue.
     try {
       console.log('🛑 Stopping conversation recording...');
 
+      // Get the processing promise before stopping
+      const processingPromise = this.currentSession.processingComplete;
+
       // Stop MediaRecorder
       this.currentSession.mediaRecorder?.stop();
       this.currentSession.isRecording = false;
+
+      // Wait for processing to complete
+      if (processingPromise) {
+        console.log('⏳ Waiting for recording processing to complete...');
+        await processingPromise;
+        console.log('✅ Recording processing complete');
+      }
 
       // Clean up auto-save interval
       if (this.autoSaveInterval) {

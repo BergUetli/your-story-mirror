@@ -427,6 +427,7 @@ export type Database = {
           is_compressed: boolean | null
           memory_ids: string[] | null
           memory_titles: string[] | null
+          metadata: Json | null
           mime_type: string | null
           original_filename: string | null
           recording_type: string
@@ -453,6 +454,7 @@ export type Database = {
           is_compressed?: boolean | null
           memory_ids?: string[] | null
           memory_titles?: string[] | null
+          metadata?: Json | null
           mime_type?: string | null
           original_filename?: string | null
           recording_type?: string
@@ -479,6 +481,7 @@ export type Database = {
           is_compressed?: boolean | null
           memory_ids?: string[] | null
           memory_titles?: string[] | null
+          metadata?: Json | null
           mime_type?: string | null
           original_filename?: string | null
           recording_type?: string
