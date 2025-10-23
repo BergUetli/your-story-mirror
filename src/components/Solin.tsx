@@ -41,6 +41,7 @@ import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, 
 import { ConversationRecordingService } from '@/services/conversationRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -112,6 +113,7 @@ const Solin: React.FC<SolinProps> = ({
   const { memories, getMemoriesForVisitor, addMemoryFromConversation, loadMemories } = useMemories();  // Memory operations
   const { toast } = useToast();                                 // User notification system
   const { user } = useAuth();                                   // User authentication state
+  const { profile } = useProfile();                             // User profile data for personalization
   const navigate = useNavigate();                               // Page navigation
   
   // ===== VOICE RECORDING STATE =====
@@ -462,10 +464,23 @@ const Solin: React.FC<SolinProps> = ({
       });
     }
     
-    // Give initial greeting based on user mode
-    const greeting = mode === 'visitor' 
-      ? "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?"
-      : "Hi, I'm your AI guide through time. Please share a memory or a thought for the future with me.";
+    // Give initial greeting based on user mode and profile
+    let greeting = '';
+    
+    if (mode === 'visitor') {
+      greeting = "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?";
+    } else if (profile?.name) {
+      // Personalized greeting using user's name (use first name only)
+      const firstName = profile.name.split(' ')[0];
+      greeting = `Hi ${firstName}, it's good to see you again. I'm Solin, your AI guide through time. What's on your mind today?`;
+    } else if (user?.email) {
+      // Use email username if no name available
+      const username = user.email.split('@')[0];
+      greeting = `Hi ${username}, it's good to see you again. I'm Solin, your AI guide through time. What's on your mind today?`;
+    } else {
+      // Default greeting when no profile data available
+      greeting = "Hi there! I'm Solin, your AI guide through time. I'm here to help you capture and preserve your memories. What would you like to share today?";
+    }
     
     speakResponse(greeting);
   };
