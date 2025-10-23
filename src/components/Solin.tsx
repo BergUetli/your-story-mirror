@@ -430,9 +430,10 @@ const Solin: React.FC<SolinProps> = ({
       toast({
         title: "🎙️ Complete Conversation Recording",
         description: user?.id 
-          ? "Recording both your voice and Solin's responses!" 
-          : "Recording your conversation as a guest session.",
-        variant: "default"
+          ? "Recording both your voice and Solin's responses! When prompted, please share tab audio to capture AI voice." 
+          : "Recording your conversation as a guest session. Share tab audio when prompted.",
+        variant: "default",
+        duration: 6000
       });
     } catch (error) {
       console.error('❌ Failed to start conversation recording:', error);

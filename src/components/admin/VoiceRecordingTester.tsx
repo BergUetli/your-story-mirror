@@ -611,6 +611,72 @@ const runEndToEndTest = async () => {
         <TestTube className="h-4 w-4" />
         Voice Recording & Audio Testing
       </h4>
+
+      {/* End-to-End Merged Audio Test */}
+      <Card className="bg-gradient-to-br from-purple-900/30 to-blue-900/30 border-purple-500/30">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <TestTube className="h-4 w-4 text-purple-400" />
+              End-to-End Merged Recording Test
+            </CardTitle>
+            <Link to="/archive" target="_blank">
+              <Button variant="outline" size="sm">
+                Open Archive →
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-slate-300">
+            Complete test: Records mic + AI voice → Saves to storage → Verifies archive retrieval
+          </p>
+          
+          <Button
+            onClick={runEndToEndTest}
+            disabled={isE2ETesting}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            {isE2ETesting ? (
+              <>
+                <Clock className="h-4 w-4 mr-2 animate-spin" />
+                Running E2E Test...
+              </>
+            ) : (
+              <>
+                <TestTube className="h-4 w-4 mr-2" />
+                Run End-to-End Test
+              </>
+            )}
+          </Button>
+
+          {e2eStatus && (
+            <div className="p-3 rounded bg-slate-800/50 border border-slate-700">
+              <p className="text-sm font-mono text-slate-200">{e2eStatus}</p>
+            </div>
+          )}
+
+          {e2eAudioUrl && (
+            <div className="space-y-2 p-3 rounded bg-green-500/10 border border-green-500/30">
+              <div className="flex items-center gap-2 text-green-400">
+                <CheckCircle className="h-4 w-4" />
+                <p className="text-sm font-semibold">Recording saved successfully!</p>
+              </div>
+              <audio controls src={e2eAudioUrl} className="w-full" />
+              {e2eSessionId && (
+                <p className="text-xs text-slate-400">Session ID: {e2eSessionId}</p>
+              )}
+            </div>
+          )}
+
+          <Alert className="border-purple-500/20 bg-purple-500/10">
+            <AlertTriangle className="h-4 w-4 text-purple-400" />
+            <AlertDescription className="text-purple-200 text-xs">
+              <strong>Note:</strong> For merged recording to work, you must share tab audio when prompted by your browser.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
       
       {/* Hardware Tests */}
       <div className="grid gap-4 md:grid-cols-2">
