@@ -203,11 +203,16 @@ class VoiceService {
         console.log(`🎵 Notifying ${this.audioStreamCallbacks.length} callback(s) about new ElevenLabs audio element`);
         this.audioStreamCallbacks.forEach(callback => {
           try {
+            console.log('📢 Calling audio stream callback with audio element');
             callback(this.currentAudio!);
+            console.log('✅ Audio stream callback completed successfully');
           } catch (error) {
             console.error('❌ Audio stream callback error:', error);
+            console.error('❌ Error details:', error);
           }
         });
+      } else {
+        console.warn('⚠️ No audio stream callbacks registered - recording may be microphone-only');
       }
       
       console.log('✅ Playing ElevenLabs audio');

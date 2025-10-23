@@ -363,48 +363,94 @@ export class ConversationRecordingService {
       console.log('🎵 Capturing ElevenLabs audio element for recording...', {
         src: audioElement.src?.substring(0, 50) + '...',
         duration: audioElement.duration || 'unknown',
-        readyState: audioElement.readyState
+        readyState: audioElement.readyState,
+        currentTime: audioElement.currentTime,
+        paused: audioElement.paused
       });
 
-      // Create MediaStream from the audio element
-      const elevenLabsSource = this.currentSession.audioContext.createMediaElementSource(audioElement);
-      
-      // Create gain node for AI voice control
-      const elevenLabsGain = this.currentSession.audioContext.createGain();
-      elevenLabsGain.gain.value = 0.8; // Slightly lower to prevent clipping when mixed with microphone
-      
-      // Connect to mixer (CRITICAL: This adds AI voice to the recording)
-      elevenLabsSource.connect(elevenLabsGain);
-      elevenLabsGain.connect(this.currentSession.mixerNode);
-      
-      // IMPORTANT: Also connect back to destination so audio still plays normally
-      elevenLabsSource.connect(this.currentSession.audioContext.destination);
-      
-      // Store the source for cleanup
-      this.currentSession.speakerSource = elevenLabsSource;
-      
-      console.log('✅ ElevenLabs audio element captured and connected!');
-      console.log('🎭 Audio routing: ElevenLabs AudioElement → elevenLabsGain → mixerNode → MediaRecorder');
-      console.log('🎧 Audio routing: ElevenLabs AudioElement → audioContext.destination (for playback)');
-      
-      toast({
-        title: "🎵✨ Complete Recording Active",
-        description: "Both your voice AND Solin's responses are being recorded!",
-        variant: "default"
-      });
+      // CRITICAL FIX: Check if we've already captured this audio element
+      if (this.currentSession.speakerSource) {
+        console.log('⚠️ ElevenLabs audio source already connected, skipping duplicate capture');
+        return;
+      }
+
+      // CRITICAL FIX: Wait for audio to be ready before capturing
+      const captureWhenReady = () => {
+        try {
+          console.log('🎵 Audio ready state:', audioElement.readyState, '(need at least 2 for HAVE_CURRENT_DATA)');
+          
+          // Create MediaStream from the audio element
+          const elevenLabsSource = this.currentSession!.audioContext.createMediaElementSource(audioElement);
+          
+          // Create gain node for AI voice control
+          const elevenLabsGain = this.currentSession!.audioContext.createGain();
+          elevenLabsGain.gain.value = 0.8; // Slightly lower to prevent clipping when mixed with microphone
+          
+          // Connect to mixer (CRITICAL: This adds AI voice to the recording)
+          elevenLabsSource.connect(elevenLabsGain);
+          elevenLabsGain.connect(this.currentSession!.mixerNode);
+          
+          // IMPORTANT: Also connect back to destination so audio still plays normally
+          elevenLabsSource.connect(this.currentSession!.audioContext.destination);
+          
+          // Store the source for cleanup
+          this.currentSession!.speakerSource = elevenLabsSource;
+          
+          console.log('✅ ElevenLabs audio element captured and connected!');
+          console.log('🎭 Audio routing: ElevenLabs AudioElement → elevenLabsGain → mixerNode → MediaRecorder');
+          console.log('🎧 Audio routing: ElevenLabs AudioElement → audioContext.destination (for playback)');
+          
+          toast({
+            title: "🎵✨ Complete Recording Active",
+            description: "Both your voice AND Solin's responses are being recorded!",
+            variant: "default"
+          });
+        } catch (innerError) {
+          console.error('❌ Failed in captureWhenReady:', innerError);
+          throw innerError;
+        }
+      };
+
+      // If audio is ready now, capture immediately
+      if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA or better
+        console.log('✅ Audio element ready immediately, capturing now');
+        captureWhenReady();
+      } else {
+        // Wait for audio to be ready
+        console.log('⏳ Audio not ready yet, waiting for canplay event...');
+        audioElement.addEventListener('canplay', () => {
+          console.log('✅ Audio canplay event fired, capturing now');
+          captureWhenReady();
+        }, { once: true });
+        
+        // Also try on loadeddata as backup
+        audioElement.addEventListener('loadeddata', () => {
+          console.log('✅ Audio loadeddata event fired, attempting capture');
+          if (!this.currentSession?.speakerSource) { // Only if not already captured
+            captureWhenReady();
+          }
+        }, { once: true });
+      }
 
     } catch (error) {
       console.error('❌ Failed to capture ElevenLabs audio element:', error);
+      console.error('❌ Full error:', error);
       
       // Provide user-friendly error message
       let errorMessage = 'Failed to capture AI voice';
-      if (error instanceof Error && error.message.includes('already')) {
-        errorMessage = 'Audio source already in use - may still record microphone only';
+      if (error instanceof Error) {
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        if (error.message.includes('already')) {
+          errorMessage = 'Audio source already in use - may still record microphone only';
+        } else if (error.message.includes('InvalidStateError')) {
+          errorMessage = 'Audio element not ready yet - will retry when audio plays';
+        }
       }
       
       toast({
         title: "⚠️ ElevenLabs Audio Capture Issue",
-        description: errorMessage + '. Check console for details.',
+        description: errorMessage + '. Recording will continue with microphone only.',
         variant: "default"
       });
     }
@@ -1059,20 +1105,22 @@ This is a browser limitation, not an application issue.
       const memoryCount = session.memoryIds.length;
       const titleCount = session.memoryTitles.length;
       
-      let summaryText = `ElevenLabs conversation recording (${duration.toFixed(1)}s)`;
+      let summaryText: string;
       
-      if (memoryCount > 0) {
-        summaryText += ` - ${memoryCount} memory${memoryCount === 1 ? '' : 'ies'} created`;
-        
-        // Add memory titles if available (for easy identification)
-        if (titleCount > 0) {
-          const titleList = session.memoryTitles.slice(0, 3).join(', ');
-          const remainingCount = titleCount - 3;
-          summaryText += `: "${titleList}"`;
-          if (remainingCount > 0) {
-            summaryText += ` +${remainingCount} more`;
-          }
+      // CRITICAL FIX: Use memory title directly when there's exactly one memory
+      if (memoryCount === 1 && titleCount === 1) {
+        summaryText = session.memoryTitles[0]; // Use the memory title as-is for easy matching
+      } else if (memoryCount > 1 && titleCount > 0) {
+        // Multiple memories - list them
+        const titleList = session.memoryTitles.slice(0, 3).join(', ');
+        const remainingCount = titleCount - 3;
+        summaryText = `${memoryCount} memories: ${titleList}`;
+        if (remainingCount > 0) {
+          summaryText += ` +${remainingCount} more`;
         }
+      } else {
+        // No memories - use duration-based title
+        summaryText = `ElevenLabs conversation recording (${duration.toFixed(1)}s)`;
       }
 
       // Save metadata to database

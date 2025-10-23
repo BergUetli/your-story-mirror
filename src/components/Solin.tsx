@@ -1002,7 +1002,16 @@ const Solin: React.FC<SolinProps> = ({
                             className="text-xs"
                           >
                             <Square className="w-3 h-3 mr-1" />
-                            End Conversation
+                            Pause
+                          </Button>
+                          <Button
+                            onClick={handleEndConversation}
+                            variant="default"
+                            size="sm"
+                            className="text-xs bg-memory hover:bg-memory/90"
+                          >
+                            <Square className="w-3 h-3 mr-1" />
+                            End & Save
                           </Button>
                         </div>
                       )}
