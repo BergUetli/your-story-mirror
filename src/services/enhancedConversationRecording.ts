@@ -67,6 +67,11 @@ export class EnhancedConversationRecordingService {
    * Capture agent audio chunk (called from onMessage callback)
    */
   captureAgentAudioChunk(base64Audio: string) {
+    if (!this.currentSession?.isRecording) {
+      console.warn('⚠️ Cannot capture agent audio - no active recording session');
+      return;
+    }
+
     try {
       // Decode base64 to binary
       const binaryString = atob(base64Audio);
@@ -83,9 +88,45 @@ export class EnhancedConversationRecordingService {
       }
       
       this.agentAudioChunks.push(float32Array);
-      console.log('🎵 Captured agent audio chunk:', float32Array.length, 'samples');
+      console.log('🎵 Captured agent audio chunk:', float32Array.length, 'samples, total chunks:', this.agentAudioChunks.length);
+      
+      // Play the audio through the mixer so it gets recorded
+      this.playAgentAudioChunk(float32Array);
     } catch (error) {
       console.error('❌ Error capturing agent audio chunk:', error);
+    }
+  }
+
+  /**
+   * Play agent audio chunk through the audio context mixer
+   */
+  private playAgentAudioChunk(audioData: Float32Array) {
+    if (!this.currentSession?.audioContext) return;
+
+    try {
+      const audioContext = this.currentSession.audioContext;
+      
+      // Create an audio buffer from the float data
+      const buffer = audioContext.createBuffer(1, audioData.length, audioContext.sampleRate);
+      const channelData = buffer.getChannelData(0);
+      channelData.set(audioData);
+      
+      // Create a buffer source
+      const source = audioContext.createBufferSource();
+      source.buffer = buffer;
+      
+      // Connect to system gain node so it gets mixed into the recording
+      source.connect(this.currentSession.systemGain);
+      
+      // Also connect to destination so user can hear it
+      source.connect(audioContext.destination);
+      
+      // Play immediately
+      source.start(0);
+      
+      console.log('🔊 Playing agent audio chunk through mixer');
+    } catch (error) {
+      console.error('❌ Error playing agent audio chunk:', error);
     }
   }
 
@@ -224,6 +265,8 @@ export class EnhancedConversationRecordingService {
         tracks: microphoneStream.getAudioTracks().length,
         settings: microphoneStream.getAudioTracks()[0]?.getSettings()
       });
+      
+      console.log('🎵 Audio routing established: Microphone → MicGain → Mixer → MediaRecorder');
 
     } catch (error) {
       console.error('❌ Microphone setup failed:', error);
@@ -305,9 +348,11 @@ export class EnhancedConversationRecordingService {
       // Connect both sources to mixer
       this.currentSession.micGain.connect(this.currentSession.mixerNode);
       
-      if (this.currentSession.hasSystemAudio) {
-        this.currentSession.systemGain.connect(this.currentSession.mixerNode);
-      }
+      // ALWAYS connect systemGain to mixer (for agent audio chunks even without screen sharing)
+      this.currentSession.systemGain.connect(this.currentSession.mixerNode);
+      
+      console.log('🎵 Audio mixer configured: MicGain + SystemGain → Mixer → MediaRecorder');
+      console.log('🎵 Agent audio chunks will be routed through SystemGain for recording');
 
       // Create output destination
       const destination = this.currentSession.audioContext.createMediaStreamDestination();
