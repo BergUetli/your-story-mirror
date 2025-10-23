@@ -252,9 +252,23 @@ const Solin: React.FC<SolinProps> = ({
     }
     
     // Check for natural conversation ending commands
-    const endCommands = ['end conversation', 'save memory', 'store memory', 'goodbye solin', 'stop conversation'];
+    const endCommands = [
+      'end conversation',
+      'save memory',
+      'store memory',
+      'goodbye solin',
+      'stop conversation',
+      'bye',
+      'goodbye',
+      'see you later',
+      'that\'s all',
+      'done',
+      'finish',
+      'end'
+    ];
+    const lowerMessage = userMessage.toLowerCase().trim();
     const isEndCommand = endCommands.some(cmd => 
-      userMessage.toLowerCase().includes(cmd.toLowerCase())
+      lowerMessage === cmd || lowerMessage.endsWith(cmd) || lowerMessage.startsWith(cmd)
     );
 
     if (isEndCommand && conversationHistory.length > 0) {
@@ -427,6 +441,9 @@ const Solin: React.FC<SolinProps> = ({
       setIsRecordingVoice(true);
       console.log('🎙️ Started recording complete Solin conversation:', { sessionId, userId: recordingUserId, isGuest: !user?.id });
       
+      // Small delay to ensure recording is fully initialized before first audio plays
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       toast({
         title: "🎙️ Complete Conversation Recording",
         description: user?.id 
@@ -503,6 +520,8 @@ const Solin: React.FC<SolinProps> = ({
    * - Navigation to timeline after successful save
    * - Voice confirmation of successful memory creation
    * - **NEW**: Links voice recordings to memories for unified archival
+   * - **IMPROVED**: Better session cleanup and closing logic
+   * - **FIXED**: "Continue Conversation" option properly resumes the conversation
    * 
    * USER EXPERIENCE: Provides clear feedback throughout the memory creation process
    * and ensures users understand their stories are being preserved for posterity.
@@ -510,6 +529,7 @@ const Solin: React.FC<SolinProps> = ({
   const handleEndConversation = async () => {
     if (conversationHistory.length === 0) {
       await stopConversation();
+      setIsOpen(false); // Close immediately if no conversation
       return;
     }
 
@@ -519,37 +539,49 @@ const Solin: React.FC<SolinProps> = ({
     // Ask user if they want to save the memory
     const shouldSave = await showSaveMemoryPrompt();
     
-    if (shouldSave) {
-      setIsProcessing(true);
+    if (!shouldSave) {
+      // User wants to continue conversation - restart it
+      toast({
+        title: "Conversation Continuing",
+        description: "Let's keep talking! What else would you like to share?",
+      });
       
-      try {
-        // Create conversation text from history for complete preservation
-        const conversationText = conversationHistory
-          .map(entry => `${entry.role === 'user' ? 'You' : 'Solin'}: ${entry.content}`)
-          .join('\n\n');
+      // Restart the conversation
+      await startConversation();
+      return;
+    }
+    
+    // User wants to save - process and close
+    setIsProcessing(true);
+    
+    try {
+      // Create conversation text from history for complete preservation
+      const conversationText = conversationHistory
+        .map(entry => `${entry.role === 'user' ? 'You' : 'Solin'}: ${entry.content}`)
+        .join('\n\n');
 
-        // Generate title and content from conversation for memory organization
-        const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
-        const title = firstUserMessage.length > 50 
-          ? firstUserMessage.substring(0, 47) + '...' 
-          : firstUserMessage || 'Memory Conversation';
+      // Generate title and content from conversation for memory organization
+      const firstUserMessage = conversationHistory.find(entry => entry.role === 'user')?.content || '';
+      const title = firstUserMessage.length > 50 
+        ? firstUserMessage.substring(0, 47) + '...' 
+        : firstUserMessage || 'Memory Conversation';
 
-        // Create a summary from the conversation for search and discovery
-        const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
-        const content = userMessages.length > 1 
-          ? userMessages.join(' ') 
-          : userMessages[0] || 'A conversation with Solin about memories';
+      // Create a summary from the conversation for search and discovery
+      const userMessages = conversationHistory.filter(entry => entry.role === 'user').map(entry => entry.content);
+      const content = userMessages.length > 1 
+        ? userMessages.join(' ') 
+        : userMessages[0] || 'A conversation with Solin about memories';
 
-        // Save the memory with complete conversation context
-        const savedMemory = await addMemoryFromConversation(
-          title,
-          content,
-          conversationText,
-          'public'
-        );
+      // Save the memory with complete conversation context
+      const savedMemory = await addMemoryFromConversation(
+        title,
+        content,
+        conversationText,
+        'public'
+      );
 
         // Link conversation recording to the saved memory if both exist
-        if (savedMemory && currentSessionId && isRecordingVoice) {
+        if (savedMemory && currentSessionId) {
           try {
             conversationRecorderRef.current.addMemory(savedMemory.id, savedMemory.title);
             console.log('🔗 Linked conversation recording to memory:', { memoryId: savedMemory.id, sessionId: currentSessionId });
@@ -567,11 +599,14 @@ const Solin: React.FC<SolinProps> = ({
           // Refresh memories before navigation to ensure timeline is updated
           await loadMemories();
           
+          // Clear conversation and close interface BEFORE navigating
+          // This ensures clean state transition
+          setConversationHistory([]);
+          setResponse(null);
+          setIsOpen(false);
+          
           // Navigate to timeline to show the new memory
           navigate(`/timeline`);
-          
-          // Provide voice confirmation for natural conversation closure
-          await speakResponse("Your memory has been saved and added to your timeline. The complete conversation is archived with both our voices!");
         } else {
           throw new Error('Failed to save memory');
         }
@@ -585,13 +620,11 @@ const Solin: React.FC<SolinProps> = ({
         });
       } finally {
         setIsProcessing(false);
+        // Always ensure interface closes even on error
+        setConversationHistory([]);
+        setResponse(null);
+        setIsOpen(false);
       }
-    }
-    
-    // Clear conversation and close interface
-    setConversationHistory([]);
-    setResponse(null);
-    setIsOpen(false);
   };
 
   const showSaveMemoryPrompt = (): Promise<boolean> => {
