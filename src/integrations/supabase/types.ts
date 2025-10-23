@@ -214,6 +214,14 @@ export type Database = {
       }
       system_configuration: {
         Row: {
+          audio_agent_volume: number | null
+          audio_buffer_delay_ms: number | null
+          audio_ducking_amount: number | null
+          audio_ducking_attack_ms: number | null
+          audio_ducking_enabled: boolean | null
+          audio_ducking_release_ms: number | null
+          audio_mic_volume: number | null
+          audio_timestamp_correlation: boolean | null
           created_at: string
           description: string | null
           id: string
@@ -221,6 +229,14 @@ export type Database = {
           value: Json | null
         }
         Insert: {
+          audio_agent_volume?: number | null
+          audio_buffer_delay_ms?: number | null
+          audio_ducking_amount?: number | null
+          audio_ducking_attack_ms?: number | null
+          audio_ducking_enabled?: boolean | null
+          audio_ducking_release_ms?: number | null
+          audio_mic_volume?: number | null
+          audio_timestamp_correlation?: boolean | null
           created_at?: string
           description?: string | null
           id?: string
@@ -228,6 +244,14 @@ export type Database = {
           value?: Json | null
         }
         Update: {
+          audio_agent_volume?: number | null
+          audio_buffer_delay_ms?: number | null
+          audio_ducking_amount?: number | null
+          audio_ducking_attack_ms?: number | null
+          audio_ducking_enabled?: boolean | null
+          audio_ducking_release_ms?: number | null
+          audio_mic_volume?: number | null
+          audio_timestamp_correlation?: boolean | null
           created_at?: string
           description?: string | null
           id?: string

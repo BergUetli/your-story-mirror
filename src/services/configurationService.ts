@@ -5,6 +5,15 @@ export interface SystemConfiguration {
   conversation_end_timeout_ms: number;
   natural_end_grace_period_ms: number;
   speaking_check_interval_ms: number;
+  // Audio mixing parameters
+  audio_ducking_enabled: boolean;
+  audio_ducking_amount: number; // 0-1, how much to reduce mic volume when agent speaks
+  audio_ducking_attack_ms: number; // How fast to reduce volume
+  audio_ducking_release_ms: number; // How fast to restore volume
+  audio_buffer_delay_ms: number; // Delay for agent audio playback
+  audio_agent_volume: number; // 0-1, agent audio volume
+  audio_mic_volume: number; // 0-1, microphone volume
+  audio_timestamp_correlation: boolean; // Enable timestamp tracking
   created_at?: string;
   updated_at?: string;
 }
@@ -13,6 +22,15 @@ export const DEFAULT_CONFIG: SystemConfiguration = {
   conversation_end_timeout_ms: 5000, // 5 seconds default
   natural_end_grace_period_ms: 3000, // 3 seconds after Solin stops speaking
   speaking_check_interval_ms: 500, // Check every 500ms
+  // Audio mixing defaults
+  audio_ducking_enabled: true,
+  audio_ducking_amount: 0.3, // Reduce mic to 30% when agent speaks
+  audio_ducking_attack_ms: 50, // Fast attack
+  audio_ducking_release_ms: 200, // Slower release
+  audio_buffer_delay_ms: 0, // No delay by default
+  audio_agent_volume: 1.0, // Full volume
+  audio_mic_volume: 1.0, // Full volume
+  audio_timestamp_correlation: true, // Enable timestamps
 };
 
 class ConfigurationService {

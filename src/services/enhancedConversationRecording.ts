@@ -10,6 +10,8 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+import { configurationService } from './configurationService';
 
 interface EnhancedRecordingSession {
   sessionId: string;
@@ -55,13 +57,22 @@ interface EnhancedRecordingSession {
   isRecording: boolean;
   hasSystemAudio: boolean;
   recordingMode: 'microphone_only' | 'system_audio' | 'mixed';
+  agentSpeaking: boolean;
+  duckingTimeoutId: number | null;
+}
+
+interface TimestampedAudioChunk {
+  data: Float32Array;
+  timestamp: number;
+  relativeTime: number;
 }
 
 export class EnhancedConversationRecordingService {
   private currentSession: EnhancedRecordingSession | null = null;
   private readonly STORAGE_BUCKET = 'voice-recordings';
   private qualityAnalysisTimer: NodeJS.Timeout | null = null;
-  private agentAudioChunks: Float32Array[] = []; // Store agent audio chunks for mixing
+  private agentAudioChunks: TimestampedAudioChunk[] = []; // Store agent audio chunks with timestamps
+  private bufferedAgentAudio: TimestampedAudioChunk[] = []; // Buffer for delayed playback
 
   /**
    * Capture agent audio chunk (called from onMessage callback)
@@ -73,27 +84,90 @@ export class EnhancedConversationRecordingService {
     }
 
     try {
+      const config = configurationService.getConfig();
+      
       // Decode base64 to binary
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
+      
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
       
-      // Convert PCM16 to Float32Array
+      // Convert PCM16 to Float32
       const int16Array = new Int16Array(bytes.buffer);
       const float32Array = new Float32Array(int16Array.length);
       for (let i = 0; i < int16Array.length; i++) {
         float32Array[i] = int16Array[i] / 32768.0;
       }
       
-      this.agentAudioChunks.push(float32Array);
-      console.log('🎵 Captured agent audio chunk:', float32Array.length, 'samples, total chunks:', this.agentAudioChunks.length);
+      // Create timestamped chunk
+      const now = Date.now();
+      const relativeTime = now - this.currentSession.startTime.getTime();
+      const timestampedChunk: TimestampedAudioChunk = {
+        data: float32Array,
+        timestamp: now,
+        relativeTime
+      };
       
-      // Play the audio through the mixer so it gets recorded
-      this.playAgentAudioChunk(float32Array);
+      this.agentAudioChunks.push(timestampedChunk);
+      console.log('🎵 Captured agent audio chunk:', float32Array.length, 'samples at', relativeTime, 'ms, total chunks:', this.agentAudioChunks.length);
+      
+      // Apply buffering if configured
+      if (config.audio_buffer_delay_ms > 0) {
+        this.bufferedAgentAudio.push(timestampedChunk);
+        setTimeout(() => {
+          this.playAgentAudioChunk(float32Array);
+        }, config.audio_buffer_delay_ms);
+      } else {
+        this.playAgentAudioChunk(float32Array);
+      }
+      
+      // Trigger ducking if enabled
+      if (config.audio_ducking_enabled) {
+        this.applyDucking(true);
+      }
     } catch (error) {
       console.error('❌ Error capturing agent audio chunk:', error);
+    }
+  }
+
+  /**
+   * Apply ducking to microphone when agent speaks
+   */
+  private applyDucking(agentSpeaking: boolean) {
+    if (!this.currentSession) return;
+
+    const config = configurationService.getConfig();
+    const targetGain = agentSpeaking 
+      ? config.audio_ducking_amount * config.audio_mic_volume
+      : config.audio_mic_volume;
+    
+    const timeConstant = agentSpeaking 
+      ? config.audio_ducking_attack_ms / 1000
+      : config.audio_ducking_release_ms / 1000;
+
+    // Cancel any pending release
+    if (this.currentSession.duckingTimeoutId) {
+      clearTimeout(this.currentSession.duckingTimeoutId);
+      this.currentSession.duckingTimeoutId = null;
+    }
+
+    // Apply gain change
+    const now = this.currentSession.audioContext.currentTime;
+    this.currentSession.micGain.gain.setTargetAtTime(targetGain, now, timeConstant);
+    
+    this.currentSession.agentSpeaking = agentSpeaking;
+    
+    console.log(`🎚️ Ducking ${agentSpeaking ? 'applied' : 'released'}: mic gain → ${targetGain.toFixed(2)}`);
+
+    // Schedule ducking release after agent finishes
+    if (!agentSpeaking) {
+      this.currentSession.duckingTimeoutId = window.setTimeout(() => {
+        if (this.currentSession && this.currentSession.agentSpeaking) {
+          this.applyDucking(false);
+        }
+      }, config.audio_ducking_release_ms);
     }
   }
 
@@ -104,6 +178,7 @@ export class EnhancedConversationRecordingService {
     if (!this.currentSession?.audioContext) return;
 
     try {
+      const config = configurationService.getConfig();
       const audioContext = this.currentSession.audioContext;
       
       // Create an audio buffer from the float data
@@ -115,16 +190,29 @@ export class EnhancedConversationRecordingService {
       const source = audioContext.createBufferSource();
       source.buffer = buffer;
       
+      // Apply agent volume
+      this.currentSession.systemGain.gain.value = config.audio_agent_volume;
+      
       // Connect to system gain node so it gets mixed into the recording
       source.connect(this.currentSession.systemGain);
       
       // Also connect to destination so user can hear it
       source.connect(audioContext.destination);
       
+      // Handle agent speaking state
+      source.onended = () => {
+        // Release ducking after a short delay
+        setTimeout(() => {
+          if (config.audio_ducking_enabled) {
+            this.applyDucking(false);
+          }
+        }, 100);
+      };
+      
       // Play immediately
       source.start(0);
       
-      console.log('🔊 Playing agent audio chunk through mixer');
+      console.log('🔊 Playing agent audio chunk through mixer at volume', config.audio_agent_volume);
     } catch (error) {
       console.error('❌ Error playing agent audio chunk:', error);
     }
@@ -199,8 +287,15 @@ export class EnhancedConversationRecordingService {
         },
         isRecording: false,
         hasSystemAudio: false,
-        recordingMode: 'microphone_only'
+        recordingMode: 'microphone_only',
+        agentSpeaking: false,
+        duckingTimeoutId: null,
       };
+      
+      // Apply initial volumes from config
+      const config = configurationService.getConfig();
+      this.currentSession.micGain.gain.value = config.audio_mic_volume;
+      this.currentSession.systemGain.gain.value = config.audio_agent_volume;
 
       // Step 1: Get microphone access
       console.log('🎤 Requesting microphone access with high quality settings...');

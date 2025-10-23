@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { 
   Settings, 
   Save, 
@@ -13,7 +15,9 @@ import {
   Mic,
   CheckCircle,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { configurationService, SystemConfiguration } from '@/services/configurationService';
 import VoiceRecordingTester from './VoiceRecordingTester';
@@ -40,14 +44,20 @@ const ConfigurationPanel = () => {
     return unsubscribe;
   }, []);
 
-  const handleInputChange = (field: keyof SystemConfiguration, value: string) => {
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue) || numValue < 0) return;
-
-    setConfig(prev => ({
-      ...prev,
-      [field]: numValue
-    }));
+  const handleInputChange = (field: keyof SystemConfiguration, value: string | number | boolean) => {
+    if (typeof value === 'string') {
+      const numValue = parseInt(value, 10);
+      if (isNaN(numValue) || numValue < 0) return;
+      setConfig(prev => ({
+        ...prev,
+        [field]: numValue
+      }));
+    } else {
+      setConfig(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
     setHasChanges(true);
   };
 
@@ -159,6 +169,188 @@ const ConfigurationPanel = () => {
                 How often to check if Solin is still speaking.
                 Default: 500ms (0.5 seconds)
               </p>
+            </div>
+          </div>
+
+          <Separator className="bg-slate-700" />
+
+          {/* Audio Mixing Settings */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-slate-200 flex items-center gap-2">
+              <Volume2 className="h-4 w-4" />
+              Audio Mixing & Ducking
+            </h4>
+            
+            {/* Ducking Enable/Disable */}
+            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+              <div className="space-y-1">
+                <Label htmlFor="ducking-enabled" className="text-slate-300 font-medium">
+                  Enable Voice Ducking
+                </Label>
+                <p className="text-xs text-slate-400">
+                  Automatically reduce microphone volume when agent speaks to prevent overlap
+                </p>
+              </div>
+              <Switch
+                id="ducking-enabled"
+                checked={config.audio_ducking_enabled}
+                onCheckedChange={(checked) => handleInputChange('audio_ducking_enabled', checked)}
+              />
+            </div>
+
+            {/* Ducking Amount */}
+            <div className="space-y-2">
+              <Label htmlFor="ducking-amount" className="text-slate-300">
+                Ducking Amount: {(config.audio_ducking_amount * 100).toFixed(0)}%
+              </Label>
+              <Slider
+                id="ducking-amount"
+                min={0}
+                max={100}
+                step={5}
+                value={[config.audio_ducking_amount * 100]}
+                onValueChange={([value]) => handleInputChange('audio_ducking_amount', value / 100)}
+                disabled={!config.audio_ducking_enabled}
+                className="w-full"
+              />
+              <p className="text-xs text-slate-400">
+                How much to reduce mic volume when agent speaks (0% = mute, 100% = no reduction)
+              </p>
+            </div>
+
+            {/* Ducking Attack/Release */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ducking-attack" className="text-slate-300">
+                  Attack Time (ms)
+                </Label>
+                <Input
+                  id="ducking-attack"
+                  type="number"
+                  min="10"
+                  step="10"
+                  value={config.audio_ducking_attack_ms}
+                  onChange={(e) => handleInputChange('audio_ducking_attack_ms', e.target.value)}
+                  disabled={!config.audio_ducking_enabled}
+                  className="bg-slate-700 border-slate-600 text-slate-200"
+                />
+                <p className="text-xs text-slate-400">
+                  How fast to reduce volume (lower = faster)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ducking-release" className="text-slate-300">
+                  Release Time (ms)
+                </Label>
+                <Input
+                  id="ducking-release"
+                  type="number"
+                  min="50"
+                  step="50"
+                  value={config.audio_ducking_release_ms}
+                  onChange={(e) => handleInputChange('audio_ducking_release_ms', e.target.value)}
+                  disabled={!config.audio_ducking_enabled}
+                  className="bg-slate-700 border-slate-600 text-slate-200"
+                />
+                <p className="text-xs text-slate-400">
+                  How fast to restore volume (lower = faster)
+                </p>
+              </div>
+            </div>
+
+            {/* Volume Controls */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="mic-volume" className="text-slate-300">
+                  Microphone Volume: {(config.audio_mic_volume * 100).toFixed(0)}%
+                </Label>
+                <Slider
+                  id="mic-volume"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[config.audio_mic_volume * 100]}
+                  onValueChange={([value]) => handleInputChange('audio_mic_volume', value / 100)}
+                  className="w-full"
+                />
+                <p className="text-xs text-slate-400">
+                  Base microphone recording volume
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="agent-volume" className="text-slate-300">
+                  Agent Voice Volume: {(config.audio_agent_volume * 100).toFixed(0)}%
+                </Label>
+                <Slider
+                  id="agent-volume"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={[config.audio_agent_volume * 100]}
+                  onValueChange={([value]) => handleInputChange('audio_agent_volume', value / 100)}
+                  className="w-full"
+                />
+                <p className="text-xs text-slate-400">
+                  Agent audio playback and recording volume
+                </p>
+              </div>
+            </div>
+
+            {/* Buffer Delay */}
+            <div className="space-y-2">
+              <Label htmlFor="buffer-delay" className="text-slate-300">
+                Audio Buffer Delay (ms)
+              </Label>
+              <Input
+                id="buffer-delay"
+                type="number"
+                min="0"
+                step="50"
+                value={config.audio_buffer_delay_ms}
+                onChange={(e) => handleInputChange('audio_buffer_delay_ms', e.target.value)}
+                className="bg-slate-700 border-slate-600 text-slate-200 max-w-xs"
+              />
+              <p className="text-xs text-slate-400">
+                Delay agent audio playback for better timing alignment (0 = no delay)
+              </p>
+            </div>
+
+            {/* Timestamp Correlation */}
+            <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
+              <div className="space-y-1">
+                <Label htmlFor="timestamp-correlation" className="text-slate-300 font-medium">
+                  Enable Timestamp Correlation
+                </Label>
+                <p className="text-xs text-slate-400">
+                  Track timing between audio chunks and transcript entries for debugging
+                </p>
+              </div>
+              <Switch
+                id="timestamp-correlation"
+                checked={config.audio_timestamp_correlation}
+                onCheckedChange={(checked) => handleInputChange('audio_timestamp_correlation', checked)}
+              />
+            </div>
+
+            {/* Audio Mixing Summary */}
+            <div className="bg-slate-900/50 p-4 rounded-lg space-y-2 text-sm">
+              <h5 className="font-semibold text-slate-200">Current Audio Settings</h5>
+              <div className="grid grid-cols-2 gap-2 text-slate-400">
+                <div>Ducking: <span className={config.audio_ducking_enabled ? 'text-green-400' : 'text-red-400'}>
+                  {config.audio_ducking_enabled ? 'Enabled' : 'Disabled'}
+                </span></div>
+                <div>Buffer Delay: <span className="text-slate-200">{config.audio_buffer_delay_ms}ms</span></div>
+                <div>Mic Volume: <span className="text-slate-200">{(config.audio_mic_volume * 100).toFixed(0)}%</span></div>
+                <div>Agent Volume: <span className="text-slate-200">{(config.audio_agent_volume * 100).toFixed(0)}%</span></div>
+                {config.audio_ducking_enabled && (
+                  <>
+                    <div>Ducked To: <span className="text-slate-200">{(config.audio_ducking_amount * 100).toFixed(0)}%</span></div>
+                    <div>Attack/Release: <span className="text-slate-200">{config.audio_ducking_attack_ms}/{config.audio_ducking_release_ms}ms</span></div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
