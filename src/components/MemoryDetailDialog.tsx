@@ -339,7 +339,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   };
 
   const handleDeleteMemory = async () => {
-    if (!memory?.id || !confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
+    if (!memory?.id || !memory?.user_id || !confirm('Are you sure you want to delete this memory? This action cannot be undone.')) {
       return;
     }
 
@@ -349,7 +349,8 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
       const { error } = await supabase
         .from('memories')
         .delete()
-        .eq('id', memory.id);
+        .eq('id', memory.id)
+        .eq('user_id', memory.user_id);
 
       if (error) throw error;
 

@@ -319,20 +319,19 @@ const Archive = () => {
     try {
       await aiVoiceSearch.deleteVoiceRecording(user.id, recordingId);
       
-      // Remove from local state
-      setRecordings(prev => prev.filter(r => r.id !== recordingId));
-      setFilteredRecordings(prev => prev.filter(r => r.id !== recordingId));
-      
-      // Clear selection if it was the deleted recording
-      if (selectedRecording?.id === recordingId) {
-        setSelectedRecording(null);
-      }
-      
       toast({
         title: 'Recording Deleted',
         description: `"${recordingTitle}" has been permanently deleted.`,
         variant: 'default'
       });
+
+      // Reload from server to ensure data is fresh and deleted items don't reappear
+      await loadRecordings(false);
+      
+      // Clear selection if it was the deleted recording
+      if (selectedRecording?.id === recordingId) {
+        setSelectedRecording(null);
+      }
       
     } catch (error) {
       console.error('Failed to delete recording:', error);

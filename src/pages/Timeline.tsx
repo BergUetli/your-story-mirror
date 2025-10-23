@@ -600,11 +600,21 @@ const Timeline = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        title: 'Authentication required',
+        description: 'You must be signed in to delete memories',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('memories')
         .delete()
-        .eq('id', memoryId);
+        .eq('id', memoryId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
