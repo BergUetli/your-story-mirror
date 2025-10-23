@@ -40,17 +40,47 @@ const Index = () => {
   // Always use real user - no dummy mode in production
   const effectiveUser = user;
 
+  const [dbFirstName, setDbFirstName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchName = async () => {
+      if (!effectiveUser?.id) return;
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', effectiveUser.id)
+          .maybeSingle();
+        if (userRow?.name) {
+          setDbFirstName(String(userRow.name).trim().split(/\s+/)[0]);
+          return;
+        }
+        const { data: profileRow } = await supabase
+          .from('user_profiles')
+          .select('preferred_name')
+          .eq('user_id', effectiveUser.id)
+          .maybeSingle();
+        if (profileRow?.preferred_name) {
+          setDbFirstName(String(profileRow.preferred_name).trim().split(/\s+/)[0]);
+        }
+      } catch (e) {
+        console.warn('Name fetch fallback failed', e);
+      }
+    };
+    fetchName();
+  }, [effectiveUser?.id]);
+
   const displayFirstName = useMemo(() => {
-    const nameCandidate = profile?.name || user?.user_metadata?.full_name || (user as any)?.user_metadata?.name || '';
+    const nameCandidate = dbFirstName || profile?.name || (user as any)?.user_metadata?.full_name || (user as any)?.user_metadata?.name || '';
     const first = (nameCandidate || '').trim().split(/\s+/)[0];
     if (first) return first;
     const emailUser = user?.email?.split('@')[0];
     return emailUser ? emailUser.charAt(0).toUpperCase() + emailUser.slice(1) : 'Friend';
-  }, [profile?.name, user?.user_metadata, user?.email]);
+  }, [dbFirstName, profile?.name, user?.user_metadata, user?.email]);
 
   useEffect(() => {
-    console.log('Greeting name resolution:', { profileName: profile?.name, userMeta: user?.user_metadata, email: user?.email, displayFirstName });
-  }, [displayFirstName, profile?.name, user?.user_metadata, user?.email]);
+    console.log('Greeting name resolution:', { dbFirstName, profileName: profile?.name, userMeta: user?.user_metadata, email: user?.email, displayFirstName });
+  }, [displayFirstName, dbFirstName, profile?.name, user?.user_metadata, user?.email]);
   
   const [isConnecting, setIsConnecting] = useState(false);
   const noEndBeforeRef = useRef(0);
