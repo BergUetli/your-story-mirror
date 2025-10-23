@@ -388,10 +388,8 @@ export class ConversationRecordingService {
       });
 
       // CRITICAL FIX: Check if we've already captured this audio element
-      if (this.currentSession.speakerSource) {
-        console.log('⚠️ ElevenLabs audio source already connected, skipping duplicate capture');
-        return;
-      }
+      // Allow capturing multiple ElevenLabs audio elements (each TTS creates a new element)
+      console.log('ℹ️ Capturing ElevenLabs audio element (multiple sources supported)');
 
       // CRITICAL FIX: Wait for audio to be ready before capturing
       const captureWhenReady = () => {

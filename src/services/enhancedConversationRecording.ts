@@ -12,6 +12,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { configurationService } from './configurationService';
+import { voiceService } from './voiceService';
 
 interface EnhancedRecordingSession {
   sessionId: string;
@@ -73,6 +74,8 @@ export class EnhancedConversationRecordingService {
   private qualityAnalysisTimer: NodeJS.Timeout | null = null;
   private agentAudioChunks: TimestampedAudioChunk[] = []; // Store agent audio chunks with timestamps
   private bufferedAgentAudio: TimestampedAudioChunk[] = []; // Buffer for delayed playback
+  private capturedAudioElements = new WeakSet<HTMLAudioElement>();
+  private elevenLabsAudioCallback?: (audioElement: HTMLAudioElement) => void;
 
   /**
    * Capture agent audio chunk (called from onMessage callback)
@@ -312,6 +315,9 @@ export class EnhancedConversationRecordingService {
 
       // Step 4: Set up audio mixing and recording
       await this.setupAudioMixing(options);
+
+      // Register for ElevenLabs audio element capture (routes agent voice to systemGain)
+      this.registerElevenLabsAudioCapture();
 
       // Step 4: Start recording
       this.startRecordingProcess();
@@ -576,6 +582,12 @@ export class EnhancedConversationRecordingService {
     try {
       console.log('🛑 Stopping enhanced recording...');
 
+      // Unregister ElevenLabs audio capture callback
+      if (this.elevenLabsAudioCallback) {
+        voiceService.offAudioElementCreated(this.elevenLabsAudioCallback);
+        this.elevenLabsAudioCallback = undefined;
+      }
+
       // Stop quality monitoring
       if (this.qualityAnalysisTimer) {
         clearInterval(this.qualityAnalysisTimer);
@@ -816,9 +828,62 @@ export class EnhancedConversationRecordingService {
     `);
   }
 
-  // REMOVED: ElevenLabs audio element capture methods (caused SDK conflicts)
-  // Audio elements managed by ElevenLabs SDK cannot be captured directly
-  // Use enableScreenSharing() method instead
+  /**
+   * Capture ElevenLabs audio elements produced by voiceService and route into the mixer
+   */
+  private registerElevenLabsAudioCapture(): void {
+    try {
+      // Clean up previous callback if any
+      if (this.elevenLabsAudioCallback) {
+        voiceService.offAudioElementCreated(this.elevenLabsAudioCallback);
+      }
+
+      this.elevenLabsAudioCallback = (audioElement: HTMLAudioElement) => {
+        this.captureElevenLabsAudioElement(audioElement);
+      };
+
+      voiceService.onAudioElementCreated(this.elevenLabsAudioCallback);
+      console.log('✅ Enhanced recorder registered for ElevenLabs audio elements');
+    } catch (e) {
+      console.warn('⚠️ Could not register ElevenLabs audio capture for enhanced recorder:', e);
+    }
+  }
+
+  private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
+    if (!this.currentSession?.isRecording) {
+      console.warn('⚠️ Cannot capture ElevenLabs audio - no active enhanced session');
+      return;
+    }
+
+    if (this.capturedAudioElements.has(audioElement)) {
+      console.log('ℹ️ ElevenLabs audio element already captured');
+      return;
+    }
+
+    const audioContext = this.currentSession.audioContext;
+
+    const captureWhenReady = () => {
+      try {
+        const source = audioContext.createMediaElementSource(audioElement);
+        // Route to systemGain (which is connected to mixer and recorder)
+        source.connect(this.currentSession!.systemGain);
+        // Also to destination for playback
+        source.connect(audioContext.destination);
+        this.capturedAudioElements.add(audioElement);
+        console.log('🔊 Enhanced recorder captured ElevenLabs audio element and routed to mixer');
+      } catch (err) {
+        console.error('❌ Enhanced recorder failed to capture audio element:', err);
+      }
+    };
+
+    if (audioElement.readyState >= 2) {
+      captureWhenReady();
+    } else {
+      audioElement.addEventListener('canplay', captureWhenReady, { once: true });
+      audioElement.addEventListener('loadeddata', captureWhenReady, { once: true });
+    }
+  }
+
 
   // Public: Enable screen sharing to capture both user and AI audio
   async enableScreenSharing(): Promise<void> {
