@@ -21,7 +21,7 @@ interface EnhancedRecordingSession {
   microphoneStream: MediaStream | null;
   systemAudioStream: MediaStream | null; // Screen share with audio
   microphoneSource: MediaStreamAudioSourceNode | null;
-  systemAudioSource: MediaStreamAudioSourceNode | null;
+  systemAudioSource: MediaStreamAudioSourceNode | MediaElementAudioSourceNode | null;
   
   // Recording setup
   mixerNode: GainNode;
@@ -138,13 +138,17 @@ export class EnhancedConversationRecordingService {
       console.log('🎤 Requesting microphone access with high quality settings...');
       await this.setupMicrophone();
 
-      // Step 2: Attempt system audio capture if enabled
-      if (options.enableSystemAudio !== false) {
-        console.log('🔊 Attempting system audio capture...');
+      // Step 2: Register for ElevenLabs audio (no screen sharing)
+      this.registerElevenLabsAudioCapture();
+      this.attemptAudioElementCapture();
+
+      // Step 3: Optionally attempt system audio capture (only when explicitly enabled)
+      if (options.enableSystemAudio === true) {
+        console.log('🔊 Attempting system audio capture (explicitly enabled)...');
         await this.setupSystemAudioCapture();
       }
 
-      // Step 3: Set up audio mixing and recording
+      // Step 4: Set up audio mixing and recording
       await this.setupAudioMixing(options);
 
       // Step 4: Start recording
@@ -614,24 +618,60 @@ export class EnhancedConversationRecordingService {
   private logSystemAudioAlternatives(): void {
     console.log(`
 🔊 SYSTEM AUDIO CAPTURE ALTERNATIVES:
-
-OPTION 1 - Browser Tab Sharing (Recommended):
-• When prompted for screen sharing, select "Browser Tab"
-• ✅ Make sure to check "Share tab audio" 
-• This captures both your voice AND ElevenLabs responses
-
-OPTION 2 - System Audio Routing (Advanced):
-• Windows: Use VoiceMeeter Banana or Virtual Audio Cable
-• Mac: Use Loopback or BlackHole audio driver
-• Linux: Configure PulseAudio loopback module
-
-OPTION 3 - External Recording:
-• Use OBS Studio or Audacity to record system audio
-• Set up audio monitoring/passthrough
-
-CURRENT MODE: Microphone-only recording
-For complete conversations, use Option 1 above.
+• Prefer internal capture from AI audio element (no screen share)
+• Optional: Tab sharing with audio if explicitly enabled
     `);
+  }
+
+  // Capture ElevenLabs audio element without screen sharing
+  private registerElevenLabsAudioCapture(): void {
+    try {
+      const { voiceService } = require('@/services/voiceService');
+      const callback = (audioElement: HTMLAudioElement) => this.captureElevenLabsAudioElement(audioElement);
+      (this as any)._elevenCallback = callback;
+      voiceService.onAudioElementCreated(callback);
+      console.log('✅ Enhanced recorder registered for ElevenLabs audio');
+    } catch (e) {
+      console.warn('⚠️ Could not register ElevenLabs audio capture (service missing):', e);
+    }
+  }
+
+  private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
+    if (!this.currentSession) return;
+    try {
+      if (this.currentSession.systemAudioSource) return; // already connected
+      const src = this.currentSession.audioContext.createMediaElementSource(audioElement);
+      // Route AI voice through systemGain so user can control balance
+      src.connect(this.currentSession.systemGain);
+      // Also to destination so user hears it normally
+      src.connect(this.currentSession.audioContext.destination);
+      this.currentSession.systemAudioSource = src;
+      this.currentSession.hasSystemAudio = true;
+      this.currentSession.recordingMode = 'mixed';
+      console.log('🎵 Connected ElevenLabs audio element to enhanced recorder');
+    } catch (err) {
+      console.warn('⚠️ Failed to connect ElevenLabs audio element:', err);
+    }
+  }
+
+  private attemptAudioElementCapture(): void {
+    try {
+      const audios = document.querySelectorAll('audio');
+      audios.forEach(a => this.captureElevenLabsAudioElement(a));
+      // Observe future audio elements
+      const observer = new MutationObserver((muts) => {
+        muts.forEach(m => m.addedNodes.forEach(n => {
+          if (n instanceof HTMLElement && (n.tagName === 'AUDIO' || n.querySelector?.('audio'))) {
+            const el = n.tagName === 'AUDIO' ? (n as HTMLAudioElement) : (n.querySelector('audio') as HTMLAudioElement);
+            if (el) this.captureElevenLabsAudioElement(el);
+          }
+        }));
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+      (this as any)._audioObserver = observer;
+    } catch (e) {
+      console.warn('⚠️ Audio element scan failed:', e);
+    }
   }
 }
 

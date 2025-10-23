@@ -666,21 +666,28 @@ const Archive = () => {
                         <div className="flex-1 min-w-0">
                           {/* Header */}
                           <div className="flex items-center gap-2 mb-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="font-medium">
-                              {new Date(recording.created_at).toLocaleDateString('en-US', {
-                                month: 'long',
-                                day: 'numeric',
-                                year: 'numeric'
-                              })}
-                            </span>
+                            {/* Title area: show memory title for new recordings; fallback to date */}
+                            {recording.memory_titles && recording.memory_titles.length > 0 ? (
+                              <>
+                                <span className="font-medium truncate max-w-[60%]" title={recording.memory_titles[0]}>
+                                  {recording.memory_titles[0]}
+                                </span>
+                                <Calendar className="w-4 h-4 text-muted-foreground ml-2" />
+                                <span className="text-sm text-muted-foreground">
+                                  {new Date(recording.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Calendar className="w-4 h-4 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {new Date(recording.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                </span>
+                              </>
+                            )}
                             <Clock className="w-4 h-4 text-muted-foreground ml-1" />
                             <span className="text-sm text-muted-foreground">
-                              {new Date(recording.created_at).toLocaleTimeString('en-US', {
-                                hour: 'numeric',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
+                              {new Date(recording.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                             </span>
                             <Badge variant="outline" className="text-xs">
                               {formatDuration(recording.duration_seconds)}

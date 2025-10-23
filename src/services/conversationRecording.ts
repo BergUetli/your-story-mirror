@@ -98,6 +98,22 @@ export class ConversationRecordingService {
       // Create audio nodes
       const microphoneSource = audioContext.createMediaStreamSource(microphoneStream);
       const mixerNode = audioContext.createGain();
+
+      // Improve voice clarity with light compression and gain
+      const micCompressor = audioContext.createDynamicsCompressor();
+      micCompressor.threshold.value = -18;
+      micCompressor.knee.value = 24;
+      micCompressor.attack.value = 0.003;
+      micCompressor.release.value = 0.25;
+      micCompressor.ratio.value = 3;
+
+      const micGain = audioContext.createGain();
+      micGain.gain.value = 1.1;
+      
+      // Connect mic: source -> compressor -> gain -> mixer
+      microphoneSource.connect(micCompressor);
+      micCompressor.connect(micGain);
+      micGain.connect(mixerNode);
       
       // Set up initial session with processing promise
       let processingResolver: () => void;
@@ -125,8 +141,7 @@ export class ConversationRecordingService {
         processingResolver: processingResolver!
       };
 
-      // Connect microphone to mixer
-      microphoneSource.connect(mixerNode);
+      // Microphone already routed through compressor/gain to mixer above
 
       // ENHANCED: Register for ElevenLabs audio stream notifications (primary method)
       this.registerElevenLabsAudioCapture();
@@ -137,6 +152,10 @@ export class ConversationRecordingService {
       // Also try to hook into any existing audio elements on the page (fallback method)
       this.attemptAudioElementCapture();
 
+      // NOTE: Avoid prompting for screen/tab sharing by default to keep UX clean
+      // If full tab-audio capture is ever needed, call setupSystemAudioCapture() explicitly from UI.
+      // this.setupSystemAudioCapture();
+
       // Set up recording output
       const destination = audioContext.createMediaStreamDestination();
       mixerNode.connect(destination);
@@ -144,7 +163,7 @@ export class ConversationRecordingService {
       // Create MediaRecorder for the mixed stream
       const mediaRecorder = new MediaRecorder(destination.stream, {
         mimeType: 'audio/webm;codecs=opus',
-        audioBitsPerSecond: 64000
+        audioBitsPerSecond: 128000
       });
 
       this.currentSession.mediaRecorder = mediaRecorder;

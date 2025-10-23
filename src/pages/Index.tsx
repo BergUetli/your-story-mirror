@@ -631,15 +631,15 @@ const Index = () => {
         
         let sessionId: string;
         if (recordingMode === 'enhanced') {
-          sessionId = await enhancedConversationRecordingService.startEnhancedRecording(
-            recordingUserId, 
-            'elevenlabs_conversation',
-            { 
-              enableSystemAudio: true, // Always try to capture system audio
-              microphoneGain: 1.0,
-              systemAudioGain: 0.8
-            }
-          );
+              sessionId = await enhancedConversationRecordingService.startEnhancedRecording(
+                recordingUserId, 
+                'elevenlabs_conversation',
+                { 
+                  enableSystemAudio: false, // Avoid screen-share prompt; we capture AI audio internally
+                  microphoneGain: 1.0,
+                  systemAudioGain: 0.85
+                }
+              );
         } else {
           sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'elevenlabs_conversation');
         }
