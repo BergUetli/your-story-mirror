@@ -276,6 +276,25 @@ const Solin: React.FC<SolinProps> = ({
     processingRef.current = true;
     lastTranscriptRef.current = userMessage;
     
+    // Check if user wants to end the conversation
+    const endPhrases = ['bye', 'goodbye', 'end conversation', 'stop', 'exit', 'quit', 'end session', 'see you later', 'talk later'];
+    const normalizedMessage = userMessage.toLowerCase().trim();
+    const wantsToEnd = endPhrases.some(phrase => 
+      normalizedMessage === phrase || 
+      normalizedMessage.startsWith(phrase + ' ') || 
+      normalizedMessage.endsWith(' ' + phrase)
+    );
+    
+    if (wantsToEnd) {
+      processingRef.current = false;
+      const farewellMessage = "Goodbye! It was wonderful talking with you. Your memories have been saved.";
+      await speakResponse(farewellMessage);
+      setTimeout(() => {
+        handleEndConversation();
+      }, 2000);
+      return;
+    }
+    
     // Add transcript to conversation recording if active
     if (isRecordingVoice && currentSessionId) {
       try {
