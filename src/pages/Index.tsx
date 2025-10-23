@@ -114,8 +114,22 @@ const Index = () => {
     if (endScheduledRef.current) return;
     endScheduledRef.current = true;
     setIsEndingConversation(true);
-    console.log(`🛑 Scheduling conversation end in ${delayMs}ms:`, reason);
-    window.setTimeout(() => endConversationRef.current?.(), delayMs);
+    console.log(`🛑 Scheduling conversation end:`, reason);
+    
+    // Wait for Solin to finish speaking before ending
+    const checkAndEnd = () => {
+      if (conversation.isSpeaking) {
+        console.log('⏳ Solin is still speaking, waiting...');
+        setTimeout(checkAndEnd, 300); // Check every 300ms
+      } else {
+        console.log('✅ Solin finished speaking, ending conversation after grace period...');
+        // Give a small grace period after speaking stops to ensure audio finishes
+        setTimeout(() => endConversationRef.current?.(), 1000);
+      }
+    };
+    
+    // Start checking after initial delay
+    setTimeout(checkAndEnd, delayMs);
   };
   
   // First Conversation state
@@ -1927,8 +1941,8 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           if (hasEnd) {
             const who = msg.source || msg.type || 'unknown';
             console.log('🔚 Detected end phrase from', who, '→ scheduling end');
-            // Give AI time to finish the goodbye if it is speaking
-            const delay = (msg.source === 'ai' || msg.type?.includes('response')) ? 1800 : 800;
+            // Use minimal delay - scheduleEnd will wait for Solin to finish speaking
+            const delay = (msg.source === 'ai' || msg.type?.includes('response')) ? 500 : 500;
             scheduleEnd(delay, `phrase_${who}`);
           }
         }
