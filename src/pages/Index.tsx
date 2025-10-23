@@ -106,6 +106,18 @@ const Index = () => {
   } | null>(null);
   const [lastSavedMemoryId, setLastSavedMemoryId] = useState<string | null>(null);
   
+  // Auto-end helpers
+  const endConversationRef = useRef<(() => Promise<void> | void) | null>(null);
+  const endScheduledRef = useRef(false);
+  const scheduleEnd = (delayMs = 1500, reason = 'auto') => {
+    if (Date.now() < noEndBeforeRef.current) return;
+    if (endScheduledRef.current) return;
+    endScheduledRef.current = true;
+    setIsEndingConversation(true);
+    console.log(`🛑 Scheduling conversation end in ${delayMs}ms:`, reason);
+    window.setTimeout(() => endConversationRef.current?.(), delayMs);
+  };
+  
   // First Conversation state
   const [needsFirstConversation, setNeedsFirstConversation] = useState(false);
   const [showFirstConversation, setShowFirstConversation] = useState(false);
@@ -468,24 +480,36 @@ const Index = () => {
         ]
       }));
 
-      // Add memory ID to voice recording if active
+      // Add memory linkage to any active recording
       if (isRecording && recordingSessionId) {
         try {
-          // Link memory to both old and new recording services
           if (recordingMode === 'enhanced') {
-            // For enhanced recording, update the database directly
+            // Track in enhanced recorder and optimistically update DB row
+            enhancedConversationRecordingService.addEnhancedMemory(primaryMemoryId, memoryTitle);
             await supabase
               .from('voice_recordings')
-              .update({ memory_ids: [primaryMemoryId] })
+              .update({ 
+                memory_ids: [primaryMemoryId], 
+                memory_titles: [memoryTitle],
+                conversation_summary: memoryTitle
+              })
               .eq('session_id', recordingSessionId);
-            console.log('📝 Added memory ID to enhanced voice recording:', primaryMemoryId);
+            console.log('📝 Linked memory (ID and title) to enhanced recording:', { primaryMemoryId, memoryTitle });
           } else {
-            // For standard recording, use the existing service
+            // Legacy recorder + optimistic DB update for title
             voiceRecordingService.addMemoryId(primaryMemoryId);
-            console.log('📝 Added memory ID to standard voice recording:', primaryMemoryId);
+            await supabase
+              .from('voice_recordings')
+              .update({ 
+                memory_ids: [primaryMemoryId],
+                memory_titles: [memoryTitle],
+                conversation_summary: memoryTitle
+              })
+              .eq('session_id', recordingSessionId);
+            console.log('📝 Linked memory to standard recording with title:', { primaryMemoryId, memoryTitle });
           }
         } catch (error) {
-          console.error('⚠️ Failed to add memory ID to recording:', error);
+          console.error('⚠️ Failed to link memory to recording:', error);
         }
       }
 
@@ -1136,23 +1160,16 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
       logHandoff('3️⃣ USER NOTIFIED', { status: 'toast_shown' });
 
-      // Allow agent to send final message before closing
-      // Note: We can't access conversation directly here due to hook dependencies
-      // The actual session closure will be handled by the endConversation function
-      logHandoff('⏳ SCHEDULING CLOSURE', { delay: '1000ms' });
-      
-      setTimeout(() => {
-        setConversationMessages([]);
-        logHandoff('✅ MESSAGES CLEARED', { method: 'programmatic' });
-      }, 1000);
+      // Schedule actual session end shortly after the farewell completes
+      scheduleEnd(1500, 'agent_tool_close_conversation');
 
       logHandoff('🎯 HANDOFF COMPLETE', { 
         status: 'success',
-        agentResponse: 'Conversation will be closed in 1 second. Thank you for using Solin!',
+        agentResponse: 'Conversation will be closed shortly. Thank you for using Solin!',
         note: 'ElevenLabs agent informed about conversation closure'
       });
 
-      return `${finalMessage} Your conversation has been saved and will be closed shortly. You can always start a new conversation anytime.`;
+      return `${finalMessage} Your conversation will end now. You can always start a new one anytime.`;
     } catch (error) {
       logHandoff('❌ CLOSE HANDOFF FAILED', { error: error instanceof Error ? error.message : 'Unknown error' });
       return 'Error closing conversation. Please try again or close manually.';
@@ -1885,7 +1902,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
     onConnect: onConnectCb,
     onDisconnect: onDisconnectCb,
     onError: onErrorCb,
-    onMessage: (message: unknown) => {
+  onMessage: (message: unknown) => {
       console.log('🗣️ ElevenLabs message:', message);
       
       // Enhanced debugging for transcript capture
@@ -1900,6 +1917,21 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           messageKeys: Object.keys(msg),
           fullMessage: msg
         });
+        
+        // End-of-conversation phrase detection (both user and AI)
+        const extractText = () => msg.message || msg.delta || msg.transcript || '';
+        const text = String(extractText()).toLowerCase();
+        const endPhrases = ['bye', 'goodbye', 'end conversation', 'end session', 'stop talking', 'that\'s all'];
+        if (text) {
+          const hasEnd = endPhrases.some(p => text.includes(p));
+          if (hasEnd) {
+            const who = msg.source || msg.type || 'unknown';
+            console.log('🔚 Detected end phrase from', who, '→ scheduling end');
+            // Give AI time to finish the goodbye if it is speaking
+            const delay = (msg.source === 'ai' || msg.type?.includes('response')) ? 1800 : 800;
+            scheduleEnd(delay, `phrase_${who}`);
+          }
+        }
         
         // Handle different message types for transcript capture
         let transcriptText = '';
@@ -2351,6 +2383,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       }
     }
   }, [conversation, toast, navigate]);
+
+  // Bind endConversation to a ref for scheduling from other callbacks
+  useEffect(() => {
+    endConversationRef.current = () => { endConversation().catch(console.error); };
+    return () => { endConversationRef.current = null; };
+  }, [endConversation]);
 
   // Auto-save conversation content as incomplete memory when conversation ends
   const autoSaveConversationContent = useCallback(async () => {

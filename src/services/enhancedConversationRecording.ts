@@ -39,6 +39,10 @@ interface EnhancedRecordingSession {
     confidence?: number;
   }>;
   
+  // Memory linkage
+  memoryIds: string[];
+  memoryTitles: string[];
+  
   // Quality monitoring
   qualityMetrics: {
     microphoneLevel: number;
@@ -117,6 +121,8 @@ export class EnhancedConversationRecordingService {
         recordingStream: null,
         audioChunks: [],
         conversationTranscript: [],
+        memoryIds: [],
+        memoryTitles: [],
         qualityMetrics: {
           microphoneLevel: 0,
           systemAudioLevel: 0,
@@ -431,6 +437,17 @@ export class EnhancedConversationRecordingService {
     }
   }
 
+  // Link a saved memory to this enhanced recording session
+  addEnhancedMemory(memoryId: string, memoryTitle: string) {
+    if (!this.currentSession) return;
+    if (memoryId && !this.currentSession.memoryIds.includes(memoryId)) {
+      this.currentSession.memoryIds.push(memoryId);
+    }
+    if (memoryTitle && !this.currentSession.memoryTitles.includes(memoryTitle)) {
+      this.currentSession.memoryTitles.push(memoryTitle);
+    }
+  }
+
   /**
    * Process and save enhanced recording
    */
@@ -475,6 +492,17 @@ export class EnhancedConversationRecordingService {
         .join('\n');
 
       // Save metadata to database with enhanced fields
+      const memoryCount = session.memoryIds?.length || 0;
+      const titleCount = session.memoryTitles?.length || 0;
+      let summary = `Enhanced ElevenLabs conversation (${duration.toFixed(1)}s, ${session.recordingMode} mode)`;
+      if (memoryCount === 1 && titleCount === 1) {
+        summary = session.memoryTitles[0];
+      } else if (memoryCount > 1 && titleCount > 0) {
+        const list = session.memoryTitles.slice(0, 3).join(', ');
+        const remain = Math.max(0, titleCount - 3);
+        summary = remain > 0 ? `${memoryCount} memories: ${list} (+${remain} more)` : `${memoryCount} memories: ${list}`;
+      }
+
       const { error: dbError } = await supabase
         .from('voice_recordings')
         .insert({
@@ -485,7 +513,9 @@ export class EnhancedConversationRecordingService {
           duration_seconds: duration,
           file_size_bytes: audioBlob.size,
           transcript_text: transcriptText,
-          conversation_summary: `Enhanced ElevenLabs conversation (${duration.toFixed(1)}s, ${session.recordingMode} mode)`,
+          conversation_summary: summary,
+          memory_ids: memoryCount ? session.memoryIds : null,
+          memory_titles: titleCount ? session.memoryTitles : null,
           session_mode: 'enhanced_elevenlabs_conversation',
           mime_type: 'audio/webm',
           compression_type: 'opus',
