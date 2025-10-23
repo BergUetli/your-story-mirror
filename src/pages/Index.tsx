@@ -2573,7 +2573,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {user && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-foreground mb-1">
-                      Welcome, {userName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Friend'}!
+                      Welcome, {(userName || user.user_metadata?.full_name)?.split(' ')[0] || user.email?.split('@')[0] || 'Friend'}!
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Ready to continue your memory journey with Solin?
@@ -2885,7 +2885,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           </h1>
             
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              {effectiveUser ? `Welcome back, ${effectiveUser.email}! Ready to continue your memory journey?` : 'Preserve your voice, stories, and values. Create a lasting legacy.'}
+              {effectiveUser ? `Welcome back, ${(userName || effectiveUser.user_metadata?.full_name)?.split(' ')[0] || effectiveUser.email?.split('@')[0]}! Ready to continue your memory journey?` : 'Preserve your voice, stories, and values. Create a lasting legacy.'}
             </p>
           </div>
           
