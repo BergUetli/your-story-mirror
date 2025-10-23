@@ -44,6 +44,7 @@ import { useMemories } from '@/hooks/useMemories';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import solinConfig from '@/agents/solin.json';
 import { AddMemoryForm } from '@/components/AddMemoryForm';
@@ -115,6 +116,37 @@ const Solin: React.FC<SolinProps> = ({
   const { user } = useAuth();                                   // User authentication state
   const { profile } = useProfile();                             // User profile data for personalization
   const navigate = useNavigate();                               // Page navigation
+  
+  // Database-fetched first name for personalized greetings
+  const [dbFirstName, setDbFirstName] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fetchUserFirstName = async () => {
+      if (!user?.id) return;
+      try {
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (userRow?.name) {
+          setDbFirstName(String(userRow.name).trim().split(/\s+/)[0]);
+          return;
+        }
+        const { data: profileRow } = await supabase
+          .from('user_profiles')
+          .select('preferred_name')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (profileRow?.preferred_name) {
+          setDbFirstName(String(profileRow.preferred_name).trim().split(/\s+/)[0]);
+        }
+      } catch (e) {
+        console.warn('Solin: Name fetch fallback failed', e);
+      }
+    };
+    fetchUserFirstName();
+  }, [user?.id]);
   
   // ===== VOICE RECORDING STATE =====
   // State for tracking conversation audio recording
@@ -469,17 +501,18 @@ const Solin: React.FC<SolinProps> = ({
     
     if (mode === 'visitor') {
       greeting = "Hi, I'm your AI guide through time. I'm ready to share memories. What would you like to know?";
-    } else if (profile?.name) {
-      // Personalized greeting using user's name (use first name only)
-      const firstName = profile.name.split(' ')[0];
-      greeting = `Hi ${firstName}, it's good to see you again. I'm Solin, your AI guide through time. What's on your mind today?`;
-    } else if (user?.email) {
-      // Use email username if no name available
-      const username = user.email.split('@')[0];
-      greeting = `Hi ${username}, it's good to see you again. I'm Solin, your AI guide through time. What's on your mind today?`;
     } else {
-      // Default greeting when no profile data available
-      greeting = "Hi there! I'm Solin, your AI guide through time. I'm here to help you capture and preserve your memories. What would you like to share today?";
+      // Personalized greeting using database name, profile, or fallback to email
+      const firstName = dbFirstName || 
+                       (profile?.name ? profile.name.split(' ')[0] : '') ||
+                       (user?.user_metadata?.full_name ? String(user.user_metadata.full_name).split(' ')[0] : '') ||
+                       (user?.email ? user.email.split('@')[0] : '');
+      
+      if (firstName) {
+        greeting = `Hi ${firstName}, it's good to see you again. I'm Solin, your AI guide through time. What's on your mind today?`;
+      } else {
+        greeting = "Hi there! I'm Solin, your AI guide through time. I'm here to help you capture and preserve your memories. What would you like to share today?";
+      }
     }
     
     speakResponse(greeting);
