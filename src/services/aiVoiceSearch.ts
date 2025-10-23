@@ -53,6 +53,7 @@ export class AIVoiceSearchService {
           transcript_text,
           conversation_summary,
           memory_ids,
+          memory_titles,
           topics,
           session_mode,
           created_at

@@ -138,9 +138,8 @@ export class EnhancedConversationRecordingService {
       console.log('🎤 Requesting microphone access with high quality settings...');
       await this.setupMicrophone();
 
-      // Step 2: Register for ElevenLabs audio (no screen sharing)
-      this.registerElevenLabsAudioCapture();
-      this.attemptAudioElementCapture();
+      // Step 2: ElevenLabs audio capture disabled (causes SDK conflicts)
+      // To record AI voice, use enableScreenSharing() method after starting
 
       // Step 3: Optionally attempt system audio capture (only when explicitly enabled)
       if (options.enableSystemAudio === true) {
@@ -443,13 +442,27 @@ export class EnhancedConversationRecordingService {
 
   // Link a saved memory to this enhanced recording session
   addEnhancedMemory(memoryId: string, memoryTitle: string) {
-    if (!this.currentSession) return;
+    if (!this.currentSession) {
+      console.warn('⚠️ Cannot add memory - no active session');
+      return;
+    }
+    
+    console.log('📝 Adding memory to session:', { memoryId, memoryTitle, sessionId: this.currentSession.sessionId });
+    
     if (memoryId && !this.currentSession.memoryIds.includes(memoryId)) {
       this.currentSession.memoryIds.push(memoryId);
+      console.log('✅ Memory ID added. Total IDs:', this.currentSession.memoryIds.length);
     }
+    
     if (memoryTitle && !this.currentSession.memoryTitles.includes(memoryTitle)) {
       this.currentSession.memoryTitles.push(memoryTitle);
+      console.log('✅ Memory title added. Total titles:', this.currentSession.memoryTitles.length);
     }
+    
+    console.log('📊 Current session memory state:', {
+      memoryIds: this.currentSession.memoryIds,
+      memoryTitles: this.currentSession.memoryTitles
+    });
   }
 
   /**
@@ -498,6 +511,14 @@ export class EnhancedConversationRecordingService {
       // Save metadata to database with enhanced fields
       const memoryCount = session.memoryIds?.length || 0;
       const titleCount = session.memoryTitles?.length || 0;
+      
+      console.log('💾 Saving to database with memory data:', {
+        memoryIds: session.memoryIds,
+        memoryTitles: session.memoryTitles,
+        memoryCount,
+        titleCount
+      });
+      
       let summary = `Enhanced ElevenLabs conversation (${duration.toFixed(1)}s, ${session.recordingMode} mode)`;
       if (memoryCount === 1 && titleCount === 1) {
         summary = session.memoryTitles[0];
@@ -507,29 +528,34 @@ export class EnhancedConversationRecordingService {
         summary = remain > 0 ? `${memoryCount} memories: ${list} (+${remain} more)` : `${memoryCount} memories: ${list}`;
       }
 
-      const { error: dbError } = await supabase
+      const insertData = {
+        user_id: session.userId,
+        session_id: session.sessionId,
+        recording_type: 'enhanced_conversation',
+        storage_path: filePath,
+        duration_seconds: duration,
+        file_size_bytes: audioBlob.size,
+        transcript_text: transcriptText,
+        conversation_summary: summary,
+        memory_ids: memoryCount > 0 ? session.memoryIds : null,
+        memory_titles: titleCount > 0 ? session.memoryTitles : null,
+        session_mode: 'enhanced_elevenlabs_conversation',
+        mime_type: 'audio/webm',
+        compression_type: 'opus',
+        sample_rate: 48000,
+        bit_rate: 128000
+      };
+      
+      console.log('💾 Database insert payload:', insertData);
+
+      const { data: insertedData, error: dbError } = await supabase
         .from('voice_recordings')
-        .insert({
-          user_id: session.userId,
-          session_id: session.sessionId,
-          recording_type: 'enhanced_conversation',
-          storage_path: filePath,
-          duration_seconds: duration,
-          file_size_bytes: audioBlob.size,
-          transcript_text: transcriptText,
-          conversation_summary: summary,
-          memory_ids: memoryCount ? session.memoryIds : null,
-          memory_titles: titleCount ? session.memoryTitles : null,
-          session_mode: 'enhanced_elevenlabs_conversation',
-          mime_type: 'audio/webm',
-          compression_type: 'opus',
-          sample_rate: 48000,
-          bit_rate: 128000
-        });
+        .insert(insertData)
+        .select();
 
       if (dbError) throw dbError;
-
-      console.log('✅ Enhanced recording saved successfully');
+      
+      console.log('✅ Enhanced recording saved to database:', insertedData);
       this.currentSession = null;
 
     } catch (error) {
@@ -618,119 +644,50 @@ export class EnhancedConversationRecordingService {
   private logSystemAudioAlternatives(): void {
     console.log(`
 🔊 SYSTEM AUDIO CAPTURE ALTERNATIVES:
-• Prefer internal capture from AI audio element (no screen share)
-• Optional: Tab sharing with audio if explicitly enabled
+• Use enableScreenSharing() method after starting recording
+• This will prompt for tab audio capture to record AI voice
     `);
   }
 
-  // Capture ElevenLabs audio element without screen sharing
-  private registerElevenLabsAudioCapture(): void {
-    try {
-      const { voiceService } = require('@/services/voiceService');
-      const callback = (audioElement: HTMLAudioElement) => this.captureElevenLabsAudioElement(audioElement);
-      (this as any)._elevenCallback = callback;
-      voiceService.onAudioElementCreated(callback);
-      console.log('✅ Enhanced recorder registered for ElevenLabs audio');
-    } catch (e) {
-      console.warn('⚠️ Could not register ElevenLabs audio capture (service missing):', e);
-    }
-  }
+  // REMOVED: ElevenLabs audio element capture methods (caused SDK conflicts)
+  // Audio elements managed by ElevenLabs SDK cannot be captured directly
+  // Use enableScreenSharing() method instead
 
-  private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
+  // Public: Enable screen sharing to capture both user and AI audio
+  async enableScreenSharing(): Promise<void> {
     if (!this.currentSession) {
-      console.log('⚠️ No session yet, audio element will be captured later');
+      console.warn('⚠️ No active session for screen sharing');
       return;
     }
+    
     try {
-      if (this.currentSession.systemAudioSource) {
-        console.log('ℹ️ System audio already connected, skipping');
-        return;
-      }
+      console.log('🖥️ Requesting screen sharing for AI audio capture...');
       
-      console.log('🎵 Attempting to connect ElevenLabs audio element...');
-      
-      // Clone the audio node to avoid cross-origin issues
-      const src = this.currentSession.audioContext.createMediaElementSource(audioElement);
-      
-      // Connect to system gain (for recording)
-      src.connect(this.currentSession.systemGain);
-      
-      // Do NOT connect to destination here to avoid duplicate playback/echo
-      // The HTMLAudioElement already plays to the system output
-      
-      // Connect system gain to mixer for recording
+      // Request screen/tab audio capture
+      const systemStream = await navigator.mediaDevices.getDisplayMedia({
+        video: false,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        } as any
+      });
+
+      // Connect system audio to mixer
+      const systemSource = this.currentSession.audioContext.createMediaStreamSource(systemStream);
+      systemSource.connect(this.currentSession.systemGain);
       this.currentSession.systemGain.connect(this.currentSession.mixerNode);
       
-      this.currentSession.systemAudioSource = src;
+      this.currentSession.systemAudioStream = systemStream;
+      this.currentSession.systemAudioSource = systemSource;
       this.currentSession.hasSystemAudio = true;
       this.currentSession.recordingMode = 'mixed';
       
-      console.log('✅ ElevenLabs audio connected successfully:', {
-        hasSystemAudio: this.currentSession.hasSystemAudio,
-        recordingMode: this.currentSession.recordingMode
-      });
-    } catch (err) {
-      console.error('❌ Failed to connect ElevenLabs audio element:', err);
-      console.error('Error details:', {
-        message: err instanceof Error ? err.message : String(err),
-        audioElement: audioElement ? 'exists' : 'null',
-        audioSrc: audioElement?.src || 'no src'
-      });
-    }
-  }
-
-  private attemptAudioElementCapture(): void {
-    try {
-      console.log('🔍 Scanning for existing audio elements...');
-      const audios = document.querySelectorAll('audio');
-      console.log(`Found ${audios.length} audio elements`);
-      
-      audios.forEach((a, idx) => {
-        console.log(`Audio element ${idx}:`, {
-          src: a.src || 'no src',
-          readyState: a.readyState
-        });
-        this.captureElevenLabsAudioElement(a as HTMLAudioElement);
-      });
-      
-      // Observe future audio elements
-      const observer = new MutationObserver((muts) => {
-        muts.forEach(m => m.addedNodes.forEach(n => {
-          if (n instanceof HTMLElement && (n.tagName === 'AUDIO' || n.querySelector?.('audio'))) {
-            const el = n.tagName === 'AUDIO' ? (n as HTMLAudioElement) : (n.querySelector('audio') as HTMLAudioElement);
-            if (el) {
-              console.log('🆕 New audio element detected');
-              this.captureElevenLabsAudioElement(el);
-            }
-          }
-        }));
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-      (this as any)._audioObserver = observer;
-      console.log('✅ Audio element observer installed');
+      console.log('✅ Screen sharing enabled - now recording both user and AI audio');
     } catch (e) {
-      console.error('❌ Audio element scan failed:', e);
-    }
-  }
-
-  // Public: capture a raw MediaStream (e.g., from ElevenLabs useConversation)
-  // and mix it into the recording without prompting for screen share
-  captureOutputMediaStream(stream: MediaStream): void {
-    if (!this.currentSession) {
-      console.warn('⚠️ No active session to attach output media stream');
-      return;
-    }
-    try {
-      const source = this.currentSession.audioContext.createMediaStreamSource(stream);
-      // Route only into the mixer (do not connect to destination to prevent double playback)
-      source.connect(this.currentSession.systemGain);
-      this.currentSession.systemGain.connect(this.currentSession.mixerNode);
-      this.currentSession.systemAudioSource = source;
-      this.currentSession.hasSystemAudio = true;
-      this.currentSession.recordingMode = 'mixed';
-      console.log('✅ Attached external MediaStream to enhanced recorder');
-    } catch (e) {
-      console.error('❌ Failed to attach external MediaStream:', e);
+      console.error('❌ Screen sharing failed:', e);
+      console.log('💡 User declined or browser blocked screen sharing');
+      throw e;
     }
   }
 }

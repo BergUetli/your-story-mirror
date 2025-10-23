@@ -498,29 +498,29 @@ const Index = () => {
       if (isRecording && recordingSessionId) {
         try {
           if (recordingMode === 'enhanced') {
-            // Track in enhanced recorder and optimistically update DB row
+            // Track in enhanced recorder - this persists in memory until recording stops
             enhancedConversationRecordingService.addEnhancedMemory(primaryMemoryId, memoryTitle);
-            await supabase
-              .from('voice_recordings')
-              .update({ 
-                memory_ids: [primaryMemoryId], 
-                memory_titles: [memoryTitle],
-                conversation_summary: memoryTitle
-              })
-              .eq('session_id', recordingSessionId);
-            console.log('📝 Linked memory (ID and title) to enhanced recording:', { primaryMemoryId, memoryTitle });
+            console.log('📝 Memory linked to enhanced recording session (will be saved when recording stops)');
+            
+            // NOTE: Don't try to update DB here - the row doesn't exist yet
+            // It will be created with the correct titles when recording stops
           } else {
-            // Legacy recorder + optimistic DB update for title
+            // Legacy recorder
             voiceRecordingService.addMemoryId(primaryMemoryId);
-            await supabase
-              .from('voice_recordings')
-              .update({ 
-                memory_ids: [primaryMemoryId],
-                memory_titles: [memoryTitle],
-                conversation_summary: memoryTitle
-              })
-              .eq('session_id', recordingSessionId);
-            console.log('📝 Linked memory to standard recording with title:', { primaryMemoryId, memoryTitle });
+            // Try optimistic DB update (may fail if row doesn't exist yet)
+            try {
+              await supabase
+                .from('voice_recordings')
+                .update({ 
+                  memory_ids: [primaryMemoryId],
+                  memory_titles: [memoryTitle],
+                  conversation_summary: memoryTitle
+                })
+                .eq('session_id', recordingSessionId);
+              console.log('📝 Linked memory to standard recording with title');
+            } catch (updateError) {
+              console.log('ℹ️ Could not update DB (row may not exist yet):', updateError);
+            }
           }
         } catch (error) {
           console.error('⚠️ Failed to link memory to recording:', error);
@@ -648,20 +648,30 @@ const Index = () => {
         setIsRecording(true);
         console.log(`✅ ${recordingMode} conversation recording started successfully:`, sessionId);
 
-        // Try to tap into ElevenLabs audio output to capture AI voice without screen share
+        // Prompt for screen sharing to capture AI audio (optional)
         if (recordingMode === 'enhanced') {
-          try {
-            const convAny: any = conversation as any;
-            const candidate: any = convAny?.audioStream || convAny?.mediaStream || convAny?.outputStream || convAny?.speakerStream;
-            if (candidate instanceof MediaStream) {
-              console.log('🎵 Found ElevenLabs output MediaStream, attaching to recorder...');
-              enhancedConversationRecordingService.captureOutputMediaStream(candidate);
-            } else {
-              console.log('🔎 No direct MediaStream exposed by SDK; relying on audio element capture.');
+          console.log('💡 Enhanced recording started - microphone only');
+          console.log('🖥️ To record AI voice too, enable screen/tab sharing when prompted');
+          
+          // Optionally prompt for screen sharing after a short delay
+          setTimeout(async () => {
+            if (isRecording) {
+              try {
+                await enhancedConversationRecordingService.enableScreenSharing();
+                toast({
+                  title: 'Full Recording Active',
+                  description: 'Now recording both your voice and AI responses',
+                });
+              } catch (e) {
+                console.log('ℹ️ Screen sharing not enabled - recording microphone only');
+                toast({
+                  title: 'Microphone-Only Recording',
+                  description: 'Recording your voice. AI responses won\'t be captured without screen sharing.',
+                  variant: 'default'
+                });
+              }
             }
-          } catch (e) {
-            console.warn('⚠️ Could not attach ElevenLabs output stream:', e);
-          }
+          }, 2000); // Wait 2 seconds before prompting
         }
         
         // Add periodic status logging
