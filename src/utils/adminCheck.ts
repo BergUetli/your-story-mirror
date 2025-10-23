@@ -1,25 +1,34 @@
 import { User } from '@supabase/supabase-js';
-
-// Admin user emails - only these emails can access admin functionality
-const ADMIN_EMAILS = [
-  'admin@solinone.com',
-  'team@bergutli.com', 
-  'admin@example.com',
-  // Add your actual admin email here when you know it
-  // For now, development mode will allow access for testing
-];
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Check if a user has admin privileges
+ * Check if a user has admin privileges by querying the user_roles table
  * @param user - The authenticated user object
- * @returns boolean - true if user is admin, false otherwise
+ * @returns Promise<boolean> - true if user has admin role, false otherwise
  */
-export const isUserAdmin = (user: User | null): boolean => {
-  if (!user || !user.email) {
+export const isUserAdmin = async (user: User | null): Promise<boolean> => {
+  if (!user || !user.id) {
     return false;
   }
   
-  return ADMIN_EMAILS.includes(user.email.toLowerCase().trim());
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking admin role:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Exception checking admin role:', error);
+    return false;
+  }
 };
 
 /**
@@ -33,10 +42,10 @@ export const isDevelopmentMode = (): boolean => {
 };
 
 /**
- * Comprehensive admin check - user must be admin OR in development mode
+ * Comprehensive admin check - user must have admin role in database
  * @param user - The authenticated user object  
- * @returns boolean - true if user can access admin features
+ * @returns Promise<boolean> - true if user can access admin features
  */
-export const hasAdminAccess = (user: User | null): boolean => {
-  return isUserAdmin(user) || isDevelopmentMode();
+export const hasAdminAccess = async (user: User | null): Promise<boolean> => {
+  return await isUserAdmin(user);
 };

@@ -49,8 +49,20 @@ const Admin = () => {
     errorRate: 0
   });
 
-  // Check if user has admin privileges using proper admin role checking
-  const isAdmin = hasAdminAccess(user) || isDummyMode();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+
+  // Check if user has admin privileges using database role system
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      setIsCheckingAdmin(true);
+      const hasAccess = await hasAdminAccess(user) || isDummyMode();
+      setIsAdmin(hasAccess);
+      setIsCheckingAdmin(false);
+    };
+    
+    checkAdminAccess();
+  }, [user]);
 
   useEffect(() => {
     // Simulate real-time metrics updates
@@ -64,6 +76,20 @@ const Admin = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Show loading state while checking admin access
+  if (isCheckingAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <Card className="w-96">
+          <CardContent className="p-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Checking admin access...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (
