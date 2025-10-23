@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
@@ -34,6 +35,7 @@ const Index = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile } = useProfile();
   
   // Always use real user - no dummy mode in production
   const effectiveUser = user;
@@ -66,9 +68,6 @@ const Index = () => {
   const [needsFirstConversation, setNeedsFirstConversation] = useState(false);
   const [showFirstConversation, setShowFirstConversation] = useState(false);
   const [checkingProfile, setCheckingProfile] = useState(true);
-  
-  // User's name from database
-  const [userName, setUserName] = useState<string | null>(null);
 
   // Biography topics tool for collecting general information about the user
   const saveBiographyTopicTool = useCallback(async (parameters: {
@@ -2417,17 +2416,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       try {
         console.log('🔍 Checking first conversation status...');
         
-        // Fetch user's name from database
-        const { data: userData } = await supabase
-          .from('users')
-          .select('name')
-          .eq('user_id', effectiveUser.id)
-          .single();
-        
-        if (userData?.name) {
-          setUserName(userData.name);
-        }
-        
         const needsFirstConv = await userProfileService.needsFirstConversation(effectiveUser.id);
         
         console.log(`👤 User needs first conversation: ${needsFirstConv}`);
@@ -2573,7 +2561,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {user && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-foreground mb-1">
-                      Welcome, {(userName || user.user_metadata?.full_name)?.split(' ')[0] || user.email?.split('@')[0] || 'Friend'}!
+                      Welcome, {profile?.name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Friend'}!
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Ready to continue your memory journey with Solin?
@@ -2885,7 +2873,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           </h1>
             
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-              {effectiveUser ? `Welcome back, ${(userName || effectiveUser.user_metadata?.full_name)?.split(' ')[0] || effectiveUser.email?.split('@')[0]}! Ready to continue your memory journey?` : 'Preserve your voice, stories, and values. Create a lasting legacy.'}
+              {effectiveUser ? `Welcome back, ${profile?.name?.split(' ')[0] || effectiveUser.user_metadata?.full_name?.split(' ')[0] || effectiveUser.email?.split('@')[0]}! Ready to continue your memory journey?` : 'Preserve your voice, stories, and values. Create a lasting legacy.'}
             </p>
           </div>
           
