@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { conversationRecordingService } from '@/services/conversationRecording';
+import { enhancedConversationRecordingService } from '@/services/enhancedConversationRecording';
 import { voiceService } from '@/services/voiceService';
 import { diagnosticLogger } from '@/services/diagnosticLogger';
 import { Link } from 'react-router-dom';
@@ -482,26 +483,44 @@ const runEndToEndTest = async () => {
   if (isE2ETesting) return;
   try {
     setIsE2ETesting(true);
-    setE2eStatus('Starting end-to-end merged recording...');
+    setE2eStatus('Starting end-to-end enhanced recording...');
     setE2eAudioUrl(null);
 
     const recordingUserId = user?.id || `guest-${Date.now()}`;
     diagnosticLogger.logInfo('voice_recording', 'e2e_test_started', { userId: recordingUserId });
 
-    // Start merged recording
-    const sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'diagnostics_end_to_end');
+    // Start enhanced recording (microphone only, we'll capture AI audio internally)
+    const sessionId = await enhancedConversationRecordingService.startEnhancedRecording(
+      recordingUserId, 
+      'diagnostics_end_to_end',
+      { enableSystemAudio: false }
+    );
     setE2eSessionId(sessionId);
 
-    setE2eStatus('Playing AI voice (ensure tab audio is shared)...');
-    // Play short TTS so AI voice is captured
-    await voiceService.speak("This is Solin. End-to-end merged audio test. You should hear both our voices in the saved file.");
+    setE2eStatus('Recording user audio...');
+    // Wait 2 seconds for user to say something
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    setE2eStatus('Stopping and saving recording...');
-    await conversationRecordingService.stopConversationRecording();
+    setE2eStatus('Playing AI voice and capturing...');
+    // Play TTS - the audio will be captured via agentAudioChunks
+    const testText = "This is Solin. End-to-end enhanced audio test. You should hear both our voices in the saved file.";
+    
+    // Simulate capturing agent audio chunks (in real scenario this happens via onMessage)
+    // For testing, we'll use voiceService which should trigger the same capture
+    await voiceService.speak(testText);
+    
+    // Add transcript for the AI speech
+    enhancedConversationRecordingService.addEnhancedTranscriptEntry('ai', testText, 1.0);
+    
+    // Wait for speech to finish
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Give Supabase a moment to persist
+    setE2eStatus('Stopping and processing recording...');
+    await enhancedConversationRecordingService.stopEnhancedRecording();
+
+    // Verify the recording was saved
     setE2eStatus('Verifying archive entry...');
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 1000));
 
     const { data: rec, error } = await supabase
       .from('voice_recordings')
@@ -518,6 +537,14 @@ const runEndToEndTest = async () => {
       return;
     }
 
+    console.log('📊 E2E Test - Recording data:', {
+      id: rec.id,
+      session_id: rec.session_id,
+      storage_path: rec.storage_path,
+      memory_titles: rec.memory_titles,
+      transcript_summary: rec.transcript_summary?.substring(0, 100)
+    });
+
     let signedUrl: string | null = null;
     if (rec.storage_path) {
       const { data: signed } = await supabase.storage
@@ -528,9 +555,20 @@ const runEndToEndTest = async () => {
 
     if (signedUrl) {
       setE2eAudioUrl(signedUrl);
-      setE2eStatus('Success: saved and playable. Open Archive to view.');
-      diagnosticLogger.logInfo('archive_display', 'e2e_success', { sessionId, recordingId: rec.id, storage_path: rec.storage_path });
-      toast({ title: 'End-to-End Test Passed', description: 'Merged recording saved to Archive.', variant: 'default' });
+      const titleInfo = rec.memory_titles && rec.memory_titles.length > 0 
+        ? ` Title: "${rec.memory_titles[0]}"` 
+        : ' (no title set)';
+      setE2eStatus(`Success: saved and playable.${titleInfo} Open Archive to view.`);
+      diagnosticLogger.logInfo('archive_display', 'e2e_success', { 
+        sessionId, 
+        recordingId: rec.id, 
+        storage_path: rec.storage_path,
+        memory_titles: rec.memory_titles
+      });
+      toast({ 
+        title: 'End-to-End Test Passed', 
+        description: `Enhanced recording saved to Archive.${titleInfo}`, 
+      });
     } else {
       setE2eStatus('Saved metadata, but audio file URL missing.');
       diagnosticLogger.logWarn('archive_display', 'e2e_missing_audio', { sessionId, recordingId: rec.id });
