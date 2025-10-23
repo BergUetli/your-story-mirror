@@ -1980,7 +1980,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           messageKeys: Object.keys(msg),
           fullMessage: msg
         });
-...
         
         // End-of-conversation phrase detection (both user and AI)
         const extractText = () => msg.message || msg.delta || msg.transcript || '';
