@@ -655,8 +655,8 @@ export class EnhancedConversationRecordingService {
       // Connect to system gain (for recording)
       src.connect(this.currentSession.systemGain);
       
-      // CRITICAL: Also connect to destination so user can hear it
-      src.connect(this.currentSession.audioContext.destination);
+      // Do NOT connect to destination here to avoid duplicate playback/echo
+      // The HTMLAudioElement already plays to the system output
       
       // Connect system gain to mixer for recording
       this.currentSession.systemGain.connect(this.currentSession.mixerNode);
@@ -710,6 +710,27 @@ export class EnhancedConversationRecordingService {
       console.log('✅ Audio element observer installed');
     } catch (e) {
       console.error('❌ Audio element scan failed:', e);
+    }
+  }
+
+  // Public: capture a raw MediaStream (e.g., from ElevenLabs useConversation)
+  // and mix it into the recording without prompting for screen share
+  captureOutputMediaStream(stream: MediaStream): void {
+    if (!this.currentSession) {
+      console.warn('⚠️ No active session to attach output media stream');
+      return;
+    }
+    try {
+      const source = this.currentSession.audioContext.createMediaStreamSource(stream);
+      // Route only into the mixer (do not connect to destination to prevent double playback)
+      source.connect(this.currentSession.systemGain);
+      this.currentSession.systemGain.connect(this.currentSession.mixerNode);
+      this.currentSession.systemAudioSource = source;
+      this.currentSession.hasSystemAudio = true;
+      this.currentSession.recordingMode = 'mixed';
+      console.log('✅ Attached external MediaStream to enhanced recorder');
+    } catch (e) {
+      console.error('❌ Failed to attach external MediaStream:', e);
     }
   }
 }

@@ -647,6 +647,22 @@ const Index = () => {
         setRecordingSessionId(sessionId);
         setIsRecording(true);
         console.log(`✅ ${recordingMode} conversation recording started successfully:`, sessionId);
+
+        // Try to tap into ElevenLabs audio output to capture AI voice without screen share
+        if (recordingMode === 'enhanced') {
+          try {
+            const convAny: any = conversation as any;
+            const candidate: any = convAny?.audioStream || convAny?.mediaStream || convAny?.outputStream || convAny?.speakerStream;
+            if (candidate instanceof MediaStream) {
+              console.log('🎵 Found ElevenLabs output MediaStream, attaching to recorder...');
+              enhancedConversationRecordingService.captureOutputMediaStream(candidate);
+            } else {
+              console.log('🔎 No direct MediaStream exposed by SDK; relying on audio element capture.');
+            }
+          } catch (e) {
+            console.warn('⚠️ Could not attach ElevenLabs output stream:', e);
+          }
+        }
         
         // Add periodic status logging
         const statusInterval = setInterval(() => {
