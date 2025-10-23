@@ -1948,15 +1948,39 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       // Enhanced debugging for transcript capture
       if (typeof message === 'object' && message !== null) {
         const msg = message as any;
+        
+        // Check for audio data in the message
+        if (msg.audio || msg.audio_data || msg.audioData || msg.delta || msg.chunk) {
+          console.log('🎵 AUDIO DATA DETECTED in message:', {
+            type: msg.type,
+            hasAudio: !!msg.audio,
+            hasAudioData: !!msg.audioData,
+            hasDelta: !!msg.delta,
+            hasChunk: !!msg.chunk,
+            keys: Object.keys(msg)
+          });
+          
+          // Try to capture agent audio if recording
+          if (isRecording && recordingMode === 'enhanced') {
+            const audioData = msg.audio || msg.audio_data || msg.audioData || msg.delta || msg.chunk;
+            if (audioData && typeof audioData === 'string') {
+              console.log('🎙️ Capturing agent audio chunk from message...');
+              enhancedConversationRecordingService.captureAgentAudioChunk(audioData);
+            }
+          }
+        }
+        
         console.log('📝 Message analysis:', {
           type: msg.type,
           source: msg.source,
           hasMessage: !!msg.message,
           hasDelta: !!msg.delta,
+          hasAudio: !!(msg.audio || msg.audio_data || msg.audioData),
           isRecording,
           messageKeys: Object.keys(msg),
           fullMessage: msg
         });
+...
         
         // End-of-conversation phrase detection (both user and AI)
         const extractText = () => msg.message || msg.delta || msg.transcript || '';

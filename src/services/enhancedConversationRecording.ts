@@ -61,6 +61,33 @@ export class EnhancedConversationRecordingService {
   private currentSession: EnhancedRecordingSession | null = null;
   private readonly STORAGE_BUCKET = 'voice-recordings';
   private qualityAnalysisTimer: NodeJS.Timeout | null = null;
+  private agentAudioChunks: Float32Array[] = []; // Store agent audio chunks for mixing
+
+  /**
+   * Capture agent audio chunk (called from onMessage callback)
+   */
+  captureAgentAudioChunk(base64Audio: string) {
+    try {
+      // Decode base64 to binary
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Convert PCM16 to Float32Array
+      const int16Array = new Int16Array(bytes.buffer);
+      const float32Array = new Float32Array(int16Array.length);
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+      
+      this.agentAudioChunks.push(float32Array);
+      console.log('🎵 Captured agent audio chunk:', float32Array.length, 'samples');
+    } catch (error) {
+      console.error('❌ Error capturing agent audio chunk:', error);
+    }
+  }
 
   /**
    * Start enhanced conversation recording with system audio capture
