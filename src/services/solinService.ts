@@ -41,12 +41,18 @@ class SolinService {
         messagePreview: request.message?.substring(0, 50) + '...'
       });
 
+      // Ensure authenticated request so the agent knows who the user is
+      const { data: sessionData } = await this.supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
       const { data, error } = await this.supabase.functions.invoke('solin-ai', {
         body: {
           ...request,
           agentConfig: solinConfig
-        }
+        },
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });
+
 
       if (error) {
         throw error;

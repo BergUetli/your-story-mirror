@@ -291,7 +291,7 @@ const Solin: React.FC<SolinProps> = ({
       
       // Generate AI response with memory context
       const solinResponse = await solinService.chat({
-        mode,
+        mode: user ? 'user' : 'visitor',
         message: userMessage,
         memories: relevantMemories,
         visitorPermissions,
