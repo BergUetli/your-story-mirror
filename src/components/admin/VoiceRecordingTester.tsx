@@ -24,6 +24,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { conversationRecordingService } from '@/services/conversationRecording';
+import { voiceService } from '@/services/voiceService';
+import { diagnosticLogger } from '@/services/diagnosticLogger';
+import { Link } from 'react-router-dom';
 
 interface AudioTestResult {
   type: 'mic' | 'speakers';
@@ -56,11 +60,17 @@ export const VoiceRecordingTester = () => {
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [maxVolumeReached, setMaxVolumeReached] = useState(0);
   
-  // Audio state
-  const [hasRecording, setHasRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  
+// Audio state
+const [hasRecording, setHasRecording] = useState(false);
+const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+// End-to-end (merged) test state
+const [isE2ETesting, setIsE2ETesting] = useState(false);
+const [e2eStatus, setE2eStatus] = useState<string | null>(null);
+const [e2eSessionId, setE2eSessionId] = useState<string | null>(null);
+const [e2eAudioUrl, setE2eAudioUrl] = useState<string | null>(null);
+
   // Refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -441,31 +451,101 @@ export const VoiceRecordingTester = () => {
     }
   };
 
-  // Save test recording to storage
-  const saveTestRecording = async (blob: Blob) => {
-    if (!user) return;
+// Save test recording to storage
+const saveTestRecording = async (blob: Blob) => {
+  if (!user) return;
+  
+  try {
+    const fileName = `test-recording-${user.id}-${Date.now()}.webm`;
+    const filePath = `${user.id}/${fileName}`;
     
-    try {
-      const fileName = `test-recording-${user.id}-${Date.now()}.webm`;
-      const filePath = `${user.id}/${fileName}`;
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('voice-recordings')
+      .upload(filePath, blob, {
+        cacheControl: '3600',
+        upsert: true
+      });
       
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('voice-recordings')
-        .upload(filePath, blob, {
-          cacheControl: '3600',
-          upsert: true
-        });
-        
-      if (uploadError) {
-        console.warn('Failed to save test recording to storage:', uploadError);
-      } else {
-        console.log('Test recording saved to storage:', filePath);
-      }
-    } catch (error) {
-      console.warn('Error saving test recording:', error);
+    if (uploadError) {
+      console.warn('Failed to save test recording to storage:', uploadError);
+    } else {
+      console.log('Test recording saved to storage:', filePath);
     }
-  };
+  } catch (error) {
+    console.warn('Error saving test recording:', error);
+  }
+};
+
+// End-to-End merged audio test (records mic + AI voice, saves to archive, verifies retrieval)
+const runEndToEndTest = async () => {
+  if (isE2ETesting) return;
+  try {
+    setIsE2ETesting(true);
+    setE2eStatus('Starting end-to-end merged recording...');
+    setE2eAudioUrl(null);
+
+    const recordingUserId = user?.id || `guest-${Date.now()}`;
+    diagnosticLogger.logInfo('voice_recording', 'e2e_test_started', { userId: recordingUserId });
+
+    // Start merged recording
+    const sessionId = await conversationRecordingService.startConversationRecording(recordingUserId, 'diagnostics_end_to_end');
+    setE2eSessionId(sessionId);
+
+    setE2eStatus('Playing AI voice (ensure tab audio is shared)...');
+    // Play short TTS so AI voice is captured
+    await voiceService.speak("This is Solin. End-to-end merged audio test. You should hear both our voices in the saved file.");
+
+    setE2eStatus('Stopping and saving recording...');
+    await conversationRecordingService.stopConversationRecording();
+
+    // Give Supabase a moment to persist
+    setE2eStatus('Verifying archive entry...');
+    await new Promise((r) => setTimeout(r, 800));
+
+    const { data: rec, error } = await supabase
+      .from('voice_recordings')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !rec) {
+      diagnosticLogger.logError('archive_display', 'e2e_record_not_found', { error: error?.message, sessionId });
+      setE2eStatus('Failed: record not found in database.');
+      toast({ title: 'End-to-End Test Failed', description: 'Recording metadata not found.', variant: 'destructive' });
+      return;
+    }
+
+    let signedUrl: string | null = null;
+    if (rec.storage_path) {
+      const { data: signed } = await supabase.storage
+        .from('voice-recordings')
+        .createSignedUrl(rec.storage_path, 3600);
+      signedUrl = signed?.signedUrl || null;
+    }
+
+    if (signedUrl) {
+      setE2eAudioUrl(signedUrl);
+      setE2eStatus('Success: saved and playable. Open Archive to view.');
+      diagnosticLogger.logInfo('archive_display', 'e2e_success', { sessionId, recordingId: rec.id, storage_path: rec.storage_path });
+      toast({ title: 'End-to-End Test Passed', description: 'Merged recording saved to Archive.', variant: 'default' });
+    } else {
+      setE2eStatus('Saved metadata, but audio file URL missing.');
+      diagnosticLogger.logWarn('archive_display', 'e2e_missing_audio', { sessionId, recordingId: rec.id });
+      toast({ title: 'Partial Success', description: 'Metadata saved but audio not available.', variant: 'default' });
+    }
+  } catch (err: any) {
+    console.error('E2E test error:', err);
+    diagnosticLogger.logError('system', 'e2e_test_error', { error: err?.message });
+    setE2eStatus(`Failed: ${err?.message || 'Unknown error'}`);
+    toast({ title: 'End-To-End Test Error', description: String(err?.message || err), variant: 'destructive' });
+  } finally {
+    setIsE2ETesting(false);
+  }
+};
+
 
   // Play/pause recording
   const togglePlayback = () => {
