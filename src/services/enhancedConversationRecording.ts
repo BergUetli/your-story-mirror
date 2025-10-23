@@ -12,7 +12,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { configurationService } from './configurationService';
-import { voiceService } from './voiceService';
+import { voiceService } from '@/services/voiceService';
 
 interface EnhancedRecordingSession {
   sessionId: string;

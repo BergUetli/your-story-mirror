@@ -9,7 +9,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { voiceRecordingService } from './voiceRecording';
-import { voiceService } from './voiceService';
+import { voiceService } from '@/services/voiceService';
 import { toast } from '@/hooks/use-toast';
 
 interface ConversationRecordingSession {
