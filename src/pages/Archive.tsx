@@ -78,43 +78,15 @@ const Archive = () => {
     try {
       console.log('📚 Loading all voice recordings for Archive...');
       
-      // If no user is logged in, load demo recordings only (for consistent behavior)
+      // Require authentication - no demo archive
       if (!user?.id) {
-        console.log('👤 No user logged in, loading demo recordings for consistent experience...');
-        
-        // Load demo recordings only - skip guest recordings to avoid time-based inconsistencies
-        console.log('🔍 Loading demo recordings...');
-        const demoRecordings = await aiVoiceSearch.getDemoRecordings();
-        console.log(`🎭 Demo recordings loaded:`, { 
-          count: demoRecordings.length, 
-          sessionIds: demoRecordings.map(r => r.session_id),
-          isRefresh 
+        console.log('👤 No user logged in, showing auth prompt...');
+        setRecordings([]);
+        setFilteredRecordings([]);
+        toast({
+          title: 'Sign In Required',
+          description: 'Please sign in to access your voice recordings.',
         });
-        
-        setRecordings(demoRecordings);
-        setFilteredRecordings(demoRecordings);
-        console.log(`✅ Archive loaded: ${demoRecordings.length} demo recordings`);
-        
-        if (demoRecordings.length === 0) {
-          if (!isRefresh) {
-            toast({
-              title: 'No recordings found',
-              description: 'Demo recordings not available. Please sign in to create your own recordings!',
-            });
-          }
-        } else {
-          if (isRefresh) {
-            toast({
-              title: 'Archive Refreshed',
-              description: `Found ${demoRecordings.length} demo recording${demoRecordings.length === 1 ? '' : 's'} in storage`,
-            });
-          } else {
-            toast({
-              title: 'Demo Archive Loaded',
-              description: `Loaded ${demoRecordings.length} demo recordings for testing!`,
-            });
-          }
-        }
         return;
       }
       

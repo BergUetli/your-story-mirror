@@ -100,9 +100,11 @@ export class AIVoiceSearchService {
     const enrichedRecordings = [];
 
     for (const recording of recordings) {
-      let memoryTitles: string[] = [];
+      // Start with titles from database column (if exists)
+      let memoryTitles: string[] = recording.memory_titles || [];
       
-      if (recording.memory_ids && recording.memory_ids.length > 0) {
+      // If no titles in DB but we have memory_ids, fetch them
+      if ((!memoryTitles || memoryTitles.length === 0) && recording.memory_ids && recording.memory_ids.length > 0) {
         try {
           const { data: memories } = await supabase
             .from('memories')
@@ -110,6 +112,7 @@ export class AIVoiceSearchService {
             .in('id', recording.memory_ids);
           
           memoryTitles = memories?.map(m => m.title).filter(Boolean) || [];
+          console.log(`✅ Fetched ${memoryTitles.length} titles for recording ${recording.id.substring(0, 8)}`);
         } catch (error) {
           console.warn('⚠️ Failed to fetch memory titles for recording:', recording.id);
         }
@@ -519,6 +522,7 @@ export class AIVoiceSearchService {
           transcript_text,
           conversation_summary,
           memory_ids,
+          memory_titles,
           topics,
           session_mode,
           created_at
@@ -534,10 +538,15 @@ export class AIVoiceSearchService {
         return [];
       }
 
-      // Enrich with memory titles
+      // Enrich with memory titles (merge DB column with fetched titles)
       const enrichedRecordings = await this.enrichWithMemoryTitles(recordings);
       
-      console.log(`✅ Archive loaded: ${enrichedRecordings.length} voice recordings`);
+      console.log(`✅ Archive loaded: ${enrichedRecordings.length} voice recordings with memory titles`);
+      console.log('📋 Sample recording titles:', enrichedRecordings.slice(0, 3).map(r => ({
+        id: r.id.substring(0, 8),
+        memory_titles: r.memory_titles,
+        memory_ids: r.memory_ids
+      })));
       return enrichedRecordings;
 
     } catch (error) {

@@ -637,40 +637,79 @@ export class EnhancedConversationRecordingService {
   }
 
   private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
-    if (!this.currentSession) return;
+    if (!this.currentSession) {
+      console.log('⚠️ No session yet, audio element will be captured later');
+      return;
+    }
     try {
-      if (this.currentSession.systemAudioSource) return; // already connected
+      if (this.currentSession.systemAudioSource) {
+        console.log('ℹ️ System audio already connected, skipping');
+        return;
+      }
+      
+      console.log('🎵 Attempting to connect ElevenLabs audio element...');
+      
+      // Clone the audio node to avoid cross-origin issues
       const src = this.currentSession.audioContext.createMediaElementSource(audioElement);
-      // Route AI voice through systemGain so user can control balance
+      
+      // Connect to system gain (for recording)
       src.connect(this.currentSession.systemGain);
-      // Also to destination so user hears it normally
+      
+      // CRITICAL: Also connect to destination so user can hear it
       src.connect(this.currentSession.audioContext.destination);
+      
+      // Connect system gain to mixer for recording
+      this.currentSession.systemGain.connect(this.currentSession.mixerNode);
+      
       this.currentSession.systemAudioSource = src;
       this.currentSession.hasSystemAudio = true;
       this.currentSession.recordingMode = 'mixed';
-      console.log('🎵 Connected ElevenLabs audio element to enhanced recorder');
+      
+      console.log('✅ ElevenLabs audio connected successfully:', {
+        hasSystemAudio: this.currentSession.hasSystemAudio,
+        recordingMode: this.currentSession.recordingMode
+      });
     } catch (err) {
-      console.warn('⚠️ Failed to connect ElevenLabs audio element:', err);
+      console.error('❌ Failed to connect ElevenLabs audio element:', err);
+      console.error('Error details:', {
+        message: err instanceof Error ? err.message : String(err),
+        audioElement: audioElement ? 'exists' : 'null',
+        audioSrc: audioElement?.src || 'no src'
+      });
     }
   }
 
   private attemptAudioElementCapture(): void {
     try {
+      console.log('🔍 Scanning for existing audio elements...');
       const audios = document.querySelectorAll('audio');
-      audios.forEach(a => this.captureElevenLabsAudioElement(a));
+      console.log(`Found ${audios.length} audio elements`);
+      
+      audios.forEach((a, idx) => {
+        console.log(`Audio element ${idx}:`, {
+          src: a.src || 'no src',
+          readyState: a.readyState
+        });
+        this.captureElevenLabsAudioElement(a as HTMLAudioElement);
+      });
+      
       // Observe future audio elements
       const observer = new MutationObserver((muts) => {
         muts.forEach(m => m.addedNodes.forEach(n => {
           if (n instanceof HTMLElement && (n.tagName === 'AUDIO' || n.querySelector?.('audio'))) {
             const el = n.tagName === 'AUDIO' ? (n as HTMLAudioElement) : (n.querySelector('audio') as HTMLAudioElement);
-            if (el) this.captureElevenLabsAudioElement(el);
+            if (el) {
+              console.log('🆕 New audio element detected');
+              this.captureElevenLabsAudioElement(el);
+            }
           }
         }));
       });
       observer.observe(document.body, { childList: true, subtree: true });
       (this as any)._audioObserver = observer;
+      console.log('✅ Audio element observer installed');
     } catch (e) {
-      console.warn('⚠️ Audio element scan failed:', e);
+      console.error('❌ Audio element scan failed:', e);
     }
   }
 }
