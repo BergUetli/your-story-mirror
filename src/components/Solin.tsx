@@ -38,6 +38,7 @@ import { cn } from '@/lib/utils';
 import { solinService, type SolinResponse, type Memory } from '@/services/solinService';
 import { voiceService, VOICES, type Voice } from '@/services/voiceService';
 import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, checkDatabaseRecordings, checkGuestRecordings } from '@/services/voiceRecording';
+import { ConversationRecordingService } from '@/services/conversationRecording';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useMemories } from '@/hooks/useMemories';
 import { useToast } from '@/hooks/use-toast';
@@ -108,7 +109,7 @@ const Solin: React.FC<SolinProps> = ({
   // ===== BUSINESS SERVICES INTEGRATION =====
   // These hooks connect to the memory system and user experience features
   
-  const { memories, getMemoriesForVisitor, addMemoryFromConversation } = useMemories();  // Memory operations
+  const { memories, getMemoriesForVisitor, addMemoryFromConversation, loadMemories } = useMemories();  // Memory operations
   const { toast } = useToast();                                 // User notification system
   const { user } = useAuth();                                   // User authentication state
   const navigate = useNavigate();                               // Page navigation
@@ -117,6 +118,7 @@ const Solin: React.FC<SolinProps> = ({
   // State for tracking conversation audio recording
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);  // Whether voice is being recorded
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);  // Current recording session ID
+  const conversationRecorderRef = useRef<ConversationRecordingService>(new ConversationRecordingService());
   
   // ===== DEBUG: Expose test functions globally =====
   useEffect(() => {
@@ -240,10 +242,10 @@ const Solin: React.FC<SolinProps> = ({
     processingRef.current = true;
     lastTranscriptRef.current = userMessage;
     
-    // Add transcript to voice recording if active
+    // Add transcript to conversation recording if active
     if (isRecordingVoice && currentSessionId) {
       try {
-        voiceRecordingService.addTranscript(userMessage, 'user');
+        conversationRecorderRef.current.addTranscriptEntry('user', userMessage);
       } catch (error) {
         console.error('❌ Failed to add user transcript to recording:', error);
       }
@@ -286,10 +288,10 @@ const Solin: React.FC<SolinProps> = ({
       const updatedHistory = [...newHistory, { role: 'solin' as const, content: solinResponse.reflection }];
       setConversationHistory(updatedHistory);
       
-      // Add AI response transcript to voice recording if active
+      // Add AI response transcript to conversation recording if active
       if (isRecordingVoice && currentSessionId) {
         try {
-          voiceRecordingService.addTranscript(solinResponse.reflection, 'ai');
+          conversationRecorderRef.current.addTranscriptEntry('ai', solinResponse.reflection);
         } catch (error) {
           console.error('❌ Failed to add AI transcript to recording:', error);
         }
@@ -419,26 +421,25 @@ const Solin: React.FC<SolinProps> = ({
     });
     
     try {
-      console.log('🎤 Calling voiceRecordingService.startRecording...');
-      const sessionId = await voiceRecordingService.startRecording(recordingUserId, 'solin_conversation');
+      console.log('🎤 Starting conversation recording (both user and AI voice)...');
+      const sessionId = await conversationRecorderRef.current.startConversationRecording(recordingUserId, 'solin_conversation');
       setCurrentSessionId(sessionId);
       setIsRecordingVoice(true);
-      console.log('🎙️ Started recording Solin conversation:', { sessionId, userId: recordingUserId, isGuest: !user?.id });
+      console.log('🎙️ Started recording complete Solin conversation:', { sessionId, userId: recordingUserId, isGuest: !user?.id });
       
-      if (!user?.id) {
-        console.log('👤 Guest user - voice recording will be stored with temporary ID');
-        toast({
-          title: "Recording Active",
-          description: "Your conversation is being recorded as a guest session.",
-          variant: "default"
-        });
-      }
+      toast({
+        title: "🎙️ Complete Conversation Recording",
+        description: user?.id 
+          ? "Recording both your voice and Solin's responses!" 
+          : "Recording your conversation as a guest session.",
+        variant: "default"
+      });
     } catch (error) {
-      console.error('❌ Failed to start voice recording:', error);
+      console.error('❌ Failed to start conversation recording:', error);
       // Continue conversation even if recording fails
       toast({
         title: "Recording Notice",
-        description: "Voice recording couldn't start, but you can still have a conversation.",
+        description: "Full conversation recording couldn't start. Recording microphone only.",
         variant: "default"
       });
     }
@@ -466,15 +467,13 @@ const Solin: React.FC<SolinProps> = ({
     if (isSpeaking) voiceService.stop();
     if (silenceTimer) clearTimeout(silenceTimer);
     
-    // Stop voice recording if active
+    // Stop conversation recording if active
     if (isRecordingVoice && currentSessionId) {
       try {
-        const recordingMetadata = await voiceRecordingService.stopRecording();
-        if (recordingMetadata) {
-          console.log('🎙️ Stopped Solin conversation recording:', recordingMetadata);
-        }
+        await conversationRecorderRef.current.stopConversationRecording();
+        console.log('🎙️ Stopped complete conversation recording');
       } catch (error) {
-        console.error('❌ Failed to stop voice recording:', error);
+        console.error('❌ Failed to stop conversation recording:', error);
       } finally {
         setIsRecordingVoice(false);
         setCurrentSessionId(null);
@@ -548,27 +547,30 @@ const Solin: React.FC<SolinProps> = ({
           'public'
         );
 
-        // Link voice recording to the saved memory if both exist
+        // Link conversation recording to the saved memory if both exist
         if (savedMemory && currentSessionId && isRecordingVoice) {
           try {
-            voiceRecordingService.addMemoryId(savedMemory.id);
-            console.log('🔗 Linked voice recording to memory:', { memoryId: savedMemory.id, sessionId: currentSessionId });
+            conversationRecorderRef.current.addMemory(savedMemory.id, savedMemory.title);
+            console.log('🔗 Linked conversation recording to memory:', { memoryId: savedMemory.id, sessionId: currentSessionId });
           } catch (error) {
-            console.error('❌ Failed to link voice recording to memory:', error);
+            console.error('❌ Failed to link conversation recording to memory:', error);
           }
         }
 
         if (savedMemory) {
           toast({
             title: "Memory Saved",
-            description: "Your conversation has been preserved as a memory and voice recording.",
+            description: "Your conversation has been preserved with full audio recording!",
           });
 
+          // Refresh memories before navigation to ensure timeline is updated
+          await loadMemories();
+          
           // Navigate to timeline to show the new memory
           navigate(`/timeline`);
           
           // Provide voice confirmation for natural conversation closure
-          await speakResponse("Your memory has been saved and added to your timeline. The conversation is also archived as a voice recording.");
+          await speakResponse("Your memory has been saved and added to your timeline. The complete conversation is archived with both our voices!");
         } else {
           throw new Error('Failed to save memory');
         }
