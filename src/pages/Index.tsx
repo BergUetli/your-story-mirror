@@ -39,6 +39,18 @@ const Index = () => {
   
   // Always use real user - no dummy mode in production
   const effectiveUser = user;
+
+  const displayFirstName = useMemo(() => {
+    const nameCandidate = profile?.name || user?.user_metadata?.full_name || (user as any)?.user_metadata?.name || '';
+    const first = (nameCandidate || '').trim().split(/\s+/)[0];
+    if (first) return first;
+    const emailUser = user?.email?.split('@')[0];
+    return emailUser ? emailUser.charAt(0).toUpperCase() + emailUser.slice(1) : 'Friend';
+  }, [profile?.name, user?.user_metadata, user?.email]);
+
+  useEffect(() => {
+    console.log('Greeting name resolution:', { profileName: profile?.name, userMeta: user?.user_metadata, email: user?.email, displayFirstName });
+  }, [displayFirstName, profile?.name, user?.user_metadata, user?.email]);
   
   const [isConnecting, setIsConnecting] = useState(false);
   const noEndBeforeRef = useRef(0);
@@ -2561,7 +2573,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {user && (
                   <div className="mb-6">
                     <h2 className="text-xl font-bold text-foreground mb-1">
-                      Welcome, {profile?.name?.split(' ')[0] || user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Friend'}!
+                      Welcome, {displayFirstName}!
                     </h2>
                     <p className="text-sm text-muted-foreground">
                       Ready to continue your memory journey with Solin?
