@@ -360,9 +360,9 @@ function ParticleSystem({
 
     // Gentle, critically-damped return to face with tiny organic drift
     const relax = 0.12;      // attraction strength
-    const damping = 0.88;    // smooths motion
-    const driftAmp = 0.003;  // subtle per-point noise
-    const breathe = Math.sin(time * 0.4) * 0.01;
+    const damping = 0.9;     // smooths motion
+    const driftAmp = 0.007;  // subtle per-point noise (visible but calm)
+    const breathe = Math.sin(time * 0.4) * 0.02;
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;

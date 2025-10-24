@@ -2726,7 +2726,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
               <div className="relative mt-12">
                 {viewMode === 'particle' ? (
-                  <div className="w-full max-w-lg">
+                  <div className="w-full max-w-md mx-auto">
                     <ParticleFaceCanvas
                       particleCount={2000}
                       flowSpeed={1}
