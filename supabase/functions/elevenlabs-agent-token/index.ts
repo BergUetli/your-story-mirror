@@ -148,7 +148,26 @@ serve(async (req) => {
 
 Welcome them back and ask what's been on their mind lately, or if there's anything new they'd like to share.`;
 
-    console.log('✅ Built personalized prompt for', profileData?.preferred_name || 'user');
+    // Build a personalized first message
+    const userName = profileData?.preferred_name || 'friend';
+    let firstMessage = `Hey ${userName}! `;
+    
+    if (conversationHistory && conversationHistory.length > 0) {
+      firstMessage += `It's so good to talk with you again. `;
+    } else if (memories && memories.length > 0) {
+      firstMessage += `Welcome back! `;
+    } else {
+      firstMessage += `Welcome! `;
+    }
+    
+    if (memories && memories.length > 0) {
+      const lastMemory = memories[0];
+      firstMessage += `I've been thinking about ${lastMemory.title || 'what you shared'}. `;
+    }
+    
+    firstMessage += `What's been on your mind lately?`;
+
+    console.log('✅ Built personalized prompt and greeting for', userName);
 
     // Request signed URL from ElevenLabs with extended inactivity timeout
     // Default is 20s; we extend to 180s to handle natural pauses in conversation
@@ -183,7 +202,8 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
     return new Response(
       JSON.stringify({
         ...data,
-        personalizedPrompt // Include the personalized prompt for override
+        personalizedPrompt, // Include the personalized prompt for override
+        firstMessage // Include the personalized first message
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

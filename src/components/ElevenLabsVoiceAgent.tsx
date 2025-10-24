@@ -108,18 +108,17 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamA
         timeoutId = window.setTimeout(() => reject(new Error('Connection timed out')), 20000);
       });
 
-      // Start the conversation with signed URL and personalized prompt override
+      // Start the conversation with signed URL and personalized prompt + first message override
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
-        ...(data.personalizedPrompt && {
-          overrides: {
-            agent: {
-              prompt: {
-                prompt: data.personalizedPrompt
-              }
-            }
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: data.personalizedPrompt || "You are Solin, a warm and empathetic AI biographer."
+            },
+            firstMessage: data.firstMessage || "Hello! How can I help you today?"
           }
-        })
+        }
       });
 
       await Promise.race([startPromise, timeoutPromise]);
