@@ -60,7 +60,6 @@ serve(async (req) => {
     }
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
     if (!ELEVENLABS_API_KEY) {
       console.error('❌ ElevenLabs API key not found in environment');
@@ -163,62 +162,34 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
     
     if (memories && memories.length > 0) {
       const lastMemory = memories[0];
-      const title = lastMemory.title || '';
+      let title = lastMemory.title || '';
       
-      // Use OpenAI to intelligently transform the memory title into natural conversational language
-      try {
-        if (OPENAI_API_KEY) {
-          const transformResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                {
-                  role: 'system',
-                  content: `Transform memory titles into natural conversational phrases. Remove dates. Make it sound like you're referring to something they shared with you.
-
-Examples:
-"Moving into New Apartment - 2024" → "the time you moved into your new apartment"
-"Remembering My Best Friend Asim" → "your best friend Asim"
-"Trip to Paris - June 2023" → "when you visited Paris"
-"Mom's Birthday Celebration" → "celebrating your mom's birthday"
-"First Day at New Job" → "your first day at your new job"
-
-Return ONLY the transformed phrase, nothing else.`
-                },
-                {
-                  role: 'user',
-                  content: title
-                }
-              ],
-              temperature: 0.3,
-              max_tokens: 50,
-            }),
-          });
-
-          if (transformResponse.ok) {
-            const transformData = await transformResponse.json();
-            const memoryReference = transformData.choices[0]?.message?.content?.trim() || title.toLowerCase();
-            firstMessage += `I've been thinking about ${memoryReference}. `;
-          } else {
-            // Fallback: simple cleanup
-            const cleanTitle = title.replace(/\s*-\s*\d{4}.*$/i, '').trim();
-            firstMessage += `I've been thinking about ${cleanTitle.toLowerCase()}. `;
-          }
-        } else {
-          // No OpenAI key - use simple fallback
-          const cleanTitle = title.replace(/\s*-\s*\d{4}.*$/i, '').trim();
-          firstMessage += `I've been thinking about ${cleanTitle.toLowerCase()}. `;
-        }
-      } catch (error) {
-        console.warn('Failed to transform memory title:', error);
-        const cleanTitle = title.replace(/\s*-\s*\d{4}.*$/i, '').trim();
-        firstMessage += `I've been thinking about ${cleanTitle.toLowerCase()}. `;
+      // Fast regex-based transformation (no API calls)
+      // Remove date patterns
+      title = title.replace(/\s*-\s*\d{4}(\s*-\s*\d{4})?\s*$/i, '');
+      title = title.replace(/\s*-\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}/i, '');
+      
+      let memoryReference = '';
+      
+      // Transform common patterns
+      if (/^Moving (into|to)/i.test(title)) {
+        memoryReference = `the time you ${title.toLowerCase()}`;
+      } else if (/^Trip to\s+(.+)/i.test(title)) {
+        const location = title.replace(/^Trip to\s+/i, '');
+        memoryReference = `when you visited ${location}`;
+      } else if (/^(Remembering|Memory of|About)\s+(.+)/i.test(title)) {
+        const subject = title.replace(/^(Remembering|Memory of|About)\s+/i, '');
+        memoryReference = subject.toLowerCase();
+      } else if (/^First\s+/i.test(title)) {
+        memoryReference = `your ${title.toLowerCase()}`;
+      } else if (/(Birthday|Wedding|Celebration|Party|Anniversary)/i.test(title)) {
+        memoryReference = title.toLowerCase();
+      } else {
+        // Default: just use cleaned title
+        memoryReference = title.trim().toLowerCase();
       }
+      
+      firstMessage += `I've been thinking about ${memoryReference}. `;
     }
     
     firstMessage += `What's been on your mind lately?`;
