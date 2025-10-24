@@ -47,7 +47,7 @@ const colorPalettes = {
 };
 
 function ParticleSystem({
-  particleCount = 3000,
+  particleCount = 1000,
   flowSpeed = 1,
   expression = 'neutral',
   colorPalette = 'tron',
@@ -126,57 +126,65 @@ function ParticleSystem({
     const faceMask = new Float32Array(particleCount);
     const palette = colorPalettes[colorPalette];
 
-    // Create face silhouette with weight distribution
+    // Create 3D human face structure with depth
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
       const rand = Math.random();
       let x, y, z, weight;
       
-      if (rand < 0.35) {
-        // Face outline (oval) - higher density
-        const ovalAngle = Math.random() * Math.PI * 2;
-        const ovalRadius = 0.8 + Math.random() * 0.25;
-        x = Math.cos(ovalAngle) * ovalRadius * 1.2;
-        y = Math.sin(ovalAngle) * ovalRadius * 1.5;
-        z = (Math.random() - 0.5) * 0.4;
+      if (rand < 0.25) {
+        // Forehead and skull dome - 3D depth
+        const theta = Math.random() * Math.PI; // 0 to π
+        const phi = Math.random() * Math.PI * 2; // 0 to 2π
+        const r = 0.85 + Math.random() * 0.3;
+        x = r * Math.sin(theta) * Math.cos(phi) * 1.1;
+        y = 0.5 + r * Math.cos(theta) * 0.9;
+        z = r * Math.sin(theta) * Math.sin(phi) * 0.7;
+        weight = 0.8;
+      } else if (rand < 0.35) {
+        // Left eye socket - deep set
+        const eyeAngle = Math.random() * Math.PI * 2;
+        const eyeRadius = Math.random() * 0.22;
+        x = -0.45 + Math.cos(eyeAngle) * eyeRadius;
+        y = 0.25 + Math.sin(eyeAngle) * eyeRadius * 0.7;
+        z = 0.3 + (Math.random() - 0.5) * 0.25;
+        weight = 1.0;
+      } else if (rand < 0.45) {
+        // Right eye socket - deep set
+        const eyeAngle = Math.random() * Math.PI * 2;
+        const eyeRadius = Math.random() * 0.22;
+        x = 0.45 + Math.cos(eyeAngle) * eyeRadius;
+        y = 0.25 + Math.sin(eyeAngle) * eyeRadius * 0.7;
+        z = 0.3 + (Math.random() - 0.5) * 0.25;
+        weight = 1.0;
+      } else if (rand < 0.55) {
+        // Nose bridge and tip - protruding
+        const noseT = Math.random();
+        x = (Math.random() - 0.5) * 0.25;
+        y = 0.1 - noseT * 0.4;
+        z = 0.4 + noseT * 0.3;
         weight = 0.9;
-      } else if (rand < 0.5) {
-        // Left eye - high density
-        const eyeAngle = Math.random() * Math.PI * 2;
-        const eyeRadius = Math.random() * 0.28;
-        x = -0.5 + Math.cos(eyeAngle) * eyeRadius;
-        y = 0.3 + Math.sin(eyeAngle) * eyeRadius * 0.8;
-        z = 0.1 + (Math.random() - 0.5) * 0.3;
-        weight = 1.0;
-      } else if (rand < 0.65) {
-        // Right eye - high density
-        const eyeAngle = Math.random() * Math.PI * 2;
-        const eyeRadius = Math.random() * 0.28;
-        x = 0.5 + Math.cos(eyeAngle) * eyeRadius;
-        y = 0.3 + Math.sin(eyeAngle) * eyeRadius * 0.8;
-        z = 0.1 + (Math.random() - 0.5) * 0.3;
-        weight = 1.0;
-      } else if (rand < 0.85) {
-        // Mouth region
-        const mouthT = Math.random();
-        const mouthWidth = 0.9;
-        x = (mouthT - 0.5) * mouthWidth;
-        
-        if (expression === 'happy') {
-          y = -0.5 - Math.abs(x) * 0.5 + Math.sin(mouthT * Math.PI) * 0.15;
-        } else if (expression === 'sad') {
-          y = -0.4 + Math.abs(x) * 0.4 - Math.sin(mouthT * Math.PI) * 0.1;
-        } else {
-          y = -0.5 - Math.sin(mouthT * Math.PI) * 0.15;
-        }
-        z = (Math.random() - 0.5) * 0.3;
+      } else if (rand < 0.70) {
+        // Cheekbones - volumetric
+        const side = Math.random() < 0.5 ? -1 : 1;
+        x = side * (0.6 + Math.random() * 0.3);
+        y = 0.1 + (Math.random() - 0.5) * 0.3;
+        z = 0.2 + Math.random() * 0.3;
         weight = 0.85;
+      } else if (rand < 0.85) {
+        // Jaw and chin - rounded
+        const jawAngle = Math.random() * Math.PI * 1.2 - Math.PI * 0.6;
+        const jawRadius = 0.7 + Math.random() * 0.2;
+        x = Math.cos(jawAngle) * jawRadius;
+        y = -0.5 - Math.sin(Math.abs(jawAngle)) * 0.3;
+        z = Math.sin(jawAngle) * 0.4;
+        weight = 0.9;
       } else {
-        // Fill particles - lower density, more dispersed
-        x = (Math.random() - 0.5) * 2.5;
-        y = (Math.random() - 0.5) * 3.0;
-        z = (Math.random() - 0.5) * 0.8;
-        weight = 0.3;
+        // Volume fill - face interior and atmosphere
+        x = (Math.random() - 0.5) * 2.2;
+        y = (Math.random() - 0.5) * 2.5;
+        z = (Math.random() - 0.5) * 1.2;
+        weight = 0.2;
       }
 
       positions[i3] = x;
@@ -197,8 +205,8 @@ function ParticleSystem({
       colors[i3 + 1] = color.g * depthFade;
       colors[i3 + 2] = color.b * depthFade;
 
-      // Size variation with depth
-      sizes[i] = (Math.random() * 0.025 + 0.015) * (1 + Math.abs(z) * 0.5);
+      // Bigger particle sizes
+      sizes[i] = (Math.random() * 0.045 + 0.035) * (1 + Math.abs(z) * 0.5);
     }
 
     return { positions, colors, sizes, faceMask };
@@ -211,9 +219,9 @@ function ParticleSystem({
     timeRef.current += delta * flowSpeed;
     const time = timeRef.current;
     
-    // Dispersion and reformation cycle
-    const reformationCycle = (Math.sin(time * 0.15) + 1) * 0.5; // 0 to 1
-    const dispersionAmount = Math.pow(1 - reformationCycle, 2) * 2.5;
+    // Stronger dispersion and reformation cycle - particles really flow away
+    const reformationCycle = (Math.sin(time * 0.12) + 1) * 0.5; // 0 to 1
+    const dispersionAmount = Math.pow(1 - reformationCycle, 2.5) * 4.5;
     
     const breathe = Math.sin(time * breathingSpeed) * 0.08;
     const audioBoost = audioReactive ? audioLevelRef.current * 0.4 : 0;
@@ -287,8 +295,8 @@ function ParticleSystem({
       colors[i3 + 1] = THREE.MathUtils.lerp(color1.g, color2.g, lerpFactor) * depthFade;
       colors[i3 + 2] = THREE.MathUtils.lerp(color1.b, color2.b, lerpFactor) * depthFade;
 
-      // Size variation with dispersion and depth
-      const baseSize = 0.02 + Math.random() * 0.015;
+      // Bigger size variation with dispersion and depth
+      const baseSize = 0.04 + Math.random() * 0.03;
       const depthSizeBoost = 1 + Math.abs(z) * 0.6;
       const dispersionSizeBoost = 1 + dispersionAmount * 0.3 * (1 - weight);
       sizes[i] = baseSize * depthSizeBoost * dispersionSizeBoost * (1 + audioBoost * 0.5);
