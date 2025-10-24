@@ -12,6 +12,7 @@ interface ParticleFaceCanvasProps {
   breathingSpeed?: number;
   ditherStyle?: 'none' | 'pixelated' | 'halftone';
   audioReactive?: boolean;
+  holographicIntensity?: number;
 }
 
 interface MousePosition {
@@ -347,163 +348,52 @@ function ParticleSystem({
     };
   }, []);
 
-  // Animation with velocity-based physics
+  // Stabilized face animation (calm, intelligent presence)
   useFrame((state, delta) => {
     if (!pointsRef.current) return;
 
     timeRef.current += delta * flowSpeed;
     const time = timeRef.current;
-    const deltaTime = Math.min(delta, 0.1);
-    
-    // Morphing cycle - smooth transition between face and dispersed states
-    const morphCycle = Math.sin(time * 0.15) * 0.5 + 0.5; // 0 = face, 1 = dispersed
-    const morphStrength = Math.pow(morphCycle, 1.5) * 3.5;
-    
-    const breathe = Math.sin(time * breathingSpeed) * 0.05;
-    const audioBoost = audioReactive ? audioLevelRef.current * 0.3 : 0;
-    
-    // Mouse influence
-    const mouseInfluence = 0.4;
-    const mouseX = mousePosition.current.x * mouseInfluence;
-    const mouseY = mousePosition.current.y * mouseInfluence;
 
     const positionAttribute = pointsRef.current.geometry.attributes.position;
-    const colorAttribute = pointsRef.current.geometry.attributes.color;
-    const sizeAttribute = pointsRef.current.geometry.attributes.size;
     const positions = positionAttribute.array as Float32Array;
-    const colors = colorAttribute.array as Float32Array;
-    const sizes = sizeAttribute.array as Float32Array;
-    const palette = colorPalettes[colorPalette];
+
+    // Gentle, critically-damped return to face with tiny organic drift
+    const relax = 0.12;      // attraction strength
+    const damping = 0.88;    // smooths motion
+    const driftAmp = 0.003;  // subtle per-point noise
+    const breathe = Math.sin(time * 0.4) * 0.01;
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
-      const targetX = targetPositions.current[i3];
-      const targetY = targetPositions.current[i3 + 1];
-      const targetZ = targetPositions.current[i3 + 2];
-      const weight = faceMask[i];
+      const tx = targetPositions.current[i3];
+      const ty = targetPositions.current[i3 + 1];
+      const tz = targetPositions.current[i3 + 2];
+      const w = faceMask[i];
 
-      const currentX = positions[i3];
-      const currentY = positions[i3 + 1];
-      const currentZ = positions[i3 + 2];
+      const cx = positions[i3];
+      const cy = positions[i3 + 1];
+      const cz = positions[i3 + 2];
 
-      // Multi-octave flow field noise for richer movement
-      const noiseScale1 = 0.3;
-      const noiseScale2 = 0.8;
-      const noiseScale3 = 1.5;
-      const noiseTime = time * 0.3;
-      
-      // Large-scale flow
-      const noise1a = noise3D(currentX * noiseScale1, currentY * noiseScale1, noiseTime);
-      const noise1b = noise3D(currentX * noiseScale1 + 100, currentY * noiseScale1 + 100, noiseTime);
-      const noise1c = noise3D(currentX * noiseScale1 + 200, currentY * noiseScale1 + 200, noiseTime);
-      
-      // Medium-scale turbulence
-      const noise2a = noise3D(currentX * noiseScale2, currentY * noiseScale2, noiseTime * 1.3);
-      const noise2b = noise3D(currentX * noiseScale2 + 50, currentY * noiseScale2 + 50, noiseTime * 1.3);
-      const noise2c = noise3D(currentX * noiseScale2 + 150, currentY * noiseScale2 + 150, noiseTime * 1.3);
-      
-      // Fine detail
-      const noise3a = noise3D(currentX * noiseScale3, currentY * noiseScale3, noiseTime * 2.0);
-      const noise3b = noise3D(currentX * noiseScale3 + 25, currentY * noiseScale3 + 25, noiseTime * 2.0);
-      
-      // Curl noise vector field (divergence-free)
-      const curlX = ((noise1b - noise1c) * 1.0 + (noise2b - noise2c) * 0.5 + (noise3a) * 0.25) * flowIntensity * 0.02;
-      const curlY = ((noise1c - noise1a) * 1.0 + (noise2c - noise2a) * 0.5 + (noise3b) * 0.25) * flowIntensity * 0.02;
-      const curlZ = ((noise1a - noise1b) * 1.0 + (noise2a - noise2b) * 0.5) * flowIntensity * 0.015;
+      const toX = tx - cx;
+      const toY = ty - cy;
+      const toZ = tz - cz;
 
-      // Attraction force to target position (face shape)
-      const toTargetX = targetX - currentX;
-      const toTargetY = targetY - currentY;
-      const toTargetZ = targetZ - currentZ;
-      const distToTarget = Math.sqrt(toTargetX * toTargetX + toTargetY * toTargetY + toTargetZ * toTargetZ);
-      
-      // Spring force - stronger when dispersed, weaker when forming
-      const springStrength = 0.08 * (1 - morphCycle * 0.7);
-      const attractX = toTargetX * springStrength;
-      const attractY = toTargetY * springStrength;
-      const attractZ = toTargetZ * springStrength;
+      // tiny drift to avoid locking into circles or flashing
+      const nX = noise3D(tx * 0.6, ty * 0.6, time * 0.15 + i * 0.001) * driftAmp;
+      const nY = noise3D(tx * 0.6 + 100.0, ty * 0.6 + 100.0, time * 0.15 + i * 0.001) * driftAmp;
+      const nZ = noise3D(tx * 0.6 + 200.0, ty * 0.6 + 200.0, time * 0.15 + i * 0.001) * driftAmp * 0.8;
 
-      // Dispersion force - push away from face during morph
-      const disperseX = noise1a * morphStrength * (1 - weight * 0.5);
-      const disperseY = noise1b * morphStrength * (1 - weight * 0.5);
-      const disperseZ = noise1c * morphStrength * 0.4;
-
-      // Mouse interaction - repulsion/attraction
-      const toMouseX = currentX - mouseX;
-      const toMouseY = currentY - mouseY;
-      const distToMouse = Math.sqrt(toMouseX * toMouseX + toMouseY * toMouseY);
-      const mouseForce = Math.max(0, 1 - distToMouse * 0.8) * 0.2;
-      const mouseDirectionX = toMouseX * mouseForce;
-      const mouseDirectionY = toMouseY * mouseForce;
-
-      // Update velocity with all forces
-      const damping = 0.96; // Velocity damping for stability
-      velocities.current[i3] = (velocities.current[i3] + curlX + attractX + disperseX + mouseDirectionX) * damping;
-      velocities.current[i3 + 1] = (velocities.current[i3 + 1] + curlY + attractY + disperseY + mouseDirectionY) * damping;
-      velocities.current[i3 + 2] = (velocities.current[i3 + 2] + curlZ + attractZ + disperseZ) * damping;
-
-      // Limit velocity magnitude
-      const velX = velocities.current[i3];
-      const velY = velocities.current[i3 + 1];
-      const velZ = velocities.current[i3 + 2];
-      const velMag = Math.sqrt(velX * velX + velY * velY + velZ * velZ);
-      const maxVelocity = 0.15;
-      if (velMag > maxVelocity) {
-        const scale = maxVelocity / velMag;
-        velocities.current[i3] *= scale;
-        velocities.current[i3 + 1] *= scale;
-        velocities.current[i3 + 2] *= scale;
-      }
-
-      // Update position based on velocity
-      const breatheScale = 1 + breathe * weight + audioBoost * weight;
-      positions[i3] = (currentX + velocities.current[i3] * deltaTime * 60) * breatheScale;
-      positions[i3 + 1] = (currentY + velocities.current[i3 + 1] * deltaTime * 60) * breatheScale;
-      positions[i3 + 2] = (currentZ + velocities.current[i3 + 2] * deltaTime * 60) * breatheScale;
-
-      // Dynamic color with velocity-based intensity
-      const z = positions[i3 + 2];
-      const depthFade = THREE.MathUtils.clamp(0.4 + (0.8 - Math.abs(z) * 0.4), 0.3, 1.0);
-      
-      // Color cycles through palette
-      const colorShift = (time * 0.1 + i * 0.003 + velMag * 2) % 1;
-      const colorIndex = Math.floor(colorShift * palette.length);
-      const nextColorIndex = (colorIndex + 1) % palette.length;
-      const lerpFactor = (colorShift * palette.length) % 1;
-      
-      const color1 = palette[colorIndex];
-      const color2 = palette[nextColorIndex];
-      
-      // Brighter when moving fast
-      const velocityBoost = 1 + Math.min(velMag * 3, 0.5);
-      
-      colors[i3] = THREE.MathUtils.lerp(color1.r, color2.r, lerpFactor) * depthFade * velocityBoost;
-      colors[i3 + 1] = THREE.MathUtils.lerp(color1.g, color2.g, lerpFactor) * depthFade * velocityBoost;
-      colors[i3 + 2] = THREE.MathUtils.lerp(color1.b, color2.b, lerpFactor) * depthFade * velocityBoost;
-
-      // Size variation based on depth, velocity, and morph state
-      const baseSize = 0.09 + (i % 100) / 1000;
-      const depthSizeBoost = 1.2 + Math.abs(z) * 0.8;
-      const velocitySizeBoost = 1 + velMag * 1.5;
-      const morphSizeBoost = 1 + morphCycle * 0.4;
-      sizes[i] = baseSize * depthSizeBoost * velocitySizeBoost * morphSizeBoost * (1 + audioBoost * 0.6);
+      positions[i3]     = cx + (toX * relax + nX) * damping;
+      positions[i3 + 1] = cy + (toY * relax + nY + breathe * w) * damping;
+      positions[i3 + 2] = cz + (toZ * relax + nZ) * damping;
     }
 
     positionAttribute.needsUpdate = true;
-    colorAttribute.needsUpdate = true;
-    sizeAttribute.needsUpdate = true;
 
-    // Slow camera orbit for depth perception
-    const orbitRadius = 4.5;
-    const orbitSpeed = time * 0.06;
-    camera.position.x = Math.sin(orbitSpeed) * orbitRadius * 0.25;
-    camera.position.y = Math.sin(orbitSpeed * 0.7) * 0.3;
-    camera.position.z = orbitRadius + Math.cos(orbitSpeed) * 0.6;
+    // Keep camera steady and centered for a sage-like presence
+    camera.position.set(0, 0, 4.5);
     camera.lookAt(0, 0, 0);
-
-    // Subtle rotation based on mouse
-    pointsRef.current.rotation.y = mouseX * 0.15;
-    pointsRef.current.rotation.x = -mouseY * 0.1;
   });
 
   return (
@@ -635,10 +525,9 @@ export function ParticleFaceCanvas(props: ParticleFaceCanvasProps) {
           toneMappingExposure: 1.2,
         }}
       >
-        <color attach="background" args={['#000000']} />
-        <fog attach="fog" args={['#000000', 3, 10]} />
-        <ambientLight intensity={0.05} />
-        <pointLight position={[0, 0, 2]} intensity={0.3} color="#00d9ff" />
+        {/* Transparent canvas so it blends with parent card */}
+        <ambientLight intensity={0.06} />
+        <pointLight position={[0, 0, 2]} intensity={0.25} color="#00d9ff" />
         <ParticleSystem {...props} />
       </Canvas>
     </div>
