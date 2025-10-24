@@ -162,7 +162,34 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
     
     if (memories && memories.length > 0) {
       const lastMemory = memories[0];
-      firstMessage += `I've been thinking about ${lastMemory.title || 'what you shared'}. `;
+      // Transform memory title into natural conversational language
+      let memoryReference = '';
+      const title = lastMemory.title || '';
+      
+      // Remove date patterns and clean up the title
+      const cleanTitle = title
+        .replace(/\s*-\s*\d{4}(\s*-\s*\d{4})?\s*$/i, '') // Remove year patterns like "- 2024"
+        .replace(/\s*-\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}/i, '') // Remove "- June 2023" patterns
+        .trim();
+      
+      // Transform common patterns
+      if (cleanTitle.match(/^Moving into/i)) {
+        memoryReference = `the time you ${cleanTitle.toLowerCase()}`;
+      } else if (cleanTitle.match(/^Trip to/i)) {
+        const location = cleanTitle.replace(/^Trip to\s+/i, '');
+        memoryReference = `when you visited ${location}`;
+      } else if (cleanTitle.match(/^Remembering|^Memory of|^About/i)) {
+        // Extract the subject after the prefix
+        const subject = cleanTitle.replace(/^(Remembering|Memory of|About)\s+/i, '');
+        memoryReference = subject.toLowerCase();
+      } else if (cleanTitle.match(/Birthday|Celebration|Party/i)) {
+        memoryReference = cleanTitle.toLowerCase();
+      } else {
+        // Default: just use the cleaned title in lowercase
+        memoryReference = cleanTitle.toLowerCase();
+      }
+      
+      firstMessage += `I've been thinking about ${memoryReference}. `;
     }
     
     firstMessage += `What's been on your mind lately?`;
