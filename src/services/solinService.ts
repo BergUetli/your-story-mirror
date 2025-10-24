@@ -48,7 +48,8 @@ class SolinService {
       const { data, error } = await this.supabase.functions.invoke('solin-ai', {
         body: {
           ...request,
-          agentConfig: solinConfig
+          agentConfig: solinConfig,
+          conversationMode: (request as any).conversationMode || 'deep'
         },
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
       });

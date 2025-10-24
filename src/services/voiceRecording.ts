@@ -32,6 +32,7 @@ export interface RecordingSession {
   isRecording: boolean;
   conversationTranscript: TranscriptEntry[];
   memoryIds: string[];
+  memoryTitles: string[];
 }
 
 export interface VoiceRecordingMetadata {
@@ -154,7 +155,8 @@ export class VoiceRecordingService {
         audioChunks: [],
         isRecording: false,
         conversationTranscript: [],
-        memoryIds: []
+        memoryIds: [],
+        memoryTitles: []
       };
 
       // Setup event handlers
@@ -249,11 +251,14 @@ export class VoiceRecordingService {
   }
 
   /**
-   * Add memory ID to current session
+   * Add memory ID and title to current session
    */
-  addMemoryId(memoryId: string): void {
+  addMemoryId(memoryId: string, memoryTitle?: string): void {
     if (this.currentSession && !this.currentSession.memoryIds.includes(memoryId)) {
       this.currentSession.memoryIds.push(memoryId);
+      if (memoryTitle) {
+        this.currentSession.memoryTitles.push(memoryTitle);
+      }
     }
   }
 
@@ -440,6 +445,7 @@ export class VoiceRecordingService {
           transcript_text: fullTranscript,
           conversation_summary: summary,
           memory_ids: session.memoryIds,
+          memory_titles: session.memoryTitles.length > 0 ? session.memoryTitles : null,
           topics: topics,
           session_mode: session.sessionMode,
           conversation_phase: 'completed'

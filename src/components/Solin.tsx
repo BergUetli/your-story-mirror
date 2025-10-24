@@ -91,6 +91,7 @@ const Solin: React.FC<SolinProps> = ({
   const [response, setResponse] = useState<SolinResponse | null>(null);  // Latest AI response
   const [selectedVoice, setSelectedVoice] = useState<Voice>(VOICES[0]);  // User's preferred AI voice
   const [voiceEnabled, setVoiceEnabled] = useState(true);         // Whether voice output is enabled
+  const [conversationMode, setConversationMode] = useState<'quick' | 'deep'>('deep'); // Conversation depth mode
   
   // ===== CONVERSATION MANAGEMENT =====
   // These states manage the conversation flow and memory capture process
@@ -346,7 +347,8 @@ const Solin: React.FC<SolinProps> = ({
         message: userMessage,
         memories: relevantMemories,
         visitorPermissions,
-      });
+        conversationMode
+      } as any);
       
       setResponse(solinResponse);
       setLastResponseTime(Date.now());
@@ -854,6 +856,30 @@ const Solin: React.FC<SolinProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* Conversation Mode Toggle (only show for user mode) */}
+              {mode === 'user' && (
+                <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1 mr-2">
+                  <Button
+                    variant={conversationMode === 'quick' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setConversationMode('quick')}
+                    className="text-xs h-7 px-2"
+                    title="Quick memory capture with minimal questions"
+                  >
+                    ⚡ Quick
+                  </Button>
+                  <Button
+                    variant={conversationMode === 'deep' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setConversationMode('deep')}
+                    className="text-xs h-7 px-2"
+                    title="Deep exploration with detailed follow-up questions"
+                  >
+                    🔍 Deep
+                  </Button>
+                </div>
+              )}
+              
               {/* Interface Mode Toggle - Voice / Chat / Form */}
               <div className="flex items-center gap-1 bg-muted/50 rounded-md p-1">
                 <Button

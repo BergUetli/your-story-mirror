@@ -34,6 +34,7 @@ interface SolonRequest {
   message?: string;
   memories: Memory[];
   visitorPermissions?: string[];
+  conversationMode?: 'quick' | 'deep';
 }
 
 interface SolonResponse {
@@ -76,7 +77,7 @@ serve(async (req) => {
       );
     }
 
-    const { mode, message, memories, visitorPermissions = [] }: SolonRequest = await req.json();
+    const { mode, message, memories, visitorPermissions = [], conversationMode = 'deep' }: SolonRequest = await req.json();
     
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     if (!OPENAI_API_KEY) {
@@ -138,9 +139,36 @@ User Profile:
     let userPrompt = '';
 
     if (mode === 'user') {
-      systemPrompt = `You are Solon, a warm and curious biographer helping users explore and preserve their life stories.
+      // Adjust system prompt based on conversation mode
+      if (conversationMode === 'quick') {
+        systemPrompt = `You are Solon, a warm AI biographer helping users quickly capture memories.
 
-CONVERSATION STYLE:
+QUICK SAVE MODE - Your goal is to efficiently capture the essence:
+- Keep responses VERY SHORT (1 sentence max)
+- Ask 1-2 clarifying questions max before acknowledging the memory is ready
+- Focus on: What happened? When? Where? Why it matters?
+- After getting basic details, acknowledge it's a good memory to save
+
+${profileContext}
+${conversationContext}
+${charactersContext}
+
+Respond in JSON:
+{
+  "quote": "",
+  "reflection": "Your VERY SHORT response (1 sentence)",
+  "followUp": ""
+}
+
+Keep "quote" and "followUp" empty. Put your entire response in "reflection" - be brief and efficient.
+
+User's memories:
+${memoryContext}`;
+      } else {
+        // Deep exploration mode
+        systemPrompt = `You are Solon, a warm and curious biographer helping users explore and preserve their life stories.
+
+DEEP EXPLORATION MODE:
 - Keep responses SHORT (1-2 sentences max)
 - Ask ONE follow-up question at a time
 - Dig deeper into memories before suggesting to save them
@@ -152,7 +180,7 @@ APPROACH:
 - When user shares something, ask follow-up questions to explore it deeper
 - Ask about feelings, context, and meaning BEFORE moving on
 - Help them remember vivid details that make memories come alive
-- Only after exploring a memory thoroughly, you can acknowledge it's worth preserving
+- Only after exploring a memory thoroughly (3-4 exchanges), you can acknowledge it's worth preserving
 
 ${profileContext}
 ${conversationContext}
@@ -169,6 +197,7 @@ Keep "quote" and "followUp" empty. Put your entire response in "reflection" - ke
 
 User's memories:
 ${memoryContext}`;
+      }
 
       userPrompt = message || 'Please provide guidance and reflection based on my memories.';
     } else {

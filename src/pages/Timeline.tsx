@@ -795,9 +795,10 @@ const Timeline = () => {
             className="max-w-4xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
             style={{ 
               transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-              transformOrigin: '0 0',
+              transformOrigin: 'top center',
               cursor: isDragging ? 'grabbing' : 'default',
-              userSelect: isDragging ? 'none' : 'auto'
+              userSelect: isDragging ? 'none' : 'auto',
+              minHeight: '100vh'
             }}
           >
         {profileLoading || isLoading ? (
