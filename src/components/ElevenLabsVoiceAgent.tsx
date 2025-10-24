@@ -90,7 +90,7 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamA
         description: "Setting up voice agent",
       });
 
-      // Get signed URL from our edge function
+      // Get signed URL and personalized prompt from our edge function
       const { data, error } = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { agentId }
       });
@@ -100,16 +100,26 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamA
         throw new Error('Failed to get signed URL');
       }
 
-      // Start the conversation with the signed URL
-      console.log('Starting ElevenLabs session with signed URL:', data.signed_url?.slice(0, 48) + '...');
-       // Use a cancellable timeout to avoid unhandled rejection after connect
+      console.log('Starting personalized ElevenLabs session with prompt override');
+      
+      // Use a cancellable timeout to avoid unhandled rejection after connect
       let timeoutId: number | undefined;
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = window.setTimeout(() => reject(new Error('Connection timed out')), 20000);
       });
 
+      // Start the conversation with signed URL and personalized prompt override
       const startPromise = conversation.startSession({
         signedUrl: data.signed_url,
+        ...(data.personalizedPrompt && {
+          overrides: {
+            agent: {
+              prompt: {
+                prompt: data.personalizedPrompt
+              }
+            }
+          }
+        })
       });
 
       await Promise.race([startPromise, timeoutPromise]);

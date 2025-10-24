@@ -72,7 +72,83 @@ serve(async (req) => {
       );
     }
 
-    console.log('🔑 Generating signed URL for agent:', agentId);
+    console.log('🔑 Generating personalized session for user:', user.id, 'agent:', agentId);
+
+    // Fetch user profile for personalization
+    const { data: profileData } = await supabaseClient
+      .from('user_profiles')
+      .select('preferred_name, age, location, occupation, hobbies_interests, family_members, cultural_background, core_values')
+      .eq('user_id', user.id)
+      .single();
+
+    // Fetch recent memories (last 5)
+    const { data: memories } = await supabaseClient
+      .from('memories')
+      .select('title, text, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    // Fetch recent conversation history (last 10 exchanges)
+    const { data: conversationHistory } = await supabaseClient
+      .from('conversation_turns')
+      .select('user_message, ai_response, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    // Build personalized context for system prompt
+    let personalizedPrompt = `You are Solin, a warm and empathetic AI biographer. This is a returning conversation with someone you know well.\n\n`;
+
+    if (profileData) {
+      personalizedPrompt += `## About ${profileData.preferred_name || 'the user'}:\n`;
+      if (profileData.preferred_name) personalizedPrompt += `- Name: ${profileData.preferred_name}\n`;
+      if (profileData.age && profileData.location) personalizedPrompt += `- ${profileData.age} years old, living in ${profileData.location}\n`;
+      if (profileData.occupation) personalizedPrompt += `- Occupation: ${profileData.occupation}\n`;
+      if (profileData.hobbies_interests?.length > 0) {
+        personalizedPrompt += `- Interests: ${profileData.hobbies_interests.join(', ')}\n`;
+      }
+      if (profileData.family_members?.length > 0) {
+        const familyStr = profileData.family_members.map((fm: any) => `${fm.name} (${fm.relationship})`).join(', ');
+        personalizedPrompt += `- Family: ${familyStr}\n`;
+      }
+      if (profileData.cultural_background?.length > 0) {
+        personalizedPrompt += `- Cultural background: ${profileData.cultural_background.join(', ')}\n`;
+      }
+      if (profileData.core_values?.length > 0) {
+        personalizedPrompt += `- Values: ${profileData.core_values.join(', ')}\n`;
+      }
+      personalizedPrompt += `\n`;
+    }
+
+    if (memories && memories.length > 0) {
+      personalizedPrompt += `## Recent memories shared:\n`;
+      memories.forEach((memory: any, idx: number) => {
+        personalizedPrompt += `${idx + 1}. "${memory.title || memory.text?.substring(0, 60)}..."\n`;
+      });
+      personalizedPrompt += `\n`;
+    }
+
+    if (conversationHistory && conversationHistory.length > 0) {
+      personalizedPrompt += `## Conversation context (most recent first):\n`;
+      conversationHistory.slice(0, 3).forEach((turn: any, idx: number) => {
+        personalizedPrompt += `${idx + 1}. User: "${turn.user_message?.substring(0, 80)}..."\n`;
+        personalizedPrompt += `   You: "${turn.ai_response?.substring(0, 80)}..."\n`;
+      });
+      personalizedPrompt += `\n`;
+    }
+
+    personalizedPrompt += `## Your approach:
+- Greet them warmly as someone you already know (avoid "nice to meet you" - you've spoken before!)
+- Reference their previous stories and experiences naturally when relevant
+- Build on past conversations rather than starting from scratch
+- Show you remember what matters to them
+- Be conversational, empathetic, and curious about updates to their life
+- Ask thoughtful follow-up questions that demonstrate continuity
+
+Welcome them back and ask what's been on their mind lately, or if there's anything new they'd like to share.`;
+
+    console.log('✅ Built personalized prompt for', profileData?.preferred_name || 'user');
 
     // Request signed URL from ElevenLabs with extended inactivity timeout
     // Default is 20s; we extend to 180s to handle natural pauses in conversation
@@ -105,7 +181,10 @@ serve(async (req) => {
     console.log('✅ Signed URL generated successfully');
 
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        ...data,
+        personalizedPrompt // Include the personalized prompt for override
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
