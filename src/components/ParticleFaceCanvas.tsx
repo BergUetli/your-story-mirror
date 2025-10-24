@@ -60,20 +60,9 @@ function ParticleSystem({
   const noise3D = useMemo(() => createNoise3D(), []);
   const timeRef = useRef(0);
   const audioLevelRef = useRef(0);
-  const mousePosition = useRef<MousePosition>({ x: 0, y: 0 });
   const targetPositions = useRef<Float32Array>(new Float32Array(particleCount * 3));
-  const velocities = useRef<Float32Array>(new Float32Array(particleCount * 3));
   const { camera } = useThree();
 
-  // Mouse tracking
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      mousePosition.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mousePosition.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   // Audio setup
   useEffect(() => {
@@ -338,6 +327,25 @@ function ParticleSystem({
 
     return { positions, colors, sizes, faceMask };
   }, [particleCount, expression, colorPalette]);
+
+  const velocities = useRef(new Float32Array(particleCount * 3));
+  const mousePosition = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      // Normalize mouse position to [-1, 1] range
+      mousePosition.current = {
+        x: (event.clientX / window.innerWidth) * 2 - 1,
+        y: -(event.clientY / window.innerHeight) * 2 + 1,
+      };
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
 
   // Animation with velocity-based physics
   useFrame((state, delta) => {
