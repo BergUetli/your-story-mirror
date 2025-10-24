@@ -118,7 +118,7 @@ function ParticleSystem({
     };
   }, [audioReactive]);
 
-  // Generate face mask and initial positions
+  // Generate face mask and initial positions using anatomical proportions
   const { positions, colors, sizes, faceMask } = useMemo(() => {
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -126,87 +126,213 @@ function ParticleSystem({
     const faceMask = new Float32Array(particleCount);
     const palette = colorPalettes[colorPalette];
 
-    // Create 3D human face structure with depth
-    for (let i = 0; i < particleCount; i++) {
-      const i3 = i * 3;
-      const rand = Math.random();
-      let x, y, z, weight;
-      
-      if (rand < 0.25) {
-        // Forehead and skull dome - 3D depth
-        const theta = Math.random() * Math.PI; // 0 to π
-        const phi = Math.random() * Math.PI * 2; // 0 to 2π
-        const r = 0.85 + Math.random() * 0.3;
-        x = r * Math.sin(theta) * Math.cos(phi) * 1.1;
-        y = 0.5 + r * Math.cos(theta) * 0.9;
-        z = r * Math.sin(theta) * Math.sin(phi) * 0.7;
-        weight = 0.8;
-      } else if (rand < 0.35) {
-        // Left eye socket - deep set
-        const eyeAngle = Math.random() * Math.PI * 2;
-        const eyeRadius = Math.random() * 0.22;
-        x = -0.45 + Math.cos(eyeAngle) * eyeRadius;
-        y = 0.25 + Math.sin(eyeAngle) * eyeRadius * 0.7;
-        z = 0.3 + (Math.random() - 0.5) * 0.25;
-        weight = 1.0;
-      } else if (rand < 0.45) {
-        // Right eye socket - deep set
-        const eyeAngle = Math.random() * Math.PI * 2;
-        const eyeRadius = Math.random() * 0.22;
-        x = 0.45 + Math.cos(eyeAngle) * eyeRadius;
-        y = 0.25 + Math.sin(eyeAngle) * eyeRadius * 0.7;
-        z = 0.3 + (Math.random() - 0.5) * 0.25;
-        weight = 1.0;
-      } else if (rand < 0.55) {
-        // Nose bridge and tip - protruding
-        const noseT = Math.random();
-        x = (Math.random() - 0.5) * 0.25;
-        y = 0.1 - noseT * 0.4;
-        z = 0.4 + noseT * 0.3;
-        weight = 0.9;
-      } else if (rand < 0.70) {
-        // Cheekbones - volumetric
-        const side = Math.random() < 0.5 ? -1 : 1;
-        x = side * (0.6 + Math.random() * 0.3);
-        y = 0.1 + (Math.random() - 0.5) * 0.3;
-        z = 0.2 + Math.random() * 0.3;
-        weight = 0.85;
-      } else if (rand < 0.85) {
-        // Jaw and chin - rounded
-        const jawAngle = Math.random() * Math.PI * 1.2 - Math.PI * 0.6;
-        const jawRadius = 0.7 + Math.random() * 0.2;
-        x = Math.cos(jawAngle) * jawRadius;
-        y = -0.5 - Math.sin(Math.abs(jawAngle)) * 0.3;
-        z = Math.sin(jawAngle) * 0.4;
-        weight = 0.9;
-      } else {
-        // Volume fill - face interior and atmosphere
-        x = (Math.random() - 0.5) * 2.2;
-        y = (Math.random() - 0.5) * 2.5;
-        z = (Math.random() - 0.5) * 1.2;
-        weight = 0.2;
+    // Helper function to sample points on face regions with anatomical accuracy
+    const sampleFaceRegion = (region: string, t: number) => {
+      const rand = Math.random;
+      let x = 0, y = 0, z = 0, weight = 1.0;
+
+      switch (region) {
+        case 'cranium':
+          // Upper head - spherical dome (30% of face)
+          const theta = Math.acos(1 - rand() * 0.7); // Top hemisphere
+          const phi = rand() * Math.PI * 2;
+          const r = 0.95 + rand() * 0.15;
+          x = r * Math.sin(theta) * Math.cos(phi) * 0.85;
+          y = 0.6 + r * Math.cos(theta) * 0.5; // Elevated
+          z = r * Math.sin(theta) * Math.sin(phi) * 0.65;
+          weight = 0.7;
+          break;
+
+        case 'forehead':
+          // Forehead - slightly curved plane
+          x = (rand() - 0.5) * 1.3;
+          y = 0.35 + rand() * 0.25; // Upper third
+          z = 0.25 + rand() * 0.15 - Math.abs(x) * 0.1; // Slight curve
+          weight = 0.85;
+          break;
+
+        case 'eyeLeft':
+          // Left eye socket - almond shaped, at mid-face height
+          const eyeAngleL = rand() * Math.PI * 2;
+          const eyeRadiusL = rand() * 0.18;
+          x = -0.35 + Math.cos(eyeAngleL) * eyeRadiusL * 1.4; // Wider
+          y = 0.15 + Math.sin(eyeAngleL) * eyeRadiusL * 0.8; // Taller
+          z = 0.32 + (rand() - 0.5) * 0.12; // Deep set
+          weight = 1.0;
+          break;
+
+        case 'eyeRight':
+          // Right eye socket - mirror of left
+          const eyeAngleR = rand() * Math.PI * 2;
+          const eyeRadiusR = rand() * 0.18;
+          x = 0.35 + Math.cos(eyeAngleR) * eyeRadiusR * 1.4;
+          y = 0.15 + Math.sin(eyeAngleR) * eyeRadiusR * 0.8;
+          z = 0.32 + (rand() - 0.5) * 0.12;
+          weight = 1.0;
+          break;
+
+        case 'eyebrowLeft':
+          // Left eyebrow arc
+          const browT = rand();
+          x = -0.5 + browT * 0.3;
+          y = 0.32 + Math.sin(browT * Math.PI) * 0.05;
+          z = 0.28;
+          weight = 0.9;
+          break;
+
+        case 'eyebrowRight':
+          // Right eyebrow arc
+          const browTR = rand();
+          x = 0.2 + browTR * 0.3;
+          y = 0.32 + Math.sin(browTR * Math.PI) * 0.05;
+          z = 0.28;
+          weight = 0.9;
+          break;
+
+        case 'noseBridge':
+          // Nose bridge - straight line between eyes
+          const bridgeT = rand();
+          x = (rand() - 0.5) * 0.15;
+          y = 0.15 - bridgeT * 0.2;
+          z = 0.35 + bridgeT * 0.05;
+          weight = 1.0;
+          break;
+
+        case 'noseTip':
+          // Nose tip and nostrils - protruding
+          const noseAngle = rand() * Math.PI * 2;
+          const noseR = rand() * 0.18;
+          x = Math.cos(noseAngle) * noseR * 0.8;
+          y = -0.05 + Math.sin(noseAngle) * noseR * 0.5;
+          z = 0.42 + rand() * 0.08;
+          weight = 1.0;
+          break;
+
+        case 'cheekLeft':
+          // Left cheekbone - volumetric prominence
+          x = -0.55 - rand() * 0.2;
+          y = 0.05 + (rand() - 0.5) * 0.25;
+          z = 0.18 + rand() * 0.2;
+          weight = 0.85;
+          break;
+
+        case 'cheekRight':
+          // Right cheekbone - volumetric prominence
+          x = 0.55 + rand() * 0.2;
+          y = 0.05 + (rand() - 0.5) * 0.25;
+          z = 0.18 + rand() * 0.2;
+          weight = 0.85;
+          break;
+
+        case 'upperLip':
+          // Upper lip - Cupid's bow shape
+          const lipT = rand();
+          const cupidBow = Math.sin(lipT * Math.PI * 2) * 0.03;
+          x = (lipT - 0.5) * 0.5;
+          y = -0.18 + cupidBow;
+          z = 0.38 - Math.abs(x) * 0.1;
+          weight = 0.95;
+          break;
+
+        case 'lowerLip':
+          // Lower lip - fuller
+          const lowerLipT = rand();
+          x = (lowerLipT - 0.5) * 0.55;
+          y = -0.25 + Math.sin(lowerLipT * Math.PI) * 0.02;
+          z = 0.36 - Math.abs(x) * 0.12;
+          weight = 0.95;
+          break;
+
+        case 'jaw':
+          // Jaw line - curved from ear to chin
+          const jawAngle = rand() * Math.PI - Math.PI * 0.5; // -90° to +90°
+          const jawRadius = 0.75 + rand() * 0.15;
+          x = Math.cos(jawAngle) * jawRadius;
+          y = -0.45 - Math.pow(Math.abs(Math.sin(jawAngle)), 1.5) * 0.3;
+          z = 0.15 + Math.sin(jawAngle) * 0.25;
+          weight = 0.9;
+          break;
+
+        case 'chin':
+          // Chin - rounded protrusion
+          const chinAngle = rand() * Math.PI;
+          const chinR = rand() * 0.22;
+          x = Math.cos(chinAngle) * chinR * 0.5;
+          y = -0.75 + Math.sin(chinAngle) * chinR * 0.3;
+          z = 0.25 + rand() * 0.1;
+          weight = 1.0;
+          break;
+
+        case 'temple':
+          // Temples - sides of forehead
+          const side = rand() < 0.5 ? -1 : 1;
+          x = side * (0.7 + rand() * 0.2);
+          y = 0.25 + rand() * 0.2;
+          z = 0.1 + rand() * 0.15;
+          weight = 0.75;
+          break;
+
+        case 'atmosphere':
+          // Sparse atmospheric particles
+          x = (rand() - 0.5) * 2.5;
+          y = (rand() - 0.5) * 2.8;
+          z = (rand() - 0.5) * 1.5;
+          weight = 0.15;
+          break;
       }
 
-      positions[i3] = x;
-      positions[i3 + 1] = y;
-      positions[i3 + 2] = z;
-      faceMask[i] = weight;
+      return { x, y, z, weight };
+    };
 
-      // Store target positions for reformation
-      targetPositions.current[i3] = x;
-      targetPositions.current[i3 + 1] = y;
-      targetPositions.current[i3 + 2] = z;
+    // Distribute particles across anatomical regions with proper proportions
+    const regions = [
+      { name: 'cranium', ratio: 0.12 },
+      { name: 'forehead', ratio: 0.10 },
+      { name: 'eyeLeft', ratio: 0.08 },
+      { name: 'eyeRight', ratio: 0.08 },
+      { name: 'eyebrowLeft', ratio: 0.03 },
+      { name: 'eyebrowRight', ratio: 0.03 },
+      { name: 'noseBridge', ratio: 0.06 },
+      { name: 'noseTip', ratio: 0.07 },
+      { name: 'cheekLeft', ratio: 0.09 },
+      { name: 'cheekRight', ratio: 0.09 },
+      { name: 'upperLip', ratio: 0.04 },
+      { name: 'lowerLip', ratio: 0.04 },
+      { name: 'jaw', ratio: 0.10 },
+      { name: 'chin', ratio: 0.04 },
+      { name: 'temple', ratio: 0.05 },
+      { name: 'atmosphere', ratio: 0.08 },
+    ];
 
-      // Assign colors with depth variation
-      const colorIndex = Math.floor(Math.random() * palette.length);
-      const color = palette[colorIndex];
-      const depthFade = 0.6 + (1 - Math.abs(z)) * 0.4;
-      colors[i3] = color.r * depthFade;
-      colors[i3 + 1] = color.g * depthFade;
-      colors[i3 + 2] = color.b * depthFade;
+    let particleIndex = 0;
+    for (const { name, ratio } of regions) {
+      const count = Math.floor(particleCount * ratio);
+      for (let j = 0; j < count && particleIndex < particleCount; j++) {
+        const i = particleIndex++;
+        const i3 = i * 3;
+        const { x, y, z, weight } = sampleFaceRegion(name, j / count);
 
-      // Bigger particle sizes
-      sizes[i] = (Math.random() * 0.08 + 0.06) * (1 + Math.abs(z) * 0.5);
+        positions[i3] = x;
+        positions[i3 + 1] = y;
+        positions[i3 + 2] = z;
+        faceMask[i] = weight;
+
+        // Store target positions for reformation
+        targetPositions.current[i3] = x;
+        targetPositions.current[i3 + 1] = y;
+        targetPositions.current[i3 + 2] = z;
+
+        // Assign colors with depth variation
+        const colorIndex = Math.floor(Math.random() * palette.length);
+        const color = palette[colorIndex];
+        const depthFade = 0.6 + (1 - Math.abs(z)) * 0.4;
+        colors[i3] = color.r * depthFade;
+        colors[i3 + 1] = color.g * depthFade;
+        colors[i3 + 2] = color.b * depthFade;
+
+        // Particle sizes based on importance
+        sizes[i] = (Math.random() * 0.08 + 0.06) * (1 + Math.abs(z) * 0.5) * weight;
+      }
     }
 
     return { positions, colors, sizes, faceMask };
@@ -385,16 +511,21 @@ function ParticleSystem({
             vec2 center = gl_PointCoord - vec2(0.5);
             float dist = length(center);
             
+            // Sharper particle edges - tighter falloff
+            float alpha = 1.0 - smoothstep(0.0, 0.45, dist);
+            alpha = pow(alpha, 2.5); // Sharper edge
+            
             // Depth-based fade
-            float depthFade = clamp(1.0 - vDepth * 0.15, 0.3, 1.0);
+            float depthFade = clamp(1.0 - vDepth * 0.12, 0.4, 1.0);
+            alpha *= depthFade;
             
-            // Core glow with soft falloff
-            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
-            alpha = pow(alpha, 1.5) * depthFade;
+            // Sharper core with defined edge
+            float core = 1.0 - smoothstep(0.0, 0.3, dist);
+            core = pow(core, 3.0);
             
-            // Luminous bloom
-            float bloom = exp(-dist * 6.0) * 0.8;
-            vec3 finalColor = vColor * (1.0 + bloom);
+            // Crisp bloom
+            float bloom = exp(-dist * 8.0) * 0.6;
+            vec3 finalColor = vColor * (1.0 + bloom + core * 0.5);
             
             // Apply dither effect
             if (ditherIntensity > 0.0) {
@@ -404,8 +535,11 @@ function ParticleSystem({
               finalColor *= mix(1.0, ditherValue * 1.5, ditherIntensity);
             }
             
-            // Final luminous output
-            gl_FragColor = vec4(finalColor, alpha * 0.85);
+            // Discard very faint pixels for sharper edges
+            if (alpha < 0.05) discard;
+            
+            // Final crisp output
+            gl_FragColor = vec4(finalColor, alpha * 0.95);
           }
         `}
         uniforms={{
