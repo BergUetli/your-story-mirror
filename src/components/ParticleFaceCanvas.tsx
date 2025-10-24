@@ -1,46 +1,68 @@
-import React, { useEffect, useRef, useState } from 'react';
-
-interface Particle {
-  x: number;
-  y: number;
-  targetX: number;
-  targetY: number;
-  vx: number;
-  vy: number;
-  size: number;
-  opacity: number;
-  hue: number;
-}
+import React, { useRef, useMemo, useEffect } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { createNoise3D } from 'simplex-noise';
 
 interface ParticleFaceCanvasProps {
-  particleCount: number;
-  flowSpeed: number;
-  expression: 'neutral' | 'happy' | 'sad' | 'thinking' | 'speaking';
-  ditherStyle: 'none' | 'bayer' | 'halftone' | 'noise';
-  holographicIntensity: number;
-  audioReactive: boolean;
+  particleCount?: number;
+  flowSpeed?: number;
+  expression?: 'neutral' | 'happy' | 'sad' | 'thinking' | 'speaking';
+  colorPalette?: 'tron' | 'spectral' | 'cyber' | 'aurora';
+  flowIntensity?: number;
+  breathingSpeed?: number;
+  ditherStyle?: 'none' | 'pixelated' | 'halftone';
+  audioReactive?: boolean;
 }
 
-export const ParticleFaceCanvas: React.FC<ParticleFaceCanvasProps> = ({
-  particleCount,
-  flowSpeed,
-  expression,
-  ditherStyle,
-  holographicIntensity,
-  audioReactive,
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const animationFrameRef = useRef<number>();
-  const [audioLevel, setAudioLevel] = useState(0);
+const colorPalettes = {
+  tron: [
+    new THREE.Color(0x00d9ff), // Cyan
+    new THREE.Color(0x0099ff), // Blue
+    new THREE.Color(0xff006e), // Pink
+    new THREE.Color(0xffd700), // Gold
+  ],
+  spectral: [
+    new THREE.Color(0x1e3a8a), // Deep Blue
+    new THREE.Color(0x3b82f6), // Blue
+    new THREE.Color(0x8b5cf6), // Purple
+    new THREE.Color(0xec4899), // Pink
+  ],
+  cyber: [
+    new THREE.Color(0x00ffff), // Cyan
+    new THREE.Color(0xff00ff), // Magenta
+    new THREE.Color(0xffff00), // Yellow
+    new THREE.Color(0x00ff00), // Green
+  ],
+  aurora: [
+    new THREE.Color(0x06b6d4), // Teal
+    new THREE.Color(0x8b5cf6), // Purple
+    new THREE.Color(0xf59e0b), // Amber
+    new THREE.Color(0x10b981), // Emerald
+  ],
+};
 
-  // Initialize audio monitoring
+function ParticleSystem({
+  particleCount = 3000,
+  flowSpeed = 1,
+  expression = 'neutral',
+  colorPalette = 'tron',
+  flowIntensity = 1,
+  breathingSpeed = 1,
+  ditherStyle = 'none',
+  audioReactive = false,
+}: ParticleFaceCanvasProps) {
+  const pointsRef = useRef<THREE.Points>(null);
+  const noise3D = useMemo(() => createNoise3D(), []);
+  const timeRef = useRef(0);
+  const audioLevelRef = useRef(0);
+
+  // Audio setup
   useEffect(() => {
     if (!audioReactive) return;
 
     let audioContext: AudioContext;
     let analyser: AnalyserNode;
-    let dataArray: Uint8Array<ArrayBuffer>;
+    let dataArray: Uint8Array;
     let animationId: number;
 
     const setupAudio = async () => {
@@ -48,20 +70,20 @@ export const ParticleFaceCanvas: React.FC<ParticleFaceCanvasProps> = ({
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         audioContext = new AudioContext();
         analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
-        analyser.fftSize = 256;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         const updateAudioLevel = () => {
           analyser.getByteFrequencyData(dataArray);
           const average = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
-          setAudioLevel(average / 255);
+          audioLevelRef.current = average / 255;
           animationId = requestAnimationFrame(updateAudioLevel);
         };
         updateAudioLevel();
       } catch (err) {
-        console.log('Audio access denied or not available');
+        console.warn('Audio access denied:', err);
       }
     };
 
@@ -73,269 +95,224 @@ export const ParticleFaceCanvas: React.FC<ParticleFaceCanvasProps> = ({
     };
   }, [audioReactive]);
 
-  // Generate face points based on expression
-  const generateFacePoints = (
-    width: number,
-    height: number,
-    expr: string
-  ): { x: number; y: number; intensity: number }[] => {
-    const points: { x: number; y: number; intensity: number }[] = [];
-    const centerX = width / 2;
-    const centerY = height / 2;
+  // Generate face shape points
+  const { positions, colors, sizes } = useMemo(() => {
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+    const sizes = new Float32Array(particleCount);
+    const palette = colorPalettes[colorPalette];
 
-    // Face outline (circle)
-    for (let i = 0; i < 360; i += 2) {
-      const angle = (i * Math.PI) / 180;
-      const radius = Math.min(width, height) * 0.35;
-      points.push({
-        x: centerX + Math.cos(angle) * radius,
-        y: centerY + Math.sin(angle) * radius,
-        intensity: 0.8,
-      });
-    }
-
-    // Eyes
-    const eyeY = centerY - height * 0.08;
-    const eyeSpacing = width * 0.12;
-    
-    // Left eye
-    for (let i = 0; i < 360; i += 8) {
-      const angle = (i * Math.PI) / 180;
-      const radius = width * 0.04;
-      points.push({
-        x: centerX - eyeSpacing + Math.cos(angle) * radius,
-        y: eyeY + Math.sin(angle) * radius,
-        intensity: 1,
-      });
-    }
-
-    // Right eye
-    for (let i = 0; i < 360; i += 8) {
-      const angle = (i * Math.PI) / 180;
-      const radius = width * 0.04;
-      points.push({
-        x: centerX + eyeSpacing + Math.cos(angle) * radius,
-        y: eyeY + Math.sin(angle) * radius,
-        intensity: 1,
-      });
-    }
-
-    // Mouth based on expression
-    const mouthY = centerY + height * 0.12;
-    const mouthWidth = width * 0.2;
-    
-    if (expr === 'happy') {
-      // Smile curve
-      for (let i = 0; i < 100; i++) {
-        const t = i / 100;
-        const x = centerX + (t - 0.5) * mouthWidth * 2;
-        const curve = Math.sin(t * Math.PI) * height * 0.06;
-        points.push({ x, y: mouthY + curve, intensity: 0.9 });
-      }
-    } else if (expr === 'sad') {
-      // Frown curve
-      for (let i = 0; i < 100; i++) {
-        const t = i / 100;
-        const x = centerX + (t - 0.5) * mouthWidth * 2;
-        const curve = -Math.sin(t * Math.PI) * height * 0.06;
-        points.push({ x, y: mouthY + curve, intensity: 0.9 });
-      }
-    } else if (expr === 'thinking') {
-      // Neutral line with thinking dots
-      for (let i = 0; i < 50; i++) {
-        const t = i / 50;
-        const x = centerX + (t - 0.5) * mouthWidth * 1.5;
-        points.push({ x, y: mouthY, intensity: 0.7 });
-      }
-      // Thinking dots above head
-      for (let i = 0; i < 3; i++) {
-        const dotX = centerX + width * 0.15 + i * 15;
-        const dotY = centerY - height * 0.25 - i * 20;
-        for (let j = 0; j < 360; j += 30) {
-          const angle = (j * Math.PI) / 180;
-          const radius = 8;
-          points.push({
-            x: dotX + Math.cos(angle) * radius,
-            y: dotY + Math.sin(angle) * radius,
-            intensity: 0.8 - i * 0.2,
-          });
+    // Generate face shape
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      const rand = Math.random();
+      
+      // Create face-like distribution
+      let x, y, z;
+      
+      if (rand < 0.4) {
+        // Face outline (oval)
+        const ovalAngle = Math.random() * Math.PI * 2;
+        const ovalRadius = 0.8 + Math.random() * 0.2;
+        x = Math.cos(ovalAngle) * ovalRadius * 1.2;
+        y = Math.sin(ovalAngle) * ovalRadius * 1.5;
+        z = (Math.random() - 0.5) * 0.3;
+      } else if (rand < 0.55) {
+        // Left eye
+        const eyeAngle = Math.random() * Math.PI * 2;
+        const eyeRadius = Math.random() * 0.25;
+        x = -0.5 + Math.cos(eyeAngle) * eyeRadius;
+        y = 0.3 + Math.sin(eyeAngle) * eyeRadius;
+        z = (Math.random() - 0.5) * 0.2;
+      } else if (rand < 0.7) {
+        // Right eye
+        const eyeAngle = Math.random() * Math.PI * 2;
+        const eyeRadius = Math.random() * 0.25;
+        x = 0.5 + Math.cos(eyeAngle) * eyeRadius;
+        y = 0.3 + Math.sin(eyeAngle) * eyeRadius;
+        z = (Math.random() - 0.5) * 0.2;
+      } else {
+        // Mouth based on expression
+        const mouthT = Math.random();
+        const mouthWidth = 0.8;
+        x = (mouthT - 0.5) * mouthWidth;
+        
+        if (expression === 'happy') {
+          y = -0.5 - Math.abs(x) * 0.4;
+        } else if (expression === 'sad') {
+          y = -0.4 + Math.abs(x) * 0.3;
+        } else {
+          y = -0.5 - Math.sin(mouthT * Math.PI) * 0.1;
         }
+        z = (Math.random() - 0.5) * 0.2;
       }
-    } else if (expr === 'speaking') {
-      // Open mouth (oval)
-      const mouthHeight = height * 0.08;
-      for (let i = 0; i < 360; i += 6) {
-        const angle = (i * Math.PI) / 180;
-        points.push({
-          x: centerX + Math.cos(angle) * mouthWidth,
-          y: mouthY + Math.sin(angle) * mouthHeight,
-          intensity: 0.9,
-        });
+
+      positions[i3] = x;
+      positions[i3 + 1] = y;
+      positions[i3 + 2] = z;
+
+      // Assign colors from palette
+      const colorIndex = Math.floor(Math.random() * palette.length);
+      const color = palette[colorIndex];
+      colors[i3] = color.r;
+      colors[i3 + 1] = color.g;
+      colors[i3 + 2] = color.b;
+
+      // Random sizes
+      sizes[i] = Math.random() * 0.03 + 0.01;
+    }
+
+    return { positions, colors, sizes };
+  }, [particleCount, expression, colorPalette]);
+
+  // Animation
+  useFrame((state, delta) => {
+    if (!pointsRef.current) return;
+
+    timeRef.current += delta * flowSpeed;
+    const time = timeRef.current;
+    const breathe = Math.sin(time * breathingSpeed) * 0.05;
+    const audioBoost = audioReactive ? audioLevelRef.current * 0.3 : 0;
+
+    const positionAttribute = pointsRef.current.geometry.attributes.position;
+    const colorAttribute = pointsRef.current.geometry.attributes.color;
+    const positions = positionAttribute.array as Float32Array;
+    const colors = colorAttribute.array as Float32Array;
+    const palette = colorPalettes[colorPalette];
+
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3;
+      const x = positions[i3];
+      const y = positions[i3 + 1];
+      const z = positions[i3 + 2];
+
+      // Curl noise for fluid motion
+      const noiseScale = 0.5;
+      const noiseTime = time * 0.2;
+      
+      const noise1 = noise3D(x * noiseScale, y * noiseScale, noiseTime);
+      const noise2 = noise3D(x * noiseScale + 100, y * noiseScale + 100, noiseTime);
+      const noise3Val = noise3D(x * noiseScale + 200, y * noiseScale + 200, noiseTime);
+
+      // Apply curl noise (vector field)
+      const curlX = noise2 - noise3Val;
+      const curlY = noise3Val - noise1;
+      const curlZ = noise1 - noise2;
+
+      positions[i3] += curlX * flowIntensity * 0.002;
+      positions[i3 + 1] += curlY * flowIntensity * 0.002;
+      positions[i3 + 2] += curlZ * flowIntensity * 0.001;
+
+      // Breathing effect
+      const scale = 1 + breathe + audioBoost;
+      positions[i3] = x * scale;
+      positions[i3 + 1] = y * scale;
+
+      // Color shifting
+      const colorShift = (time * 0.1 + i * 0.01) % 1;
+      const colorIndex = Math.floor(colorShift * palette.length);
+      const nextColorIndex = (colorIndex + 1) % palette.length;
+      const lerpFactor = (colorShift * palette.length) % 1;
+      
+      const color1 = palette[colorIndex];
+      const color2 = palette[nextColorIndex];
+      
+      colors[i3] = THREE.MathUtils.lerp(color1.r, color2.r, lerpFactor);
+      colors[i3 + 1] = THREE.MathUtils.lerp(color1.g, color2.g, lerpFactor);
+      colors[i3 + 2] = THREE.MathUtils.lerp(color1.b, color2.b, lerpFactor);
+
+      // Keep particles within bounds (soft containment)
+      const distFromCenter = Math.sqrt(x * x + y * y + z * z);
+      if (distFromCenter > 2.5) {
+        positions[i3] *= 0.98;
+        positions[i3 + 1] *= 0.98;
+        positions[i3 + 2] *= 0.98;
       }
-    } else {
-      // Neutral straight line
-      for (let i = 0; i < 50; i++) {
-        const t = i / 50;
-        const x = centerX + (t - 0.5) * mouthWidth * 2;
-        points.push({ x, y: mouthY, intensity: 0.8 });
-      }
     }
 
-    return points;
-  };
+    positionAttribute.needsUpdate = true;
+    colorAttribute.needsUpdate = true;
 
-  // Apply dithering effect
-  const applyDithering = (
-    x: number,
-    y: number,
-    intensity: number,
-    style: string,
-    time: number
-  ): number => {
-    if (style === 'none') return intensity;
-
-    if (style === 'bayer') {
-      const bayerMatrix = [
-        [0, 8, 2, 10],
-        [12, 4, 14, 6],
-        [3, 11, 1, 9],
-        [15, 7, 13, 5],
-      ];
-      const threshold = bayerMatrix[Math.floor(y) % 4][Math.floor(x) % 4] / 16;
-      return intensity > threshold ? 1 : 0.3;
-    }
-
-    if (style === 'halftone') {
-      const dotSize = 12;
-      const dotX = Math.floor(x / dotSize) * dotSize + dotSize / 2;
-      const dotY = Math.floor(y / dotSize) * dotSize + dotSize / 2;
-      const dist = Math.sqrt((x - dotX) ** 2 + (y - dotY) ** 2);
-      const maxDist = (dotSize / 2) * intensity;
-      return dist < maxDist ? 1 : 0.2;
-    }
-
-    if (style === 'noise') {
-      const noise = (Math.sin(x * 0.1 + time) * Math.cos(y * 0.1 + time) + 1) / 2;
-      return intensity * (0.5 + noise * 0.5);
-    }
-
-    return intensity;
-  };
-
-  // Initialize and animate particles
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Initialize particles
-    if (particlesRef.current.length !== particleCount) {
-      particlesRef.current = Array.from({ length: particleCount }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        targetX: 0,
-        targetY: 0,
-        vx: 0,
-        vy: 0,
-        size: Math.random() * 2 + 1,
-        opacity: Math.random() * 0.5 + 0.5,
-        hue: Math.random() * 60 + 180, // Blue-cyan range
-      }));
-    }
-
-    let time = 0;
-
-    const animate = () => {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillRect(0, 0, width, height);
-
-      time += 0.01 * flowSpeed;
-
-      // Generate face points
-      const facePoints = generateFacePoints(width, height, expression);
-
-      // Update and draw particles
-      particlesRef.current.forEach((particle, i) => {
-        // Assign target point
-        const targetPoint = facePoints[i % facePoints.length];
-        particle.targetX = targetPoint.x;
-        particle.targetY = targetPoint.y;
-
-        // Apply audio reactivity
-        const reactivity = audioReactive ? audioLevel * 50 : 0;
-        const flowOffset = Math.sin(time + i * 0.1) * reactivity;
-
-        // Move towards target with flow
-        const dx = particle.targetX - particle.x + flowOffset;
-        const dy = particle.targetY - particle.y + flowOffset;
-        particle.vx += dx * 0.01 * flowSpeed;
-        particle.vy += dy * 0.01 * flowSpeed;
-        particle.vx *= 0.95;
-        particle.vy *= 0.95;
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-
-        // Apply dithering
-        const ditheredOpacity = applyDithering(
-          particle.x,
-          particle.y,
-          targetPoint.intensity * particle.opacity,
-          ditherStyle,
-          time
-        );
-
-        // Holographic color shifting
-        const hueShift = Math.sin(time + i * 0.01) * 30 * holographicIntensity;
-        const finalHue = particle.hue + hueShift;
-
-        // Draw particle with glow
-        const glowSize = particle.size * (1 + audioLevel * 2);
-        
-        // Outer glow
-        const gradient = ctx.createRadialGradient(
-          particle.x, particle.y, 0,
-          particle.x, particle.y, glowSize * 2
-        );
-        gradient.addColorStop(0, `hsla(${finalHue}, 80%, 60%, ${ditheredOpacity * 0.8})`);
-        gradient.addColorStop(0.5, `hsla(${finalHue}, 70%, 50%, ${ditheredOpacity * 0.4})`);
-        gradient.addColorStop(1, `hsla(${finalHue}, 60%, 40%, 0)`);
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, glowSize * 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Core particle
-        ctx.fillStyle = `hsla(${finalHue}, 90%, 70%, ${ditheredOpacity})`;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [particleCount, flowSpeed, expression, ditherStyle, holographicIntensity, audioReactive, audioLevel]);
+    // Gentle rotation
+    pointsRef.current.rotation.y = Math.sin(time * 0.1) * 0.1;
+    pointsRef.current.rotation.x = Math.sin(time * 0.15) * 0.05;
+  });
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={800}
-      height={600}
-      className="w-full h-auto rounded-lg"
-      style={{ maxHeight: '600px' }}
-    />
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particleCount}
+          array={positions}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          count={particleCount}
+          array={colors}
+          itemSize={3}
+        />
+        <bufferAttribute
+          attach="attributes-size"
+          count={particleCount}
+          array={sizes}
+          itemSize={1}
+        />
+      </bufferGeometry>
+      <shaderMaterial
+        vertexShader={`
+          attribute float size;
+          attribute vec3 color;
+          varying vec3 vColor;
+          
+          void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            gl_PointSize = size * 300.0 / -mvPosition.z;
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `}
+        fragmentShader={`
+          varying vec3 vColor;
+          
+          void main() {
+            vec2 center = gl_PointCoord - vec2(0.5);
+            float dist = length(center);
+            
+            // Soft glow
+            float alpha = 1.0 - smoothstep(0.0, 0.5, dist);
+            alpha = pow(alpha, 2.0);
+            
+            // Add bloom effect
+            float glow = exp(-dist * 8.0);
+            
+            gl_FragColor = vec4(vColor * (1.0 + glow * 0.5), alpha * 0.8);
+          }
+        `}
+        transparent
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
   );
-};
+}
+
+export function ParticleFaceCanvas(props: ParticleFaceCanvasProps) {
+  return (
+    <div className="w-full h-[500px] bg-gradient-to-b from-black via-gray-900 to-black rounded-lg overflow-hidden">
+      <Canvas
+        camera={{ position: [0, 0, 4], fov: 60 }}
+        gl={{ 
+          antialias: true,
+          alpha: true,
+          powerPreference: 'high-performance',
+        }}
+      >
+        <color attach="background" args={['#000000']} />
+        <ambientLight intensity={0.1} />
+        <ParticleSystem {...props} />
+      </Canvas>
+    </div>
+  );
+}
