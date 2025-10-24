@@ -146,6 +146,16 @@ serve(async (req) => {
 - Be conversational, empathetic, and curious about updates to their life
 - Ask thoughtful follow-up questions that demonstrate continuity
 
+## IMPORTANT: When referencing memories in conversation:
+- Memory titles may include dates or formatting (e.g., "Remembering My Best Friend Asim" or "Moving into New Apartment - 2024")
+- Always transform these into natural conversational language when speaking
+- Remove dates and make it sound like you're referring to something they shared
+- Examples:
+  * "Remembering My Best Friend Asim" → speak as "your best friend Asim"
+  * "Moving into New Apartment - 2024" → speak as "the time you moved into your new apartment"
+  * "Trip to Paris - June 2023" → speak as "when you visited Paris"
+  * "Mom's Birthday Celebration" → speak as "celebrating your mom's birthday"
+
 Welcome them back and ask what's been on their mind lately, or if there's anything new they'd like to share.`;
 
     // Build a personalized first message
@@ -162,34 +172,8 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
     
     if (memories && memories.length > 0) {
       const lastMemory = memories[0];
-      let title = lastMemory.title || '';
-      
-      // Fast regex-based transformation (no API calls)
-      // Remove date patterns
-      title = title.replace(/\s*-\s*\d{4}(\s*-\s*\d{4})?\s*$/i, '');
-      title = title.replace(/\s*-\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}/i, '');
-      
-      let memoryReference = '';
-      
-      // Transform common patterns
-      if (/^Moving (into|to)/i.test(title)) {
-        memoryReference = `the time you ${title.toLowerCase()}`;
-      } else if (/^Trip to\s+(.+)/i.test(title)) {
-        const location = title.replace(/^Trip to\s+/i, '');
-        memoryReference = `when you visited ${location}`;
-      } else if (/^(Remembering|Memory of|About)\s+(.+)/i.test(title)) {
-        const subject = title.replace(/^(Remembering|Memory of|About)\s+/i, '');
-        memoryReference = subject.toLowerCase();
-      } else if (/^First\s+/i.test(title)) {
-        memoryReference = `your ${title.toLowerCase()}`;
-      } else if (/(Birthday|Wedding|Celebration|Party|Anniversary)/i.test(title)) {
-        memoryReference = title.toLowerCase();
-      } else {
-        // Default: just use cleaned title
-        memoryReference = title.trim().toLowerCase();
-      }
-      
-      firstMessage += `I've been thinking about ${memoryReference}. `;
+      // Pass raw title - ElevenLabs will transform it naturally based on the prompt instructions
+      firstMessage += `I've been thinking about ${lastMemory.title || 'what you shared'}. `;
     }
     
     firstMessage += `What's been on your mind lately?`;
