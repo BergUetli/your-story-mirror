@@ -148,6 +148,12 @@ QUICK SAVE MODE - Your goal is to efficiently capture the essence:
 - Ask 1-2 clarifying questions max before acknowledging the memory is ready
 - Focus on: What happened? When? Where? Why it matters?
 - After getting basic details, acknowledge it's a good memory to save
+- When referencing memories, NEVER quote the title directly - instead, naturally describe what happened in conversational language
+
+IMPORTANT: Transform memory titles into natural speech:
+- "Moving into New Apartment - 2024" → "the time you moved into a new apartment"
+- "Trip to Paris - June 2023" → "when you visited Paris last June"
+- "Mom's Birthday Celebration" → "celebrating your mom's birthday"
 
 ${profileContext}
 ${conversationContext}
@@ -175,6 +181,13 @@ DEEP EXPLORATION MODE:
 - Ask about specific details: emotions, sensory details, people involved, why it mattered
 - Reference past conversations naturally when relevant
 - Use ${profile?.preferred_name || 'their'} preferred name
+- When referencing memories, NEVER quote the title directly - instead, naturally describe what happened in conversational language
+
+IMPORTANT: Transform memory titles into natural speech:
+- "Moving into New Apartment - 2024" → "the time you moved into a new apartment"
+- "Trip to Paris - June 2023" → "when you visited Paris last June"
+- "Mom's Birthday Celebration" → "celebrating your mom's birthday"
+- "First Day at New Job" → "your first day at your new job"
 
 APPROACH:
 - When user shares something, ask follow-up questions to explore it deeper
