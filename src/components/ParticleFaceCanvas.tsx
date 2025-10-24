@@ -73,11 +73,16 @@ function ParticleSystem({
         analyser.fftSize = 256;
         const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(new ArrayBuffer(bufferLength));
 
         const updateAudioLevel = () => {
-          analyser.getByteFrequencyData(dataArray);
-          const average = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
+          analyser.getByteFrequencyData(dataArray as Uint8Array<ArrayBuffer>);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / dataArray.length;
           audioLevelRef.current = average / 255;
           animationId = requestAnimationFrame(updateAudioLevel);
         };
