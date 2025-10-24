@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
+import { ParticleFaceCanvas } from '@/components/ParticleFaceCanvas';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
 import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
@@ -27,7 +28,8 @@ import {
   Lock,
   Sparkles,
   Music,
-  Mic
+  Mic,
+  Hexagon
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -93,6 +95,9 @@ const Index = () => {
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('enhanced'); // Use enhanced mode to capture both user and agent voice
+  
+  // View mode state (voice agent vs particle face)
+  const [viewMode, setViewMode] = useState<'voice' | 'particle'>('voice');
   
   // Store authenticated user ID for voice recording
   const authenticatedUserIdRef = useRef<string | null>(null);
@@ -2693,8 +2698,45 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           >
             
             <div className="flex flex-col items-center gap-6">
+              {/* View Mode Tabs - Small icon switcher */}
+              <div className="absolute top-4 right-4 flex gap-1 bg-white rounded-full p-1 shadow-md border border-border/30">
+                <button
+                  onClick={() => setViewMode('voice')}
+                  className={`p-2 rounded-full transition-all ${
+                    viewMode === 'voice' 
+                      ? 'bg-primary text-white' 
+                      : 'text-muted-foreground hover:bg-gray-100'
+                  }`}
+                  title="Voice Agent"
+                >
+                  <Mic className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('particle')}
+                  className={`p-2 rounded-full transition-all ${
+                    viewMode === 'particle' 
+                      ? 'bg-primary text-white' 
+                      : 'text-muted-foreground hover:bg-gray-100'
+                  }`}
+                  title="Particle Face"
+                >
+                  <Hexagon className="h-4 w-4" />
+                </button>
+              </div>
+
               <div className="relative mt-12">
-                {isConnecting ? (
+                {viewMode === 'particle' ? (
+                  <div className="w-full max-w-lg">
+                    <ParticleFaceCanvas
+                      particleCount={2000}
+                      flowSpeed={1}
+                      expression={isSpeaking ? 'speaking' : isConnected ? 'thinking' : 'neutral'}
+                      ditherStyle="halftone"
+                      holographicIntensity={0.7}
+                      audioReactive={isConnected}
+                    />
+                  </div>
+                ) : isConnecting ? (
                   <div className="w-40 h-40 flex items-center justify-center">
                     <Sparkles className="h-14 w-14 text-primary animate-pulse" />
                   </div>
