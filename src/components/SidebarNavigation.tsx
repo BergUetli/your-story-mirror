@@ -8,7 +8,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Home, Menu, ChevronLeft } from 'lucide-react';
+import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Home, Menu, ChevronLeft, Hexagon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,7 @@ const SidebarNavigation = () => {
    */
   const mainNavItems = user ? [
     { path: '/sanctuary', icon: Sparkles, label: 'Solin', description: 'AI Memory Assistant', accent: 'from-purple-500/20 to-pink-500/20' },
+    { path: '/particle-face', icon: Hexagon, label: 'Face', description: 'Particle Avatar', accent: 'from-cyan-500/20 to-blue-500/20' },
     { path: '/timeline', icon: Clock, label: 'Timeline', description: 'Life Journey', accent: 'from-blue-500/20 to-cyan-500/20' },
     { path: '/story', icon: BookOpen, label: 'Story', description: 'Your Narrative', accent: 'from-green-500/20 to-emerald-500/20' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction', description: 'AI Enhancement', accent: 'from-orange-500/20 to-amber-500/20' },

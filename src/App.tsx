@@ -30,6 +30,7 @@ import VoiceTest from "./components/VoiceTest";
 import MicImagePreview from "./pages/MicImagePreview";
 import MicTest from "./pages/MicTest";
 import ScrollToTop from "./components/ScrollToTop";
+import ParticleFace from "./pages/ParticleFace";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,11 @@ const AppContent = () => {
         <Route path="/test-memory-recordings" element={
           <ProtectedRoute>
             <TestMemoryRecordings />
+          </ProtectedRoute>
+        } />
+        <Route path="/particle-face" element={
+          <ProtectedRoute>
+            <ParticleFace />
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
