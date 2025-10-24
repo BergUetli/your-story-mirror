@@ -61,6 +61,7 @@ function ParticleSystem({
   const noise3D = useMemo(() => createNoise3D(), []);
   const timeRef = useRef(0);
   const audioLevelRef = useRef(0);
+  const formationProgressRef = useRef(0);
   const targetPositions = useRef<Float32Array>(new Float32Array(particleCount * 3));
   const { camera } = useThree();
 
@@ -303,9 +304,11 @@ function ParticleSystem({
         const i3 = i * 3;
         const { x, y, z, weight } = sampleFaceRegion(name, j / count);
 
-        positions[i3] = x;
-        positions[i3 + 1] = y;
-        positions[i3 + 2] = z;
+        // Start scattered; target is anatomical position
+        const initSpread = 2.6;
+        positions[i3] = (Math.random() - 0.5) * initSpread * 2.0;
+        positions[i3 + 1] = (Math.random() - 0.5) * initSpread * 2.2;
+        positions[i3 + 2] = (Math.random() - 0.5) * initSpread;
         faceMask[i] = weight;
 
         // Store target positions for reformation
@@ -313,10 +316,10 @@ function ParticleSystem({
         targetPositions.current[i3 + 1] = y;
         targetPositions.current[i3 + 2] = z;
 
-        // Assign colors with depth variation
+        // Assign colors with depth variation (slightly brighter for visibility)
         const colorIndex = Math.floor(Math.random() * palette.length);
         const color = palette[colorIndex];
-        const depthFade = 0.6 + (1 - Math.abs(z)) * 0.4;
+        const depthFade = Math.min(1.0, 0.7 + (1.0 - Math.abs(z)) * 0.5);
         colors[i3] = color.r * depthFade;
         colors[i3 + 1] = color.g * depthFade;
         colors[i3 + 2] = color.b * depthFade;
@@ -358,11 +361,15 @@ function ParticleSystem({
     const positionAttribute = pointsRef.current.geometry.attributes.position;
     const positions = positionAttribute.array as Float32Array;
 
-    // Gentle, critically-damped return to face with tiny organic drift
-    const relax = 0.12;      // attraction strength
-    const damping = 0.9;     // smooths motion
-    const driftAmp = 0.007;  // subtle per-point noise (visible but calm)
-    const breathe = Math.sin(time * 0.4) * 0.02;
+    // Formation progress ramps from scattered to assembled face
+    formationProgressRef.current = Math.min(1, formationProgressRef.current + delta * 0.3);
+    const formation = formationProgressRef.current;
+
+    // Critically damped attraction with subtle organic drift and breathing
+    const relax = 0.04 + 0.14 * formation; // starts gentle, strengthens as face assembles
+    const damping = 0.9;
+    const driftAmp = 0.004 + 0.004 * (1.0 - formation); // more drift early, calmer when formed
+    const breathe = Math.sin(time * 0.5) * 0.02 * (0.7 + 0.3 * formation);
 
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
@@ -379,7 +386,7 @@ function ParticleSystem({
       const toY = ty - cy;
       const toZ = tz - cz;
 
-      // tiny drift to avoid locking into circles or flashing
+      // small per-point noise for life-like motion
       const nX = noise3D(tx * 0.6, ty * 0.6, time * 0.15 + i * 0.001) * driftAmp;
       const nY = noise3D(tx * 0.6 + 100.0, ty * 0.6 + 100.0, time * 0.15 + i * 0.001) * driftAmp;
       const nZ = noise3D(tx * 0.6 + 200.0, ty * 0.6 + 200.0, time * 0.15 + i * 0.001) * driftAmp * 0.8;
@@ -467,7 +474,7 @@ function ParticleSystem({
             alpha = pow(alpha, 2.0);
             
             // Depth-based fade with better range
-            float depthFade = clamp(1.2 - vDepth * 0.15, 0.5, 1.0);
+            float depthFade = clamp(1.35 - vDepth * 0.12, 0.65, 1.0);
             alpha *= depthFade;
             
             // Bright core
@@ -475,7 +482,7 @@ function ParticleSystem({
             core = pow(core, 4.0);
             
             // Softer bloom for glow
-            float bloom = exp(-dist * 6.0) * 0.8;
+            float bloom = exp(-dist * 6.0) * 0.9;
             
             // Energy ring effect
             float ring = smoothstep(0.25, 0.3, dist) * smoothstep(0.45, 0.35, dist) * 0.6;
@@ -494,7 +501,7 @@ function ParticleSystem({
             if (alpha < 0.03) discard;
             
             // Final output with enhanced brightness
-            gl_FragColor = vec4(finalColor * 1.1, alpha * 0.9);
+            gl_FragColor = vec4(finalColor * 1.0, alpha);
           }
         `}
         uniforms={{
@@ -505,7 +512,7 @@ function ParticleSystem({
         }}
         transparent
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
+        blending={THREE.NormalBlending}
       />
     </points>
   );
@@ -514,15 +521,16 @@ function ParticleSystem({
 export function ParticleFaceCanvas(props: ParticleFaceCanvasProps) {
   return (
     <div className="w-full h-[500px] bg-gradient-to-b from-background via-background/95 to-background rounded-lg overflow-hidden relative">
-      <div className="absolute inset-0 bg-gradient-radial from-primary/5 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-radial from-primary/15 via-transparent to-transparent pointer-events-none" />
       <Canvas
+        className="pointer-events-none"
         camera={{ position: [0, 0, 4.5], fov: 65 }}
         gl={{ 
           antialias: true,
           alpha: true,
           powerPreference: 'high-performance',
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
+          toneMappingExposure: 1.0,
         }}
       >
         {/* Transparent canvas so it blends with parent card */}
