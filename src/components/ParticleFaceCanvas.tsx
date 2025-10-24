@@ -47,7 +47,7 @@ const colorPalettes = {
 };
 
 function ParticleSystem({
-  particleCount = 1000,
+  particleCount = 10000,
   flowSpeed = 1,
   expression = 'neutral',
   colorPalette = 'tron',
@@ -206,7 +206,7 @@ function ParticleSystem({
       colors[i3 + 2] = color.b * depthFade;
 
       // Bigger particle sizes
-      sizes[i] = (Math.random() * 0.045 + 0.035) * (1 + Math.abs(z) * 0.5);
+      sizes[i] = (Math.random() * 0.08 + 0.06) * (1 + Math.abs(z) * 0.5);
     }
 
     return { positions, colors, sizes, faceMask };
@@ -296,7 +296,7 @@ function ParticleSystem({
       colors[i3 + 2] = THREE.MathUtils.lerp(color1.b, color2.b, lerpFactor) * depthFade;
 
       // Bigger size variation with dispersion and depth
-      const baseSize = 0.04 + Math.random() * 0.03;
+      const baseSize = 0.07 + Math.random() * 0.05;
       const depthSizeBoost = 1 + Math.abs(z) * 0.6;
       const dispersionSizeBoost = 1 + dispersionAmount * 0.3 * (1 - weight);
       sizes[i] = baseSize * depthSizeBoost * dispersionSizeBoost * (1 + audioBoost * 0.5);
