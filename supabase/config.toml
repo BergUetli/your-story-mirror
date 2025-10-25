@@ -3,6 +3,9 @@ project_id = "gulydhhzwlltkxbfnclu"
 [functions.elevenlabs-agent-token]
 verify_jwt = true
 
+[functions.elevenlabs-credits]
+verify_jwt = true
+
 [functions.orchestrator]
 verify_jwt = true
 

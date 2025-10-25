@@ -13,6 +13,7 @@ import DatabaseManagementPanel from '@/components/admin/DatabaseManagementPanel'
 import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { MicrophoneTest } from '@/components/MicrophoneTest';
 import { VoiceArchiveDiagnosticsPanel } from '@/components/admin/VoiceArchiveDiagnosticsPanel';
+import { ElevenLabsCreditsPanel } from '@/components/admin/ElevenLabsCreditsPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -283,7 +284,10 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="system" className="space-y-6">
-            <SystemStatusPanel systemStatus={systemStatus} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SystemStatusPanel systemStatus={systemStatus} />
+              <ElevenLabsCreditsPanel />
+            </div>
           </TabsContent>
 
           <TabsContent value="config" className="space-y-6">
