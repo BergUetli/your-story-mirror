@@ -90,7 +90,9 @@ const Index = () => {
   const lastConnectedAtRef = useRef(0);
   const retryCountRef = useRef(0);
   const startConversationRef = useRef<(isRetry?: boolean) => Promise<void>>();
+  const reconnectTimeoutRef = useRef<number | null>(null);
   
+
   // Voice recording state
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -603,6 +605,12 @@ const Index = () => {
     noEndBeforeRef.current = Date.now() + 2000;
     lastConnectedAtRef.current = Date.now();
     
+    // Clear any pending reconnect timeouts when a connection succeeds
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     // Initialize conversation state for this session with greeting phase
     setConversationState(prev => ({
       ...prev,
@@ -732,6 +740,19 @@ const Index = () => {
       retryCount: retryCountRef.current,
       wasRecording: isRecording
     });
+
+    // If we intentionally ended the conversation, don't auto-retry
+    if (isEndingConversation || endScheduledRef.current) {
+      console.log('🛑 Skipping auto-retry: intentional end detected');
+      retryCountRef.current = 0;
+      endScheduledRef.current = false;
+      setIsEndingConversation(false);
+      toast({ 
+        title: 'Disconnected', 
+        description: 'Voice session ended',
+      });
+      return;
+    }
     
     // Stop voice recording if active
     if (isRecording && recordingSessionId) {
@@ -768,14 +789,17 @@ const Index = () => {
     // Only retry if disconnect happened very quickly (under 5 seconds)
     // This prevents retrying on intentional disconnects or after meaningful conversation
     if (earlyDisconnect) {
-      if (retryCountRef.current < 2) {
+      if (retryCountRef.current < 2 && !isConnecting) {
         retryCountRef.current += 1;
         const delay = 1000 * retryCountRef.current; // Longer delays: 1s, 2s
         console.log(`⚠️ Early disconnect detected (${elapsed}ms), retry #${retryCountRef.current} in ${delay}ms...`);
-        setTimeout(() => startConversationRef.current?.(true), delay);
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+        reconnectTimeoutRef.current = window.setTimeout(() => startConversationRef.current?.(true), delay);
         return;
       } else {
-        console.warn('⛔ Max early-disconnect retries reached. Not retrying automatically.');
+        console.warn('⛔ Max early-disconnect retries reached or already connecting. Not retrying automatically.');
         toast({
           title: 'Connection unstable',
           description: 'The voice agent disconnected unexpectedly. Please check your microphone permissions and internet connection, then try again.',
@@ -793,7 +817,7 @@ const Index = () => {
         ? 'Voice session ended and recording saved'
         : 'Voice session ended' 
     });
-  }, [toast, isRecording, recordingSessionId]);
+  }, [toast, isRecording, recordingSessionId, isEndingConversation, isConnecting]);
 
   const onErrorCb = useCallback((error: unknown) => {
     toast({
@@ -2089,6 +2113,18 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
   const startConversation = useCallback(async () => {
     console.log('🚀 START CONVERSATION: Function called');
+
+    // Prevent duplicate starts
+    if (isConnecting || conversation.status === 'connected') {
+      console.log('⏭️ Already connecting/connected. Skipping start.');
+      return;
+    }
+
+    // Cancel any pending reconnect timers
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     
     // Define sessionHandoffId at function scope so it's available in catch block
     const sessionHandoffId = `session-${Date.now()}`;
