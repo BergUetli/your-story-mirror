@@ -109,7 +109,15 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamA
       });
 
       const startPromise = conversation.startSession({
-        signedUrl: data.signed_url
+        signedUrl: data.signed_url,
+        overrides: {
+          agent: {
+            prompt: {
+              prompt: data.personalizedPrompt || "You are Solin, a warm and empathetic AI biographer."
+            },
+            firstMessage: data.firstMessage || "Hello! How can I help you today?"
+          }
+        }
       });
 
       await Promise.race([startPromise, timeoutPromise]);
