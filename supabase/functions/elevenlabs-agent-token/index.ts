@@ -181,9 +181,10 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
     console.log('✅ Built personalized prompt and greeting for', userName);
 
     // Request signed URL from ElevenLabs with extended inactivity timeout
-    // Default is 20s; we extend to 180s to handle natural pauses in conversation
+    // Default is 20s; we extend to 300s (5 min) to handle natural pauses in conversation
+    // Also set max duration to prevent premature disconnects
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}&inactivity_timeout=180`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}&inactivity_timeout=300&max_duration_seconds=3600`,
       {
         method: 'GET',
         headers: {

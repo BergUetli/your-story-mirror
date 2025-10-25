@@ -753,9 +753,11 @@ const Index = () => {
     }
 
     // AUTO-SAVE: Try to save conversation content when disconnected
-    // Only if this wasn't a quick retry disconnect
-    const justConnected = elapsed < 3000;
-    if (!justConnected) {
+    // Only if this wasn't an immediate disconnect
+    const veryQuickDisconnect = elapsed < 1000;
+    const earlyDisconnect = elapsed < 5000;
+    
+    if (!veryQuickDisconnect) {
       try {
         await autoSaveConversationContent();
       } catch (error) {
@@ -763,23 +765,25 @@ const Index = () => {
       }
     }
 
-    if (justConnected) {
-      if (retryCountRef.current < 3) {
+    // Only retry if disconnect happened very quickly (under 5 seconds)
+    // This prevents retrying on intentional disconnects or after meaningful conversation
+    if (earlyDisconnect) {
+      if (retryCountRef.current < 2) {
         retryCountRef.current += 1;
-        const delay = 400 * retryCountRef.current;
-        console.log(`⚠️ Early disconnect detected, retry #${retryCountRef.current} in ${delay}ms...`);
+        const delay = 1000 * retryCountRef.current; // Longer delays: 1s, 2s
+        console.log(`⚠️ Early disconnect detected (${elapsed}ms), retry #${retryCountRef.current} in ${delay}ms...`);
         setTimeout(() => startConversationRef.current?.(true), delay);
         return;
       } else {
         console.warn('⛔ Max early-disconnect retries reached. Not retrying automatically.');
         toast({
           title: 'Connection unstable',
-          description: 'Auto-retry stopped after multiple attempts. Check mic permissions and try again.',
+          description: 'The voice agent disconnected unexpectedly. Please check your microphone permissions and internet connection, then try again.',
           variant: 'destructive',
         });
       }
-    } else if (elapsed >= 8000) {
-      // Stable session: reset retry counter
+    } else if (elapsed >= 10000) {
+      // Stable session (10+ seconds): reset retry counter
       retryCountRef.current = 0;
     }
 
