@@ -2256,15 +2256,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       });
 
       const startPromise = conversation.startSession({
-        signedUrl: data.signed_url,
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: data.personalizedPrompt || "You are Solin, a warm and empathetic AI biographer."
-            },
-            firstMessage: data.firstMessage || "Hello! How can I help you today?"
-          }
-        }
+        signedUrl: data.signed_url
       });
 
       await Promise.race([startPromise, timeoutPromise]);
