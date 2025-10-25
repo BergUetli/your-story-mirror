@@ -12,6 +12,7 @@ serve(async (req) => {
   }
 
   try {
+    // Client for user authentication
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -22,16 +23,25 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    console.log('User auth check:', { user: user?.id, error: userError });
+    
     if (!user) {
       throw new Error('Unauthorized');
     }
+
+    // Use service role for backend operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
     const { identityId, action } = await req.json();
 
     // Check training status
     if (action === 'check_status') {
-      const { data: identity, error } = await supabaseClient
+      const { data: identity, error } = await supabaseAdmin
         .from('trained_identities')
         .select('*')
         .eq('id', identityId)
@@ -56,7 +66,7 @@ serve(async (req) => {
 
           if (statusResponse.ok) {
             // Model exists, training complete!
-            await supabaseClient
+            await supabaseAdmin
               .from('trained_identities')
               .update({
                 training_status: 'completed',
@@ -79,7 +89,7 @@ serve(async (req) => {
 
     // Start training
     if (action === 'start_training') {
-      const { data: identity, error: identityError } = await supabaseClient
+      const { data: identity, error: identityError } = await supabaseAdmin
         .from('trained_identities')
         .select('*')
         .eq('id', identityId)
@@ -89,7 +99,7 @@ serve(async (req) => {
       if (identityError) throw identityError;
 
       // Update status to training
-      await supabaseClient
+      await supabaseAdmin
         .from('trained_identities')
         .update({
           training_status: 'training',
@@ -105,7 +115,7 @@ serve(async (req) => {
       // Download images from Supabase Storage
       const imageBlobs: Blob[] = [];
       for (const storagePath of identity.image_storage_paths || []) {
-        const { data: imageData, error: downloadError } = await supabaseClient.storage
+        const { data: imageData, error: downloadError } = await supabaseAdmin.storage
           .from('identity-training-images')
           .download(storagePath);
 
@@ -170,7 +180,7 @@ serve(async (req) => {
       // to manually train via HF UI or use their AutoTrain API when it's stable.
       
       // Update with repo info
-      await supabaseClient
+      await supabaseAdmin
         .from('trained_identities')
         .update({
           hf_repo_name: fullRepoName,
