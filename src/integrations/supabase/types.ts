@@ -260,6 +260,63 @@ export type Database = {
         }
         Relationships: []
       }
+      trained_identities: {
+        Row: {
+          created_at: string | null
+          hf_model_id: string | null
+          hf_repo_name: string | null
+          id: string
+          image_storage_paths: string[] | null
+          model_type: string | null
+          name: string
+          num_training_images: number | null
+          thumbnail_url: string | null
+          training_completed_at: string | null
+          training_error: string | null
+          training_job_id: string | null
+          training_started_at: string | null
+          training_status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hf_model_id?: string | null
+          hf_repo_name?: string | null
+          id?: string
+          image_storage_paths?: string[] | null
+          model_type?: string | null
+          name: string
+          num_training_images?: number | null
+          thumbnail_url?: string | null
+          training_completed_at?: string | null
+          training_error?: string | null
+          training_job_id?: string | null
+          training_started_at?: string | null
+          training_status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hf_model_id?: string | null
+          hf_repo_name?: string | null
+          id?: string
+          image_storage_paths?: string[] | null
+          model_type?: string | null
+          name?: string
+          num_training_images?: number | null
+          thumbnail_url?: string | null
+          training_completed_at?: string | null
+          training_error?: string | null
+          training_job_id?: string | null
+          training_started_at?: string | null
+          training_status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           age: number | null

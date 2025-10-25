@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,15 +8,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Upload, X, Loader2, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TrainedIdentity {
   id: string;
   name: string;
-  modelId: string;
-  status: "ready" | "training" | "failed";
-  trainedAt: Date;
-  thumbnailUrl: string;
-  version: string;
+  hf_model_id: string | null;
+  hf_repo_name: string | null;
+  training_status: "pending" | "uploading" | "training" | "completed" | "failed";
+  training_error: string | null;
+  created_at: string;
+  training_completed_at: string | null;
+  thumbnail_url: string | null;
+  num_training_images: number | null;
 }
 
 const Identities = () => {
@@ -27,33 +31,27 @@ const Identities = () => {
   const [trainingProgress, setTrainingProgress] = useState(0);
   const [consentChecked, setConsentChecked] = useState(false);
   
-  // Load trained identities from localStorage on mount
-  const [trainedIdentities, setTrainedIdentities] = useState<TrainedIdentity[]>(() => {
-    const stored = localStorage.getItem('trained_identities');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Convert date strings back to Date objects
-        return parsed.map((identity: any) => ({
-          ...identity,
-          trainedAt: new Date(identity.trainedAt)
-        }));
-      } catch (e) {
-        console.error('Error loading trained identities:', e);
-      }
+  const [trainedIdentities, setTrainedIdentities] = useState<TrainedIdentity[]>([]);
+
+  // Load trained identities from database
+  useEffect(() => {
+    loadTrainedIdentities();
+  }, []);
+
+  const loadTrainedIdentities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('trained_identities')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTrainedIdentities(data || []);
+    } catch (error) {
+      console.error('Error loading identities:', error);
+      toast.error('Failed to load identities');
     }
-    return [
-      {
-        id: "1",
-        name: "Me",
-        modelId: "me_v1",
-        status: "ready",
-        trainedAt: new Date("2025-01-10"),
-        thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-        version: "v1"
-      }
-    ];
-  });
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -109,63 +107,140 @@ const Identities = () => {
     setTrainingProgress(0);
 
     try {
-      // Simulate training progress
-      const interval = setInterval(() => {
-        setTrainingProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Step 1: Create identity record
+      setTrainingProgress(10);
+      const { data: identity, error: createError } = await supabase
+        .from('trained_identities')
+        .insert({
+          user_id: user.id,
+          name: identityName,
+          training_status: 'uploading',
+          num_training_images: uploadedImages.length,
+          thumbnail_url: imagePreviews[0],
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // Step 2: Upload images to Supabase Storage
+      setTrainingProgress(20);
+      const storagePaths: string[] = [];
+      
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const file = uploadedImages[i];
+        const filePath = `${user.id}/${identity.id}/image_${i}.jpg`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('identity-training-images')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
+
+        storagePaths.push(filePath);
+        setTrainingProgress(20 + (i / uploadedImages.length) * 30);
+      }
+
+      // Step 3: Update identity with storage paths
+      await supabase
+        .from('trained_identities')
+        .update({ image_storage_paths: storagePaths })
+        .eq('id', identity.id);
+
+      setTrainingProgress(50);
+
+      // Step 4: Start training via edge function
+      const { data: trainingData, error: trainingError } = await supabase.functions.invoke(
+        'train-identity',
+        {
+          body: {
+            identityId: identity.id,
+            action: 'start_training'
           }
-          return prev + 10;
-        });
-      }, 1000);
+        }
+      );
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 10000));
-      
-      clearInterval(interval);
-      setTrainingProgress(100);
+      if (trainingError) throw trainingError;
 
-      const newIdentity: TrainedIdentity = {
-        id: crypto.randomUUID(),
-        name: identityName,
-        modelId: `${identityName.toLowerCase()}_v1`,
-        status: "ready",
-        trainedAt: new Date(),
-        thumbnailUrl: imagePreviews[0],
-        version: "v1"
-      };
+      setTrainingProgress(60);
 
-      const updatedIdentities = [newIdentity, ...trainedIdentities];
-      setTrainedIdentities(updatedIdentities);
-      
-      // Save to localStorage
-      localStorage.setItem('trained_identities', JSON.stringify(updatedIdentities));
-      
-      toast.success(`✅ Identity "${identityName}" is now trained! Use it in Reconstruction to create memories.`, {
-        duration: 5000
-      });
-      
-      // Reset form
-      setIdentityName("");
-      setUploadedImages([]);
-      imagePreviews.forEach(url => URL.revokeObjectURL(url));
-      setImagePreviews([]);
-      setConsentChecked(false);
-      setIsTraining(false);
-      setTrainingProgress(0);
+      // Step 5: Poll for training completion
+      const pollInterval = setInterval(async () => {
+        const { data: statusData } = await supabase.functions.invoke(
+          'train-identity',
+          {
+            body: {
+              identityId: identity.id,
+              action: 'check_status'
+            }
+          }
+        );
+
+        if (statusData?.training_status === 'completed') {
+          clearInterval(pollInterval);
+          setTrainingProgress(100);
+          toast.success(`✅ Identity "${identityName}" is now trained! Use it in Reconstruction.`, {
+            duration: 5000
+          });
+          
+          // Reset form
+          setIdentityName("");
+          setUploadedImages([]);
+          imagePreviews.forEach(url => URL.revokeObjectURL(url));
+          setImagePreviews([]);
+          setConsentChecked(false);
+          setIsTraining(false);
+          setTrainingProgress(0);
+          
+          // Reload identities
+          loadTrainedIdentities();
+        } else if (statusData?.training_status === 'failed') {
+          clearInterval(pollInterval);
+          throw new Error(statusData.training_error || 'Training failed');
+        } else {
+          // Still training, update progress
+          setTrainingProgress(prev => Math.min(prev + 2, 95));
+        }
+      }, 5000); // Check every 5 seconds
+
+      // Timeout after 30 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (isTraining) {
+          toast.error("Training timeout. Check status in HuggingFace.");
+          setIsTraining(false);
+        }
+      }, 30 * 60 * 1000);
+
     } catch (error) {
       console.error('Training error:', error);
-      toast.error("Training failed. Please try again.");
+      toast.error(error.message || "Training failed. Please try again.");
       setIsTraining(false);
+      setTrainingProgress(0);
     }
   };
 
-  const handleDeleteIdentity = (id: string) => {
-    const updatedIdentities = trainedIdentities.filter(identity => identity.id !== id);
-    setTrainedIdentities(updatedIdentities);
-    localStorage.setItem('trained_identities', JSON.stringify(updatedIdentities));
-    toast.success("Identity deleted");
+  const handleDeleteIdentity = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('trained_identities')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      toast.success("Identity deleted");
+      loadTrainedIdentities();
+    } catch (error) {
+      console.error('Error deleting identity:', error);
+      toast.error("Failed to delete identity");
+    }
   };
 
   return (
@@ -346,8 +421,8 @@ const Identities = () => {
               {trainedIdentities.map((identity) => (
                 <Card key={identity.id} className="p-4 bg-card border-2">
                   <div className="flex gap-4">
-                    <img 
-                      src={identity.thumbnailUrl} 
+                  <img 
+                      src={identity.thumbnail_url || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop'} 
                       alt={identity.name}
                       className="w-20 h-20 object-cover rounded-lg border-2 border-border"
                     />
@@ -356,21 +431,24 @@ const Identities = () => {
                         <div>
                           <h3 className="font-semibold text-lg">{identity.name}</h3>
                           <p className="text-xs text-muted-foreground">
-                            {identity.modelId}
+                            {identity.hf_repo_name || 'Pending'}
                           </p>
                         </div>
                         <Badge 
-                          variant={identity.status === "ready" ? "default" : "secondary"}
+                          variant={identity.training_status === "completed" ? "default" : "secondary"}
                           className="flex items-center gap-1"
                         >
-                          {identity.status === "ready" && <Check className="w-3 h-3" />}
-                          {identity.status === "training" && <Loader2 className="w-3 h-3 animate-spin" />}
-                          {identity.status === "failed" && <AlertCircle className="w-3 h-3" />}
-                          {identity.status}
+                          {identity.training_status === "completed" && <Check className="w-3 h-3" />}
+                          {identity.training_status === "training" && <Loader2 className="w-3 h-3 animate-spin" />}
+                          {identity.training_status === "failed" && <AlertCircle className="w-3 h-3" />}
+                          {identity.training_status}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mb-3">
-                        Trained {identity.trainedAt.toLocaleDateString()}
+                        {identity.training_completed_at 
+                          ? `Trained ${new Date(identity.training_completed_at).toLocaleDateString()}`
+                          : `Created ${new Date(identity.created_at).toLocaleDateString()}`
+                        }
                       </p>
                       <div className="flex gap-2">
                         <Button 

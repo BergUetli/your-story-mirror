@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generate-mic-image]
 verify_jwt = false
+
+[functions.train-identity]
+verify_jwt = true
