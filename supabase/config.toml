@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.train-identity]
 verify_jwt = true
+
+[functions.generate-identity-preview]
+verify_jwt = true

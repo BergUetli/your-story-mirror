@@ -21,6 +21,13 @@ interface TrainedIdentity {
   training_completed_at: string | null;
   thumbnail_url: string | null;
   num_training_images: number | null;
+  image_storage_paths: string[] | null;
+}
+
+interface GeneratedPreview {
+  identityId: string;
+  view: string;
+  imageUrl: string;
 }
 
 const Identities = () => {
@@ -32,6 +39,11 @@ const Identities = () => {
   const [consentChecked, setConsentChecked] = useState(false);
   
   const [trainedIdentities, setTrainedIdentities] = useState<TrainedIdentity[]>([]);
+  const [generatedPreviews, setGeneratedPreviews] = useState<GeneratedPreview[]>([]);
+  const [generatingPreviews, setGeneratingPreviews] = useState<Record<string, boolean>>({});
+  const [addingMoreImages, setAddingMoreImages] = useState<string | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<File[]>([]);
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
 
   // Load trained identities from database
   useEffect(() => {
@@ -243,6 +255,115 @@ const Identities = () => {
     }
   };
 
+  const generatePreview = async (identityId: string, view: string) => {
+    const key = `${identityId}-${view}`;
+    setGeneratingPreviews(prev => ({ ...prev, [key]: true }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-identity-preview', {
+        body: { identityId, view }
+      });
+
+      if (error) throw error;
+
+      setGeneratedPreviews(prev => [
+        ...prev.filter(p => !(p.identityId === identityId && p.view === view)),
+        { identityId, view, imageUrl: data.image }
+      ]);
+
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast.error(`Failed to generate ${view} view`);
+    } finally {
+      setGeneratingPreviews(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
+  const handleAddMoreImages = (identityId: string) => {
+    setAddingMoreImages(identityId);
+  };
+
+  const handleAdditionalFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 20MB)`);
+        return false;
+      }
+      if (!file.type.match(/^image\/(jpeg|png)$/)) {
+        toast.error(`${file.name} must be JPG or PNG`);
+        return false;
+      }
+      return true;
+    });
+
+    setAdditionalImages(prev => [...prev, ...validFiles]);
+    validFiles.forEach(file => {
+      const url = URL.createObjectURL(file);
+      setAdditionalImagePreviews(prev => [...prev, url]);
+    });
+  };
+
+  const handleSubmitAdditionalImages = async () => {
+    if (!addingMoreImages || additionalImages.length === 0) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const identity = trainedIdentities.find(i => i.id === addingMoreImages);
+      if (!identity) throw new Error('Identity not found');
+
+      const existingPaths = identity.image_storage_paths || [];
+      const newPaths: string[] = [];
+
+      for (let i = 0; i < additionalImages.length; i++) {
+        const file = additionalImages[i];
+        const filePath = `${user.id}/${addingMoreImages}/image_${existingPaths.length + i}.jpg`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('identity-training-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+        newPaths.push(filePath);
+      }
+
+      // Update identity with new paths
+      const { error: updateError } = await supabase
+        .from('trained_identities')
+        .update({ 
+          image_storage_paths: [...existingPaths, ...newPaths],
+          num_training_images: existingPaths.length + newPaths.length,
+          training_status: 'training' // Trigger retraining
+        })
+        .eq('id', addingMoreImages);
+
+      if (updateError) throw updateError;
+
+      // Trigger retraining
+      await supabase.functions.invoke('train-identity', {
+        body: {
+          identityId: addingMoreImages,
+          action: 'start_training'
+        }
+      });
+
+      toast.success("Additional images uploaded! Retraining started.");
+      
+      // Reset
+      additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+      setAdditionalImages([]);
+      setAdditionalImagePreviews([]);
+      setAddingMoreImages(null);
+      loadTrainedIdentities();
+
+    } catch (error) {
+      console.error('Error adding images:', error);
+      toast.error("Failed to add images");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -451,12 +572,25 @@ const Identities = () => {
                         }
                       </p>
                       <div className="flex gap-2">
+                        {identity.training_status === "completed" && (
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => {
+                              generatePreview(identity.id, 'front');
+                              generatePreview(identity.id, 'right_profile');
+                            }}
+                          >
+                            View Identity
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="outline"
-                          onClick={() => window.location.href = '/reconstruction'}
+                          onClick={() => handleAddMoreImages(identity.id)}
+                          disabled={identity.training_status === 'training'}
                         >
-                          Use in Reconstruction
+                          Add More Images
                         </Button>
                         <Button 
                           size="sm" 
@@ -468,6 +602,101 @@ const Identities = () => {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Generated Previews */}
+                  {generatedPreviews.some(p => p.identityId === identity.id) && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-sm font-medium mb-3">Generated Previews</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        {['front', 'right_profile'].map(view => {
+                          const preview = generatedPreviews.find(
+                            p => p.identityId === identity.id && p.view === view
+                          );
+                          const isGenerating = generatingPreviews[`${identity.id}-${view}`];
+                          
+                          return (
+                            <div key={view} className="space-y-2">
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {view.replace('_', ' ')}
+                              </p>
+                              {isGenerating ? (
+                                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                </div>
+                              ) : preview ? (
+                                <img 
+                                  src={preview.imageUrl} 
+                                  alt={`${view} view`}
+                                  className="w-full aspect-square object-cover rounded-lg border-2 border-border"
+                                />
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Add More Images UI */}
+                  {addingMoreImages === identity.id && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-sm font-medium mb-3">Add More Training Images</p>
+                      <div className="space-y-3">
+                        {additionalImagePreviews.length === 0 ? (
+                          <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
+                            <Input
+                              id={`add-images-${identity.id}`}
+                              type="file"
+                              accept="image/jpeg,image/png"
+                              multiple
+                              onChange={handleAdditionalFileSelect}
+                              className="hidden"
+                            />
+                            <label htmlFor={`add-images-${identity.id}`} className="cursor-pointer">
+                              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                              <p className="text-sm text-muted-foreground">
+                                Upload more photos to refine this identity
+                              </p>
+                            </label>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="grid grid-cols-4 gap-2">
+                              {additionalImagePreviews.map((url, index) => (
+                                <img 
+                                  key={index}
+                                  src={url} 
+                                  alt={`Additional ${index + 1}`}
+                                  className="w-full aspect-square object-cover rounded border"
+                                />
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                onClick={handleSubmitAdditionalImages}
+                                className="flex-1"
+                              >
+                                Upload & Retrain ({additionalImages.length} images)
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
+                                  setAdditionalImages([]);
+                                  setAdditionalImagePreviews([]);
+                                  setAddingMoreImages(null);
+                                }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Card>
               ))}
             </div>
