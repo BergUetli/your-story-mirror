@@ -786,26 +786,14 @@ const Index = () => {
       }
     }
 
-    // Only retry if disconnect happened very quickly (under 5 seconds)
-    // This prevents retrying on intentional disconnects or after meaningful conversation
+    // Do NOT auto-retry to avoid reconnect loops; surface the issue and let user retry manually
     if (earlyDisconnect) {
-      if (retryCountRef.current < 2 && !isConnecting) {
-        retryCountRef.current += 1;
-        const delay = 1000 * retryCountRef.current; // Longer delays: 1s, 2s
-        console.log(`⚠️ Early disconnect detected (${elapsed}ms), retry #${retryCountRef.current} in ${delay}ms...`);
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
-        reconnectTimeoutRef.current = window.setTimeout(() => startConversationRef.current?.(true), delay);
-        return;
-      } else {
-        console.warn('⛔ Max early-disconnect retries reached or already connecting. Not retrying automatically.');
-        toast({
-          title: 'Connection unstable',
-          description: 'The voice agent disconnected unexpectedly. Please check your microphone permissions and internet connection, then try again.',
-          variant: 'destructive',
-        });
-      }
+      console.warn('⛔ Early disconnect detected; auto-retry disabled to prevent loops.');
+      toast({
+        title: 'Connection unstable',
+        description: 'The voice agent disconnected unexpectedly. Tap Start Conversation to try again.',
+        variant: 'destructive',
+      });
     } else if (elapsed >= 10000) {
       // Stable session (10+ seconds): reset retry counter
       retryCountRef.current = 0;
