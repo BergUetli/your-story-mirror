@@ -12,23 +12,12 @@ serve(async (req) => {
   }
 
   try {
-    // Client for user authentication
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
     
-    console.log('User auth check:', { user: user?.id, error: userError });
-    
-    if (!user) {
-      throw new Error('Unauthorized');
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
     }
 
     // Use service role for backend operations
@@ -36,6 +25,16 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Extract JWT and verify user
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
+    
+    console.log('User verification:', { userId: user?.id, error: userError?.message });
+    
+    if (userError || !user) {
+      throw new Error('Invalid or expired token');
+    }
 
     const { identityId, action } = await req.json();
 
