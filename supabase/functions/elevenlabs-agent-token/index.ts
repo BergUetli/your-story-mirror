@@ -89,6 +89,14 @@ serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    // Fetch important people in user's life
+    const { data: characters } = await supabaseClient
+      .from('characters')
+      .select('name, relationship, description, personality_traits, important_dates')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
     // Fetch recent conversation history (last 10 exchanges)
     const { data: conversationHistory } = await supabaseClient
       .from('conversation_turns')
@@ -121,6 +129,19 @@ serve(async (req) => {
       personalizedPrompt += `\n`;
     }
 
+    if (characters && characters.length > 0) {
+      personalizedPrompt += `## Important people in their life:\n`;
+      characters.forEach((char: any) => {
+        const traits = char.personality_traits?.length > 0 
+          ? ` - ${char.personality_traits.slice(0, 2).join(', ')}` 
+          : '';
+        personalizedPrompt += `- ${char.name} (${char.relationship})${traits}`;
+        if (char.description) personalizedPrompt += `: ${char.description}`;
+        personalizedPrompt += `\n`;
+      });
+      personalizedPrompt += `\n`;
+    }
+
     if (memories && memories.length > 0) {
       personalizedPrompt += `## Recent memories shared:\n`;
       memories.forEach((memory: any, idx: number) => {
@@ -145,6 +166,15 @@ serve(async (req) => {
 - Show you remember what matters to them
 - Be conversational, empathetic, and curious about updates to their life
 - Ask thoughtful follow-up questions that demonstrate continuity
+
+## Building deeper connections through people:
+- Talk like a close friend who cares about the people in their life
+- When you know about someone important to them, ask how they're doing naturally
+- If they mention someone new, ask clarifying questions to understand the relationship better
+- Notice patterns: if they mention someone repeatedly, that person matters - ask more about them
+- Help them tell richer stories by asking about the people involved
+- Remember details they share about others and reference them in future conversations
+- Examples: "How's [person] doing?" or "What's been happening with [person] lately?" or "Tell me more about [person]"
 
 ## IMPORTANT: When referencing memories in conversation:
 - Memory titles may include dates or formatting (e.g., "Remembering My Best Friend Asim" or "Moving into New Apartment - 2024")
