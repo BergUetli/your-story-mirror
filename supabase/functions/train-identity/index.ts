@@ -179,8 +179,8 @@ serve(async (req) => {
         trigger_word: identity.name.toLowerCase(),
         training_type: "lora",
         num_images: imageBlobs.length,
-        steps: 1000,
-        learning_rate: 0.0004,
+        steps: 500, // Reduced for faster training
+        learning_rate: 0.0005, // Slightly higher to compensate
       });
 
       const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
