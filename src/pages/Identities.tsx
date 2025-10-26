@@ -148,13 +148,15 @@ const Identities = () => {
     setTrainingProgress(0);
     setLastEdgeError(null);
 
+    let identity: any = null;
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       // Step 1: Create identity record
       setTrainingProgress(10);
-      const { data: identity, error: createError } = await supabase
+      const { data: identityData, error: createError } = await supabase
         .from('trained_identities')
         .insert({
           user_id: user.id,
@@ -167,6 +169,7 @@ const Identities = () => {
         .single();
 
       if (createError) throw createError;
+      identity = identityData;
 
       // Step 2: Upload images to Supabase Storage
       setTrainingProgress(20);
@@ -299,6 +302,15 @@ const Identities = () => {
 
     } catch (error: any) {
       console.error('Training error:', error);
+      
+      // Update database status to failed if identity was created
+      if (identity?.id) {
+        await supabase
+          .from('trained_identities')
+          .update({ training_status: 'failed', training_error: error?.message || 'Training failed' })
+          .eq('id', identity.id);
+      }
+      
       try {
         if (!lastEdgeError && (error as any)?.context?.response) {
           const details = await extractEdgeFunctionError(error);
@@ -308,6 +320,7 @@ const Identities = () => {
       toast.error(error?.message || 'Training failed. See details below.');
       setIsTraining(false);
       setTrainingProgress(0);
+      loadTrainedIdentities(); // Reload to show failed status
     }
   };
 
@@ -454,9 +467,19 @@ const Identities = () => {
       setAddingMoreImages(null);
       loadTrainedIdentities();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding images:', error);
+      
+      // Update database status to failed if retraining failed
+      if (addingMoreImages) {
+        await supabase
+          .from('trained_identities')
+          .update({ training_status: 'failed', training_error: error?.message || 'Retraining failed' })
+          .eq('id', addingMoreImages);
+      }
+      
       toast.error("Failed to add images");
+      loadTrainedIdentities(); // Reload to show failed status
     }
   };
 
