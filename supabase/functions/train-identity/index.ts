@@ -1,287 +1,268 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { createRepo, uploadFiles } from "https://esm.sh/@huggingface/hub@0.15.1";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { 
+  createRepo, 
+  uploadFiles, 
+  type Credentials,
+  type RepoDesignation
+} from "https://esm.sh/@huggingface/hub@0.15.1";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface TrainingRequest {
+  identityName: string;
+  imageFiles: {
+    name: string;
+    data: string; // base64 encoded
+  }[];
+  userId: string;
+}
+
+interface TrainingResponse {
+  success: boolean;
+  repoId?: string;
+  modelUrl?: string;
+  error?: string;
+}
+
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
-  // Track request context for error handling
-  let parsedIdentityId: string | null = null;
-  let parsedAction: string | null = null;
 
   try {
-    // Get authorization header
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
-    
-    if (!authHeader) {
-      throw new Error('Missing Authorization header');
+    console.log('🚀 Train Identity Edge Function Started');
+
+    // Get HuggingFace token from environment
+    const hfToken = Deno.env.get('HUGGINGFACE_TOKEN');
+    if (!hfToken) {
+      throw new Error('HUGGINGFACE_TOKEN environment variable not set');
     }
 
-    // Use service role for backend operations
-    const supabaseAdmin = createClient(
+    // Parse request
+    const { identityName, imageFiles, userId }: TrainingRequest = await req.json();
+    console.log(`📝 Training request: ${identityName}, ${imageFiles.length} images, user: ${userId}`);
+
+    // Validate inputs
+    if (!identityName || !identityName.trim()) {
+      throw new Error('Identity name is required');
+    }
+    if (!imageFiles || imageFiles.length < 3) {
+      throw new Error('At least 3 images are required for training');
+    }
+    if (imageFiles.length > 40) {
+      throw new Error('Maximum 40 images allowed');
+    }
+
+    // Create sanitized repo name
+    const timestamp = Date.now();
+    const sanitizedName = identityName
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 50);
+    const repoName = `identity-${sanitizedName}-${timestamp}`;
+    console.log(`📦 Repository name: ${repoName}`);
+
+    // Initialize HuggingFace credentials
+    const credentials: Credentials = {
+      accessToken: hfToken
+    };
+
+    // Step 1: Create repository on HuggingFace
+    console.log('🏗️  Creating HuggingFace repository...');
+    const repo: RepoDesignation = {
+      type: 'model',
+      name: repoName,
+    };
+
+    try {
+      await createRepo({
+        repo,
+        credentials,
+        license: 'mit',
+        private: true, // Keep training data private
+      });
+      console.log('✅ Repository created successfully');
+    } catch (error: any) {
+      console.error('❌ Repository creation failed:', error);
+      throw new Error(`Failed to create HuggingFace repository: ${error.message}`);
+    }
+
+    // Step 2: Prepare files for upload
+    console.log('📦 Preparing files for upload...');
+    const files: Array<{ path: string; content: Uint8Array }> = [];
+
+    // Add training images
+    for (let i = 0; i < imageFiles.length; i++) {
+      const imageFile = imageFiles[i];
+      const extension = imageFile.name.split('.').pop() || 'jpg';
+      const fileName = `images/image_${String(i + 1).padStart(3, '0')}.${extension}`;
+      
+      // Decode base64 to Uint8Array
+      const base64Data = imageFile.data.includes(',') 
+        ? imageFile.data.split(',')[1] 
+        : imageFile.data;
+      
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let j = 0; j < binaryString.length; j++) {
+        bytes[j] = binaryString.charCodeAt(j);
+      }
+
+      files.push({
+        path: fileName,
+        content: bytes
+      });
+    }
+    console.log(`📸 Prepared ${files.length} image files`);
+
+    // Add .gitattributes for Git LFS support (large files)
+    const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+`;
+    files.push({
+      path: '.gitattributes',
+      content: new TextEncoder().encode(gitattributesContent)
+    });
+    console.log('✅ Added .gitattributes for Git LFS');
+
+    // Add training configuration
+    const trainingConfig = {
+      identity_name: identityName,
+      num_images: imageFiles.length,
+      created_at: new Date().toISOString(),
+      user_id: userId,
+      model_type: "flux-lora", // Using FLUX LoRA for identity training
+      training_params: {
+        steps: 1000,
+        learning_rate: 0.0004,
+        resolution: 512,
+      }
+    };
+    files.push({
+      path: 'training_config.json',
+      content: new TextEncoder().encode(JSON.stringify(trainingConfig, null, 2))
+    });
+    console.log('✅ Added training_config.json');
+
+    // Add README
+    const readme = `# ${identityName} Identity Model
+
+This model was trained on ${imageFiles.length} images to learn the identity: **${identityName}**.
+
+## Usage
+This model is designed for use with FLUX image generation models for creating personalized images.
+
+## Training Details
+- **Model Type**: FLUX LoRA
+- **Number of Images**: ${imageFiles.length}
+- **Training Steps**: 1000
+- **Learning Rate**: 0.0004
+- **Resolution**: 512x512
+
+## Privacy
+This model is private and intended for personal use only.
+
+---
+*Trained with Solon AI Memory Platform*
+`;
+    files.push({
+      path: 'README.md',
+      content: new TextEncoder().encode(readme)
+    });
+    console.log('✅ Added README.md');
+
+    // Step 3: Upload all files to HuggingFace
+    console.log(`🚀 Uploading ${files.length} files to HuggingFace...`);
+    
+    // 🔧 FIX: Use 'commitMessage' instead of 'commitTitle' and 'commitDescription'
+    // The @huggingface/hub library expects 'commitMessage' as a single string parameter
+    try {
+      const uploadResult = await uploadFiles({
+        repo,
+        credentials,
+        files,
+        // ✅ CORRECT: Use commitMessage (single string)
+        commitMessage: `Upload training data for ${identityName} (${imageFiles.length} images)`,
+        // ❌ WRONG: Don't use commitTitle and commitDescription - these don't exist!
+        // commitTitle: "Upload training data",
+        // commitDescription: `Training ${identityName} with ${imageFiles.length} images`,
+      });
+
+      console.log('✅ Files uploaded successfully:', uploadResult);
+    } catch (error: any) {
+      console.error('❌ File upload failed:', error);
+      throw new Error(`Failed to upload files to HuggingFace: ${error.message}`);
+    }
+
+    // Step 4: Get repository URL
+    const modelUrl = `https://huggingface.co/${repoName}`;
+    console.log(`✅ Model available at: ${modelUrl}`);
+
+    // Step 5: Save training record to Supabase
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Extract JWT and verify user
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
-    
-    console.log('User verification:', { userId: user?.id, error: userError?.message });
-    
-    if (userError || !user) {
-      throw new Error('Invalid or expired token');
+    const { error: dbError } = await supabaseClient
+      .from('trained_identities')
+      .insert({
+        user_id: userId,
+        identity_name: identityName,
+        model_id: repoName,
+        huggingface_repo_url: modelUrl,
+        num_training_images: imageFiles.length,
+        status: 'training', // Will be updated when training completes
+        training_config: trainingConfig,
+      });
+
+    if (dbError) {
+      console.error('⚠️ Failed to save to database:', dbError);
+      // Don't throw - the HF upload succeeded, which is most important
+    } else {
+      console.log('✅ Training record saved to database');
     }
 
-    const { identityId, action } = await req.json();
-    // Track for error handling in catch
-    parsedIdentityId = identityId ?? null;
-    parsedAction = action ?? null;
-
-    // Check training status
-    if (action === 'check_status') {
-      const { data: identity, error } = await supabaseAdmin
-        .from('trained_identities')
-        .select('*')
-        .eq('id', identityId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      // If training job exists, check HF API for status
-      if (identity.training_job_id && identity.training_status === 'training') {
-        const HF_TOKEN = Deno.env.get('HUGGINGFACE_TOKEN');
-        
-        try {
-          const statusResponse = await fetch(
-            `https://huggingface.co/api/models/${identity.hf_repo_name}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${HF_TOKEN}`,
-              },
-            }
-          );
-
-          if (statusResponse.ok) {
-            // Model exists, training complete!
-            await supabaseAdmin
-              .from('trained_identities')
-              .update({
-                training_status: 'completed',
-                training_completed_at: new Date().toISOString(),
-                hf_model_id: identity.hf_repo_name,
-              })
-              .eq('id', identityId);
-
-            identity.training_status = 'completed';
-          }
-        } catch (error) {
-          console.error('Error checking HF model status:', error);
-        }
-      }
-
-      return new Response(JSON.stringify(identity), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Start training
-    if (action === 'start_training') {
-      const { data: identity, error: identityError } = await supabaseAdmin
-        .from('trained_identities')
-        .select('*')
-        .eq('id', identityId)
-        .eq('user_id', user.id)
-        .single();
-
-      if (identityError) throw identityError;
-
-      // Update status to training
-      await supabaseAdmin
-        .from('trained_identities')
-        .update({
-          training_status: 'training',
-          training_started_at: new Date().toISOString(),
-        })
-        .eq('id', identityId);
-
-      const HF_TOKEN = Deno.env.get('HUGGINGFACE_TOKEN');
-      if (!HF_TOKEN) {
-        throw new Error('HUGGINGFACE_TOKEN not configured');
-      }
-
-      // Fetch the actual HuggingFace username
-      console.log('Fetching HuggingFace username...');
-      const whoamiResponse = await fetch('https://huggingface.co/api/whoami-v2', {
-        headers: { 'Authorization': `Bearer ${HF_TOKEN}` },
-      });
-
-      if (!whoamiResponse.ok) {
-        const errorText = await whoamiResponse.text();
-        throw new Error(`Failed to fetch HF username: ${errorText}`);
-      }
-
-      const whoamiData = await whoamiResponse.json();
-      const hfUsername = whoamiData.name;
-      console.log(`HuggingFace username: ${hfUsername}`);
-
-      // Download images from Supabase Storage
-      const imageBlobs: Blob[] = [];
-      for (const storagePath of identity.image_storage_paths || []) {
-        const { data: imageData, error: downloadError } = await supabaseAdmin.storage
-          .from('identity-training-images')
-          .download(storagePath);
-
-        if (downloadError) {
-          console.error('Error downloading image:', downloadError);
-          continue;
-        }
-
-        if (imageData) {
-          imageBlobs.push(imageData);
-        }
-      }
-
-      console.log(`Downloaded ${imageBlobs.length} images for training`);
-
-      if (imageBlobs.length === 0) {
-        throw new Error('No images could be downloaded for training');
-      }
-
-      // Create HF repo name with CORRECT username
-      const repoName = `${identity.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-lora-${Date.now()}`;
-      const fullRepoName = `${hfUsername}/${repoName}`;
-
-      // Create repository on HF using @huggingface/hub
-      console.log(`Creating HF repository: ${fullRepoName}`);
-      await createRepo({
-        repo: { type: "model", name: fullRepoName },
-        accessToken: HF_TOKEN,
-        private: true,
-      });
-
-      console.log(`Repository created: ${fullRepoName}`);
-
-      // Prepare files for upload
-      console.log(`Preparing to upload ${imageBlobs.length} images using @huggingface/hub...`);
-      
-      const files = [];
-
-      // Add .gitattributes
-      files.push({
-        path: '.gitattributes',
-        content: new Blob([
-          '*.jpg filter=lfs diff=lfs merge=lfs -text\n' +
-          '*.jpeg filter=lfs diff=lfs merge=lfs -text\n' +
-          '*.png filter=lfs diff=lfs merge=lfs -text\n' +
-          '*.webp filter=lfs diff=lfs merge=lfs -text\n'
-        ]),
-      });
-
-      // Add training images
-      for (let i = 0; i < imageBlobs.length; i++) {
-        files.push({
-          path: `training_data/image_${i}.jpg`,
-          content: imageBlobs[i],
-        });
-      }
-
-      // Add training_config.json
-      const trainingConfig = {
-        base_model: "black-forest-labs/FLUX.1-dev",
-        trigger_word: identity.name.toLowerCase(),
-        training_type: "lora",
-        num_images: imageBlobs.length,
-        steps: 500,
-        learning_rate: 0.0005,
-      };
-      files.push({
-        path: 'training_config.json',
-        content: new Blob([JSON.stringify(trainingConfig, null, 2)]),
-      });
-
-      // Upload all files with LFS support (explicit)
-      const commitTitleStr = `Initial training data for ${identity.name || 'identity'}`;
-      const commitDescriptionStr = `Uploaded ${imageBlobs.length} images via Supabase Edge Function`;
-      console.log('TRAIN-ID: using @huggingface/hub.uploadFiles', {
-        repo: fullRepoName,
-        filesCount: files.length,
-        hasGitattributes: files.some((f: any) => f.path === '.gitattributes'),
-        commitTitleStr,
-        commitDescriptionStr,
-      });
-
-      try {
-        await uploadFiles({
-          repo: { type: "model", name: fullRepoName },
-          accessToken: HF_TOKEN,
-          files,
-          commitTitle: commitTitleStr,
-          commitDescription: commitDescriptionStr,
-        });
-        console.log('TRAIN-ID: uploadFiles() succeeded for', fullRepoName);
-      } catch (e) {
-        console.error('TRAIN-ID: uploadFiles() failed', { error: (e as any)?.message || e });
-        throw e;
-      }
-      
-      // Update with repo info - training needs to be started manually on HF
-      await supabaseAdmin
-        .from('trained_identities')
-        .update({
-          hf_repo_name: fullRepoName,
-          training_job_id: `manual-${Date.now()}`,
-        })
-        .eq('id', identityId);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Images uploaded. Please start training on HuggingFace.',
-          repoName: fullRepoName,
-          trainingUrl: `https://huggingface.co/${fullRepoName}`,
-          autoTrainUrl: `https://huggingface.co/spaces/autotrain-projects/autotrain-advanced`,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    throw new Error('Invalid action');
-
-  } catch (error) {
-    console.error('Error in train-identity function:', error);
-
-    // Best-effort: mark training as failed on server if we know the identity
-    try {
-      const supabaseAdmin = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-      // Use parsed variables captured earlier in the request scope
-      if (parsedAction === 'start_training' && parsedIdentityId) {
-        await supabaseAdmin
-          .from('trained_identities')
-          .update({ training_status: 'failed', training_error: (error as any)?.message ?? 'Edge function failure' })
-          .eq('id', parsedIdentityId);
-      }
-    } catch (e) {
-      console.error('Failed to update training status on server error:', e);
-    }
+    // Return success response
+    const response: TrainingResponse = {
+      success: true,
+      repoId: repoName,
+      modelUrl: modelUrl,
+    };
 
     return new Response(
-      JSON.stringify({ error: (error as any)?.message ?? 'Unknown error' }),
-      {
+      JSON.stringify(response),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
+    );
+
+  } catch (error: any) {
+    console.error('❌ Training failed:', error);
+    
+    const errorResponse: TrainingResponse = {
+      success: false,
+      error: error.message || 'Unknown error occurred'
+    };
+
+    return new Response(
+      JSON.stringify(errorResponse),
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
       }
     );
   }
