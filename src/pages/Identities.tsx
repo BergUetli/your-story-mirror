@@ -185,17 +185,23 @@ const Identities = () => {
       
       // Store training URLs for this identity
       if (trainingData.repoName) {
+        const autoTrainUrl = trainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced';
+        const repoUrl = trainingData.trainingUrl || `https://huggingface.co/${trainingData.repoName}`;
+        
         setTrainingUrls(prev => ({
           ...prev,
           [identity.id]: {
-            repoUrl: trainingData.trainingUrl || `https://huggingface.co/${trainingData.repoName}`,
-            autoTrainUrl: trainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced'
+            repoUrl,
+            autoTrainUrl
           }
         }));
         
+        // Open AutoTrain in new tab automatically
+        window.open(autoTrainUrl, '_blank');
+        
         toast.success(
-          "Images uploaded to HuggingFace! Visit your repo to start training.",
-          { duration: 8000 }
+          "Opening AutoTrain... Start training there and we'll detect when it completes!",
+          { duration: 10000 }
         );
       }
 
@@ -372,18 +378,23 @@ const Identities = () => {
 
       if (retrainingError) throw retrainingError;
 
-      // Store training URLs
+      // Store training URLs and open AutoTrain
       if (retrainingData?.repoName) {
+        const autoTrainUrl = retrainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced';
+        
         setTrainingUrls(prev => ({
           ...prev,
           [addingMoreImages]: {
             repoUrl: retrainingData.trainingUrl || `https://huggingface.co/${retrainingData.repoName}`,
-            autoTrainUrl: retrainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced'
+            autoTrainUrl
           }
         }));
+        
+        // Open AutoTrain automatically
+        window.open(autoTrainUrl, '_blank');
       }
 
-      toast.success("Additional images uploaded! Visit HuggingFace to retrain.");
+      toast.success("Opening AutoTrain to retrain with additional images!");
       
       
       // Reset
