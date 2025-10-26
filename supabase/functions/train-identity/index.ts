@@ -187,42 +187,35 @@ serve(async (req) => {
 
       console.log(`Preparing commit with ${imageBlobs.length} images using NDJSON commit API...`);
 
-      // Build NDJSON commit: header + .gitattributes + files + config
-      const ndjsonLines: string[] = [];
+      // Build JSON commit with .gitattributes + files (LFS) + config
+      const operations: any[] = [];
 
-      ndjsonLines.push(
-        JSON.stringify({ key: 'header', value: { summary: `Initial training data for ${identity.name}`, description: `Uploaded ${imageBlobs.length} images via Edge Function` } })
-      );
-
+      // Prepare .gitattributes content and encode to base64
       const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
       const gitAttrBase64 = base64Encode(new TextEncoder().encode(gitattributesContent));
-      ndjsonLines.push(
-        JSON.stringify({
-          key: 'file',
-          value: {
-            content: gitAttrBase64,
-            path: '.gitattributes',
-            encoding: 'base64',
-          }
-        })
-      );
 
+      // Add .gitattributes (base64)
+      operations.push({
+        op: 'add',
+        path: '.gitattributes',
+        content: gitAttrBase64,
+        encoding: 'base64',
+      });
+
+      // Add training images as LFS blobs
       for (let i = 0; i < imageBlobs.length; i++) {
         const ab = await imageBlobs[i].arrayBuffer();
         const base64 = base64Encode(new Uint8Array(ab));
-        ndjsonLines.push(
-          JSON.stringify({
-            key: 'file',
-            value: {
-              content: base64,
-              path: `training_data/image_${i}.jpg`,
-              encoding: 'base64',
-              lfs: true,
-            }
-          })
-        );
+        operations.push({
+          op: 'add',
+          path: `training_data/image_${i}.jpg`,
+          content: base64,
+          encoding: 'base64',
+          lfs: true,
+        });
       }
 
+      // Prepare training_config.json and encode to base64
       const metadataContent = JSON.stringify({
         base_model: "black-forest-labs/FLUX.1-dev",
         trigger_word: identity.name.toLowerCase(),
@@ -232,27 +225,28 @@ serve(async (req) => {
         learning_rate: 0.0005,
       }, null, 2);
       const metaBase64 = base64Encode(new TextEncoder().encode(metadataContent));
-      ndjsonLines.push(
-        JSON.stringify({
-          key: 'file',
-          value: {
-            content: metaBase64,
-            path: 'training_config.json',
-            encoding: 'base64',
-          }
-        })
-      );
 
-      console.log('Submitting NDJSON commit to Hugging Face...');
+      // Add training_config.json (base64)
+      operations.push({
+        op: 'add',
+        path: 'training_config.json',
+        content: metaBase64,
+        encoding: 'base64',
+      });
+
+      console.log('Submitting JSON commit to Hugging Face (with LFS for images)...');
       const commitResponse = await fetch(
         `https://huggingface.co/api/models/${fullRepoName}/commit/main`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${HF_TOKEN}`,
-            'Content-Type': 'application/x-ndjson',
+            'Content-Type': 'application/json',
           },
-          body: ndjsonLines.join('\n'),
+          body: JSON.stringify({
+            operations,
+            commit_message: `Initial training data for ${identity.name}`,
+          }),
         }
       );
 
@@ -262,7 +256,7 @@ serve(async (req) => {
         throw new Error(`Failed to commit training files: ${errorText}`);
       }
 
-      console.log('NDJSON commit succeeded. Training files are in the repo.');
+      console.log('JSON commit succeeded. Training files are in the repo.');
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
