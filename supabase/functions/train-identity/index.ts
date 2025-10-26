@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -179,88 +178,68 @@ serve(async (req) => {
 
       console.log(`Repository created: ${fullRepoName}`);
 
-      // Commit images and config in a single commit via Hub commit API (NDJSON)
-      const toBase64 = (bytes: Uint8Array) => base64Encode(bytes);
+      console.log(`Uploading ${imageBlobs.length} images to HuggingFace...`);
 
-      console.log(`Preparing commit with ${imageBlobs.length} images...`);
+      // Upload each image individually using HF's upload endpoint (handles LFS automatically)
+      for (let i = 0; i < imageBlobs.length; i++) {
+        console.log(`Uploading image ${i + 1}/${imageBlobs.length}...`);
+        
+        const imageBlob = imageBlobs[i];
+        const formData = new FormData();
+        formData.append('file', imageBlob, `image_${i}.jpg`);
 
-      // Create training metadata file for AutoTrain
+        const uploadResponse = await fetch(
+          `https://huggingface.co/api/models/${fullRepoName}/upload/main/training_data/image_${i}.jpg`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${HF_TOKEN}`,
+            },
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error(`Failed to upload image ${i}:`, errorText);
+          throw new Error(`Failed to upload image ${i}: ${errorText}`);
+        }
+      }
+
+      console.log('All images uploaded successfully.');
+
+      // Upload training config
       const metadataContent = JSON.stringify({
         base_model: "black-forest-labs/FLUX.1-dev",
         trigger_word: identity.name.toLowerCase(),
         training_type: "lora",
         num_images: imageBlobs.length,
-        steps: 500, // Reduced for faster training
-        learning_rate: 0.0005, // Slightly higher to compensate
-      });
+        steps: 500,
+        learning_rate: 0.0005,
+      }, null, 2);
 
-      const ndjsonLines: string[] = [];
-      ndjsonLines.push(
-        JSON.stringify({ key: 'header', value: { summary: `Initial training data for ${identity.name}`, description: 'Uploaded via Supabase Edge Function' } })
-      );
+      const configBlob = new Blob([metadataContent], { type: 'application/json' });
+      const configFormData = new FormData();
+      configFormData.append('file', configBlob, 'training_config.json');
 
-      // Ensure Git LFS is enabled for image files in this repo by committing .gitattributes first
-      const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
-      const gitattributesBase64 = toBase64(new TextEncoder().encode(gitattributesContent));
-      ndjsonLines.push(
-        JSON.stringify({
-          key: 'file',
-          value: {
-            content: gitattributesBase64,
-            path: '.gitattributes',
-            encoding: 'base64',
-          }
-        })
-      );
-
-      for (let i = 0; i < imageBlobs.length; i++) {
-        const ab = await imageBlobs[i].arrayBuffer();
-        const base64 = toBase64(new Uint8Array(ab));
-        ndjsonLines.push(
-          JSON.stringify({
-            key: 'file',
-            value: {
-              content: base64,
-              path: `training_data/image_${i}.jpg`,
-              encoding: 'base64',
-              lfs: true,
-            }
-          })
-        );
-      }
-
-      const metaBase64 = toBase64(new TextEncoder().encode(metadataContent));
-      ndjsonLines.push(
-        JSON.stringify({
-          key: 'file',
-          value: {
-            content: metaBase64,
-            path: 'training_config.json',
-            encoding: 'base64',
-          }
-        })
-      );
-
-      console.log('Submitting commit to Hugging Face...');
-      const commitResponse = await fetch(
-        `https://huggingface.co/api/models/${fullRepoName}/commit/main`,
+      const configUploadResponse = await fetch(
+        `https://huggingface.co/api/models/${fullRepoName}/upload/main/training_config.json`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${HF_TOKEN}`,
-            'Content-Type': 'application/x-ndjson',
           },
-          body: ndjsonLines.join('\n'),
+          body: configFormData,
         }
       );
 
-      if (!commitResponse.ok) {
-        const errorText = await commitResponse.text();
-        console.error('Commit failed:', errorText);
-        throw new Error(`Failed to commit training files: ${errorText}`);
+      if (!configUploadResponse.ok) {
+        const errorText = await configUploadResponse.text();
+        console.error('Failed to upload config:', errorText);
+        throw new Error(`Failed to upload training config: ${errorText}`);
       }
 
-      console.log('Commit succeeded. Training files are in the repo.');
+      console.log('Training files uploaded successfully.');
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
