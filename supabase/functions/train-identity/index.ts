@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -180,15 +180,7 @@ serve(async (req) => {
       console.log(`Repository created: ${fullRepoName}`);
 
       // Commit images and config in a single commit via Hub commit API (NDJSON)
-      const toBase64 = (bytes: Uint8Array) => {
-        let binary = '';
-        const chunkSize = 8192; // Process 8KB at a time to avoid stack overflow
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-          binary += String.fromCharCode(...chunk);
-        }
-        return btoa(binary);
-      };
+      const toBase64 = (bytes: Uint8Array) => base64Encode(bytes);
 
       console.log(`Preparing commit with ${imageBlobs.length} images...`);
 
