@@ -195,7 +195,7 @@ serve(async (req) => {
       );
 
       const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
-      const gitAttrBase64 = btoa(unescape(encodeURIComponent(gitattributesContent)));
+      const gitAttrBase64 = base64Encode(new TextEncoder().encode(gitattributesContent));
       ndjsonLines.push(
         JSON.stringify({
           key: 'file',
@@ -231,7 +231,7 @@ serve(async (req) => {
         steps: 500,
         learning_rate: 0.0005,
       }, null, 2);
-      const metaBase64 = btoa(unescape(encodeURIComponent(metadataContent)));
+      const metaBase64 = base64Encode(new TextEncoder().encode(metadataContent));
       ndjsonLines.push(
         JSON.stringify({
           key: 'file',
