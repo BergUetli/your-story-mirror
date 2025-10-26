@@ -58,20 +58,40 @@ serve(async (req) => {
       throw new Error('Maximum 40 images allowed');
     }
 
-    // Create sanitized repo name
+    // Initialize HuggingFace credentials
+    const credentials: Credentials = {
+      accessToken: hfToken
+    };
+
+    // Get HuggingFace username for namespace
+    console.log('🔍 Fetching HuggingFace username...');
+    let hfUsername: string;
+    try {
+      const userResponse = await fetch('https://huggingface.co/api/whoami-v2', {
+        headers: {
+          'Authorization': `Bearer ${hfToken}`
+        }
+      });
+      if (!userResponse.ok) {
+        throw new Error(`Failed to get HuggingFace user info: ${userResponse.status}`);
+      }
+      const userData = await userResponse.json();
+      hfUsername = userData.name;
+      console.log(`✅ HuggingFace username: ${hfUsername}`);
+    } catch (error: any) {
+      console.error('❌ Failed to get HuggingFace username:', error);
+      throw new Error(`Could not authenticate with HuggingFace: ${error.message}`);
+    }
+
+    // Create sanitized repo name WITH namespace
     const timestamp = Date.now();
     const sanitizedName = identityName
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, '-')
       .replace(/-+/g, '-')
       .slice(0, 50);
-    const repoName = `identity-${sanitizedName}-${timestamp}`;
+    const repoName = `${hfUsername}/identity-${sanitizedName}-${timestamp}`;
     console.log(`📦 Repository name: ${repoName}`);
-
-    // Initialize HuggingFace credentials
-    const credentials: Credentials = {
-      accessToken: hfToken
-    };
 
     // Step 1: Create repository on HuggingFace
     console.log('🏗️  Creating HuggingFace repository...');
