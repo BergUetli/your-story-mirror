@@ -207,17 +207,30 @@ serve(async (req) => {
         content: new Blob([JSON.stringify(trainingConfig, null, 2)]),
       });
 
-      // Upload all files with LFS support
-      console.log('Uploading files to Hugging Face...');
-      await uploadFiles({
-        repo: { type: "model", name: fullRepoName },
-        accessToken: HF_TOKEN,
-        files,
-        commitTitle: `Initial training data for ${identity.name}`,
-        commitDescription: `Uploaded ${imageBlobs.length} images via Edge Function`,
+      // Upload all files with LFS support (explicit)
+      const commitTitleStr = `Initial training data for ${identity.name || 'identity'}`;
+      const commitDescriptionStr = `Uploaded ${imageBlobs.length} images via Supabase Edge Function`;
+      console.log('TRAIN-ID: using @huggingface/hub.uploadFiles', {
+        repo: fullRepoName,
+        filesCount: files.length,
+        hasGitattributes: files.some((f: any) => f.path === '.gitattributes'),
+        commitTitleStr,
+        commitDescriptionStr,
       });
 
-      console.log('Upload succeeded. Training files are in the repo.');
+      try {
+        await uploadFiles({
+          repo: { type: "model", name: fullRepoName },
+          accessToken: HF_TOKEN,
+          files,
+          commitTitle: commitTitleStr,
+          commitDescription: commitDescriptionStr,
+        });
+        console.log('TRAIN-ID: uploadFiles() succeeded for', fullRepoName);
+      } catch (e) {
+        console.error('TRAIN-ID: uploadFiles() failed', { error: (e as any)?.message || e });
+        throw e;
+      }
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
