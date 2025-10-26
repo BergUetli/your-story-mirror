@@ -115,7 +115,7 @@ serve(async (req) => {
 
     // Step 2: Prepare files for upload
     console.log('📦 Preparing files for upload...');
-    const files: Array<{ path: string; content: Uint8Array }> = [];
+    const files: Array<{ path: string; content: Blob }> = [];
 
     // Add training images
     for (let i = 0; i < imageFiles.length; i++) {
@@ -134,9 +134,11 @@ serve(async (req) => {
         bytes[j] = binaryString.charCodeAt(j);
       }
 
+      // Convert to Blob
+      const mimeType = `image/${extension === 'jpg' ? 'jpeg' : extension}`;
       files.push({
         path: fileName,
-        content: bytes
+        content: new Blob([bytes], { type: mimeType })
       });
     }
     console.log(`📸 Prepared ${files.length} image files`);
@@ -148,7 +150,7 @@ serve(async (req) => {
 `;
     files.push({
       path: '.gitattributes',
-      content: new TextEncoder().encode(gitattributesContent)
+      content: new Blob([gitattributesContent], { type: 'text/plain' })
     });
     console.log('✅ Added .gitattributes for Git LFS');
 
@@ -167,7 +169,7 @@ serve(async (req) => {
     };
     files.push({
       path: 'training_config.json',
-      content: new TextEncoder().encode(JSON.stringify(trainingConfig, null, 2))
+      content: new Blob([JSON.stringify(trainingConfig, null, 2)], { type: 'application/json' })
     });
     console.log('✅ Added training_config.json');
 
@@ -194,7 +196,7 @@ This model is private and intended for personal use only.
 `;
     files.push({
       path: 'README.md',
-      content: new TextEncoder().encode(readme)
+      content: new Blob([readme], { type: 'text/markdown' })
     });
     console.log('✅ Added README.md');
 
