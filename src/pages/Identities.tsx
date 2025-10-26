@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Upload, X, Loader2, Check, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +46,7 @@ const Identities = () => {
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
   const [trainingUrls, setTrainingUrls] = useState<Record<string, {repoUrl: string, autoTrainUrl: string}>>({});
+  const [lastEdgeError, setLastEdgeError] = useState<string | null>(null);
 
   // Load trained identities from database
   useEffect(() => {
@@ -63,6 +65,32 @@ const Identities = () => {
     } catch (error) {
       console.error('Error loading identities:', error);
       toast.error('Failed to load identities');
+    }
+  };
+
+  const extractEdgeFunctionError = async (err: any): Promise<string> => {
+    try {
+      const res = (err as any)?.context?.response as Response | undefined;
+      if (res) {
+        const status = res.status;
+        let bodyText = '';
+        try {
+          const ct = res.headers?.get('content-type') || '';
+          if (ct.includes('application/json')) {
+            const j = await (res as any).json();
+            bodyText = JSON.stringify(j, null, 2);
+          } else {
+            bodyText = await (res as any).text();
+          }
+        } catch (_) {
+          bodyText = '[failed to read response body]';
+        }
+        return `HTTP ${status} - ${bodyText}`;
+      }
+      if ((err as any)?.message) return (err as any).message;
+      return typeof err === 'string' ? err : JSON.stringify(err);
+    } catch (_) {
+      return 'Unknown Edge Function error';
     }
   };
 
@@ -118,6 +146,7 @@ const Identities = () => {
 
     setIsTraining(true);
     setTrainingProgress(0);
+    setLastEdgeError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -179,7 +208,11 @@ const Identities = () => {
         }
       );
 
-      if (trainingError) throw trainingError;
+      if (trainingError) {
+        const details = await extractEdgeFunctionError(trainingError);
+        setLastEdgeError(details);
+        throw new Error(trainingError.message || 'Edge Function failed during start_training');
+      }
 
       console.log('Training setup complete:', trainingData);
       
@@ -209,7 +242,7 @@ const Identities = () => {
 
       // Step 5: Poll for training completion (check every minute)
       const pollInterval = setInterval(async () => {
-        const { data: statusData } = await supabase.functions.invoke(
+        const { data: statusData, error: statusError } = await supabase.functions.invoke(
           'train-identity',
           {
             body: {
@@ -218,6 +251,13 @@ const Identities = () => {
             }
           }
         );
+
+        if (statusError) {
+          const details = await extractEdgeFunctionError(statusError);
+          setLastEdgeError(details);
+          console.error('Training status poll error:', statusError);
+          return; // keep polling, don't crash the flow
+        }
 
         console.log('Training status:', statusData);
 
@@ -257,9 +297,15 @@ const Identities = () => {
         }
       }, 120 * 60 * 1000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Training error:', error);
-      toast.error(error.message || "Training failed. Please try again.");
+      try {
+        if (!lastEdgeError && (error as any)?.context?.response) {
+          const details = await extractEdgeFunctionError(error);
+          setLastEdgeError(details);
+        }
+      } catch {}
+      toast.error(error?.message || 'Training failed. See details below.');
       setIsTraining(false);
       setTrainingProgress(0);
     }
@@ -376,7 +422,11 @@ const Identities = () => {
         }
       });
 
-      if (retrainingError) throw retrainingError;
+      if (retrainingError) {
+        const details = await extractEdgeFunctionError(retrainingError);
+        setLastEdgeError(details);
+        throw new Error(retrainingError.message || 'Edge Function failed during retraining');
+      }
 
       // Store training URLs and open AutoTrain
       if (retrainingData?.repoName) {
@@ -422,6 +472,24 @@ const Identities = () => {
             Upload 3–40 clear photos of one person so Solon can learn their look.
           </p>
         </div>
+
+        {lastEdgeError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Edge Function Error</AlertTitle>
+            <AlertDescription>
+              <pre className="whitespace-pre-wrap break-words text-xs">{lastEdgeError}</pre>
+              <a
+                href={`https://supabase.com/dashboard/project/gulydhhzwlltkxbfnclu/functions/train-identity/logs`}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                View train-identity logs
+              </a>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Upload Panel */}
         <Card className="p-6 mb-8 bg-card border-2">
