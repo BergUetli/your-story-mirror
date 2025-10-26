@@ -111,6 +111,21 @@ serve(async (req) => {
         throw new Error('HUGGINGFACE_TOKEN not configured');
       }
 
+      // Fetch the actual HuggingFace username
+      console.log('Fetching HuggingFace username...');
+      const whoamiResponse = await fetch('https://huggingface.co/api/whoami-v2', {
+        headers: { 'Authorization': `Bearer ${HF_TOKEN}` },
+      });
+
+      if (!whoamiResponse.ok) {
+        const errorText = await whoamiResponse.text();
+        throw new Error(`Failed to fetch HF username: ${errorText}`);
+      }
+
+      const whoamiData = await whoamiResponse.json();
+      const hfUsername = whoamiData.name;
+      console.log(`HuggingFace username: ${hfUsername}`);
+
       // Download images from Supabase Storage
       const imageBlobs: Blob[] = [];
       for (const storagePath of identity.image_storage_paths || []) {
@@ -130,11 +145,16 @@ serve(async (req) => {
 
       console.log(`Downloaded ${imageBlobs.length} images for training`);
 
-      // Create HF repo name
+      if (imageBlobs.length === 0) {
+        throw new Error('No images could be downloaded for training');
+      }
+
+      // Create HF repo name with CORRECT username
       const repoName = `${identity.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-lora-${Date.now()}`;
-      const fullRepoName = `${user.email?.split('@')[0] || user.id}/${repoName}`;
+      const fullRepoName = `${hfUsername}/${repoName}`;
 
       // Create repository on HF
+      console.log(`Creating HF repository: ${fullRepoName}`);
       const createRepoResponse = await fetch(
         `https://huggingface.co/api/repos/create`,
         {
@@ -153,15 +173,19 @@ serve(async (req) => {
 
       if (!createRepoResponse.ok) {
         const errorText = await createRepoResponse.text();
+        console.error('Failed to create repo:', errorText);
         throw new Error(`Failed to create HF repo: ${errorText}`);
       }
 
+      console.log(`Repository created: ${fullRepoName}`);
+
       // Upload images to HF repo
+      console.log(`Uploading ${imageBlobs.length} images...`);
       for (let i = 0; i < imageBlobs.length; i++) {
         const formData = new FormData();
         formData.append('file', imageBlobs[i], `image_${i}.jpg`);
 
-        await fetch(
+        const uploadResponse = await fetch(
           `https://huggingface.co/api/repos/${fullRepoName}/upload/main/training_data/image_${i}.jpg`,
           {
             method: 'POST',
@@ -171,7 +195,14 @@ serve(async (req) => {
             body: formData,
           }
         );
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error(`Failed to upload image ${i}:`, errorText);
+          throw new Error(`Failed to upload image ${i}: ${errorText}`);
+        }
       }
+      console.log('All images uploaded successfully');
 
       // Create training metadata file for AutoTrain
       const metadataContent = JSON.stringify({
@@ -187,7 +218,8 @@ serve(async (req) => {
       const metadataFormData = new FormData();
       metadataFormData.append('file', metadataBlob, 'training_config.json');
 
-      await fetch(
+      console.log('Uploading training config...');
+      const configUploadResponse = await fetch(
         `https://huggingface.co/api/repos/${fullRepoName}/upload/main/training_config.json`,
         {
           method: 'POST',
@@ -195,6 +227,12 @@ serve(async (req) => {
           body: metadataFormData,
         }
       );
+
+      if (!configUploadResponse.ok) {
+        const errorText = await configUploadResponse.text();
+        console.error('Failed to upload config:', errorText);
+        throw new Error(`Failed to upload training config: ${errorText}`);
+      }
 
       console.log(`Training config created for ${fullRepoName}`);
       
