@@ -237,12 +237,12 @@ This model is private and intended for personal use only.
       .from('trained_identities')
       .insert({
         user_id: userId,
-        identity_name: identityName,
-        model_id: repoName,
-        huggingface_repo_url: modelUrl,
+        name: identityName,
+        hf_model_id: repoName,
+        hf_repo_name: repoName,
         num_training_images: imageFiles.length,
-        status: 'training', // Will be updated when training completes
-        training_config: trainingConfig,
+        training_status: 'training', // Will be updated when training completes
+        model_type: trainingConfig.model_type,
       });
 
     if (dbError) {
