@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -208,7 +209,7 @@ serve(async (req) => {
 
       for (let i = 0; i < imageBlobs.length; i++) {
         const ab = await imageBlobs[i].arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+        const base64 = base64Encode(new Uint8Array(ab));
         ndjsonLines.push(
           JSON.stringify({
             key: 'file',
@@ -297,17 +298,12 @@ serve(async (req) => {
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
-      // We can't re-read req.json() here, so rely on variables set earlier if present
-      // Note: identityIdParam/actionParam are set just after parsing request.
-      // @ts-ignore - using dynamic lookup from closure if available
-      const identityIdParam = (globalThis as any).identityIdParam ?? undefined;
-      // @ts-ignore
-      const actionParam = (globalThis as any).actionParam ?? undefined;
-      if (actionParam === 'start_training' && identityIdParam) {
+      // Use parsed variables captured earlier in the request scope
+      if (parsedAction === 'start_training' && parsedIdentityId) {
         await supabaseAdmin
           .from('trained_identities')
           .update({ training_status: 'failed', training_error: (error as any)?.message ?? 'Edge function failure' })
-          .eq('id', identityIdParam);
+          .eq('id', parsedIdentityId);
       }
     } catch (e) {
       console.error('Failed to update training status on server error:', e);
