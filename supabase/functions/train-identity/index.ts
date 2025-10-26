@@ -180,7 +180,15 @@ serve(async (req) => {
       console.log(`Repository created: ${fullRepoName}`);
 
       // Commit images and config in a single commit via Hub commit API (NDJSON)
-      const toBase64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
+      const toBase64 = (bytes: Uint8Array) => {
+        let binary = '';
+        const chunkSize = 8192; // Process 8KB at a time to avoid stack overflow
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          binary += String.fromCharCode(...chunk);
+        }
+        return btoa(binary);
+      };
 
       console.log(`Preparing commit with ${imageBlobs.length} images...`);
 
