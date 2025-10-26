@@ -179,20 +179,21 @@ serve(async (req) => {
 
       console.log(`Repository created: ${fullRepoName}`);
 
-      // Upload images to HF repo
+      // Upload images to HF repo using correct API
       console.log(`Uploading ${imageBlobs.length} images...`);
       for (let i = 0; i < imageBlobs.length; i++) {
-        const formData = new FormData();
-        formData.append('file', imageBlobs[i], `image_${i}.jpg`);
+        const arrayBuffer = await imageBlobs[i].arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
 
         const uploadResponse = await fetch(
-          `https://huggingface.co/api/repos/${fullRepoName}/upload/main/training_data/image_${i}.jpg`,
+          `https://huggingface.co/api/models/${fullRepoName}/tree/main/training_data/image_${i}.jpg`,
           {
-            method: 'POST',
+            method: 'PUT',
             headers: {
               'Authorization': `Bearer ${HF_TOKEN}`,
+              'Content-Type': 'image/jpeg',
             },
-            body: formData,
+            body: uint8Array,
           }
         );
 
@@ -201,6 +202,7 @@ serve(async (req) => {
           console.error(`Failed to upload image ${i}:`, errorText);
           throw new Error(`Failed to upload image ${i}: ${errorText}`);
         }
+        console.log(`Uploaded image ${i}`);
       }
       console.log('All images uploaded successfully');
 
@@ -214,17 +216,16 @@ serve(async (req) => {
         learning_rate: 0.0005, // Slightly higher to compensate
       });
 
-      const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
-      const metadataFormData = new FormData();
-      metadataFormData.append('file', metadataBlob, 'training_config.json');
-
       console.log('Uploading training config...');
       const configUploadResponse = await fetch(
-        `https://huggingface.co/api/repos/${fullRepoName}/upload/main/training_config.json`,
+        `https://huggingface.co/api/models/${fullRepoName}/tree/main/training_config.json`,
         {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${HF_TOKEN}` },
-          body: metadataFormData,
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${HF_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          body: metadataContent,
         }
       );
 
