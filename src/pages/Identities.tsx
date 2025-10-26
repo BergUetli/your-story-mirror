@@ -44,6 +44,7 @@ const Identities = () => {
   const [addingMoreImages, setAddingMoreImages] = useState<string | null>(null);
   const [additionalImages, setAdditionalImages] = useState<File[]>([]);
   const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>([]);
+  const [trainingUrls, setTrainingUrls] = useState<Record<string, {repoUrl: string, autoTrainUrl: string}>>({});
 
   // Load trained identities from database
   useEffect(() => {
@@ -180,9 +181,27 @@ const Identities = () => {
 
       if (trainingError) throw trainingError;
 
+      console.log('Training setup complete:', trainingData);
+      
+      // Store training URLs for this identity
+      if (trainingData.repoName) {
+        setTrainingUrls(prev => ({
+          ...prev,
+          [identity.id]: {
+            repoUrl: trainingData.trainingUrl || `https://huggingface.co/${trainingData.repoName}`,
+            autoTrainUrl: trainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced'
+          }
+        }));
+        
+        toast.success(
+          "Images uploaded to HuggingFace! Visit your repo to start training.",
+          { duration: 8000 }
+        );
+      }
+
       setTrainingProgress(60);
 
-      // Step 5: Poll for training completion
+      // Step 5: Poll for training completion (check every minute)
       const pollInterval = setInterval(async () => {
         const { data: statusData } = await supabase.functions.invoke(
           'train-identity',
@@ -194,10 +213,12 @@ const Identities = () => {
           }
         );
 
+        console.log('Training status:', statusData);
+
         if (statusData?.training_status === 'completed') {
           clearInterval(pollInterval);
           setTrainingProgress(100);
-          toast.success(`✅ Identity "${identityName}" is now trained! Use it in Reconstruction.`, {
+          toast.success(`✅ Identity "${identityName}" training detected as complete! Model found on HuggingFace.`, {
             duration: 5000
           });
           
@@ -217,18 +238,18 @@ const Identities = () => {
           throw new Error(statusData.training_error || 'Training failed');
         } else {
           // Still training, update progress
-          setTrainingProgress(prev => Math.min(prev + 2, 95));
+          setTrainingProgress(prev => Math.min(prev + 1, 95));
         }
-      }, 5000); // Check every 5 seconds
+      }, 60000); // Check every minute
 
-      // Timeout after 30 minutes
+      // Timeout after 2 hours
       setTimeout(() => {
         clearInterval(pollInterval);
         if (isTraining) {
           toast.error("Training timeout. Check status in HuggingFace.");
           setIsTraining(false);
         }
-      }, 30 * 60 * 1000);
+      }, 120 * 60 * 1000);
 
     } catch (error) {
       console.error('Training error:', error);
@@ -342,14 +363,28 @@ const Identities = () => {
       if (updateError) throw updateError;
 
       // Trigger retraining
-      await supabase.functions.invoke('train-identity', {
+      const { data: retrainingData, error: retrainingError } = await supabase.functions.invoke('train-identity', {
         body: {
           identityId: addingMoreImages,
           action: 'start_training'
         }
       });
 
-      toast.success("Additional images uploaded! Retraining started.");
+      if (retrainingError) throw retrainingError;
+
+      // Store training URLs
+      if (retrainingData?.repoName) {
+        setTrainingUrls(prev => ({
+          ...prev,
+          [addingMoreImages]: {
+            repoUrl: retrainingData.trainingUrl || `https://huggingface.co/${retrainingData.repoName}`,
+            autoTrainUrl: retrainingData.autoTrainUrl || 'https://huggingface.co/spaces/autotrain-projects/autotrain-advanced'
+          }
+        }));
+      }
+
+      toast.success("Additional images uploaded! Visit HuggingFace to retrain.");
+      
       
       // Reset
       additionalImagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -565,12 +600,44 @@ const Identities = () => {
                           {identity.training_status}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-3">
+                      <p className="text-xs text-muted-foreground mb-1">
                         {identity.training_completed_at 
                           ? `Trained ${new Date(identity.training_completed_at).toLocaleDateString()}`
                           : `Created ${new Date(identity.created_at).toLocaleDateString()}`
                         }
                       </p>
+                      
+                      {/* HuggingFace Links */}
+                      {identity.hf_repo_name && (
+                        <div className="mb-3 space-y-1">
+                          <a 
+                            href={`https://huggingface.co/${identity.hf_repo_name}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline block"
+                          >
+                            🤗 View HuggingFace Repo →
+                          </a>
+                          {identity.training_status === 'training' && trainingUrls[identity.id] && (
+                            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded p-2">
+                              <p className="text-xs text-amber-800 dark:text-amber-200 mb-1">
+                                ⚠️ Manual step required:
+                              </p>
+                              <a 
+                                href={trainingUrls[identity.id].autoTrainUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-orange-600 dark:text-orange-400 hover:underline block"
+                              >
+                                🚀 Start Training on AutoTrain →
+                              </a>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                We'll detect when training completes
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         {identity.training_status === "completed" && (
                           <Button 

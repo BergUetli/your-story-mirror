@@ -173,26 +173,47 @@ serve(async (req) => {
         );
       }
 
-      // Start AutoTrain via HF API
-      // Note: This is a simplified version. Full AutoTrain integration requires
-      // more complex API calls. For now, we'll mark as training and you'll need
-      // to manually train via HF UI or use their AutoTrain API when it's stable.
+      // Create training metadata file for AutoTrain
+      const metadataContent = JSON.stringify({
+        base_model: "black-forest-labs/FLUX.1-dev",
+        trigger_word: identity.name.toLowerCase(),
+        training_type: "lora",
+        num_images: imageBlobs.length,
+        steps: 1000,
+        learning_rate: 0.0004,
+      });
+
+      const metadataBlob = new Blob([metadataContent], { type: 'application/json' });
+      const metadataFormData = new FormData();
+      metadataFormData.append('file', metadataBlob, 'training_config.json');
+
+      await fetch(
+        `https://huggingface.co/api/repos/${fullRepoName}/upload/main/training_config.json`,
+        {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${HF_TOKEN}` },
+          body: metadataFormData,
+        }
+      );
+
+      console.log(`Training config created for ${fullRepoName}`);
       
-      // Update with repo info
+      // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
         .from('trained_identities')
         .update({
           hf_repo_name: fullRepoName,
-          training_job_id: `autotrain-${Date.now()}`,
+          training_job_id: `manual-${Date.now()}`,
         })
         .eq('id', identityId);
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Training initiated. Images uploaded to HuggingFace.',
+          message: 'Images uploaded. Please start training on HuggingFace.',
           repoName: fullRepoName,
-          note: 'You can now train the LoRA using HuggingFace AutoTrain UI or API',
+          trainingUrl: `https://huggingface.co/${fullRepoName}`,
+          autoTrainUrl: `https://huggingface.co/spaces/autotrain-projects/autotrain-advanced`,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
