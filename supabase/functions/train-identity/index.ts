@@ -178,37 +178,26 @@ serve(async (req) => {
 
       console.log(`Repository created: ${fullRepoName}`);
 
-      console.log(`Uploading ${imageBlobs.length} images to HuggingFace...`);
+      console.log(`Uploading ${imageBlobs.length} images to HuggingFace using commit API...`);
 
-      // Upload each image individually using HF's upload endpoint (handles LFS automatically)
+      // Convert blobs to base64 for the commit API
+      const operations: any[] = [];
+      
       for (let i = 0; i < imageBlobs.length; i++) {
-        console.log(`Uploading image ${i + 1}/${imageBlobs.length}...`);
-        
         const imageBlob = imageBlobs[i];
-        const formData = new FormData();
-        formData.append('file', imageBlob, `image_${i}.jpg`);
-
-        const uploadResponse = await fetch(
-          `https://huggingface.co/api/models/${fullRepoName}/upload/main/training_data/image_${i}.jpg`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${HF_TOKEN}`,
-            },
-            body: formData,
-          }
-        );
-
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          console.error(`Failed to upload image ${i}:`, errorText);
-          throw new Error(`Failed to upload image ${i}: ${errorText}`);
-        }
+        const arrayBuffer = await imageBlob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const base64 = btoa(String.fromCharCode(...bytes));
+        
+        operations.push({
+          operation: 'add',
+          path: `training_data/image_${i}.jpg`,
+          encoding: 'base64',
+          content: base64
+        });
       }
 
-      console.log('All images uploaded successfully.');
-
-      // Upload training config
+      // Add training config
       const metadataContent = JSON.stringify({
         base_model: "black-forest-labs/FLUX.1-dev",
         trigger_word: identity.name.toLowerCase(),
@@ -218,28 +207,37 @@ serve(async (req) => {
         learning_rate: 0.0005,
       }, null, 2);
 
-      const configBlob = new Blob([metadataContent], { type: 'application/json' });
-      const configFormData = new FormData();
-      configFormData.append('file', configBlob, 'training_config.json');
+      operations.push({
+        operation: 'add',
+        path: 'training_config.json',
+        encoding: 'utf-8',
+        content: metadataContent
+      });
 
-      const configUploadResponse = await fetch(
-        `https://huggingface.co/api/models/${fullRepoName}/upload/main/training_config.json`,
+      // Upload all files in a single commit using the commit API
+      const commitResponse = await fetch(
+        `https://huggingface.co/api/models/${fullRepoName}/commit/main`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${HF_TOKEN}`,
+            'Content-Type': 'application/json',
           },
-          body: configFormData,
+          body: JSON.stringify({
+            summary: `Upload training data for ${identity.name}`,
+            description: `Uploaded ${imageBlobs.length} training images and config`,
+            files: operations
+          }),
         }
       );
 
-      if (!configUploadResponse.ok) {
-        const errorText = await configUploadResponse.text();
-        console.error('Failed to upload config:', errorText);
-        throw new Error(`Failed to upload training config: ${errorText}`);
+      if (!commitResponse.ok) {
+        const errorText = await commitResponse.text();
+        console.error('Commit failed:', errorText);
+        throw new Error(`Failed to commit training files: ${errorText}`);
       }
 
-      console.log('Training files uploaded successfully.');
+      console.log('Training files committed successfully.');
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
