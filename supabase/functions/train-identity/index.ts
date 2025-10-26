@@ -9,6 +9,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+  // Track request context for error handling
+  let parsedIdentityId: string | null = null;
+  let parsedAction: string | null = null;
 
   try {
     // Get authorization header
@@ -36,6 +39,9 @@ serve(async (req) => {
     }
 
     const { identityId, action } = await req.json();
+    // Track for error handling in catch
+    parsedIdentityId = identityId ?? null;
+    parsedAction = action ?? null;
 
     // Check training status
     if (action === 'check_status') {
@@ -178,26 +184,44 @@ serve(async (req) => {
 
       console.log(`Repository created: ${fullRepoName}`);
 
-      console.log(`Uploading ${imageBlobs.length} images to HuggingFace using commit API...`);
+      console.log(`Preparing commit with ${imageBlobs.length} images using NDJSON commit API...`);
 
-      // Convert blobs to base64 for the commit API
-      const operations: any[] = [];
-      
+      // Build NDJSON commit: header + .gitattributes + files + config
+      const ndjsonLines: string[] = [];
+
+      ndjsonLines.push(
+        JSON.stringify({ key: 'header', value: { summary: `Initial training data for ${identity.name}`, description: `Uploaded ${imageBlobs.length} images via Edge Function` } })
+      );
+
+      const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
+      const gitAttrBase64 = btoa(unescape(encodeURIComponent(gitattributesContent)));
+      ndjsonLines.push(
+        JSON.stringify({
+          key: 'file',
+          value: {
+            content: gitAttrBase64,
+            path: '.gitattributes',
+            encoding: 'base64',
+          }
+        })
+      );
+
       for (let i = 0; i < imageBlobs.length; i++) {
-        const imageBlob = imageBlobs[i];
-        const arrayBuffer = await imageBlob.arrayBuffer();
-        const bytes = new Uint8Array(arrayBuffer);
-        const base64 = btoa(String.fromCharCode(...bytes));
-        
-        operations.push({
-          operation: 'add',
-          path: `training_data/image_${i}.jpg`,
-          encoding: 'base64',
-          content: base64
-        });
+        const ab = await imageBlobs[i].arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(ab)));
+        ndjsonLines.push(
+          JSON.stringify({
+            key: 'file',
+            value: {
+              content: base64,
+              path: `training_data/image_${i}.jpg`,
+              encoding: 'base64',
+              lfs: true,
+            }
+          })
+        );
       }
 
-      // Add training config
       const metadataContent = JSON.stringify({
         base_model: "black-forest-labs/FLUX.1-dev",
         trigger_word: identity.name.toLowerCase(),
@@ -206,28 +230,28 @@ serve(async (req) => {
         steps: 500,
         learning_rate: 0.0005,
       }, null, 2);
+      const metaBase64 = btoa(unescape(encodeURIComponent(metadataContent)));
+      ndjsonLines.push(
+        JSON.stringify({
+          key: 'file',
+          value: {
+            content: metaBase64,
+            path: 'training_config.json',
+            encoding: 'base64',
+          }
+        })
+      );
 
-      operations.push({
-        operation: 'add',
-        path: 'training_config.json',
-        encoding: 'utf-8',
-        content: metadataContent
-      });
-
-      // Upload all files in a single commit using the commit API
+      console.log('Submitting NDJSON commit to Hugging Face...');
       const commitResponse = await fetch(
         `https://huggingface.co/api/models/${fullRepoName}/commit/main`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${HF_TOKEN}`,
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-ndjson',
           },
-          body: JSON.stringify({
-            summary: `Upload training data for ${identity.name}`,
-            description: `Uploaded ${imageBlobs.length} training images and config`,
-            files: operations
-          }),
+          body: ndjsonLines.join('\n'),
         }
       );
 
@@ -237,7 +261,7 @@ serve(async (req) => {
         throw new Error(`Failed to commit training files: ${errorText}`);
       }
 
-      console.log('Training files committed successfully.');
+      console.log('NDJSON commit succeeded. Training files are in the repo.');
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
@@ -266,8 +290,31 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in train-identity function:', error);
+
+    // Best-effort: mark training as failed on server if we know the identity
+    try {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+      // We can't re-read req.json() here, so rely on variables set earlier if present
+      // Note: identityIdParam/actionParam are set just after parsing request.
+      // @ts-ignore - using dynamic lookup from closure if available
+      const identityIdParam = (globalThis as any).identityIdParam ?? undefined;
+      // @ts-ignore
+      const actionParam = (globalThis as any).actionParam ?? undefined;
+      if (actionParam === 'start_training' && identityIdParam) {
+        await supabaseAdmin
+          .from('trained_identities')
+          .update({ training_status: 'failed', training_error: (error as any)?.message ?? 'Edge function failure' })
+          .eq('id', identityIdParam);
+      }
+    } catch (e) {
+      console.error('Failed to update training status on server error:', e);
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as any)?.message ?? 'Unknown error' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
