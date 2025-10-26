@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { createRepo, uploadFiles } from "https://esm.sh/@huggingface/hub@0.15.1";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -159,104 +159,65 @@ serve(async (req) => {
       const repoName = `${identity.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-lora-${Date.now()}`;
       const fullRepoName = `${hfUsername}/${repoName}`;
 
-      // Create repository on HF
+      // Create repository on HF using @huggingface/hub
       console.log(`Creating HF repository: ${fullRepoName}`);
-      const createRepoResponse = await fetch(
-        `https://huggingface.co/api/repos/create`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${HF_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: repoName,
-            type: 'model',
-            private: true,
-          }),
-        }
-      );
-
-      if (!createRepoResponse.ok) {
-        const errorText = await createRepoResponse.text();
-        console.error('Failed to create repo:', errorText);
-        throw new Error(`Failed to create HF repo: ${errorText}`);
-      }
+      await createRepo({
+        repo: { type: "model", name: fullRepoName },
+        accessToken: HF_TOKEN,
+        private: true,
+      });
 
       console.log(`Repository created: ${fullRepoName}`);
 
-      console.log(`Preparing commit with ${imageBlobs.length} images using NDJSON commit API...`);
+      // Prepare files for upload
+      console.log(`Preparing to upload ${imageBlobs.length} images using @huggingface/hub...`);
+      
+      const files = [];
 
-      // Build JSON commit with .gitattributes + files (LFS) + config
-      const operations: any[] = [];
-
-      // Prepare .gitattributes content and encode to base64
-      const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
-      const gitAttrBase64 = base64Encode(new TextEncoder().encode(gitattributesContent));
-
-      // Add .gitattributes (base64)
-      operations.push({
-        op: 'add',
+      // Add .gitattributes
+      files.push({
         path: '.gitattributes',
-        content: gitAttrBase64,
-        encoding: 'base64',
+        content: new Blob([
+          '*.jpg filter=lfs diff=lfs merge=lfs -text\n' +
+          '*.jpeg filter=lfs diff=lfs merge=lfs -text\n' +
+          '*.png filter=lfs diff=lfs merge=lfs -text\n' +
+          '*.webp filter=lfs diff=lfs merge=lfs -text\n'
+        ]),
       });
 
-      // Add training images as LFS blobs
+      // Add training images
       for (let i = 0; i < imageBlobs.length; i++) {
-        const ab = await imageBlobs[i].arrayBuffer();
-        const base64 = base64Encode(new Uint8Array(ab));
-        operations.push({
-          op: 'add',
+        files.push({
           path: `training_data/image_${i}.jpg`,
-          content: base64,
-          encoding: 'base64',
-          lfs: true,
+          content: imageBlobs[i],
         });
       }
 
-      // Prepare training_config.json and encode to base64
-      const metadataContent = JSON.stringify({
+      // Add training_config.json
+      const trainingConfig = {
         base_model: "black-forest-labs/FLUX.1-dev",
         trigger_word: identity.name.toLowerCase(),
         training_type: "lora",
         num_images: imageBlobs.length,
         steps: 500,
         learning_rate: 0.0005,
-      }, null, 2);
-      const metaBase64 = base64Encode(new TextEncoder().encode(metadataContent));
-
-      // Add training_config.json (base64)
-      operations.push({
-        op: 'add',
+      };
+      files.push({
         path: 'training_config.json',
-        content: metaBase64,
-        encoding: 'base64',
+        content: new Blob([JSON.stringify(trainingConfig, null, 2)]),
       });
 
-      console.log('Submitting JSON commit to Hugging Face (with LFS for images)...');
-      const commitResponse = await fetch(
-        `https://huggingface.co/api/models/${fullRepoName}/commit/main`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${HF_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            operations,
-            commit_message: `Initial training data for ${identity.name}`,
-          }),
-        }
-      );
+      // Upload all files with LFS support
+      console.log('Uploading files to Hugging Face...');
+      await uploadFiles({
+        repo: { type: "model", name: fullRepoName },
+        accessToken: HF_TOKEN,
+        files,
+        commitTitle: `Initial training data for ${identity.name}`,
+        commitDescription: `Uploaded ${imageBlobs.length} images via Edge Function`,
+      });
 
-      if (!commitResponse.ok) {
-        const errorText = await commitResponse.text();
-        console.error('Commit failed:', errorText);
-        throw new Error(`Failed to commit training files: ${errorText}`);
-      }
-
-      console.log('JSON commit succeeded. Training files are in the repo.');
+      console.log('Upload succeeded. Training files are in the repo.');
       
       // Update with repo info - training needs to be started manually on HF
       await supabaseAdmin
