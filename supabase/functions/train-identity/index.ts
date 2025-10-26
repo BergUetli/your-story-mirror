@@ -209,6 +209,7 @@ serve(async (req) => {
               content: base64,
               path: `training_data/image_${i}.jpg`,
               encoding: 'base64',
+              lfs: true,
             }
           })
         );
