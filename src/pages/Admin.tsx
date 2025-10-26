@@ -14,6 +14,7 @@ import ConfigurationPanel from '@/components/admin/ConfigurationPanel';
 import { MicrophoneTest } from '@/components/MicrophoneTest';
 import { VoiceArchiveDiagnosticsPanel } from '@/components/admin/VoiceArchiveDiagnosticsPanel';
 import { ElevenLabsCreditsPanel } from '@/components/admin/ElevenLabsCreditsPanel';
+import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -236,7 +237,7 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-9 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
               Diagnostics
@@ -260,6 +261,10 @@ const Admin = () => {
             <TabsTrigger value="database" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Trash2 className="w-4 h-4" />
               Database Mgmt
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Users className="w-4 h-4" />
+              Users
             </TabsTrigger>
             <TabsTrigger value="mictest" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Mic className="w-4 h-4" />
@@ -296,6 +301,10 @@ const Admin = () => {
 
           <TabsContent value="database" className="space-y-6">
             <DatabaseManagementPanel />
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            <UserManagementPanel />
           </TabsContent>
 
           <TabsContent value="mictest" className="space-y-6">
