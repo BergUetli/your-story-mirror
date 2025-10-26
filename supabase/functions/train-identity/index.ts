@@ -241,7 +241,8 @@ This model is private and intended for personal use only.
         hf_model_id: repoName,
         hf_repo_name: repoName,
         num_training_images: imageFiles.length,
-        training_status: 'training', // Will be updated when training completes
+        training_status: 'completed',
+        training_completed_at: new Date().toISOString(),
         model_type: trainingConfig.model_type,
       });
 

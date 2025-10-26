@@ -15,7 +15,7 @@ interface TrainedIdentity {
   id: string;
   name: string;
   modelId: string;
-  status: "ready" | "training" | "failed";
+  status: "completed" | "training" | "failed" | "pending";
   trainedAt: Date;
   thumbnailUrl: string;
   version: string;
@@ -45,7 +45,7 @@ const Identities = () => {
           id: "demo-1",
           name: "Demo Identity",
           modelId: "demo_v1",
-          status: "ready",
+          status: "completed",
           trainedAt: new Date("2025-01-10"),
           thumbnailUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
           version: "v1"
@@ -66,12 +66,12 @@ const Identities = () => {
 
       const identities = data.map((row: any) => ({
         id: row.id,
-        name: row.identity_name,
-        modelId: row.model_id,
-        status: row.status,
-        trainedAt: new Date(row.trained_at || row.created_at),
+        name: row.name,
+        modelId: row.hf_model_id,
+        status: row.training_status,
+        trainedAt: new Date(row.training_completed_at || row.created_at),
         thumbnailUrl: row.thumbnail_url || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-        version: row.version || "v1"
+        version: "v1"
       }));
 
       setTrainedIdentities(identities);
@@ -453,13 +453,13 @@ const Identities = () => {
                           </p>
                         </div>
                         <Badge 
-                          variant={identity.status === "ready" ? "default" : "secondary"}
+                          variant={identity.status === "completed" ? "default" : "secondary"}
                           className="flex items-center gap-1"
                         >
-                          {identity.status === "ready" && <Check className="w-3 h-3" />}
+                          {identity.status === "completed" && <Check className="w-3 h-3" />}
                           {identity.status === "training" && <Loader2 className="w-3 h-3 animate-spin" />}
                           {identity.status === "failed" && <AlertCircle className="w-3 h-3" />}
-                          {identity.status}
+                          {identity.status === "training" ? "In Progress" : identity.status}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mb-3">
