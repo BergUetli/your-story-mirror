@@ -199,6 +199,20 @@ serve(async (req) => {
         JSON.stringify({ key: 'header', value: { summary: `Initial training data for ${identity.name}`, description: 'Uploaded via Supabase Edge Function' } })
       );
 
+      // Ensure Git LFS is enabled for image files in this repo by committing .gitattributes first
+      const gitattributesContent = `*.jpg filter=lfs diff=lfs merge=lfs -text\n*.jpeg filter=lfs diff=lfs merge=lfs -text\n*.png filter=lfs diff=lfs merge=lfs -text\n*.webp filter=lfs diff=lfs merge=lfs -text\n`;
+      const gitattributesBase64 = toBase64(new TextEncoder().encode(gitattributesContent));
+      ndjsonLines.push(
+        JSON.stringify({
+          key: 'file',
+          value: {
+            content: gitattributesBase64,
+            path: '.gitattributes',
+            encoding: 'base64',
+          }
+        })
+      );
+
       for (let i = 0; i < imageBlobs.length; i++) {
         const ab = await imageBlobs[i].arrayBuffer();
         const base64 = toBase64(new Uint8Array(ab));
