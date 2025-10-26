@@ -197,7 +197,7 @@ const Identities = () => {
         }));
         
         // Open AutoTrain in new tab automatically
-        window.location.href = autoTrainUrl;
+        window.open(autoTrainUrl, '_blank');
         
         toast.success(
           "Opening AutoTrain... Start training there and we'll detect when it completes!",
@@ -391,7 +391,7 @@ const Identities = () => {
         }));
         
         // Open AutoTrain automatically
-        window.location.href = autoTrainUrl;
+        window.open(autoTrainUrl, '_blank');
       }
 
       toast.success("Opening AutoTrain to retrain with additional images!");
