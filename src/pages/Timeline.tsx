@@ -950,7 +950,7 @@ const Timeline = () => {
                           </h2>
 
                           {yearData.isCurrentYear && (
-                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block mt-1 whitespace-nowrap">
+                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block whitespace-nowrap absolute" style={{ top: '80px', right: '0' }}>
                               17th October 2025
                             </span>
                           )}
