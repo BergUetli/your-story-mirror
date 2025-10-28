@@ -85,18 +85,29 @@ const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight:
 
 // Generate only birth event from profile
 const generateLifeEvents = (profile: any) => {
-  if (!profile?.birth_date) return [];
+  if (!profile?.birth_date && !profile?.age) return [];
   
-  const birthYear = new Date(profile.birth_date).getFullYear();
+  // Calculate birth year from birth_date or age
+  let birthYear;
+  if (profile.birth_date) {
+    birthYear = new Date(profile.birth_date).getFullYear();
+  } else if (profile.age) {
+    const currentYear = new Date().getFullYear();
+    birthYear = currentYear - profile.age;
+  } else {
+    return [];
+  }
+  
+  const birthPlace = profile.birth_place || profile.hometown || profile.location || 'Unknown';
   
   return [
     { 
       year: birthYear, 
-      event: 'Born', 
+      event: `Born (${birthYear})`, 
       type: 'milestone',
       significance: 'major' as const,
-      location: profile.birth_place || 'Unknown',
-      date: profile.birth_date
+      location: birthPlace,
+      date: profile.birth_date || `${birthYear}-01-01`
     }
   ];
 };
@@ -227,9 +238,9 @@ const Timeline = () => {
         throw memoriesError;
       }
 
-      // Fetch profile directly from Supabase
+      // Fetch profile directly from Supabase - use user_profiles table
       const { data: profiles, error: profileError } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
@@ -237,6 +248,14 @@ const Timeline = () => {
       if (profileError) {
         console.error('Failed to fetch profile:', profileError);
         throw profileError;
+      }
+      
+      // Calculate birth_date from age if not present
+      if (profiles && profiles.age && !profiles.birth_date) {
+        const currentYear = new Date().getFullYear();
+        const birthYear = currentYear - profiles.age;
+        profiles.birth_date = `${birthYear}-01-01`;
+        profiles.birth_place = profiles.hometown || profiles.location || 'Unknown';
       }
 
       console.log('✅ Timeline: Fetched', memories?.length || 0, 'memories and profile', profiles);
