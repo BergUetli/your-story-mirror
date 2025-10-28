@@ -2916,7 +2916,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
           {/* Right Side - Live Conversation Transcript - Enhanced with golden clouds background */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[80vh] rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden relative"
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden relative"
             style={{ 
               borderColor: 'hsl(var(--section-border))',
               backgroundImage: 'url(https://page.gensparksite.com/v1/base64_upload/5c053105de9ee6c4ead70f426c7dff6d)',
