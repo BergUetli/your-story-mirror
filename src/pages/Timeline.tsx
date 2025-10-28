@@ -155,13 +155,15 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     const hasMajorEvents = yearEvents.some(e => e.significance === 'major') || 
                           yearMemories.some(m => m.significance === 'major');
     
-    // Only include years with significant events or current year
-    // Birth year is always significant, other years need major events/memories
-    const isSignificantYear = year === birthYear || // Always show birth year
-                             year === currentYear || // Always show current year
-                             hasMajorEvents; // Show years with major events/memories
+    // Include years with any content (memories or events)
+    const hasAnyContent = yearEvents.length > 0 || yearMemories.length > 0;
     
-    if (isSignificantYear && (yearEvents.length > 0 || yearMemories.length > 0 || year === currentYear || year === birthYear)) {
+    // Always show: birth year, current year, OR any year with content (memories/events)
+    const shouldIncludeYear = year === birthYear || 
+                             year === currentYear || 
+                             hasAnyContent;
+    
+    if (shouldIncludeYear) {
       timelineData.push({
         year,
         events: yearEvents,
