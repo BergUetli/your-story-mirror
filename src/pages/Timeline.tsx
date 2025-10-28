@@ -907,6 +907,7 @@ const Timeline = () => {
                     
                     // Position proportionally from birth year (top) to current year (bottom)
                     const yearsFromBirth = yearData.year - sharedBirthYear;
+                    const currentYearPosition = totalHeight - 150;
                     let topPosition = (yearsFromBirth * pixelsPerYear) + 50; // Start 50px from top
                     
                     // Anchor birth year at the top
@@ -916,7 +917,10 @@ const Timeline = () => {
                     
                     // Anchor current year at the bottom
                     if (yearData.isCurrentYear) {
-                      topPosition = totalHeight - 150; // Fixed at bottom with margin for content
+                      topPosition = currentYearPosition;
+                    } else {
+                      // Ensure no year appears below the current year
+                      topPosition = Math.min(topPosition, currentYearPosition - 100);
                     }
                     
                     return (
