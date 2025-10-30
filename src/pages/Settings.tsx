@@ -1,35 +1,123 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles, MapPin, Briefcase, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Settings = () => {
-  const [userName, setUserName] = useState('Sarah');
-  const [email, setEmail] = useState('sarah@example.com');
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  // Profile state
+  const [preferredName, setPreferredName] = useState('');
+  const [age, setAge] = useState<number | ''>('');
+  const [hometown, setHometown] = useState('');
+  const [location, setLocation] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [relationshipStatus, setRelationshipStatus] = useState('');
+  const [educationBackground, setEducationBackground] = useState('');
+  const [hobbiesInterests, setHobbiesInterests] = useState('');
+  const [topicsOfInterest, setTopicsOfInterest] = useState('');
+  
+  // UI state
   const [notifications, setNotifications] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
+  const [profileExists, setProfileExists] = useState(false);
+
+  // Load profile data
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setProfileExists(true);
+        setPreferredName(data.preferred_name || '');
+        setAge(data.age || '');
+        setHometown(data.hometown || '');
+        setLocation(data.location || '');
+        setOccupation(data.occupation || '');
+        setRelationshipStatus(data.relationship_status || '');
+        setEducationBackground(data.education_background || '');
+        setHobbiesInterests(data.hobbies_interests?.join(', ') || '');
+        setTopicsOfInterest(data.topics_of_interest?.join(', ') || '');
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast({
+        title: "Error loading profile",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
+    
     setIsUpdating(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      localStorage.setItem('userName', userName);
+      const profileData = {
+        user_id: user.id,
+        preferred_name: preferredName || null,
+        age: age ? Number(age) : null,
+        hometown: hometown || null,
+        location: location || null,
+        occupation: occupation || null,
+        relationship_status: relationshipStatus || null,
+        education_background: educationBackground || null,
+        hobbies_interests: hobbiesInterests ? hobbiesInterests.split(',').map(s => s.trim()).filter(Boolean) : null,
+        topics_of_interest: topicsOfInterest ? topicsOfInterest.split(',').map(s => s.trim()).filter(Boolean) : null,
+      };
+
+      if (profileExists) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Create new profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert(profileData);
+
+        if (error) throw error;
+        setProfileExists(true);
+      }
       
       toast({
         title: "Profile updated",
-        description: "Your preferences have been saved safely"
+        description: "Your information has been saved successfully"
       });
     } catch (error) {
+      console.error('Error saving profile:', error);
       toast({
         title: "Update failed",
         description: "Please try again in a moment",
@@ -39,6 +127,17 @@ const Settings = () => {
       setIsUpdating(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -81,27 +180,118 @@ const Settings = () => {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="userName">Display name</Label>
+                <Label htmlFor="preferredName">Preferred Name</Label>
                 <Input
-                  id="userName"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
+                  id="preferredName"
+                  value={preferredName}
+                  onChange={(e) => setPreferredName(e.target.value)}
                   className="bg-card border-border"
                   placeholder="What should we call you?"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="age">Age</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="age"
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value ? Number(e.target.value) : '')}
                   className="bg-card border-border"
-                  placeholder="your@email.com"
+                  placeholder="Your age"
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hometown" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Hometown
+                </Label>
+                <Input
+                  id="hometown"
+                  value={hometown}
+                  onChange={(e) => setHometown(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="Where you grew up"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location" className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Current Location
+                </Label>
+                <Input
+                  id="location"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="Where you live now"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="occupation" className="flex items-center gap-2">
+                  <Briefcase className="w-4 h-4" />
+                  Occupation
+                </Label>
+                <Input
+                  id="occupation"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="What you do"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="relationshipStatus">Relationship Status</Label>
+                <Input
+                  id="relationshipStatus"
+                  value={relationshipStatus}
+                  onChange={(e) => setRelationshipStatus(e.target.value)}
+                  className="bg-card border-border"
+                  placeholder="e.g., Single, Married, Partner"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="educationBackground" className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4" />
+                Education Background
+              </Label>
+              <Textarea
+                id="educationBackground"
+                value={educationBackground}
+                onChange={(e) => setEducationBackground(e.target.value)}
+                className="bg-card border-border min-h-[80px]"
+                placeholder="Your educational background"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hobbiesInterests">Hobbies & Interests</Label>
+              <Textarea
+                id="hobbiesInterests"
+                value={hobbiesInterests}
+                onChange={(e) => setHobbiesInterests(e.target.value)}
+                className="bg-card border-border min-h-[80px]"
+                placeholder="Separate with commas: e.g., photography, hiking, reading"
+              />
+              <p className="text-xs text-muted-foreground">Separate multiple items with commas</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="topicsOfInterest">Topics of Interest</Label>
+              <Textarea
+                id="topicsOfInterest"
+                value={topicsOfInterest}
+                onChange={(e) => setTopicsOfInterest(e.target.value)}
+                className="bg-card border-border min-h-[80px]"
+                placeholder="Separate with commas: e.g., technology, philosophy, travel"
+              />
+              <p className="text-xs text-muted-foreground">Separate multiple topics with commas</p>
             </div>
 
             <div className="p-4 rounded-lg bg-muted/30 space-y-2">
