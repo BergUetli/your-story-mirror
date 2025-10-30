@@ -20,7 +20,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen, LogOut, Database } from 'lucide-react';
+import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,6 +72,7 @@ const Navigation = () => {
     { path: '/story', icon: BookOpen, label: 'Story' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
+    { path: '/settings', icon: SettingsIcon, label: 'Settings' },
   ] : [];
 
   /**
