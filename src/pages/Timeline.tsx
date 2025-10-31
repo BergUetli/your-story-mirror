@@ -196,16 +196,42 @@ const Timeline = () => {
     return createTimelineData(timelineMemories, timelineProfile || profile);
   }, [timelineMemories, timelineProfile, profile]);
 
-  // Transform to react-chrono format
+  // Transform to react-chrono nested format
   const chronoItems = useMemo(() => {
-    return timelineData.map((yearData) => ({
-      title: yearData.year.toString(),
-      cardTitle: yearData.events.map(e => e.event).join(', ') || 
-                 (yearData.memories.length > 0 ? `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}` : 'Year ' + yearData.year),
-      cardSubtitle: yearData.isCurrentYear ? 'Present' : '',
-      cardDetailedText: '',
-      yearData,
-    }));
+    return timelineData.map((yearData) => {
+      const nestedItems = [];
+      
+      // Add events as nested items
+      yearData.events.forEach((event: any) => {
+        nestedItems.push({
+          title: new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          cardTitle: event.event,
+          cardSubtitle: event.location ? `📍 ${event.location}` : '',
+          cardDetailedText: event.type === 'milestone' ? '🎉 Major Life Event' : '',
+        });
+      });
+      
+      // Add memories as nested items
+      yearData.memories.forEach((memory: any) => {
+        const memoryDate = new Date(memory.memory_date || memory.created_at);
+        nestedItems.push({
+          title: memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          cardTitle: memory.title,
+          cardSubtitle: memory.text ? memory.text.substring(0, 100) + (memory.text.length > 100 ? '...' : '') : '',
+          cardDetailedText: memory.text || '',
+          metadata: { memoryId: memory.id, isMemory: true, fullMemory: memory }
+        });
+      });
+      
+      return {
+        title: yearData.year.toString(),
+        cardTitle: yearData.events.length > 0 
+          ? yearData.events.map(e => e.event).join(', ')
+          : `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`,
+        cardSubtitle: yearData.isCurrentYear ? 'Present' : '',
+        items: nestedItems.length > 0 ? nestedItems : undefined,
+      };
+    });
   }, [timelineData]);
 
   return (
@@ -322,9 +348,20 @@ const Timeline = () => {
               mode="VERTICAL"
               scrollable={false}
               hideControls={false}
-              cardHeight={180}
+              cardHeight={150}
+              nestedCardHeight={180}
               disableClickOnCircle={false}
               useReadMore={false}
+              onItemSelected={(item) => {
+                // Handle nested item clicks
+                const selectedItem = chronoItems[item.index];
+                if (selectedItem?.items?.[item.nestedIndex || 0]) {
+                  const nestedItem = selectedItem.items[item.nestedIndex || 0];
+                  if (nestedItem.metadata?.isMemory && nestedItem.metadata?.fullMemory) {
+                    setSelectedMemory(nestedItem.metadata.fullMemory);
+                  }
+                }
+              }}
               theme={{
                 primary: '#3b82f6',
                 secondary: '#f9fafb',
@@ -339,62 +376,7 @@ const Timeline = () => {
                 cardTitle: '1rem',
                 title: '1rem',
               }}
-            >
-              {chronoItems.map((item, index) => (
-                <div key={index} className="p-4 space-y-4">
-                  {/* Events */}
-                  {item.yearData.events.length > 0 && (
-                    <div className="space-y-2">
-                      {item.yearData.events.map((event: any, eventIndex: number) => (
-                        <div key={eventIndex} className="pb-2 border-b border-gray-200 last:border-0">
-                          <div className="text-base font-semibold text-gray-900">{event.event}</div>
-                          {event.location && (
-                            <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
-                              <MapPin className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{event.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Memories */}
-                  {item.yearData.memories.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                        Memories ({item.yearData.memories.length})
-                      </div>
-                      {item.yearData.memories.map((memory: any) => (
-                        <button
-                          key={memory.id}
-                          onClick={() => setSelectedMemory(memory)}
-                          className="w-full text-left p-3 rounded-lg border-2 border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
-                        >
-                          <div className="font-semibold text-sm text-gray-900 mb-1">{memory.title}</div>
-                          {memory.text && (
-                            <div className="text-xs text-gray-600 line-clamp-2 mb-2">
-                              {memory.text}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3 flex-shrink-0" />
-                            <span>{new Date(memory.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Empty state */}
-                  {item.yearData.events.length === 0 && item.yearData.memories.length === 0 && (
-                    <div className="text-sm text-gray-500 italic py-2">
-                      No events or memories recorded for this year
-                    </div>
-                  )}
-                </div>
-              ))}
-            </Chrono>
+            />
           </div>
         )}
       </div>
