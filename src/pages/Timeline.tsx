@@ -56,7 +56,24 @@ const generateLifeEvents = (profile: any) => {
 // Create timeline data
 const createTimelineData = (actualMemories: any[], profile: any) => {
   const currentYear = new Date().getFullYear();
-  const birthYear = profile?.birth_date ? new Date(profile.birth_date).getFullYear() : currentYear - 25;
+  
+  // Determine birth year from profile
+  let birthYear = currentYear - 25; // Default fallback
+  if (profile?.birth_date) {
+    birthYear = new Date(profile.birth_date).getFullYear();
+  } else if (profile?.age) {
+    birthYear = currentYear - profile.age;
+  } else if (actualMemories.length > 0) {
+    // If no birth data, start from earliest memory
+    const earliestMemory = actualMemories.reduce((earliest, memory) => {
+      const dateToUse = memory.memory_date || memory.created_at || memory.date;
+      if (!dateToUse) return earliest;
+      const memoryDate = new Date(dateToUse);
+      return memoryDate < earliest ? memoryDate : earliest;
+    }, new Date());
+    birthYear = earliestMemory.getFullYear();
+  }
+  
   const timelineData = [];
   
   const lifeEvents = generateLifeEvents(profile);
