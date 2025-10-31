@@ -232,33 +232,43 @@ const Timeline = () => {
             </Link>
           </div>
         ) : (
-          <div className="w-full py-8">
+          <div className="w-full max-w-6xl mx-auto py-8 px-4" style={{ minHeight: '80vh' }}>
             <Chrono
               items={chronoItems}
               mode="VERTICAL"
               scrollable={{ scrollbar: false }}
+              hideControls={false}
+              cardHeight={150}
               theme={{
-                primary: 'hsl(var(--primary))',
-                secondary: 'hsl(var(--card))',
-                cardBgColor: 'hsl(var(--card))',
-                cardForeColor: 'hsl(var(--foreground))',
-                titleColor: 'hsl(var(--foreground))',
-                titleColorActive: 'hsl(var(--primary))',
+                primary: '#3b82f6',
+                secondary: '#f3f4f6',
+                cardBgColor: '#ffffff',
+                cardForeColor: '#1f2937',
+                titleColor: '#1f2937',
+                titleColorActive: '#3b82f6',
               }}
               fontSizes={{
-                cardSubtitle: '0.85rem',
+                cardSubtitle: '0.875rem',
                 cardText: '0.875rem',
-                cardTitle: '1rem',
-                title: '1rem',
+                cardTitle: '1.125rem',
+                title: '1.25rem',
+              }}
+              classNames={{
+                card: 'shadow-md border border-gray-200',
+                cardMedia: 'rounded-t-lg',
+                cardSubTitle: 'text-gray-600',
+                cardText: 'text-gray-700',
+                cardTitle: 'font-semibold text-gray-900',
+                title: 'font-bold',
               }}
             >
               {chronoItems.map((item, index) => (
-                <div key={index} className="space-y-3 p-2">
+                <div key={index} className="space-y-3 p-4 bg-white">
                   {item.yearData.events.map((event: any, eventIndex: number) => (
-                    <div key={eventIndex} className="space-y-1">
-                      <div className="text-base font-medium">{event.event}</div>
+                    <div key={eventIndex} className="space-y-1 mb-3">
+                      <div className="text-base font-semibold text-gray-900">{event.event}</div>
                       {event.location && (
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
                           <MapPin className="w-3 h-3" />
                           {event.location}
                         </div>
@@ -272,15 +282,15 @@ const Timeline = () => {
                         <button
                           key={memory.id}
                           onClick={() => setSelectedMemory(memory)}
-                          className="w-full text-left p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                          className="w-full text-left p-3 rounded-lg border-2 border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                         >
-                          <div className="font-medium text-sm">{memory.title}</div>
+                          <div className="font-semibold text-sm text-gray-900">{memory.title}</div>
                           {memory.text && (
-                            <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            <div className="text-xs text-gray-600 mt-1 line-clamp-2">
                               {memory.text}
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                             <Calendar className="w-3 h-3" />
                             {new Date(memory.created_at).toLocaleDateString()}
                           </div>
