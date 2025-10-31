@@ -991,9 +991,9 @@ const Timeline = () => {
                           
                           {/* Message moved to bottom of screen */}
 
-                          {/* Memory Content - Use 3D slider for all memories */}
+                          {/* Memory Content - Use 3D slider for all memories, centered on year marker */}
                           {yearData.memories.length > 0 && (
-                            <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
+                            <div className="animate-scale-in" style={{ marginTop: yearData.events.length > 0 ? '-93px' : '-109px' }}>
                               <Memory3DSlider
                                 memories={yearData.memories.map((memory) => ({
                                   id: memory.id,
