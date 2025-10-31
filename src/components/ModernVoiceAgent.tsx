@@ -31,7 +31,7 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[600px] w-full">
+    <div className="relative flex flex-col items-center justify-center min-h-[500px] w-full py-8">
       <style>{`
         @keyframes pulsing-border {
           0%, 100% {
@@ -51,15 +51,16 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
         
         @keyframes pulse-scale {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
+          50% { transform: scale(1.02); }
         }
 
         .pulsing-border-wrapper {
           position: relative;
-          width: 420px;
-          height: 420px;
+          width: 350px;
+          height: 350px;
           border-radius: 50%;
-          padding: 10px;
+          padding: 8px;
+          flex-shrink: 0;
         }
         
         .pulsing-border-wrapper::before {
@@ -70,11 +71,11 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
           padding: 3px;
           background: linear-gradient(
             45deg,
-            #5800FF,
-            #BEECFF,
-            #E77EDC,
-            #FF4C3E,
-            #5800FF
+            #0066FF,
+            #00BFFF,
+            #4169E1,
+            #1E90FF,
+            #0066FF
           );
           background-size: 300% 300%;
           animation: pulsing-border 4s ease infinite, rotate-gradient 8s linear infinite;
@@ -95,16 +96,16 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
           className="relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed overflow-hidden"
           style={{
             background: state === 'speaking' 
-              ? 'radial-gradient(circle, rgba(88,0,255,0.4) 0%, rgba(231,126,220,0.3) 50%, rgba(190,236,255,0.2) 100%)'
+              ? 'radial-gradient(circle, rgba(0,102,255,0.4) 0%, rgba(30,144,255,0.3) 50%, rgba(0,191,255,0.2) 100%)'
               : state === 'listening'
-              ? 'radial-gradient(circle, rgba(190,236,255,0.4) 0%, rgba(88,0,255,0.3) 50%, rgba(231,126,220,0.2) 100%)'
-              : 'radial-gradient(circle, rgba(88,0,255,0.2) 0%, rgba(231,126,220,0.15) 50%, rgba(190,236,255,0.1) 100%)',
+              ? 'radial-gradient(circle, rgba(0,191,255,0.4) 0%, rgba(0,102,255,0.3) 50%, rgba(65,105,225,0.2) 100%)'
+              : 'radial-gradient(circle, rgba(0,102,255,0.2) 0%, rgba(30,144,255,0.15) 50%, rgba(0,191,255,0.1) 100%)',
             backdropFilter: 'blur(20px)',
             boxShadow: state === 'speaking'
-              ? '0 0 80px rgba(88,0,255,0.5), 0 0 40px rgba(231,126,220,0.4), inset 0 0 60px rgba(231,126,220,0.3)'
+              ? '0 0 80px rgba(0,102,255,0.5), 0 0 40px rgba(30,144,255,0.4), inset 0 0 60px rgba(0,191,255,0.3)'
               : state === 'listening'
-              ? '0 0 60px rgba(190,236,255,0.4), 0 0 30px rgba(88,0,255,0.3), inset 0 0 40px rgba(88,0,255,0.2)'
-              : '0 0 40px rgba(88,0,255,0.3), inset 0 0 30px rgba(231,126,220,0.15)'
+              ? '0 0 60px rgba(0,191,255,0.4), 0 0 30px rgba(0,102,255,0.3), inset 0 0 40px rgba(0,102,255,0.2)'
+              : '0 0 40px rgba(0,102,255,0.3), inset 0 0 30px rgba(30,144,255,0.15)'
           }}
           aria-label={getAriaLabel()}
           aria-pressed={isActive}
@@ -120,9 +121,9 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
           
           {/* Microphone icon */}
           <Mic 
-            className="relative z-10 w-24 h-24 transition-all duration-300"
+            className="relative z-10 w-20 h-20 transition-all duration-300"
             style={{
-              color: state === 'speaking' ? '#E77EDC' : state === 'listening' ? '#BEECFF' : '#5800FF',
+              color: state === 'speaking' ? '#00BFFF' : state === 'listening' ? '#1E90FF' : '#0066FF',
               filter: `drop-shadow(0 0 ${state === 'speaking' ? '20px' : state === 'listening' ? '15px' : '8px'} currentColor)`,
               animation: state === 'speaking' ? 'pulse 1s ease-in-out infinite' : state === 'listening' ? 'pulse 2s ease-in-out infinite' : 'none'
             }}
@@ -133,14 +134,14 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
       {/* Caption card */}
       {state !== 'idle' && (
         <div 
-          className="mt-8 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 animate-fade-in"
+          className="mt-6 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 animate-fade-in"
           style={{
             background: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
             border: '2px solid',
-            borderColor: state === 'speaking' ? '#E77EDC' : '#BEECFF',
-            color: state === 'speaking' ? '#5800FF' : '#5800FF',
-            boxShadow: `0 4px 20px ${state === 'speaking' ? 'rgba(231,126,220,0.3)' : 'rgba(190,236,255,0.3)'}`
+            borderColor: state === 'speaking' ? '#00BFFF' : '#1E90FF',
+            color: state === 'speaking' ? '#0066FF' : '#0066FF',
+            boxShadow: `0 4px 20px ${state === 'speaking' ? 'rgba(0,191,255,0.3)' : 'rgba(30,144,255,0.3)'}`
           }}
           aria-live="polite"
         >
@@ -151,16 +152,16 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
       {/* Provenance chip */}
       <div 
-        className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
+        className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
         style={{
-          background: 'rgba(88,0,255,0.1)',
-          border: '1px solid rgba(88,0,255,0.2)',
-          color: '#5800FF'
+          background: 'rgba(0,102,255,0.1)',
+          border: '1px solid rgba(0,102,255,0.2)',
+          color: '#0066FF'
         }}
       >
         <div 
           className="w-2 h-2 rounded-full animate-pulse"
-          style={{ background: '#5800FF' }}
+          style={{ background: '#0066FF' }}
         />
         <span>Solin AI</span>
       </div>
