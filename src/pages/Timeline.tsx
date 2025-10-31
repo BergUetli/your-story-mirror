@@ -993,7 +993,7 @@ const Timeline = () => {
 
                           {/* Memory Content - Use 3D slider for all memories, centered on year marker */}
                           {yearData.memories.length > 0 && (
-                            <div className="animate-scale-in" style={{ marginTop: yearData.events.length > 0 ? '-93px' : '-109px' }}>
+                            <div className="animate-scale-in" style={{ marginTop: yearData.events.length > 0 ? '-46px' : '-54px' }}>
                               <Memory3DSlider
                                 memories={yearData.memories.map((memory) => ({
                                   id: memory.id,

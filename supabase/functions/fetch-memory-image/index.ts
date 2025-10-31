@@ -39,8 +39,36 @@ serve(async (req) => {
     const searchTerms = extractKeywords(title, text, location, keywords);
     console.log('Search terms:', searchTerms);
 
-    // Use Unsplash Source API (no key required) - 1920x1080 for high quality
-    const imageUrl = `https://source.unsplash.com/1920x1080/?${searchTerms}`;
+    // Use Pexels API for free high-quality stock photos (1920x1080)
+    const pexelsApiKey = Deno.env.get('PEXELS_API_KEY');
+    
+    if (!pexelsApiKey) {
+      throw new Error('PEXELS_API_KEY not configured');
+    }
+
+    const pexelsUrl = `https://api.pexels.com/v1/search?query=${searchTerms}&per_page=1&orientation=landscape`;
+    
+    console.log('Fetching image from Pexels:', pexelsUrl);
+
+    const pexelsResponse = await fetch(pexelsUrl, {
+      headers: {
+        'Authorization': pexelsApiKey
+      }
+    });
+
+    if (!pexelsResponse.ok) {
+      throw new Error(`Pexels API error: ${pexelsResponse.statusText}`);
+    }
+
+    const pexelsData = await pexelsResponse.json();
+    
+    if (!pexelsData.photos || pexelsData.photos.length === 0) {
+      throw new Error('No images found for search terms');
+    }
+
+    // Get the large image URL (1920x1080)
+    const imageUrl = pexelsData.photos[0].src.large2x;
+    const finalImageUrl = imageUrl;
     
     console.log('Fetching image from:', imageUrl);
 
@@ -50,8 +78,6 @@ serve(async (req) => {
       throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
     }
 
-    // Get the actual image URL after redirects
-    const finalImageUrl = imageResponse.url;
     const imageBlob = await imageResponse.blob();
     const arrayBuffer = await imageBlob.arrayBuffer();
 
@@ -119,7 +145,7 @@ function extractKeywords(
   }
 
   if (keywords && keywords.length > 0) {
-    return encodeURIComponent(keywords.slice(0, 3).join(','));
+    return encodeURIComponent(keywords.slice(0, 3).join(' '));
   }
 
   // Extract meaningful words from title (ignore common words)
@@ -131,5 +157,5 @@ function extractKeywords(
     .filter(word => word.length > 3 && !commonWords.includes(word))
     .slice(0, 3);
 
-  return encodeURIComponent(titleWords.join(',')) || 'memory,life,moment';
+  return encodeURIComponent(titleWords.join(' ')) || 'memory life moment';
 }

@@ -2,7 +2,7 @@
 .memory-slider-container {
   position: relative;
   width: 100%;
-  height: 250px;
+  height: 125px;
   overflow: visible;
 }
 
@@ -21,13 +21,13 @@
 /* Memory card styles with 3D rotation and overlap - Smaller size */
 .memory-card {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 100px;
+  height: 100px;
   transform: rotateX(20deg) rotateY(-10deg) rotateZ(130deg);
-  border: 2px solid hsl(var(--border) / 0.3);
-  border-radius: 12px;
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 6px;
   overflow: hidden;
-  margin: -150px 0;
+  margin: -75px 0;
   transition: all 1s cubic-bezier(0.075, 0.82, 0.165, 1);
   left: 0%;
   cursor: pointer;
@@ -54,22 +54,22 @@
 .memory-card-content {
   width: 100%;
   height: 100%;
-  padding: 1.5rem;
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
   overflow: hidden;
 }
 
 /* Memory card title - Smaller font */
 .memory-card-title {
-  font-size: 0.75rem;
+  font-size: 0.5rem;
   font-weight: 600;
   color: hsl(var(--foreground));
   line-height: 1.2;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
   word-wrap: break-word;
@@ -77,19 +77,19 @@
 
 /* Memory card date */
 .memory-card-date {
-  font-size: 0.75rem;
+  font-size: 0.5rem;
   color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
 /* Memory card text */
 .memory-card-text {
-  font-size: 0.875rem;
+  font-size: 0.625rem;
   color: hsl(var(--muted-foreground));
-  line-height: 1.4;
+  line-height: 1.3;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   text-overflow: ellipsis;
   word-wrap: break-word;
