@@ -57,21 +57,15 @@ const generateLifeEvents = (profile: any) => {
 const createTimelineData = (actualMemories: any[], profile: any) => {
   const currentYear = new Date().getFullYear();
   
-  // Determine birth year from profile
-  let birthYear = currentYear - 25; // Default fallback
+  // Always use birth_date or age from profile (birth date is collected during signup)
+  let birthYear;
   if (profile?.birth_date) {
     birthYear = new Date(profile.birth_date).getFullYear();
   } else if (profile?.age) {
     birthYear = currentYear - profile.age;
-  } else if (actualMemories.length > 0) {
-    // If no birth data, start from earliest memory
-    const earliestMemory = actualMemories.reduce((earliest, memory) => {
-      const dateToUse = memory.memory_date || memory.created_at || memory.date;
-      if (!dateToUse) return earliest;
-      const memoryDate = new Date(dateToUse);
-      return memoryDate < earliest ? memoryDate : earliest;
-    }, new Date());
-    birthYear = earliestMemory.getFullYear();
+  } else {
+    // Default to 25 years ago if no profile data
+    birthYear = currentYear - 25;
   }
   
   const timelineData = [];
@@ -98,7 +92,11 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     
     const hasAnyContent = yearEvents.length > 0 || yearMemories.length > 0;
     
-    if (year === birthYear || year === currentYear || hasAnyContent) {
+    // Always include years: birth year, current year, years with content, 
+    // and milestone years (every 5 years) for proper scaling
+    const isMilestoneYear = year % 5 === 0;
+    
+    if (year === birthYear || year === currentYear || hasAnyContent || isMilestoneYear) {
       timelineData.push({
         year,
         events: yearEvents,
