@@ -62,6 +62,29 @@ async function saveMemory(userId: string, title: string, text: string, tags?: st
     .select("id")
     .maybeSingle();
   if (error) throw error;
+  
+  // Trigger background image fetching (don't await)
+  if (data?.id) {
+    console.log('🖼️ Triggering background image fetch for memory:', data.id);
+    EdgeRuntime.waitUntil(
+      supabase.functions.invoke('fetch-memory-image', {
+        body: {
+          memoryId: data.id,
+          title,
+          text,
+          location: null,
+          keywords: tags
+        }
+      }).then(result => {
+        if (result.error) {
+          console.error('Background image fetch error:', result.error);
+        } else {
+          console.log('✅ Background image fetch completed for memory:', data.id);
+        }
+      })
+    );
+  }
+  
   return { id: data?.id };
 }
 
@@ -91,10 +114,10 @@ async function summarizeMemories(items: Array<{ title: string; preview: string }
 async function getTimelineData(userId: string) {
   const supabase = getSupabaseAdmin();
   
-  // Fetch memories with only essential fields (no image_urls for performance)
+  // Fetch memories with image_urls for timeline display
   const { data: memories, error: memError } = await supabase
     .from("memories")
-    .select("id,title,text,created_at,memory_date,memory_location,tags")
+    .select("id,title,text,created_at,memory_date,memory_location,tags,image_urls")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   

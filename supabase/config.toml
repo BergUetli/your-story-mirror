@@ -6,6 +6,9 @@ verify_jwt = true
 [functions.elevenlabs-credits]
 verify_jwt = true
 
+[functions.fetch-memory-image]
+verify_jwt = false
+
 [functions.orchestrator]
 verify_jwt = true
 
