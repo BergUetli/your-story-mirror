@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Chrono } from 'react-chrono';
 
 // Extend window interface for scroll timeout
 declare global {
@@ -7,10 +8,7 @@ declare global {
   }
 }
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, MapPin, Calendar, ZoomIn, ZoomOut, RefreshCw, Trash2, Edit, Plus, ChevronUp, ChevronDown, Play, Pause, Search } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Plus } from 'lucide-react';
 import { EnhancedVoiceSearch } from '@/components/EnhancedVoiceSearch';
 import { Link } from 'react-router-dom';
 import { useMemories } from '@/hooks/useMemories';
@@ -19,7 +17,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
-import { TimelineMemoryCard } from '@/components/TimelineMemoryCard';
 import { Memory3DSlider } from '@/components/Memory3DSlider';
 import { soundEffects } from '@/services/soundEffects';
 
@@ -36,52 +33,6 @@ const detectEventSignificance = (memory: any): 'major' | 'minor' => {
   ];
   
   return majorKeywords.some(keyword => text.includes(keyword)) ? 'major' : 'minor';
-};
-
-// LABEL OVERLAP CHECKER MODULE - Use this for ALL timeline sizing decisions
-const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight: number, minGap: number = 300) => {
-  if (timelineData.length <= 1) {
-    return { hasOverlaps: false, expansionNeeded: 1, details: [] };
-  }
-
-  const pixelsPerYear = baseHeight / totalYears;
-  const sortedYears = [...timelineData].sort((a, b) => a.year - b.year);
-  const overlaps = [];
-  let maxExpansionNeeded = 1;
-
-  console.log(`🔍 LABEL OVERLAP CHECK: Base height ${baseHeight}px, ${pixelsPerYear.toFixed(1)}px per year, min gap ${minGap}px`);
-
-  for (let i = 0; i < sortedYears.length - 1; i++) {
-    const current = sortedYears[i];
-    const next = sortedYears[i + 1];
-    const yearGap = next.year - current.year;
-    const pixelGap = yearGap * pixelsPerYear;
-
-    if (pixelGap < minGap) {
-      const expansionNeeded = minGap / pixelGap;
-      maxExpansionNeeded = Math.max(maxExpansionNeeded, expansionNeeded);
-      overlaps.push({
-        currentYear: current.year,
-        nextYear: next.year,
-        yearGap,
-        pixelGap: Math.round(pixelGap),
-        needed: Math.round(expansionNeeded * 100) / 100
-      });
-      console.log(`❌ OVERLAP: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px < ${minGap}px (needs ${Math.round((expansionNeeded - 1) * 100)}% expansion)`);
-    } else {
-      console.log(`✅ OK: ${current.year}-${next.year} gap=${Math.round(pixelGap)}px ≥ ${minGap}px`);
-    }
-  }
-
-  const result = {
-    hasOverlaps: overlaps.length > 0,
-    expansionNeeded: maxExpansionNeeded,
-    details: overlaps,
-    finalHeight: baseHeight * maxExpansionNeeded
-  };
-
-  console.log(`📊 OVERLAP SUMMARY: ${overlaps.length} overlaps, expansion needed: ${Math.round((maxExpansionNeeded - 1) * 100)}%, final: ${Math.round(result.finalHeight)}px`);
-  return result;
 };
 
 // Generate only birth event from profile
@@ -192,26 +143,18 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
 const Timeline = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set());
   const [materializingMemory, setMaterializingMemory] = useState<string | null>(null);
   const [selectedMemory, setSelectedMemory] = useState<any | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const zoomLevelRef = useRef(1);
-  const panOffsetRef = useRef({ x: 0, y: 0 });
   
   // Scroll state for modern scroll indicators
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isScrolling, setIsScrolling] = useState(false);
-  const [showScrollControls, setShowScrollControls] = useState(false);
   
   const { memories, loadMemories, isLoading } = useMemories();
   const { profile, loading: profileLoading } = useProfile();
   
-  // Fetch timeline data through orchestrator for optimized performance
+  // Fetch timeline data through optimized queries
   const [timelineMemories, setTimelineMemories] = useState<any[]>([]);
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
@@ -349,7 +292,7 @@ const Timeline = () => {
     }
   }, [user?.id, fetchTimelineData]);
 
-  // Poll for updates every 5 seconds when on timeline page (more frequent for testing)
+  // Poll for updates every 5 seconds when on timeline page
   useEffect(() => {
     const interval = setInterval(() => {
       console.log('🔄 Timeline: Auto-refresh triggered');
@@ -363,51 +306,11 @@ const Timeline = () => {
   const timelineData = useMemo(() => {
     return createTimelineData(timelineMemories, timelineProfile || profile);
   }, [timelineMemories, timelineProfile, profile]);
-  
-  // For now, let's remove the auto-expansion status to focus on the working collision detection
-  // The collision detection itself is working perfectly as shown in console logs
-
-  // Keep refs in sync with state
-  useEffect(() => {
-    zoomLevelRef.current = zoomLevel;
-  }, [zoomLevel]);
-
-  useEffect(() => {
-    panOffsetRef.current = panOffset;
-  }, [panOffset]);
 
   // Refresh memories when component mounts
   useEffect(() => {
     loadMemories();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  
-  // Auto-expand ALL years with memories on initial load (not just significant ones)
-  // Use a flag to prevent re-expansion
-  const hasInitializedExpansion = useRef(false);
-  
-  useEffect(() => {
-    if (!timelineLoading && timelineData.length > 0 && !hasInitializedExpansion.current) {
-      const yearsWithAnyContent = timelineData
-        .filter(y => 
-          y.memories.length > 0 || // Expand ANY year with memories
-          y.events.length > 0 ||   // Always expand years with life events (like birth)
-          y.significance === 'major'
-        )
-        .map(y => y.year);
-      console.log('🔄 Timeline: Auto-expanding all years with content:', yearsWithAnyContent);
-      console.log('🔄 Timeline: Timeline data details:', timelineData.map(y => ({
-        year: y.year,
-        memoriesCount: y.memories.length,
-        eventsCount: y.events.length,
-        significance: y.significance,
-        memories: y.memories.map(m => ({ title: m.title, significance: m.significance }))
-      })));
-      if (yearsWithAnyContent.length > 0) {
-        setExpandedYears(new Set(yearsWithAnyContent));
-        hasInitializedExpansion.current = true;
-      }
-    }
-  }, [timelineLoading, timelineData]);
 
   // Handle new memory materialization animation and highlighting
   useEffect(() => {
@@ -433,9 +336,6 @@ const Timeline = () => {
       
       if (foundMemory && foundYear) {
         console.log('✅ Timeline: Found memory to highlight:', foundMemory.title, 'in year', foundYear);
-        
-        // Expand the year containing the memory
-        setExpandedYears(prev => new Set([...prev, foundYear]));
         
         // If it's a new memory, trigger materialization animation
         if (isNewMemory) {
@@ -506,11 +406,6 @@ const Timeline = () => {
         summary: memorySummary
       });
       
-      const currentYear = new Date().getFullYear();
-      setExpandedYears(prev => new Set([...prev, currentYear]));
-      
-      console.log(`🔄 [${handoffId}] HANDOFF: 🔟 EXPANDING YEAR`, { year: currentYear });
-      
       setTimeout(() => {
         console.log(`🔄 [${handoffId}] HANDOFF: 1️⃣1️⃣ STARTING ANIMATION`, { memoryId: newMemoryId });
         setMaterializingMemory(newMemoryId);
@@ -543,79 +438,6 @@ const Timeline = () => {
       }, 300);
     }
   }, [timelineLoading, timelineData]);
-
-  const toggleYear = (year: number) => {
-    const newExpanded = new Set(expandedYears);
-    if (newExpanded.has(year)) {
-      newExpanded.delete(year);
-    } else {
-      newExpanded.add(year);
-    }
-    setExpandedYears(newExpanded);
-  };
-
-  // Mouse wheel zoom (only with Ctrl key held)
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      // Only zoom if Ctrl key is pressed, otherwise allow normal scroll
-      if (!e.ctrlKey) return;
-      
-      e.preventDefault();
-      
-      const delta = e.deltaY * -0.001;
-      const currentZoom = zoomLevelRef.current;
-      const currentPan = panOffsetRef.current;
-      const newZoom = Math.min(Math.max(currentZoom + delta, 0.5), 2);
-      
-      if (newZoom !== currentZoom) {
-        // Calculate zoom center based on mouse position
-        const rect = container.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        // Adjust pan to zoom towards mouse position
-        const zoomRatio = newZoom / currentZoom;
-        const newPanX = mouseX - (mouseX - currentPan.x) * zoomRatio;
-        const newPanY = mouseY - (mouseY - currentPan.y) * zoomRatio;
-        
-        setZoomLevel(newZoom);
-        setPanOffset({ x: newPanX, y: newPanY });
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []); // Empty deps array - we use refs to avoid infinite loop
-
-  // Mouse drag to pan (only with Space key held)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0 && e.shiftKey) { // Left mouse + Shift key
-      e.preventDefault();
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      e.preventDefault();
-      setPanOffset({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
 
   const handleDeleteMemory = async (memoryId: string, memoryTitle: string) => {
     if (!confirm(`Delete "${memoryTitle}"? This cannot be undone.`)) {
@@ -665,19 +487,6 @@ const Timeline = () => {
     }
   };
 
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.2, 2));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
-  };
-
-  const handleResetZoom = () => {
-    setZoomLevel(1);
-    setPanOffset({ x: 0, y: 0 });
-  };
-
   // Scroll handling for progress indicator
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
@@ -686,7 +495,6 @@ const Timeline = () => {
     const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
     
     setScrollProgress(progress);
-    setShowScrollControls(scrollTop > 100); // Show controls after scrolling 100px
     
     // Set scrolling state for visual feedback
     setIsScrolling(true);
@@ -696,31 +504,23 @@ const Timeline = () => {
     }, 150);
   };
 
-  // Smooth scroll functions
-  const scrollToTop = () => {
-    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const scrollToBottom = () => {
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-    }
-  };
-
-  const scrollToYear = (year: number) => {
-    const yearElement = document.querySelector(`[data-year="${year}"]`);
-    if (yearElement && containerRef.current) {
-      const container = containerRef.current;
-      const elementTop = yearElement.getBoundingClientRect().top;
-      const containerTop = container.getBoundingClientRect().top;
-      const scrollPosition = container.scrollTop + (elementTop - containerTop) - 100; // 100px offset
-      
-      container.scrollTo({ top: scrollPosition, behavior: 'smooth' });
-    }
-  };
-
-
+  // Transform timeline data into react-chrono format
+  const chronoItems = useMemo(() => {
+    return timelineData
+      .sort((a, b) => a.year - b.year) // Chronological order
+      .map((yearData) => {
+        // Build card title from events
+        const eventTitles = yearData.events.map(e => e.event).join(', ');
+        
+        return {
+          title: yearData.year.toString(),
+          cardTitle: eventTitles || (yearData.memories.length > 0 ? `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}` : yearData.isCurrentYear ? 'Current Year' : ''),
+          cardSubtitle: yearData.isCurrentYear ? new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+          cardDetailedText: '', // We'll use custom content instead
+          yearData, // Pass through for custom rendering
+        };
+      });
+  }, [timelineData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -737,9 +537,8 @@ const Timeline = () => {
             <h1 className="text-xl font-semibold">Timeline</h1>
           </div>
           
-          {/* Zoom Controls */}
+          {/* Controls */}
           <div className="flex items-center gap-2">
-            {/* Voice Search */}
             <Button
               variant="outline"
               size="sm"
@@ -760,69 +559,12 @@ const Timeline = () => {
             >
               <RefreshCw className={`w-4 h-4 ${timelineLoading ? 'animate-spin' : ''}`} />
             </Button>
-            <span className="text-xs text-muted-foreground font-light mr-2">
-              Ctrl+Wheel to zoom • Shift+Drag to pan
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomOut}
-              disabled={zoomLevel <= 0.5}
-              className="font-light"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground font-light min-w-[60px] text-center">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 2}
-              className="font-light"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-            {(zoomLevel !== 1 || panOffset.x !== 0 || panOffset.y !== 0) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleResetZoom}
-                className="font-light"
-              >
-                Reset
-              </Button>
-            )}
           </div>
         </div>
       </nav>
 
-      {/* Main Container - Full Width Timeline */}
-      <div className="h-[calc(100vh-60px)] overflow-auto">
-        {/* Timeline - Full Width */}
-        <div 
-          ref={containerRef}
-          className="relative w-full modern-scrollbar"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          onScroll={handleScroll}
-          style={{
-            scrollBehavior: 'smooth',
-          }}
-        >
-          <div
-            className="max-w-4xl mx-auto px-8 py-16 transition-transform duration-100 ease-out"
-            style={{ 
-              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
-              transformOrigin: 'top center',
-              cursor: isDragging ? 'grabbing' : 'default',
-              userSelect: isDragging ? 'none' : 'auto',
-              minHeight: '100vh'
-            }}
-          >
+      {/* Main Container */}
+      <div className="h-[calc(100vh-60px)] overflow-auto" ref={containerRef} onScroll={handleScroll}>
         {profileLoading || isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground animate-pulse">Loading your timeline...</div>
@@ -843,273 +585,85 @@ const Timeline = () => {
             </Link>
           </div>
         ) : (
-          (() => {
-            // Shared variables for timeline calculations
-            const sharedBirthYear = timelineProfile?.birth_date 
-              ? new Date(timelineProfile.birth_date).getFullYear() 
-              : timelineData[0]?.year || new Date().getFullYear();
-            
-            return (
-          <div 
-            className="relative animate-fade-in"
-            style={{
-              minHeight: (() => {
-                // FULL PAGE DEFAULT: Always start with one full page height minimum
-                const currentYear = new Date().getFullYear();
-                const sharedBirthYear = timelineProfile?.birth_date 
-                  ? new Date(timelineProfile.birth_date).getFullYear() 
-                  : timelineData[0]?.year || new Date().getFullYear();
-                const totalYears = currentYear - sharedBirthYear;
-                
-                // ALWAYS ONE PAGE MINIMUM: Ensure timeline fills viewport height
-                const viewportHeight = window.innerHeight - 200;
-                const baseHeight = Math.max(viewportHeight * 0.9, 800); // Always at least 90% of screen or 800px minimum
-                
-                // Use dedicated overlap checker module with generous spacing for readability
-                const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
-                
-                console.log(`🎯 FULL PAGE TIMELINE: ${Math.round(baseHeight)}px → ${Math.round((overlapCheck as any).finalHeight)}px (${Math.round((overlapCheck as any).finalHeight / viewportHeight * 100)}% of screen)`);
-                
-                return (overlapCheck as any).finalHeight;
-              })()
-            }}
-          >
-            {(() => {
-              // POSITIONING: Use same overlap checker for consistent results
-              const currentYear = new Date().getFullYear();
-              const totalYears = currentYear - sharedBirthYear;
-              const viewportHeight = window.innerHeight - 200;
-              
-              // Same logic as container: Start with full page, use overlap checker with generous spacing
-              const baseHeight = Math.max(viewportHeight * 0.9, 800);
-              const overlapCheck = checkLabelOverlaps(timelineData, totalYears, baseHeight, 80);
-              
-              // Final sizing - guaranteed to match container
-              const pixelsPerYear = (overlapCheck as any).finalHeight / totalYears;
-              const totalHeight = (overlapCheck as any).finalHeight;
-
-              return (
-                <>
-                  {/* Timeline Line - centered */}
-                  <div 
-                    className="absolute left-1/4 top-0 w-1 bg-black"
-                    style={{ height: `${totalHeight}px` }}
-                  />
-
-                  {/* Timeline Content with proportional spacing - CHRONOLOGICAL ORDER */}
-                  {timelineData
-                    .sort((a, b) => a.year - b.year) // Sort chronologically: earliest year first (birth to current)
-                    .map((yearData, index) => {
-                    const isMajorYear = yearData.significance === 'major';
-                    // Consistent font size for all years for better alignment
-                    const yearSize = 'text-2xl'; // Same size for all years
-                    const markerSize = isMajorYear ? 'w-4 h-4' : 'w-3 h-3';
-                    const spacing = isMajorYear ? 'mb-6' : 'mb-4';
-                    
-                    // Position proportionally from birth year (top) to current year (bottom)
-                    const yearsFromBirth = yearData.year - sharedBirthYear;
-                    const currentYearPosition = totalHeight - 150;
-                    let topPosition = (yearsFromBirth * pixelsPerYear) + 50; // Start 50px from top
-                    
-                    // Anchor birth year at the top
-                    if (yearData.year === sharedBirthYear) {
-                      topPosition = 50; // Fixed at top with small margin
-                    }
-                    
-                    // Anchor current year at the bottom
-                    if (yearData.isCurrentYear) {
-                      topPosition = currentYearPosition;
-                    } else {
-                      // Ensure no year appears below the current year
-                      topPosition = Math.min(topPosition, currentYearPosition - 100);
-                    }
-                    
-                    return (
-                      <div 
-                        key={yearData.year} 
-                        className="absolute left-0 right-0"
-                        style={{ top: `${topPosition}px` }}
-                        data-year={yearData.year}
-                       >
-                        {/* Year Marker - Aligned with year labels */}
-                        <div 
-                          className={`absolute ${markerSize} rounded-full ${
-                            isMajorYear 
-                              ? 'bg-black shadow-lg' 
-                              : 'bg-black/80 shadow-md'
-                          } transition-all duration-300`}
-                          style={{
-                            left: 'calc(25% - 8px)', // Center on timeline
-                            top: '16px' // Align with year labels (12px + 4px for centering)
-                          }}
-                        />
-
-                        {/* Left Side: Year Label - Vertically aligned with right content */}
-                        <div 
-                          className="absolute right-[76%] pr-4 cursor-pointer group flex flex-col items-end justify-start"
-                          onClick={() => toggleYear(yearData.year)}
-                          style={{ top: '0px' }}
-                        >
-                          <h2 className="text-4xl font-light text-right text-foreground group-hover:text-primary transition-colors leading-none" style={{ fontFamily: 'Georgia, serif' }}>
-                            {yearData.year}
-                          </h2>
-
-                          {yearData.isCurrentYear && (
-                            <span className="text-xs text-primary font-medium bg-primary/10 px-2 py-1 rounded-full inline-block whitespace-nowrap absolute" style={{ top: '80px', right: '0' }}>
-                              17th October 2025
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Right Side: Content - Aligned with year labels */}
-                        <div className="ml-[26%] pl-12 space-y-2 flex flex-col justify-start" style={{ paddingTop: '0px' }}>
-                          {/* Life Events (Birth) - Compact layout */}
-                          {yearData.events.map((event, eventIndex) => (
-                            <div key={eventIndex} className="space-y-1 mb-2 animate-fade-in">
-                              <div className="text-lg font-light text-foreground">
-                                {event.event}
-                              </div>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                {event.location && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3" />
-                                    {event.location}
-                                  </div>
-                                )}
-                                {event.date && (
-                                  <div className="flex items-center gap-1 font-light">
-                                    <Calendar className="w-3 h-3" />
-                                    {new Date(event.date).toLocaleDateString('en-US', {
-                                      month: 'long',
-                                      day: 'numeric'
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {/* Message moved to bottom of screen */}
-
-                          {/* Memory Content - Use 3D slider for all memories, centered on year marker */}
-                          {yearData.memories.length > 0 && (
-                            <div className="animate-scale-in" style={{ marginTop: yearData.events.length > 0 ? '-46px' : '-54px' }}>
-                              <Memory3DSlider
-                                memories={yearData.memories.map((memory) => ({
-                                  id: memory.id,
-                                  title: memory.title,
-                                  text: memory.text,
-                                  image_urls: memory.image_urls,
-                                  date: new Date(memory.created_at).toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                  }),
-                                  onClick: () => setSelectedMemory(memory)
-                                }))}
-                              />
-                            </div>
-                          )}
-                        </div>
+          <div className="py-8 px-4">
+            <Chrono
+              items={chronoItems}
+              mode="VERTICAL"
+              disableClickOnCircle={false}
+              disableNavOnKey={false}
+              scrollable={false}
+              cardHeight={200}
+              theme={{
+                primary: 'hsl(var(--primary))',
+                secondary: 'hsl(var(--background))',
+                cardBgColor: 'hsl(var(--card))',
+                titleColor: 'hsl(var(--foreground))',
+                titleColorActive: 'hsl(var(--primary))',
+              }}
+            >
+              {chronoItems.map((item, index) => (
+                <div key={index} className="space-y-4 p-4">
+                  {/* Life Events */}
+                  {item.yearData.events.map((event: any, eventIndex: number) => (
+                    <div key={eventIndex} className="space-y-1 mb-2 animate-fade-in">
+                      <div className="text-lg font-light text-foreground">
+                        {event.event}
                       </div>
-                    );
-                  })}
-                </>
-              );
-            })()}
-          </div>
-            );
-          })()
-        )}
-          </div>
-        </div>
-
-        {/* Empty State Message - Fixed at Bottom */}
-        {timelineData.length > 0 && timelineData.every(y => y.memories.length === 0 && y.events.length === 0) && (
-          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-            <p className="text-sm text-muted-foreground italic animate-pulse font-light">
-              Start recording memories to fill your timeline...
-            </p>
-          </div>
-        )}
-
-        {/* Modern Scroll Indicators and Controls */}
-        {timelineData.length > 0 && (
-          <>
-            {/* Scroll Progress Bar */}
-            <div className="fixed left-0 top-[60px] w-1 h-[calc(100vh-60px)] bg-muted/20 z-40 lg:block hidden">
-              <div 
-                className={`w-full bg-gradient-to-b from-primary/60 to-primary transition-all duration-300 ${
-                  isScrolling ? 'shadow-lg shadow-primary/20' : ''
-                }`}
-                style={{ height: `${scrollProgress}%` }}
-              />
-            </div>
-
-            {/* Floating Scroll Controls */}
-            {showScrollControls && (
-              <div className="fixed right-6 bottom-6 flex flex-col gap-2 z-50 animate-fade-in">
-                {/* Year Quick Navigation */}
-                <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-2 shadow-lg">
-                  <div className="text-xs text-muted-foreground mb-2 px-2">Jump to:</div>
-                  <div className="flex flex-col gap-1 max-h-32 overflow-y-auto mini-scrollbar">
-                    {timelineData
-                      .slice()
-                      .sort((a, b) => b.year - a.year) // Reverse chronological for navigation (newest first)
-                      .map((yearData) => (
-                      <Button
-                        key={yearData.year}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs h-6 justify-start px-2 hover:bg-primary/10 font-mono tabular-nums"
-                        onClick={() => scrollToYear(yearData.year)}
-                      >
-                        {yearData.year}
-                        {yearData.memories.length > 0 && (
-                          <span className="ml-auto text-primary">•</span>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        {event.location && (
+                          <div className="flex items-center gap-1">
+                            📍 {event.location}
+                          </div>
                         )}
-                      </Button>
-                    ))}
-                  </div>
+                        {event.date && (
+                          <div className="flex items-center gap-1 font-light">
+                            📅 {new Date(event.date).toLocaleDateString('en-US', {
+                              month: 'long',
+                              day: 'numeric'
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Memory Cards with 3D Slider */}
+                  {item.yearData.memories.length > 0 && (
+                    <div className="animate-scale-in">
+                      <Memory3DSlider
+                        memories={item.yearData.memories.map((memory: any) => ({
+                          id: memory.id,
+                          title: memory.title,
+                          text: memory.text,
+                          image_urls: memory.image_urls,
+                          date: new Date(memory.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }),
+                          onClick: () => setSelectedMemory(memory)
+                        }))}
+                      />
+                    </div>
+                  )}
                 </div>
-
-                {/* Scroll Direction Controls */}
-                <div className="bg-background/95 backdrop-blur-sm border border-border rounded-lg p-1 shadow-lg flex flex-col gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary/10"
-                    onClick={scrollToTop}
-                    title="Scroll to top"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 hover:bg-primary/10"
-                    onClick={scrollToBottom}
-                    title="Scroll to bottom"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Scroll Progress Indicator (mobile) */}
-            <div className="fixed bottom-0 left-0 right-0 h-1 bg-muted/20 z-40 lg:hidden">
-              <div 
-                className={`h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ${
-                  isScrolling ? 'shadow-lg shadow-primary/20' : ''
-                }`}
-                style={{ width: `${scrollProgress}%` }}
-              />
-            </div>
-          </>
+              ))}
+            </Chrono>
+          </div>
         )}
-
       </div>
+
+      {/* Scroll Progress Indicator (mobile) */}
+      {timelineData.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 h-1 bg-muted/20 z-40">
+          <div 
+            className={`h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-300 ${
+              isScrolling ? 'shadow-lg shadow-primary/20' : ''
+            }`}
+            style={{ width: `${scrollProgress}%` }}
+          />
+        </div>
+      )}
 
       {/* Memory Detail Dialog */}
       {selectedMemory && (
