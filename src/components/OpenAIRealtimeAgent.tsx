@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 
 interface OpenAIRealtimeAgentProps {
@@ -28,6 +29,25 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
     setIsConnecting(true);
     
     try {
+      // Request microphone access
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      toast({
+        title: "Connecting...",
+        description: "Setting up personalized OpenAI session",
+      });
+
+      // Fetch personalized session data
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke(
+        'openai-realtime-session'
+      );
+
+      if (sessionError || !sessionData) {
+        throw new Error('Failed to fetch session data');
+      }
+
+      console.log('✅ Received personalized session data for:', sessionData.userName);
+
       // Initialize audio context
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext({ sampleRate: 24000 });
@@ -55,12 +75,12 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
 
         await sessionCreatedPromise;
 
-        // Send session configuration
+        // Send session configuration with personalized prompt
         ws.send(JSON.stringify({
           type: 'session.update',
           session: {
             modalities: ['text', 'audio'],
-            instructions: 'You are Solin, a helpful AI memory companion. Help users reflect on and preserve their memories.',
+            instructions: sessionData.systemPrompt,
             voice: 'alloy',
             input_audio_format: 'pcm16',
             output_audio_format: 'pcm16',
@@ -78,6 +98,22 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
           }
         }));
 
+        // Send first personalized message
+        setTimeout(() => {
+          ws.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'message',
+              role: 'assistant',
+              content: [{
+                type: 'text',
+                text: sessionData.firstMessage
+              }]
+            }
+          }));
+          ws.send(JSON.stringify({ type: 'response.create' }));
+        }, 500);
+
         // Start audio recording
         recorderRef.current = new AudioRecorder((audioData) => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -91,7 +127,7 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
         
         toast({
           title: "Connected",
-          description: "OpenAI Realtime is ready",
+          description: `Voice agent ready for ${sessionData.userName}`,
         });
       };
 

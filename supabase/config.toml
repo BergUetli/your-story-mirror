@@ -26,3 +26,9 @@ verify_jwt = true
 
 [functions.openai-realtime]
 verify_jwt = false
+
+[functions.openai-realtime-session]
+verify_jwt = true
+
+[functions.vapi-session]
+verify_jwt = true

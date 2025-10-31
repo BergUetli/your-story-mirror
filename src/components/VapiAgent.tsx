@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import Vapi from '@vapi-ai/web';
 
 interface VapiAgentProps {
@@ -83,7 +84,25 @@ export function VapiAgent({ assistantId, onSpeakingChange }: VapiAgentProps) {
         throw new Error('VAPI not initialized');
       }
 
-      await vapiRef.current.start(assistantId);
+      // Fetch personalized session data
+      const { data: sessionData, error: sessionError } = await supabase.functions.invoke(
+        'vapi-session'
+      );
+
+      if (sessionError) {
+        console.warn('Failed to fetch session data, continuing with defaults:', sessionError);
+      }
+
+      console.log('✅ Starting VAPI with personalized context');
+
+      // Start VAPI with assistant configuration
+      await vapiRef.current.start(assistantId, {
+        // VAPI will use the assistant's configured prompt, but we can pass metadata
+        metadata: sessionData ? {
+          userName: sessionData.userName,
+          context: sessionData.context
+        } : undefined
+      });
       
       toast({
         title: "Connected",
