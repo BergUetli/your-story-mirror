@@ -168,25 +168,25 @@ const Timeline = () => {
     return timelineData.map((yearData) => ({
       title: yearData.year.toString(),
       cardTitle: yearData.events.map(e => e.event).join(', ') || 
-                 (yearData.memories.length > 0 ? `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}` : ''),
-      cardSubtitle: yearData.isCurrentYear ? new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
-      cardDetailedText: yearData.memories.map(m => m.title).join(' • '),
+                 (yearData.memories.length > 0 ? `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}` : 'Year ' + yearData.year),
+      cardSubtitle: yearData.isCurrentYear ? 'Present' : '',
+      cardDetailedText: '',
       yearData,
     }));
   }, [timelineData]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="border-b border-border bg-card sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <nav className="border-b border-border bg-card sticky top-0 z-50 flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link to="/dashboard">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
             </Link>
-            <h1 className="text-xl font-semibold">Timeline</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">Timeline</h1>
           </div>
           
           <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ const Timeline = () => {
               onClick={() => setShowVoiceSearch(true)}
               className="text-xs"
             >
-              🎤 Voice Search
+              🎤 <span className="hidden sm:inline ml-1">Voice</span>
             </Button>
             
             <Button
@@ -211,16 +211,16 @@ const Timeline = () => {
         </div>
       </nav>
 
-      <div className="h-[calc(100vh-60px)] overflow-auto">
+      <div className="flex-1 overflow-auto">
         {profileLoading || isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-muted-foreground animate-pulse">Loading timeline...</div>
           </div>
         ) : timelineData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center space-y-6">
+          <div className="flex flex-col items-center justify-center h-64 text-center space-y-6 px-4">
             <div className="space-y-2">
-              <p className="text-2xl font-medium">No memories yet</p>
-              <p className="text-base text-muted-foreground max-w-md">
+              <p className="text-xl sm:text-2xl font-medium">No memories yet</p>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-md">
                 Start preserving your life stories
               </p>
             </div>
@@ -232,70 +232,131 @@ const Timeline = () => {
             </Link>
           </div>
         ) : (
-          <div className="w-full max-w-6xl mx-auto py-8 px-4" style={{ minHeight: '80vh' }}>
+          <div className="w-full py-12 px-4" style={{ 
+            maxWidth: '1400px', 
+            margin: '0 auto',
+          }}>
+            <style>
+              {`
+                /* Fix react-chrono layout issues */
+                .react-chrono-wrapper {
+                  width: 100% !important;
+                }
+                
+                /* Ensure proper spacing */
+                [data-testid="timeline-main-wrapper"] {
+                  padding: 20px 0 !important;
+                }
+                
+                /* Card spacing */
+                [class*="timeline-card-content"] {
+                  padding: 16px !important;
+                  margin: 10px 0 !important;
+                  min-height: 120px !important;
+                }
+                
+                /* Year labels - prevent overlap */
+                [class*="timeline-title"] {
+                  font-size: 1rem !important;
+                  font-weight: 600 !important;
+                  padding: 8px 12px !important;
+                  background: white !important;
+                  border: 2px solid #e5e7eb !important;
+                  border-radius: 8px !important;
+                  margin: 20px 0 !important;
+                  white-space: nowrap !important;
+                }
+                
+                /* Timeline line */
+                [class*="timeline-vertical-circle"] {
+                  margin: 20px 0 !important;
+                }
+                
+                /* Responsive adjustments */
+                @media (max-width: 768px) {
+                  [class*="timeline-card-content"] {
+                    font-size: 0.875rem !important;
+                  }
+                  
+                  [class*="timeline-title"] {
+                    font-size: 0.875rem !important;
+                  }
+                }
+              `}
+            </style>
             <Chrono
               items={chronoItems}
               mode="VERTICAL"
-              scrollable={{ scrollbar: false }}
+              scrollable={false}
               hideControls={false}
-              cardHeight={150}
+              cardHeight={180}
+              disableClickOnCircle={false}
+              useReadMore={false}
               theme={{
                 primary: '#3b82f6',
-                secondary: '#f3f4f6',
+                secondary: '#f9fafb',
                 cardBgColor: '#ffffff',
-                cardForeColor: '#1f2937',
+                cardForeColor: '#111827',
                 titleColor: '#1f2937',
                 titleColorActive: '#3b82f6',
               }}
               fontSizes={{
                 cardSubtitle: '0.875rem',
                 cardText: '0.875rem',
-                cardTitle: '1.125rem',
-                title: '1.25rem',
-              }}
-              classNames={{
-                card: 'shadow-md border border-gray-200',
-                cardMedia: 'rounded-t-lg',
-                cardSubTitle: 'text-gray-600',
-                cardText: 'text-gray-700',
-                cardTitle: 'font-semibold text-gray-900',
-                title: 'font-bold',
+                cardTitle: '1rem',
+                title: '1rem',
               }}
             >
               {chronoItems.map((item, index) => (
-                <div key={index} className="space-y-3 p-4 bg-white">
-                  {item.yearData.events.map((event: any, eventIndex: number) => (
-                    <div key={eventIndex} className="space-y-1 mb-3">
-                      <div className="text-base font-semibold text-gray-900">{event.event}</div>
-                      {event.location && (
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <MapPin className="w-3 h-3" />
-                          {event.location}
+                <div key={index} className="p-4 space-y-4">
+                  {/* Events */}
+                  {item.yearData.events.length > 0 && (
+                    <div className="space-y-2">
+                      {item.yearData.events.map((event: any, eventIndex: number) => (
+                        <div key={eventIndex} className="pb-2 border-b border-gray-200 last:border-0">
+                          <div className="text-base font-semibold text-gray-900">{event.event}</div>
+                          {event.location && (
+                            <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{event.location}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                  ))}
+                  )}
                   
+                  {/* Memories */}
                   {item.yearData.memories.length > 0 && (
-                    <div className="space-y-2 mt-3">
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        Memories ({item.yearData.memories.length})
+                      </div>
                       {item.yearData.memories.map((memory: any) => (
                         <button
                           key={memory.id}
                           onClick={() => setSelectedMemory(memory)}
-                          className="w-full text-left p-3 rounded-lg border-2 border-gray-200 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                          className="w-full text-left p-3 rounded-lg border-2 border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 shadow-sm hover:shadow-md"
                         >
-                          <div className="font-semibold text-sm text-gray-900">{memory.title}</div>
+                          <div className="font-semibold text-sm text-gray-900 mb-1">{memory.title}</div>
                           {memory.text && (
-                            <div className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            <div className="text-xs text-gray-600 line-clamp-2 mb-2">
                               {memory.text}
                             </div>
                           )}
-                          <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(memory.created_at).toLocaleDateString()}
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3 flex-shrink-0" />
+                            <span>{new Date(memory.created_at).toLocaleDateString()}</span>
                           </div>
                         </button>
                       ))}
+                    </div>
+                  )}
+                  
+                  {/* Empty state */}
+                  {item.yearData.events.length === 0 && item.yearData.memories.length === 0 && (
+                    <div className="text-sm text-gray-500 italic py-2">
+                      No events or memories recorded for this year
                     </div>
                   )}
                 </div>
