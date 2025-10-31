@@ -50,12 +50,6 @@ export function Memory3DSlider({ memories }: Memory3DSliderProps) {
                 <h3 className="memory-card-title">
                   {memory.title}
                 </h3>
-                <p className="memory-card-date">{memory.date}</p>
-                {memory.text && (
-                  <p className="memory-card-text">
-                    {memory.text}
-                  </p>
-                )}
               </div>
             )}
           </div>

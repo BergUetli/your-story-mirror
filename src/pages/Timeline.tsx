@@ -39,7 +39,7 @@ const detectEventSignificance = (memory: any): 'major' | 'minor' => {
 };
 
 // LABEL OVERLAP CHECKER MODULE - Use this for ALL timeline sizing decisions
-const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight: number, minGap: number = 50) => {
+const checkLabelOverlaps = (timelineData: any[], totalYears: number, baseHeight: number, minGap: number = 300) => {
   if (timelineData.length <= 1) {
     return { hasOverlaps: false, expansionNeeded: 1, details: [] };
   }
@@ -948,9 +948,9 @@ const Timeline = () => {
                         <div 
                           className="absolute right-[76%] pr-4 cursor-pointer group flex flex-col items-end justify-start"
                           onClick={() => toggleYear(yearData.year)}
-                          style={{ top: '12px' }} // Move year labels significantly lower to align with content baseline
+                          style={{ top: '0px' }}
                         >
-                          <h2 className={`${yearSize} font-light text-right text-foreground group-hover:text-primary transition-colors leading-none font-mono tabular-nums`}>
+                          <h2 className="text-4xl font-light text-right text-foreground group-hover:text-primary transition-colors leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                             {yearData.year}
                           </h2>
 
