@@ -11,7 +11,7 @@
   position: absolute;
   top: 50%;
   left: 30px;
-  transform: translateY(-50%) rotateX(0deg) rotateY(-25deg) rotateZ(-120deg);
+  transform: translateY(-50%) rotateX(-15deg) rotateY(20deg);
   transform-style: preserve-3d;
   transition: all 0.6s cubic-bezier(0.075, 0.82, 0.165, 1);
   user-select: none;
@@ -20,6 +20,7 @@
   flex-direction: row;
   align-items: center;
   gap: 10px;
+  perspective: 1000px;
 }
 
 /* Memory card styles with 3D rotation - stack horizontally */
@@ -27,7 +28,7 @@
   position: relative;
   width: 100px;
   height: 100px;
-  transform: rotateX(20deg) rotateY(-10deg) rotateZ(130deg);
+  transform: rotateY(-5deg);
   border: 1px solid hsl(var(--border) / 0.3);
   border-radius: 6px;
   overflow: hidden;
@@ -40,7 +41,7 @@
 
 /* Hover state for memory cards */
 .memory-card-hover {
-  transform: rotateX(20deg) rotateY(-10deg) rotateZ(130deg) translateY(-5px) scale(1.05);
+  transform: rotateY(-5deg) translateY(-5px) scale(1.05);
   border-color: hsl(var(--primary) / 0.5);
   box-shadow: 0 8px 20px hsl(var(--primary) / 0.3);
 }
