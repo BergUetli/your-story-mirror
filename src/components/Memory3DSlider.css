@@ -6,19 +6,22 @@
   overflow: visible;
 }
 
-/* Slider container with 3D transforms */
+/* Slider container with 3D transforms - positioned 30px from left */
 .memory-slider {
   position: absolute;
   top: 50%;
-  left: 50%;
-  transform: translate3d(-50%, -50%, 0) rotateX(0deg) rotateY(-25deg) rotateZ(-120deg);
+  left: 30px;
+  transform: translate3d(0, -50%, 0) rotateX(0deg) rotateY(-25deg) rotateZ(-120deg);
   transform-style: preserve-3d;
   transition: 1s cubic-bezier(0.075, 0.82, 0.165, 1);
   user-select: none;
   will-change: transform;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
 }
 
-/* Memory card styles with 3D rotation and overlap - Smaller size */
+/* Memory card styles with 3D rotation - stack horizontally */
 .memory-card {
   position: relative;
   width: 100px;
@@ -27,9 +30,9 @@
   border: 1px solid hsl(var(--border) / 0.3);
   border-radius: 6px;
   overflow: hidden;
-  margin: -75px 0;
-  transition: all 1s cubic-bezier(0.075, 0.82, 0.165, 1);
-  left: 0%;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.075, 0.82, 0.165, 1);
   cursor: pointer;
   background: hsl(var(--card));
   backdrop-filter: blur(10px);
@@ -37,7 +40,7 @@
 
 /* Hover state for memory cards */
 .memory-card-hover {
-  left: 15%;
+  transform: rotateX(20deg) rotateY(-10deg) rotateZ(130deg) translateY(-5px);
   border-color: hsl(var(--primary) / 0.5);
 }
 
@@ -97,5 +100,5 @@
 
 /* Single memory adjustments */
 .memory-slider:has(.memory-card:only-child) .memory-card {
-  margin: 0;
+  margin-right: 0;
 }
