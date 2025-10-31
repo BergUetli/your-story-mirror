@@ -139,23 +139,41 @@ const Timeline = () => {
 
       if (memoriesError) throw memoriesError;
 
+      // Fetch from users table which has birth_date and birth_place
+      const { data: userProfile, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // Also fetch user_profiles for additional data
       const { data: profiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
+      if (userError) console.error('User profile error:', userError);
       if (profileError) console.error('Profile error:', profileError);
       
-      if (profiles && profiles.age && !profiles.birth_date) {
+      // Combine data, prioritizing users table for birth info
+      const combinedProfile = {
+        ...profiles,
+        ...userProfile,
+        birth_date: userProfile?.birth_date || profiles?.birth_date,
+        birth_place: userProfile?.birth_place || profiles?.hometown || profiles?.location,
+        age: userProfile?.age || profiles?.age,
+      };
+      
+      // Calculate birth_date from age if not provided
+      if (combinedProfile.age && !combinedProfile.birth_date) {
         const currentYear = new Date().getFullYear();
-        const birthYear = currentYear - profiles.age;
-        profiles.birth_date = `${birthYear}-01-01`;
-        profiles.birth_place = profiles.hometown || profiles.location || 'Unknown';
+        const birthYear = currentYear - combinedProfile.age;
+        combinedProfile.birth_date = `${birthYear}-01-01`;
       }
       
       setTimelineMemories(memories || []);
-      setTimelineProfile(profiles || profile || null);
+      setTimelineProfile(combinedProfile);
 
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
