@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
 import { TimelineMemoryCard } from '@/components/TimelineMemoryCard';
+import { MemoryStack3DSlider } from '@/components/MemoryStack3DSlider';
 import { soundEffects } from '@/services/soundEffects';
 
 
@@ -997,43 +998,35 @@ const Timeline = () => {
 
                           {/* Memory Content - Always show memories if they exist */}
                           {yearData.memories.length > 0 && (
-                            <div 
-                              className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}
-                              style={{
-                                position: 'relative',
-                                minHeight: yearData.memories.length > 1 ? '120px' : '60px' // Extra height for stacked memories
-                              }}
-                            >
-                              {yearData.memories.map((memory, memoryIndex) => {
-                                const isMajorMemory = memory.significance === 'major';
-                                
-                                // Calculate stacking offset for multiple memories in same year
-                                const isStacked = yearData.memories.length > 1;
-                                const stackOffset = isStacked ? memoryIndex * 16 : 0; // 16px horizontal offset for each subsequent memory
-                                const verticalOffset = isStacked ? memoryIndex * 8 : 0; // 8px vertical offset for visual depth
-                                
-                                return (
-                                  <div 
-                                    key={memory.id} 
-                                    className="absolute timeline-card transition-all duration-300"
-                                    style={{
-                                      left: `${stackOffset}px`,
-                                      top: `${verticalOffset}px`,
-                                      zIndex: yearData.memories.length - memoryIndex, // First memory on top, others stacked behind
-                                      width: isStacked ? 'calc(100% - 32px)' : '100%', // Slightly narrower when stacked
-                                    }}
-                                  >
-                                    <TimelineMemoryCard
-                                      memory={memory}
-                                      artifact={memoryArtifacts[memory.id] || null}
-                                      onClick={() => setSelectedMemory(memory)}
-                                      isMaterializing={materializingMemory === memory.id}
-                                      hasVoiceRecording={memoryVoiceRecordings.has(memory.id)}
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            <>
+                              {yearData.memories.length > 1 ? (
+                                // Use 3D slider for multiple memories in same year
+                                <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
+                                  <MemoryStack3DSlider
+                                    memories={yearData.memories.map((memory) => ({
+                                      id: memory.id,
+                                      title: memory.title,
+                                      date: new Date(memory.created_at).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric'
+                                      }),
+                                      onClick: () => setSelectedMemory(memory)
+                                    }))}
+                                  />
+                                </div>
+                              ) : (
+                                // Single memory card for one memory
+                                <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
+                                  <TimelineMemoryCard
+                                    memory={yearData.memories[0]}
+                                    artifact={memoryArtifacts[yearData.memories[0].id] || null}
+                                    onClick={() => setSelectedMemory(yearData.memories[0])}
+                                    isMaterializing={materializingMemory === yearData.memories[0].id}
+                                    hasVoiceRecording={memoryVoiceRecordings.has(yearData.memories[0].id)}
+                                  />
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
