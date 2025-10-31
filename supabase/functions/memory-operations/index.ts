@@ -45,6 +45,39 @@ serve(async (req) => {
       case 'save':
         if (!memory) throw new Error('Memory data required for save action');
         
+        // Extract date from title or text (e.g., "Visit 2022", "Trip in 2018", "December 2020")
+        const extractDate = (title: string, text: string): string | null => {
+          const combined = `${title} ${text}`;
+          
+          // Match year patterns (2000-2099)
+          const yearMatch = combined.match(/\b(20\d{2})\b/);
+          if (yearMatch) {
+            const year = yearMatch[1];
+            
+            // Try to find month names
+            const monthMatch = combined.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i);
+            if (monthMatch) {
+              const monthNames: {[key: string]: string} = {
+                january: '01', jan: '01', february: '02', feb: '02',
+                march: '03', mar: '03', april: '04', apr: '04',
+                may: '05', june: '06', jun: '06',
+                july: '07', jul: '07', august: '08', aug: '08',
+                september: '09', sep: '09', october: '10', oct: '10',
+                november: '11', nov: '11', december: '12', dec: '12'
+              };
+              const month = monthNames[monthMatch[1].toLowerCase()];
+              return `${year}-${month}-01`;
+            }
+            
+            // Default to January 1st of that year
+            return `${year}-01-01`;
+          }
+          
+          return null;
+        };
+        
+        const extractedDate = extractDate(memory.title, memory.text);
+        
         const { data: savedMemory, error: saveError } = await supabase
           .from('memories')
           .insert({
@@ -52,12 +85,14 @@ serve(async (req) => {
             text: memory.text,
             tags: memory.tags || [],
             recipient: memory.recipient || 'private',
-            user_id: userId
+            user_id: userId,
+            memory_date: extractedDate
           })
           .select()
           .single();
 
         if (saveError) throw saveError;
+        console.log('✅ Memory saved with extracted date:', { title: memory.title, extractedDate });
         result = { memory: savedMemory };
         break;
 
