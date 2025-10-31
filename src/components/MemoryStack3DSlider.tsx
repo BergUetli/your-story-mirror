@@ -39,44 +39,38 @@ export function MemoryStack3DSlider({ memories }: MemoryStack3DSliderProps) {
   };
 
   const getCardStyle = (index: number) => {
-    const position = (index - activeIndex + memories.length) % memories.length;
-    const totalCards = Math.min(memories.length, 5); // Show max 5 cards
+    const diff = index - activeIndex;
+    const position = ((diff % memories.length) + memories.length) % memories.length;
+    const normalizedPosition = position > memories.length / 2 ? position - memories.length : position;
     
-    if (position === 0) {
-      // Active card (center, front)
+    // Active card (center)
+    if (normalizedPosition === 0) {
       return {
         transform: 'translateX(-50%) translateZ(0px) rotateY(0deg) scale(1)',
         opacity: 1,
         zIndex: 50,
         left: '50%',
       };
-    } else if (position === 1 || position === memories.length - 1) {
-      // Side cards
-      const isRight = position === 1;
-      return {
-        transform: `translateX(${isRight ? '20%' : '-120%'}) translateZ(-100px) rotateY(${isRight ? '-25' : '25'}deg) scale(0.85)`,
-        opacity: 0.7,
-        zIndex: 40,
-        left: isRight ? '50%' : '50%',
-      };
-    } else if (position === 2 || position === memories.length - 2) {
-      // Far side cards
-      const isRight = position === 2;
-      return {
-        transform: `translateX(${isRight ? '60%' : '-160%'}) translateZ(-200px) rotateY(${isRight ? '-35' : '35'}deg) scale(0.7)`,
-        opacity: 0.4,
-        zIndex: 30,
-        left: isRight ? '50%' : '50%',
-      };
-    } else {
-      // Hidden cards
-      return {
-        transform: 'translateX(-50%) translateZ(-300px) scale(0.5)',
-        opacity: 0,
-        zIndex: 10,
-        left: '50%',
-      };
     }
+    
+    // Calculate symmetric positioning
+    const isRight = normalizedPosition > 0;
+    const absPosition = Math.abs(normalizedPosition);
+    
+    // Symmetric spacing and rotation
+    const xOffset = absPosition * 100; // pixels from center
+    const zOffset = absPosition * 80; // depth
+    const rotation = absPosition * 25; // degrees
+    const scale = Math.max(0.6, 1 - absPosition * 0.15);
+    const opacity = Math.max(0.3, 1 - absPosition * 0.25);
+    const zIndex = 50 - absPosition * 10;
+    
+    return {
+      transform: `translateX(${isRight ? `calc(-50% + ${xOffset}px)` : `calc(-50% - ${xOffset}px)`}) translateZ(-${zOffset}px) rotateY(${isRight ? -rotation : rotation}deg) scale(${scale})`,
+      opacity,
+      zIndex,
+      left: '50%',
+    };
   };
 
   return (
