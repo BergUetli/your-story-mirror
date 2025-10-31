@@ -799,11 +799,11 @@ const Timeline = () => {
       </nav>
 
       {/* Main Container - Full Width Timeline */}
-      <div className="h-[calc(100vh-60px)]">
+      <div className="h-[calc(100vh-60px)] overflow-auto">
         {/* Timeline - Full Width */}
         <div 
           ref={containerRef}
-          className="relative overflow-auto w-full modern-scrollbar"
+          className="relative w-full modern-scrollbar"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
