@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
 import { TimelineMemoryCard } from '@/components/TimelineMemoryCard';
-import { MemoryStack3DSlider } from '@/components/MemoryStack3DSlider';
+import { Memory3DSlider } from '@/components/Memory3DSlider';
 import { soundEffects } from '@/services/soundEffects';
 
 
@@ -991,37 +991,24 @@ const Timeline = () => {
                           
                           {/* Message moved to bottom of screen */}
 
-                          {/* Memory Content - Always show memories if they exist */}
+                          {/* Memory Content - Use 3D slider for all memories */}
                           {yearData.memories.length > 0 && (
-                            <>
-                              {yearData.memories.length > 1 ? (
-                                // Use 3D slider for multiple memories in same year
-                                <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
-                                  <MemoryStack3DSlider
-                                    memories={yearData.memories.map((memory) => ({
-                                      id: memory.id,
-                                      title: memory.title,
-                                      date: new Date(memory.created_at).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric'
-                                      }),
-                                      onClick: () => setSelectedMemory(memory)
-                                    }))}
-                                  />
-                                </div>
-                              ) : (
-                                // Single memory card for one memory
-                                <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
-                                  <TimelineMemoryCard
-                                    memory={yearData.memories[0]}
-                                    artifact={memoryArtifacts[yearData.memories[0].id] || null}
-                                    onClick={() => setSelectedMemory(yearData.memories[0])}
-                                    isMaterializing={materializingMemory === yearData.memories[0].id}
-                                    hasVoiceRecording={memoryVoiceRecordings.has(yearData.memories[0].id)}
-                                  />
-                                </div>
-                              )}
-                            </>
+                            <div className={`animate-scale-in ${yearData.events.length > 0 ? 'mt-8' : 'mt-4'}`}>
+                              <Memory3DSlider
+                                memories={yearData.memories.map((memory) => ({
+                                  id: memory.id,
+                                  title: memory.title,
+                                  text: memory.text,
+                                  image_urls: memory.image_urls,
+                                  date: new Date(memory.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                  }),
+                                  onClick: () => setSelectedMemory(memory)
+                                }))}
+                              />
+                            </div>
                           )}
                         </div>
                       </div>

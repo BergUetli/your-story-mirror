@@ -1,0 +1,101 @@
+/* Memory Slider Container */
+.memory-slider-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  overflow: visible;
+}
+
+/* Slider container with 3D transforms */
+.memory-slider {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, -50%, 0) rotateX(0deg) rotateY(-25deg) rotateZ(-120deg);
+  transform-style: preserve-3d;
+  transition: 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+  user-select: none;
+  will-change: transform;
+}
+
+/* Memory card styles with 3D rotation and overlap */
+.memory-card {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  transform: rotateX(20deg) rotateY(-10deg) rotateZ(130deg);
+  border: 2px solid hsl(var(--border) / 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: -240px 0;
+  transition: all 1s cubic-bezier(0.075, 0.82, 0.165, 1);
+  left: 0%;
+  cursor: pointer;
+  background: hsl(var(--card));
+  backdrop-filter: blur(10px);
+}
+
+/* Hover state for memory cards */
+.memory-card-hover {
+  left: 15%;
+  border-color: hsl(var(--primary) / 0.5);
+}
+
+/* Memory card image */
+.memory-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* Memory card content (when no image) */
+.memory-card-content {
+  width: 100%;
+  height: 100%;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+/* Memory card title */
+.memory-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+}
+
+/* Memory card date */
+.memory-card-date {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+}
+
+/* Memory card text */
+.memory-card-text {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  word-wrap: break-word;
+}
+
+/* Single memory adjustments */
+.memory-slider:has(.memory-card:only-child) .memory-card {
+  margin: 0;
+}
