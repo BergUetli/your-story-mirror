@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import Vapi from '@vapi-ai/web';
 
 interface VapiAgentProps {
   assistantId: string;
@@ -14,24 +15,65 @@ export function VapiAgent({ assistantId, onSpeakingChange }: VapiAgentProps) {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const vapiRef = useRef<Vapi | null>(null);
 
   const handleSpeakingChange = useCallback((speaking: boolean) => {
     setIsSpeaking(speaking);
     onSpeakingChange?.(speaking);
   }, [onSpeakingChange]);
 
+  useEffect(() => {
+    // Initialize VAPI client
+    // Note: You'll need to get the public key from VAPI dashboard
+    const VAPI_PUBLIC_KEY = 'your-vapi-public-key'; // This should come from config
+    vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
+
+    // Set up event listeners
+    vapiRef.current.on('call-start', () => {
+      console.log('✅ VAPI call started');
+      setIsConnected(true);
+      setIsConnecting(false);
+    });
+
+    vapiRef.current.on('call-end', () => {
+      console.log('🔌 VAPI call ended');
+      setIsConnected(false);
+      handleSpeakingChange(false);
+    });
+
+    vapiRef.current.on('speech-start', () => {
+      console.log('🗣️ VAPI speech started');
+      handleSpeakingChange(true);
+    });
+
+    vapiRef.current.on('speech-end', () => {
+      console.log('🤐 VAPI speech ended');
+      handleSpeakingChange(false);
+    });
+
+    vapiRef.current.on('error', (error: any) => {
+      console.error('❌ VAPI error:', error);
+      toast({
+        title: "VAPI Error",
+        description: error.message || "An error occurred",
+        variant: "destructive",
+      });
+    });
+
+    return () => {
+      vapiRef.current?.stop();
+    };
+  }, [handleSpeakingChange, toast]);
+
   const startConversation = useCallback(async () => {
     setIsConnecting(true);
     
     try {
-      // Get microphone access
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!vapiRef.current) {
+        throw new Error('VAPI not initialized');
+      }
 
-      // This would initialize VAPI SDK
-      // For now, showing the structure
-      
-      setIsConnected(true);
-      setIsConnecting(false);
+      await vapiRef.current.start(assistantId);
       
       toast({
         title: "Connected",
@@ -50,7 +92,7 @@ export function VapiAgent({ assistantId, onSpeakingChange }: VapiAgentProps) {
   }, [assistantId, toast]);
 
   const endConversation = useCallback(() => {
-    // Stop VAPI connection
+    vapiRef.current?.stop();
     setIsConnected(false);
     handleSpeakingChange(false);
     

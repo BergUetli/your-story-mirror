@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AudioRecorder, encodeAudioForAPI, playAudioData } from '@/utils/RealtimeAudio';
 
 interface OpenAIRealtimeAgentProps {
   model: string;
@@ -16,6 +17,7 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
   const [isSpeaking, setIsSpeaking] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const recorderRef = useRef<AudioRecorder | null>(null);
 
   const handleSpeakingChange = useCallback((speaking: boolean) => {
     setIsSpeaking(speaking);
@@ -26,17 +28,66 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
     setIsConnecting(true);
     
     try {
-      // Get microphone access
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Initialize audio context
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      }
 
-      // Connect to WebSocket (this would connect to your edge function)
-      const projectRef = 'gulydhhzwlltkxbfnclu';
-      const ws = new WebSocket(`wss://${projectRef}.supabase.co/functions/v1/openai-realtime`);
+      // Connect to WebSocket
+      const ws = new WebSocket('wss://gulydhhzwlltkxbfnclu.supabase.co/functions/v1/openai-realtime');
       
-      ws.onopen = () => {
-        console.log('Connected to OpenAI Realtime');
+      ws.onopen = async () => {
+        console.log('✅ Connected to OpenAI Realtime');
         setIsConnected(true);
         setIsConnecting(false);
+        
+        // Wait for session.created event before sending session.update
+        const sessionCreatedPromise = new Promise((resolve) => {
+          const handler = (event: MessageEvent) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'session.created') {
+              ws.removeEventListener('message', handler);
+              resolve(data);
+            }
+          };
+          ws.addEventListener('message', handler);
+        });
+
+        await sessionCreatedPromise;
+
+        // Send session configuration
+        ws.send(JSON.stringify({
+          type: 'session.update',
+          session: {
+            modalities: ['text', 'audio'],
+            instructions: 'You are Solin, a helpful AI memory companion. Help users reflect on and preserve their memories.',
+            voice: 'alloy',
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            input_audio_transcription: {
+              model: 'whisper-1'
+            },
+            turn_detection: {
+              type: 'server_vad',
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 1000
+            },
+            temperature: 0.8,
+            max_response_output_tokens: 'inf'
+          }
+        }));
+
+        // Start audio recording
+        recorderRef.current = new AudioRecorder((audioData) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'input_audio_buffer.append',
+              audio: encodeAudioForAPI(audioData)
+            }));
+          }
+        });
+        await recorderRef.current.start();
         
         toast({
           title: "Connected",
@@ -44,19 +95,25 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
         });
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = async (event) => {
         const data = JSON.parse(event.data);
+        console.log('📨 Received event:', data.type);
         
-        if (data.type === 'response.audio.delta') {
+        if (data.type === 'response.audio.delta' && audioContextRef.current) {
           handleSpeakingChange(true);
-          // Handle audio playback
+          const binaryString = atob(data.delta);
+          const bytes = new Uint8Array(binaryString.length);
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          await playAudioData(audioContextRef.current, bytes);
         } else if (data.type === 'response.audio.done') {
           handleSpeakingChange(false);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('❌ WebSocket error:', error);
         toast({
           title: "Connection error",
           description: "Failed to connect to OpenAI",
@@ -66,14 +123,16 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
       };
 
       ws.onclose = () => {
+        console.log('🔌 WebSocket closed');
         setIsConnected(false);
         handleSpeakingChange(false);
+        recorderRef.current?.stop();
       };
 
       wsRef.current = ws;
       
     } catch (error) {
-      console.error('Error starting conversation:', error);
+      console.error('❌ Error starting conversation:', error);
       toast({
         title: "Failed to connect",
         description: error instanceof Error ? error.message : "Could not start voice agent",
@@ -84,6 +143,7 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
   }, [model, toast, handleSpeakingChange]);
 
   const endConversation = useCallback(() => {
+    recorderRef.current?.stop();
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -99,8 +159,12 @@ export function OpenAIRealtimeAgent({ model, onSpeakingChange }: OpenAIRealtimeA
 
   useEffect(() => {
     return () => {
+      recorderRef.current?.stop();
       if (wsRef.current) {
         wsRef.current.close();
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
       }
     };
   }, []);
