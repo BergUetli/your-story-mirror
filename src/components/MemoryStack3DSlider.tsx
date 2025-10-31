@@ -74,7 +74,7 @@ export function MemoryStack3DSlider({ memories }: MemoryStack3DSliderProps) {
   };
 
   return (
-    <div className="relative w-full h-[200px] my-8">
+    <div className="relative w-full h-[180px] my-4">
       {/* 3D Container */}
       <div className="relative w-full h-full" style={{ perspective: '1000px' }}>
         {memories.map((memory, index) => {
@@ -86,10 +86,10 @@ export function MemoryStack3DSlider({ memories }: MemoryStack3DSliderProps) {
               key={memory.id}
               onClick={isActive ? memory.onClick : undefined}
               className={cn(
-                'absolute w-[280px] p-4 bg-card rounded-lg border border-border transition-all duration-500 ease-out',
+                'absolute w-[280px] p-4 bg-card rounded-lg border transition-all duration-500 ease-out',
                 isActive
-                  ? 'cursor-pointer hover:border-primary hover:shadow-lg'
-                  : 'cursor-default'
+                  ? 'cursor-pointer hover:border-primary hover:shadow-lg border-border'
+                  : 'cursor-default border-border/50'
               )}
               style={{
                 ...style,
@@ -101,56 +101,15 @@ export function MemoryStack3DSlider({ memories }: MemoryStack3DSliderProps) {
                 {memory.title}
               </h3>
               <p className="text-xs text-muted-foreground">{memory.date}</p>
-              {isActive && (
-                <div className="mt-2 text-xs text-primary">
-                  Click to view details
-                </div>
-              )}
             </div>
           );
         })}
       </div>
 
-      {/* Navigation Controls */}
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-12 flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handlePrevious}
-          className="rounded-full"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <div className="flex gap-1.5">
-          {memories.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setActiveIndex(index)}
-              className={cn(
-                'w-2 h-2 rounded-full transition-all',
-                index === activeIndex
-                  ? 'bg-primary w-6'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              )}
-              aria-label={`Go to memory ${index + 1}`}
-            />
-          ))}
-        </div>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={handleNext}
-          className="rounded-full"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {/* Counter */}
-      <div className="absolute top-0 right-0 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded-md">
-        {activeIndex + 1} / {memories.length}
+      {/* Hidden Navigation Controls (keyboard/swipe) */}
+      <div className="sr-only">
+        <button onClick={handlePrevious} aria-label="Previous memory">Previous</button>
+        <button onClick={handleNext} aria-label="Next memory">Next</button>
       </div>
     </div>
   );

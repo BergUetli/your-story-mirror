@@ -989,12 +989,7 @@ const Timeline = () => {
                             </div>
                           ))}
                           
-                          {/* Show message for current year if no memories yet */}
-                          {yearData.isCurrentYear && yearData.memories.length === 0 && yearData.events.length === 0 && (
-                            <p className="text-sm text-muted-foreground italic animate-pulse font-light">
-                              Start recording memories to fill your timeline...
-                            </p>
-                          )}
+                          {/* Message moved to bottom of screen */}
 
                           {/* Memory Content - Always show memories if they exist */}
                           {yearData.memories.length > 0 && (
@@ -1041,6 +1036,15 @@ const Timeline = () => {
         )}
           </div>
         </div>
+
+        {/* Empty State Message - Fixed at Bottom */}
+        {timelineData.length > 0 && timelineData.every(y => y.memories.length === 0 && y.events.length === 0) && (
+          <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+            <p className="text-sm text-muted-foreground italic animate-pulse font-light">
+              Start recording memories to fill your timeline...
+            </p>
+          </div>
+        )}
 
         {/* Modern Scroll Indicators and Controls */}
         {timelineData.length > 0 && (
