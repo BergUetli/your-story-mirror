@@ -8,42 +8,75 @@
 
 /* Slider container with 3D transforms - positioned 30px from left */
 .memory-slider {
-  position: absolute;
-  top: 50%;
+  position: relative;
   left: 30px;
-  transform: translateY(-50%) rotateX(-15deg) rotateY(20deg);
+  transform: translateY(-50%);
   transform-style: preserve-3d;
   transition: all 0.6s cubic-bezier(0.075, 0.82, 0.165, 1);
   user-select: none;
   will-change: transform;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
   perspective: 1000px;
 }
 
-/* Memory card styles with 3D rotation - stack horizontally */
+/* Memory card styles with 3D rotation - stack vertically with offset */
 .memory-card {
-  position: relative;
+  position: absolute;
   width: 100px;
   height: 100px;
-  transform: rotateY(-5deg);
+  transform: rotateX(-15deg) rotateY(20deg);
+  transform-origin: center center;
   border: 1px solid hsl(var(--border) / 0.3);
   border-radius: 6px;
   overflow: hidden;
-  flex-shrink: 0;
   transition: all 0.3s cubic-bezier(0.075, 0.82, 0.165, 1);
   cursor: pointer;
   background: hsl(var(--card));
   backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px hsl(var(--background) / 0.3);
+}
+
+/* Stack cards with progressive offset */
+.memory-card:nth-child(1) {
+  top: 0;
+  z-index: 10;
+}
+
+.memory-card:nth-child(2) {
+  top: 20px;
+  left: 8px;
+  z-index: 9;
+}
+
+.memory-card:nth-child(3) {
+  top: 40px;
+  left: 16px;
+  z-index: 8;
+}
+
+.memory-card:nth-child(4) {
+  top: 60px;
+  left: 24px;
+  z-index: 7;
+}
+
+.memory-card:nth-child(5) {
+  top: 80px;
+  left: 32px;
+  z-index: 6;
+}
+
+.memory-card:nth-child(n+6) {
+  top: calc(80px + (var(--n) - 5) * 20px);
+  left: calc(32px + (var(--n) - 5) * 8px);
+  z-index: calc(6 - (var(--n) - 5));
 }
 
 /* Hover state for memory cards */
 .memory-card-hover {
-  transform: rotateY(-5deg) translateY(-5px) scale(1.05);
+  transform: rotateX(-15deg) rotateY(20deg) translateY(-8px) translateZ(20px) scale(1.08);
   border-color: hsl(var(--primary) / 0.5);
-  box-shadow: 0 8px 20px hsl(var(--primary) / 0.3);
+  box-shadow: 0 12px 30px hsl(var(--primary) / 0.4);
+  z-index: 100 !important;
 }
 
 /* Memory card image */
