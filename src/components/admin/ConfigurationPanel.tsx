@@ -19,7 +19,8 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { configurationService, SystemConfiguration } from '@/services/configurationService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { configurationService, SystemConfiguration, VoiceProvider } from '@/services/configurationService';
 import VoiceRecordingTester from './VoiceRecordingTester';
 
 const ConfigurationPanel = () => {
@@ -104,6 +105,89 @@ const ConfigurationPanel = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          
+          {/* Voice Provider Settings */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-slate-200 flex items-center gap-2">
+              <Mic className="h-4 w-4" />
+              Voice Provider
+            </h4>
+            
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="voice-provider" className="text-slate-300">
+                  Provider
+                </Label>
+                <Select
+                  value={config.voice_provider}
+                  onValueChange={(value: VoiceProvider) => handleInputChange('voice_provider', value)}
+                >
+                  <SelectTrigger id="voice-provider" className="bg-slate-700 border-slate-600 text-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+                    <SelectItem value="openai">OpenAI Realtime</SelectItem>
+                    <SelectItem value="vapi">VAPI</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-400">
+                  Choose which AI voice service to use for conversations
+                </p>
+              </div>
+
+              {config.voice_provider === 'elevenlabs' && (
+                <div className="space-y-2">
+                  <Label htmlFor="elevenlabs-agent-id" className="text-slate-300">
+                    ElevenLabs Agent ID
+                  </Label>
+                  <Input
+                    id="elevenlabs-agent-id"
+                    value={config.elevenlabs_agent_id}
+                    onChange={(e) => handleInputChange('elevenlabs_agent_id', e.target.value)}
+                    placeholder="agent_..."
+                    className="bg-slate-700 border-slate-600 text-slate-200"
+                  />
+                </div>
+              )}
+
+              {config.voice_provider === 'openai' && (
+                <div className="space-y-2">
+                  <Label htmlFor="openai-model" className="text-slate-300">
+                    OpenAI Model
+                  </Label>
+                  <Select
+                    value={config.openai_model}
+                    onValueChange={(value) => handleInputChange('openai_model', value)}
+                  >
+                    <SelectTrigger id="openai-model" className="bg-slate-700 border-slate-600 text-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gpt-4o-realtime-preview-2024-12-17">GPT-4o Realtime</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {config.voice_provider === 'vapi' && (
+                <div className="space-y-2">
+                  <Label htmlFor="vapi-assistant-id" className="text-slate-300">
+                    VAPI Assistant ID
+                  </Label>
+                  <Input
+                    id="vapi-assistant-id"
+                    value={config.vapi_assistant_id}
+                    onChange={(e) => handleInputChange('vapi_assistant_id', e.target.value)}
+                    placeholder="Enter your VAPI assistant ID"
+                    className="bg-slate-700 border-slate-600 text-slate-200"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Separator className="bg-slate-700" />
           
           {/* Conversation Timing Settings */}
           <div className="space-y-4">

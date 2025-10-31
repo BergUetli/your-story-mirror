@@ -224,9 +224,13 @@ export type Database = {
           audio_timestamp_correlation: boolean | null
           created_at: string
           description: string | null
+          elevenlabs_agent_id: string | null
           id: string
           key: string
+          openai_model: string | null
           value: Json | null
+          vapi_assistant_id: string | null
+          voice_provider: string | null
         }
         Insert: {
           audio_agent_volume?: number | null
@@ -239,9 +243,13 @@ export type Database = {
           audio_timestamp_correlation?: boolean | null
           created_at?: string
           description?: string | null
+          elevenlabs_agent_id?: string | null
           id?: string
           key: string
+          openai_model?: string | null
           value?: Json | null
+          vapi_assistant_id?: string | null
+          voice_provider?: string | null
         }
         Update: {
           audio_agent_volume?: number | null
@@ -254,9 +262,13 @@ export type Database = {
           audio_timestamp_correlation?: boolean | null
           created_at?: string
           description?: string | null
+          elevenlabs_agent_id?: string | null
           id?: string
           key?: string
+          openai_model?: string | null
           value?: Json | null
+          vapi_assistant_id?: string | null
+          voice_provider?: string | null
         }
         Relationships: []
       }

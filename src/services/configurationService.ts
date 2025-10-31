@@ -1,7 +1,15 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export type VoiceProvider = 'elevenlabs' | 'openai' | 'vapi';
+
 export interface SystemConfiguration {
   id?: string;
+  // Voice Provider Settings
+  voice_provider: VoiceProvider;
+  elevenlabs_agent_id: string;
+  openai_model: string;
+  vapi_assistant_id: string;
+  // Conversation timing
   conversation_end_timeout_ms: number;
   natural_end_grace_period_ms: number;
   speaking_check_interval_ms: number;
@@ -19,6 +27,12 @@ export interface SystemConfiguration {
 }
 
 export const DEFAULT_CONFIG: SystemConfiguration = {
+  // Voice Provider Settings
+  voice_provider: 'elevenlabs',
+  elevenlabs_agent_id: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
+  openai_model: 'gpt-4o-realtime-preview-2024-12-17',
+  vapi_assistant_id: '',
+  // Conversation timing
   conversation_end_timeout_ms: 5000, // 5 seconds default
   natural_end_grace_period_ms: 3000, // 3 seconds after Solin stops speaking
   speaking_check_interval_ms: 500, // Check every 500ms
