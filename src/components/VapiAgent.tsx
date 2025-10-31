@@ -23,9 +23,19 @@ export function VapiAgent({ assistantId, onSpeakingChange }: VapiAgentProps) {
   }, [onSpeakingChange]);
 
   useEffect(() => {
-    // Initialize VAPI client
-    // Note: You'll need to get the public key from VAPI dashboard
-    const VAPI_PUBLIC_KEY = 'your-vapi-public-key'; // This should come from config
+    // Initialize VAPI client with environment variable
+    const VAPI_PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY;
+    
+    if (!VAPI_PUBLIC_KEY) {
+      console.error('❌ VAPI_PUBLIC_KEY not configured');
+      toast({
+        title: "Configuration Error",
+        description: "VAPI public key not configured. Please add it to environment variables.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
 
     // Set up event listeners
