@@ -2656,14 +2656,8 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       return;
     }
 
-    // Prevent interaction if first conversation is needed
-    if (needsFirstConversation) {
-      toast({
-        title: 'Complete your profile first',
-        description: 'Please finish the welcome conversation to get started with Solin.',
-      });
-      return;
-    }
+    // User has completed onboarding, allow direct access
+    // (First conversation dialog is optional and won't block access)
 
     lastClickRef.current = now;
     isTogglingRef.current = true;
