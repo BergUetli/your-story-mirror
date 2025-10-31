@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Mic } from 'lucide-react';
-import { PulsingBorder } from '@paper-design/shaders-react';
 
 interface ModernVoiceAgentProps {
   isActive: boolean;
@@ -33,61 +32,102 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[600px] w-full">
-      {/* PulsingBorder shader wrapper for the mic bubble */}
-      <div className="relative">
-        <PulsingBorder
-          colors={["#5800FF", "#BEECFF", "#E77EDC", "#FF4C3E"]}
-          colorBack="#00000000"
-          speed={isSpeaking ? 2.5 : isActive ? 1.8 : 1.2}
-          roundness={1}
-          thickness={0.08}
-          softness={0.15}
-          intensity={isSpeaking ? 1.5 : isActive ? 1.2 : 0.8}
-          spotSize={0.12}
-          pulse={isSpeaking ? 0.4 : isActive ? 0.3 : 0.1}
-          smoke={0.6}
-          smokeSize={2.2}
-          scale={0.7}
-          rotation={0}
+      <style>{`
+        @keyframes pulsing-border {
+          0%, 100% {
+            background-position: 0% 50%;
+            filter: blur(8px) brightness(1);
+          }
+          50% {
+            background-position: 100% 50%;
+            filter: blur(12px) brightness(1.2);
+          }
+        }
+        
+        @keyframes rotate-gradient {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse-scale {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+
+        .pulsing-border-wrapper {
+          position: relative;
+          width: 420px;
+          height: 420px;
+          border-radius: 50%;
+          padding: 10px;
+        }
+        
+        .pulsing-border-wrapper::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          padding: 3px;
+          background: linear-gradient(
+            45deg,
+            #5800FF,
+            #BEECFF,
+            #E77EDC,
+            #FF4C3E,
+            #5800FF
+          );
+          background-size: 300% 300%;
+          animation: pulsing-border 4s ease infinite, rotate-gradient 8s linear infinite;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+        }
+      `}</style>
+      
+      {/* Custom pulsing border wrapper */}
+      <div className="pulsing-border-wrapper" style={{
+        animation: state === 'speaking' ? 'pulse-scale 1s ease-in-out infinite' : 'none'
+      }}>
+        {/* Main orb button */}
+        <button
+          onClick={onClick}
+          disabled={isActive}
+          className="relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed overflow-hidden"
           style={{
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            position: "relative",
+            background: state === 'speaking' 
+              ? 'radial-gradient(circle, rgba(88,0,255,0.4) 0%, rgba(231,126,220,0.3) 50%, rgba(190,236,255,0.2) 100%)'
+              : state === 'listening'
+              ? 'radial-gradient(circle, rgba(190,236,255,0.4) 0%, rgba(88,0,255,0.3) 50%, rgba(231,126,220,0.2) 100%)'
+              : 'radial-gradient(circle, rgba(88,0,255,0.2) 0%, rgba(231,126,220,0.15) 50%, rgba(190,236,255,0.1) 100%)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: state === 'speaking'
+              ? '0 0 80px rgba(88,0,255,0.5), 0 0 40px rgba(231,126,220,0.4), inset 0 0 60px rgba(231,126,220,0.3)'
+              : state === 'listening'
+              ? '0 0 60px rgba(190,236,255,0.4), 0 0 30px rgba(88,0,255,0.3), inset 0 0 40px rgba(88,0,255,0.2)'
+              : '0 0 40px rgba(88,0,255,0.3), inset 0 0 30px rgba(231,126,220,0.15)'
           }}
+          aria-label={getAriaLabel()}
+          aria-pressed={isActive}
         >
-          {/* Main orb button inside shader */}
-          <button
-            onClick={onClick}
-            disabled={isActive}
-            className="absolute inset-0 m-auto w-72 h-72 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed"
+          {/* Animated gradient overlay */}
+          <div 
+            className="absolute inset-0 opacity-30"
             style={{
-              background: state === 'speaking' 
-                ? 'radial-gradient(circle, rgba(88,0,255,0.3) 0%, rgba(231,126,220,0.2) 50%, rgba(190,236,255,0.1) 100%)'
-                : state === 'listening'
-                ? 'radial-gradient(circle, rgba(190,236,255,0.3) 0%, rgba(88,0,255,0.2) 50%, rgba(231,126,220,0.1) 100%)'
-                : 'radial-gradient(circle, rgba(88,0,255,0.15) 0%, rgba(231,126,220,0.1) 50%, rgba(190,236,255,0.05) 100%)',
-              backdropFilter: 'blur(20px)',
-              boxShadow: state === 'speaking'
-                ? '0 0 60px rgba(88,0,255,0.4), inset 0 0 40px rgba(231,126,220,0.2)'
-                : state === 'listening'
-                ? '0 0 50px rgba(190,236,255,0.3), inset 0 0 30px rgba(88,0,255,0.2)'
-                : '0 0 30px rgba(88,0,255,0.2), inset 0 0 20px rgba(231,126,220,0.1)'
+              background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)',
+              animation: state === 'speaking' ? 'pulse 1.5s ease-in-out infinite' : 'none'
             }}
-            aria-label={getAriaLabel()}
-            aria-pressed={isActive}
-          >
-            {/* Microphone icon */}
-            <Mic 
-              className="w-20 h-20 transition-all duration-300"
-              style={{
-                color: state === 'speaking' ? '#E77EDC' : state === 'listening' ? '#BEECFF' : '#5800FF',
-                filter: `drop-shadow(0 0 ${state === 'speaking' ? '15px' : state === 'listening' ? '10px' : '5px'} currentColor)`,
-                animation: state === 'speaking' ? 'pulse 1s infinite' : state === 'listening' ? 'pulse 2s infinite' : 'none'
-              }}
-            />
-          </button>
-        </PulsingBorder>
+          />
+          
+          {/* Microphone icon */}
+          <Mic 
+            className="relative z-10 w-24 h-24 transition-all duration-300"
+            style={{
+              color: state === 'speaking' ? '#E77EDC' : state === 'listening' ? '#BEECFF' : '#5800FF',
+              filter: `drop-shadow(0 0 ${state === 'speaking' ? '20px' : state === 'listening' ? '15px' : '8px'} currentColor)`,
+              animation: state === 'speaking' ? 'pulse 1s ease-in-out infinite' : state === 'listening' ? 'pulse 2s ease-in-out infinite' : 'none'
+            }}
+          />
+        </button>
       </div>
 
       {/* Caption card */}
