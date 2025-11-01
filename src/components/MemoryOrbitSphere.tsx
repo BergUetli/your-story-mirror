@@ -39,13 +39,28 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
       
       for (const memory of memories.slice(0, 25)) {
         if (memory.image_urls && memory.image_urls.length > 0) {
+          console.log('Loading image for memory:', memory.title, memory.image_urls)
           const signedUrls = await getSignedUrls('memory-images', memory.image_urls, 3600)
+          console.log('Got signed URLs:', signedUrls)
+          
           if (signedUrls[0]) {
             const loader = new THREE.TextureLoader()
-            loader.load(signedUrls[0], (texture) => {
-              textureMap.set(memory.id, texture)
-              setMemoryTextures(new Map(textureMap))
-            })
+            loader.crossOrigin = 'anonymous'
+            loader.load(
+              signedUrls[0],
+              (texture) => {
+                console.log('Texture loaded successfully for:', memory.title)
+                setMemoryTextures(prev => {
+                  const newMap = new Map(prev)
+                  newMap.set(memory.id, texture)
+                  return newMap
+                })
+              },
+              undefined,
+              (error) => {
+                console.error('Error loading texture for memory:', memory.title, error)
+              }
+            )
           }
         }
       }
