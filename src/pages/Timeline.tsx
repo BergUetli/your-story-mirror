@@ -92,11 +92,9 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     
     const hasAnyContent = yearEvents.length > 0 || yearMemories.length > 0;
     
-    // Always include years: birth year, current year, years with content, 
-    // and milestone years (every 5 years) for proper scaling
-    const isMilestoneYear = year % 5 === 0;
-    
-    if (year === birthYear || year === currentYear || hasAnyContent || isMilestoneYear) {
+    // Only include years with actual content, birth year, or current year
+    // No empty placeholders - timeline scales naturally
+    if (year === birthYear || year === currentYear || hasAnyContent) {
       timelineData.push({
         year,
         events: yearEvents,
@@ -223,12 +221,22 @@ const Timeline = () => {
         });
       });
       
+      // Build card title based on content
+      let cardTitle = '';
+      if (yearData.events.length > 0) {
+        cardTitle = yearData.events.map(e => e.event).join(', ');
+      } else if (yearData.memories.length > 0) {
+        cardTitle = `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`;
+      } else if (yearData.isCurrentYear) {
+        cardTitle = 'Present';
+      } else {
+        cardTitle = 'No memories this year';
+      }
+      
       return {
         title: yearData.year.toString(),
-        cardTitle: yearData.events.length > 0 
-          ? yearData.events.map(e => e.event).join(', ')
-          : `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`,
-        cardSubtitle: yearData.isCurrentYear ? 'Present' : '',
+        cardTitle,
+        cardSubtitle: yearData.isCurrentYear ? 'Current year' : '',
         items: nestedItems.length > 0 ? nestedItems : undefined,
       };
     });
