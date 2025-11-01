@@ -75,7 +75,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   // If no birth info, fall back to earliest memory year or current year
   if (!birthYear) {
     const earliestMemory = actualMemories
-      .map(m => m.memory_date || m.created_at || m.date)
+      .map(m => m.memory_date)
       .filter(Boolean)
       .map((d: string) => new Date(d))
       .filter((d: Date) => !isNaN(d.getTime()))
@@ -245,6 +245,7 @@ const Timeline = () => {
       
       // Build card title based on content
       let cardTitle = '';
+      const isMilestone = yearData.year % 5 === 0;
       if (yearData.events.length > 0) {
         cardTitle = yearData.events.map(e => e.event).join(', ');
       } else if (yearData.memories.length > 0) {
@@ -252,13 +253,13 @@ const Timeline = () => {
       } else if (yearData.isCurrentYear) {
         cardTitle = 'Present';
       } else {
-        cardTitle = '';
+        cardTitle = `${yearData.year}`;
       }
       
       return {
         title: yearData.year.toString(),
         cardTitle,
-        cardSubtitle: yearData.isCurrentYear ? 'Current year' : '',
+        cardSubtitle: yearData.isCurrentYear ? 'Current year' : (isMilestone && yearData.events.length === 0 && yearData.memories.length === 0 ? 'Milestone' : ''),
         items: nestedItems.length > 0 ? nestedItems : undefined,
       };
     });
@@ -381,7 +382,7 @@ const Timeline = () => {
             <Chrono
               items={chronoItems}
               mode="VERTICAL"
-              scrollable={false}
+              scrollable={true}
               hideControls={false}
               cardHeight={150}
               nestedCardHeight={180}
