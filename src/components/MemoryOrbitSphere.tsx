@@ -1,6 +1,7 @@
-import { useRef, useMemo } from "react"
-import { useFrame } from "@react-three/fiber"
+import { useRef, useMemo, useState, useEffect } from "react"
+import { useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
+import { getSignedUrls } from '@/lib/storage'
 
 interface Memory {
   id: string
@@ -13,9 +14,10 @@ interface Memory {
 
 interface MemoryOrbitSphereProps {
   memories: Memory[]
+  onMemoryClick?: (memory: Memory) => void
 }
 
-export function MemoryOrbitSphere({ memories }: MemoryOrbitSphereProps) {
+export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphereProps) {
   const PARTICLE_COUNT = 1500
   const PARTICLE_SIZE_MIN = 0.005
   const PARTICLE_SIZE_MAX = 0.010
@@ -27,6 +29,32 @@ export function MemoryOrbitSphere({ memories }: MemoryOrbitSphereProps) {
   const IMAGE_SIZE = 1.5
 
   const groupRef = useRef<THREE.Group>(null)
+  const [memoryTextures, setMemoryTextures] = useState<Map<string, THREE.Texture>>(new Map())
+  const { raycaster, pointer, camera, gl } = useThree()
+
+  // Load images for memories
+  useEffect(() => {
+    async function loadMemoryImages() {
+      const textureMap = new Map<string, THREE.Texture>()
+      
+      for (const memory of memories.slice(0, 25)) {
+        if (memory.image_urls && memory.image_urls.length > 0) {
+          const signedUrls = await getSignedUrls('memory-images', memory.image_urls, 3600)
+          if (signedUrls[0]) {
+            const loader = new THREE.TextureLoader()
+            loader.load(signedUrls[0], (texture) => {
+              textureMap.set(memory.id, texture)
+              setMemoryTextures(new Map(textureMap))
+            })
+          }
+        }
+      }
+    }
+    
+    if (memories.length > 0) {
+      loadMemoryImages()
+    }
+  }, [memories])
 
   const particles = useMemo(() => {
     const particles = []
@@ -86,6 +114,29 @@ export function MemoryOrbitSphere({ memories }: MemoryOrbitSphereProps) {
     })
   }, [memories, SPHERE_RADIUS])
 
+  // Handle clicks on memories
+  useEffect(() => {
+    const handleClick = (event: MouseEvent) => {
+      if (!groupRef.current || !onMemoryClick) return
+
+      raycaster.setFromCamera(pointer, camera)
+      const meshes = groupRef.current.children.filter(child => 
+        child.userData.isMemory && child instanceof THREE.Mesh
+      )
+      
+      const intersects = raycaster.intersectObjects(meshes)
+      if (intersects.length > 0) {
+        const memory = intersects[0].object.userData.memory
+        if (memory) {
+          onMemoryClick(memory)
+        }
+      }
+    }
+
+    gl.domElement.addEventListener('click', handleClick)
+    return () => gl.domElement.removeEventListener('click', handleClick)
+  }, [raycaster, pointer, camera, gl, onMemoryClick])
+
   useFrame(() => {
     if (groupRef.current) {
       groupRef.current.rotation.y += ROTATION_SPEED_Y
@@ -101,34 +152,97 @@ export function MemoryOrbitSphere({ memories }: MemoryOrbitSphereProps) {
         </mesh>
       ))}
 
-      {orbitingMemories.map((item, index) => (
-        <mesh key={`memory-${item.memory.id}`} position={item.position} rotation={item.rotation}>
-          <planeGeometry args={[IMAGE_SIZE, IMAGE_SIZE]} />
-          <meshBasicMaterial color="#3b82f6" opacity={0.8} transparent side={THREE.DoubleSide}>
-            <primitive 
-              attach="map" 
-              object={(() => {
-                const canvas = document.createElement('canvas')
-                canvas.width = 512
-                canvas.height = 512
-                const ctx = canvas.getContext('2d')
-                if (ctx) {
-                  ctx.fillStyle = '#1e40af'
-                  ctx.fillRect(0, 0, 512, 512)
-                  ctx.fillStyle = '#ffffff'
-                  ctx.font = 'bold 32px sans-serif'
-                  ctx.textAlign = 'center'
-                  ctx.textBaseline = 'middle'
-                  const title = item.memory.title.substring(0, 30)
-                  ctx.fillText(title, 256, 256)
-                }
-                const texture = new THREE.CanvasTexture(canvas)
-                return texture
-              })()} 
-            />
-          </meshBasicMaterial>
-        </mesh>
-      ))}
+      {orbitingMemories.map((item, index) => {
+        const texture = memoryTextures.get(item.memory.id)
+        
+        // If we have an image texture, use it
+        if (texture) {
+          return (
+            <mesh 
+              key={`memory-${item.memory.id}`} 
+              position={item.position} 
+              rotation={item.rotation}
+              userData={{ isMemory: true, memory: item.memory }}
+            >
+              <planeGeometry args={[IMAGE_SIZE, IMAGE_SIZE]} />
+              <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
+            </mesh>
+          )
+        }
+        
+        // Otherwise create a text-based card
+        const canvas = document.createElement('canvas')
+        canvas.width = 512
+        canvas.height = 512
+        const ctx = canvas.getContext('2d')
+        
+        if (ctx) {
+          // Background gradient
+          const gradient = ctx.createLinearGradient(0, 0, 512, 512)
+          gradient.addColorStop(0, '#1e3a8a')
+          gradient.addColorStop(1, '#3b82f6')
+          ctx.fillStyle = gradient
+          ctx.fillRect(0, 0, 512, 512)
+          
+          // Border
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 4
+          ctx.strokeRect(10, 10, 492, 492)
+          
+          // Title
+          ctx.fillStyle = '#ffffff'
+          ctx.font = 'bold 36px Arial, sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'top'
+          
+          // Word wrap the title
+          const words = item.memory.title.split(' ')
+          let line = ''
+          let y = 60
+          const maxWidth = 450
+          const lineHeight = 44
+          
+          for (let word of words) {
+            const testLine = line + word + ' '
+            const metrics = ctx.measureText(testLine)
+            if (metrics.width > maxWidth && line !== '') {
+              ctx.fillText(line.trim(), 256, y)
+              line = word + ' '
+              y += lineHeight
+              if (y > 300) break // Limit to prevent overflow
+            } else {
+              line = testLine
+            }
+          }
+          if (y <= 300) {
+            ctx.fillText(line.trim(), 256, y)
+          }
+          
+          // Date
+          const date = new Date(item.memory.memory_date || item.memory.created_at)
+          ctx.font = '24px Arial, sans-serif'
+          ctx.fillStyle = '#e0e7ff'
+          ctx.fillText(date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          }), 256, 420)
+        }
+        
+        const textTexture = new THREE.CanvasTexture(canvas)
+        
+        return (
+          <mesh 
+            key={`memory-${item.memory.id}`} 
+            position={item.position} 
+            rotation={item.rotation}
+            userData={{ isMemory: true, memory: item.memory }}
+          >
+            <planeGeometry args={[IMAGE_SIZE, IMAGE_SIZE]} />
+            <meshBasicMaterial map={textTexture} transparent side={THREE.DoubleSide} />
+          </mesh>
+        )
+      })}
     </group>
   )
 }

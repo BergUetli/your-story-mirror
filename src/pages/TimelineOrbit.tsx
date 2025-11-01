@@ -7,12 +7,14 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/integrations/supabase/client'
 import { MemoryOrbitSphere } from '@/components/MemoryOrbitSphere'
+import { MemoryDetailDialog } from '@/components/MemoryDetailDialog'
 
 export default function TimelineOrbit() {
   const { user } = useAuth()
   const [memories, setMemories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [canvasReady, setCanvasReady] = useState(false)
+  const [selectedMemory, setSelectedMemory] = useState<any | null>(null)
 
   const fetchMemories = useCallback(async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000'
@@ -100,10 +102,19 @@ export default function TimelineOrbit() {
           <Suspense fallback={null}>
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={1} />
-            <MemoryOrbitSphere memories={memories} />
+            <MemoryOrbitSphere memories={memories} onMemoryClick={setSelectedMemory} />
             <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
           </Suspense>
         </Canvas>
+      )}
+
+      {selectedMemory && (
+        <MemoryDetailDialog
+          memory={selectedMemory}
+          open={!!selectedMemory}
+          onOpenChange={(open) => !open && setSelectedMemory(null)}
+          onUpdate={fetchMemories}
+        />
       )}
     </div>
   )
