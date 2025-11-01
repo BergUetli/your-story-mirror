@@ -156,8 +156,9 @@ const Timeline = () => {
       // Fetch from users table which has birth_date and birth_place
       const { data: userProfile, error: userError } = await supabase
         .from('users')
-        .select('*')
+        .select('birth_date,birth_place,age')
         .eq('user_id', userId)
+        .limit(1)
         .maybeSingle();
 
       // Also fetch user_profiles for additional data
@@ -189,8 +190,11 @@ const Timeline = () => {
       const completeMemories = (memories || []).filter((m: any) => !!m.title && !!m.text && !!(m.memory_date || m.created_at || m.date));
       console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories');
       setTimelineMemories(completeMemories);
-      setTimelineProfile(combinedProfile);
-
+      if (combinedProfile.birth_date || combinedProfile.age) {
+        setTimelineProfile(combinedProfile);
+      } else {
+        setTimelineProfile(null);
+      }
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {
