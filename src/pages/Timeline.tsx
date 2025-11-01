@@ -75,7 +75,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   // If no birth info, fall back to earliest memory year or current year
   if (!birthYear) {
     const earliestMemory = actualMemories
-      .map(m => m.memory_date)
+      .map(m => m.memory_date || m.created_at || m.date)
       .filter(Boolean)
       .map((d: string) => new Date(d))
       .filter((d: Date) => !isNaN(d.getTime()))
@@ -84,6 +84,7 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   }
   
   const timelineData = [];
+  console.info('📅 Timeline start year computed:', birthYear, 'currentYear:', currentYear);
   
   const lifeEvents = generateLifeEvents(profile);
   
