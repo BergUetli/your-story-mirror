@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ export default function TimelineOrbit() {
   const { user } = useAuth()
   const [memories, setMemories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [canvasReady, setCanvasReady] = useState(false)
 
   const fetchMemories = useCallback(async () => {
     const userId = user?.id || '00000000-0000-0000-0000-000000000000'
@@ -40,6 +41,12 @@ export default function TimelineOrbit() {
       fetchMemories()
     }
   }, [user?.id, fetchMemories])
+
+  useEffect(() => {
+    // Ensure Canvas renders after component is fully mounted
+    const timer = setTimeout(() => setCanvasReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   return (
     <div className="w-full h-screen bg-black relative">
@@ -73,7 +80,7 @@ export default function TimelineOrbit() {
         </h2>
       </div>
 
-      {loading ? (
+      {loading || !canvasReady ? (
         <div className="flex items-center justify-center h-full">
           <div className="text-white animate-pulse">Loading memories...</div>
         </div>
@@ -90,10 +97,12 @@ export default function TimelineOrbit() {
         </div>
       ) : (
         <Canvas camera={{ position: [-10, 1.5, 10], fov: 50 }}>
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1} />
-          <MemoryOrbitSphere memories={memories} />
-          <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+          <Suspense fallback={null}>
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} intensity={1} />
+            <MemoryOrbitSphere memories={memories} />
+            <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+          </Suspense>
         </Canvas>
       )}
     </div>
