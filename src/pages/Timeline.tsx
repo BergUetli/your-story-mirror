@@ -107,9 +107,9 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     
     const hasAnyContent = yearEvents.length > 0 || yearMemories.length > 0;
     
-    // Only include years with actual content, birth year, or current year
-    // No empty placeholders - timeline scales naturally
-    if (year === birthYear || year === currentYear || hasAnyContent) {
+    // Include content years, birth/current, and 5-year milestone labels (no cards)
+    const isMilestoneYear = year % 5 === 0;
+    if (year === birthYear || year === currentYear || hasAnyContent || isMilestoneYear) {
       timelineData.push({
         year,
         events: yearEvents,
@@ -148,7 +148,7 @@ const Timeline = () => {
         .from('memories')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_primary_chunk', true)
+        .or('is_primary_chunk.is.true,is_primary_chunk.is.null')
         .order('created_at', { ascending: false });
 
       if (memoriesError) throw memoriesError;
@@ -186,7 +186,9 @@ const Timeline = () => {
         combinedProfile.birth_date = `${birthYear}-01-01`;
       }
       
-      setTimelineMemories(memories || []);
+      const completeMemories = (memories || []).filter((m: any) => !!m.title && !!m.text && !!(m.memory_date || m.created_at || m.date));
+      console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories');
+      setTimelineMemories(completeMemories);
       setTimelineProfile(combinedProfile);
 
     } catch (error) {
@@ -246,7 +248,7 @@ const Timeline = () => {
       } else if (yearData.isCurrentYear) {
         cardTitle = 'Present';
       } else {
-        cardTitle = 'No memories this year';
+        cardTitle = '';
       }
       
       return {
