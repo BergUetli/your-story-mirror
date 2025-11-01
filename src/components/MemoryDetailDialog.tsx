@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2, Play, Pause } from 'lucide-react';
+import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2, Play, Pause, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { TagsInput } from '@/components/TagsInput';
 import { getSignedUrl } from '@/lib/storage';
+import { UnsplashImageSearch } from '@/components/UnsplashImageSearch';
 
 interface MemoryDetailDialogProps {
   memory: any;
@@ -27,6 +28,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showStockSearch, setShowStockSearch] = useState(false);
   
   // Signed URLs for memory images and artifacts
   const [memoryImageUrls, setMemoryImageUrls] = useState<(string | null)[]>([]);
@@ -189,9 +191,13 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    await uploadFiles(Array.from(files));
+  };
+
+  const uploadFiles = async (files: File[]) => {
     setUploading(true);
     try {
-      for (const file of Array.from(files)) {
+      for (const file of files) {
         // Determine artifact type
         let artifactType = 'other';
         if (file.type.startsWith('image/')) artifactType = 'image';
@@ -666,26 +672,34 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
           {/* Attachments Section */}
           <div className="border-t pt-4">
-            {/* Single Upload Button with Better Styling */}
-            <div className="mb-4">
+            <div className="flex flex-wrap gap-2 mb-4">
               <input
-                type="file"
                 id="artifact-upload"
+                type="file"
                 multiple
                 accept="image/*,audio/*,video/*"
                 onChange={handleFileUpload}
                 className="hidden"
-                disabled={uploading}
               />
               <Button
                 variant="outline"
                 size="default"
                 onClick={() => document.getElementById('artifact-upload')?.click()}
                 disabled={uploading}
-                className="w-full sm:w-auto border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+                className="border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
               >
                 <Upload className="w-4 h-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Add Attachments'}
+                {uploading ? 'Uploading...' : 'Upload Files'}
+              </Button>
+              <Button
+                variant="outline"
+                size="default"
+                onClick={() => setShowStockSearch(true)}
+                disabled={uploading}
+                className="border-2 border-primary/20 hover:border-primary hover:bg-primary/5 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Search Stock Images
               </Button>
             </div>
 
@@ -801,6 +815,35 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
           )}
         </div>
       </DialogContent>
+
+      {/* Stock Image Search Dialog */}
+      <UnsplashImageSearch
+        open={showStockSearch}
+        onOpenChange={setShowStockSearch}
+        onSelectImage={async (imageUrl) => {
+          setUploading(true);
+          try {
+            // Download the image from Unsplash
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            
+            // Convert to File object
+            const file = new File([blob], 'stock-image.jpg', { type: 'image/jpeg' });
+            
+            // Upload using existing uploadFiles function
+            await uploadFiles([file]);
+          } catch (error) {
+            console.error('Error downloading stock image:', error);
+            toast({
+              title: 'Download failed',
+              description: 'Failed to download stock image',
+              variant: 'destructive',
+            });
+          } finally {
+            setUploading(false);
+          }
+        }}
+      />
 
       {/* Image Enlargement Dialog */}
       <Dialog open={!!enlargedImage} onOpenChange={() => setEnlargedImage(null)}>

@@ -170,35 +170,27 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
 
       {orbitingMemories.map((item, index) => {
         const texture = memoryTextures.get(item.memory.id)
-        
-        // If we have an image texture, use it
-        if (texture) {
-          return (
-            <mesh 
-              key={`memory-${item.memory.id}`} 
-              position={item.position} 
-              rotation={item.rotation}
-              userData={{ isMemory: true, memory: item.memory }}
-            >
-              <planeGeometry args={[IMAGE_SIZE, IMAGE_SIZE]} />
-              <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} />
-            </mesh>
-          )
-        }
-        
-        // Otherwise create a text-based card
         const canvas = document.createElement('canvas')
         canvas.width = 512
         canvas.height = 512
         const ctx = canvas.getContext('2d')
         
         if (ctx) {
-          // Background gradient
-          const gradient = ctx.createLinearGradient(0, 0, 512, 512)
-          gradient.addColorStop(0, '#1e3a8a')
-          gradient.addColorStop(1, '#3b82f6')
-          ctx.fillStyle = gradient
-          ctx.fillRect(0, 0, 512, 512)
+          // If we have an image texture, draw it as background
+          if (texture && texture.image) {
+            ctx.drawImage(texture.image, 0, 0, 512, 512)
+            
+            // Add dark overlay for text readability
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+            ctx.fillRect(0, 0, 512, 512)
+          } else {
+            // Background gradient if no image
+            const gradient = ctx.createLinearGradient(0, 0, 512, 512)
+            gradient.addColorStop(0, '#1e3a8a')
+            gradient.addColorStop(1, '#3b82f6')
+            ctx.fillStyle = gradient
+            ctx.fillRect(0, 0, 512, 512)
+          }
           
           // Border
           ctx.strokeStyle = '#ffffff'
@@ -210,6 +202,12 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
           ctx.font = 'bold 36px Arial, sans-serif'
           ctx.textAlign = 'center'
           ctx.textBaseline = 'top'
+          
+          // Add text shadow for better readability
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.8)'
+          ctx.shadowBlur = 8
+          ctx.shadowOffsetX = 2
+          ctx.shadowOffsetY = 2
           
           // Word wrap the title
           const words = item.memory.title.split(' ')
@@ -225,7 +223,7 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
               ctx.fillText(line.trim(), 256, y)
               line = word + ' '
               y += lineHeight
-              if (y > 300) break // Limit to prevent overflow
+              if (y > 300) break
             } else {
               line = testLine
             }
@@ -237,7 +235,7 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
           // Date
           const date = new Date(item.memory.memory_date || item.memory.created_at)
           ctx.font = '24px Arial, sans-serif'
-          ctx.fillStyle = '#e0e7ff'
+          ctx.fillStyle = '#ffffff'
           ctx.fillText(date.toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'short', 
@@ -245,7 +243,7 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
           }), 256, 420)
         }
         
-        const textTexture = new THREE.CanvasTexture(canvas)
+        const compositeTexture = new THREE.CanvasTexture(canvas)
         
         return (
           <mesh 
@@ -255,7 +253,7 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
             userData={{ isMemory: true, memory: item.memory }}
           >
             <planeGeometry args={[IMAGE_SIZE, IMAGE_SIZE]} />
-            <meshBasicMaterial map={textTexture} transparent side={THREE.DoubleSide} />
+            <meshBasicMaterial map={compositeTexture} transparent side={THREE.DoubleSide} />
           </mesh>
         )
       })}
