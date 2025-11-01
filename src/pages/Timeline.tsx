@@ -80,7 +80,9 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
       .map((d: string) => new Date(d))
       .filter((d: Date) => !isNaN(d.getTime()))
       .sort((a: Date, b: Date) => a.getTime() - b.getTime())[0];
-    birthYear = earliestMemory ? earliestMemory.getFullYear() : currentYear;
+    birthYear = earliestMemory ? earliestMemory.getFullYear() : currentYear - 40;
+    if (birthYear > currentYear) birthYear = currentYear;
+    if (birthYear < 1900) birthYear = 1900;
   }
   
   const timelineData = [];
@@ -172,6 +174,8 @@ const Timeline = () => {
       if (userError) console.error('User profile error:', userError);
       if (profileError) console.error('Profile error:', profileError);
       
+      console.info('👤 Timeline profile sources:', { userProfile, profiles });
+      
       // Combine data, prioritizing users table for birth info
       const combinedProfile = {
         ...profiles,
@@ -191,11 +195,8 @@ const Timeline = () => {
       const completeMemories = (memories || []).filter((m: any) => !!m.title && !!m.text && !!(m.memory_date || m.created_at || m.date));
       console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories');
       setTimelineMemories(completeMemories);
-      if (combinedProfile.birth_date || combinedProfile.age) {
-        setTimelineProfile(combinedProfile);
-      } else {
-        setTimelineProfile(null);
-      }
+      console.info('🧬 Combined profile for timeline:', { combinedProfile });
+      setTimelineProfile(combinedProfile);
     } catch (error) {
       console.error('Failed to fetch timeline data:', error);
     } finally {
