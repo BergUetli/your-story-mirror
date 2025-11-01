@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,20 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [loadingRecordings, setLoadingRecordings] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+
+  // Choose the most relevant image for panel background
+  const bestBgUrl = useMemo(() => {
+    // Prefer memory's own images
+    const memUrl = memoryImageUrls.find((u) => !!u) || null;
+    if (memUrl) return memUrl;
+    // Fallback to the latest image artifact
+    const imageArtifacts = (artifacts as any[]).filter((a) => a.artifact_type === 'image');
+    if (imageArtifacts.length > 0) {
+      const last = imageArtifacts[imageArtifacts.length - 1];
+      return artifactUrls[last.id] || null;
+    }
+    return null;
+  }, [memoryImageUrls, artifacts, artifactUrls]);
 
   // Load voice recordings for this memory
   const loadVoiceRecordings = async () => {
@@ -238,6 +252,9 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
         if (linkError) throw linkError;
 
+        // Update in-memory lists and signed URL immediately so UI refreshes
+        const signed = await getSignedUrl('memory-images', uploadData.path, 3600);
+        setArtifactUrls(prev => ({ ...prev, [artifactData.id]: signed }));
         setArtifacts(prev => [...prev, artifactData]);
       }
 
@@ -452,7 +469,14 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        style={bestBgUrl ? {
+          backgroundImage: `linear-gradient(to bottom, hsl(var(--background) / 0.6), hsl(var(--background) / 0.95)), url(${bestBgUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        } : undefined}
+      >
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl">
