@@ -82,6 +82,12 @@ export default function TimelineOrbit() {
         </h2>
       </div>
 
+      <div className="absolute bottom-6 left-6 z-10 px-4 py-2 bg-black/70 backdrop-blur-sm rounded-lg border border-white/10 pointer-events-none">
+        <p className="text-white text-sm">
+          💡 <span className="font-semibold">Scroll</span> to adjust orbit speed
+        </p>
+      </div>
+
       {loading || !canvasReady ? (
         <div className="flex items-center justify-center h-full">
           <div className="text-white animate-pulse">Loading memories...</div>

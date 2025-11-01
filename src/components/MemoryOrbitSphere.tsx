@@ -23,13 +23,14 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
   const PARTICLE_SIZE_MAX = 0.010
   const SPHERE_RADIUS = 9
   const POSITION_RANDOMNESS = 4
-  const ROTATION_SPEED_Y = 0.0005
+  const BASE_ROTATION_SPEED = 0.0005
   const PARTICLE_OPACITY = 1
 
   const IMAGE_SIZE = 1.5
 
   const groupRef = useRef<THREE.Group>(null)
   const [memoryTextures, setMemoryTextures] = useState<Map<string, THREE.Texture>>(new Map())
+  const [speedMultiplier, setSpeedMultiplier] = useState(1)
   const { raycaster, pointer, camera, gl } = useThree()
 
   // Load images for memories
@@ -130,7 +131,7 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
     })
   }, [memories, SPHERE_RADIUS])
 
-  // Handle clicks on memories
+  // Handle clicks on memories and scroll for speed control
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
       if (!groupRef.current || !onMemoryClick) return
@@ -149,13 +150,26 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
       }
     }
 
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault()
+      setSpeedMultiplier(prev => {
+        const delta = event.deltaY > 0 ? -0.5 : 0.5
+        const newSpeed = Math.max(0.5, Math.min(10, prev + delta))
+        return newSpeed
+      })
+    }
+
     gl.domElement.addEventListener('click', handleClick)
-    return () => gl.domElement.removeEventListener('click', handleClick)
+    gl.domElement.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      gl.domElement.removeEventListener('click', handleClick)
+      gl.domElement.removeEventListener('wheel', handleWheel)
+    }
   }, [raycaster, pointer, camera, gl, onMemoryClick])
 
   useFrame(() => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += ROTATION_SPEED_Y
+      groupRef.current.rotation.y += BASE_ROTATION_SPEED * speedMultiplier
     }
   })
 
