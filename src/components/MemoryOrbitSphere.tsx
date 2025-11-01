@@ -104,7 +104,8 @@ export function MemoryOrbitSphere({ memories, onMemoryClick }: MemoryOrbitSphere
       matrix.lookAt(position, position.clone().add(outwardDirection), new THREE.Vector3(0, 1, 0))
       euler.setFromRotationMatrix(matrix)
 
-      euler.z += Math.PI
+      // Flip to face outward (no additional rotation needed, just flip Y)
+      euler.y += Math.PI
 
       return {
         memory,
