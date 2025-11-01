@@ -58,14 +58,29 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   const currentYear = new Date().getFullYear();
   
   // Always use birth_date or age from profile (birth date is collected during signup)
-  let birthYear;
+  let birthYear: number | undefined;
   if (profile?.birth_date) {
-    birthYear = new Date(profile.birth_date).getFullYear();
-  } else if (profile?.age) {
+    const bd = String(profile.birth_date);
+    const match = bd.match(/^(\d{4})/);
+    if (match) {
+      birthYear = parseInt(match[1], 10);
+    } else {
+      const d = new Date(bd);
+      if (!isNaN(d.getTime())) birthYear = d.getFullYear();
+    }
+  } else if (typeof profile?.age === 'number' && isFinite(profile.age)) {
     birthYear = currentYear - profile.age;
-  } else {
-    // Default to 25 years ago if no profile data
-    birthYear = currentYear - 25;
+  }
+  
+  // If no birth info, fall back to earliest memory year or current year
+  if (!birthYear) {
+    const earliestMemory = actualMemories
+      .map(m => m.memory_date || m.created_at || m.date)
+      .filter(Boolean)
+      .map((d: string) => new Date(d))
+      .filter((d: Date) => !isNaN(d.getTime()))
+      .sort((a: Date, b: Date) => a.getTime() - b.getTime())[0];
+    birthYear = earliestMemory ? earliestMemory.getFullYear() : currentYear;
   }
   
   const timelineData = [];
@@ -133,6 +148,7 @@ const Timeline = () => {
         .from('memories')
         .select('*')
         .eq('user_id', userId)
+        .eq('is_primary_chunk', true)
         .order('created_at', { ascending: false });
 
       if (memoriesError) throw memoriesError;
