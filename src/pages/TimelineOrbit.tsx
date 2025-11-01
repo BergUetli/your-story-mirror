@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, Suspense, useMemo } from 'react'
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/integrations/supabase/client'
 import { MemoryOrbitSphere } from '@/components/MemoryOrbitSphere'
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog'
+import { format } from 'date-fns'
 
 export default function TimelineOrbit() {
   const { user } = useAuth()
@@ -50,6 +51,19 @@ export default function TimelineOrbit() {
     return () => clearTimeout(timer)
   }, [])
 
+  const dateRange = useMemo(() => {
+    if (memories.length === 0) return null
+    
+    const dates = memories.map(m => new Date(m.created_at)).sort((a, b) => a.getTime() - b.getTime())
+    const earliest = dates[0]
+    const latest = dates[dates.length - 1]
+    
+    return {
+      start: format(earliest, 'MMM yyyy'),
+      end: format(latest, 'MMM yyyy')
+    }
+  }, [memories])
+
   return (
     <div className="w-full h-screen bg-black relative">
       <nav className="absolute top-0 left-0 right-0 z-10 border-b border-white/10 bg-black/50 backdrop-blur-sm">
@@ -78,7 +92,7 @@ export default function TimelineOrbit() {
 
       <div className="absolute top-20 left-0 right-0 z-10 px-6 pointer-events-none">
         <h2 className="max-w-[750px] mx-auto text-white text-center font-serif px-6 md:text-4xl text-2xl tracking-tight font-normal">
-          Your memories, orbiting through space and time
+          {dateRange ? `Memories: ${dateRange.start} to ${dateRange.end}` : 'Memories'}
         </h2>
       </div>
 
