@@ -246,6 +246,11 @@ const Timeline = () => {
               </Button>
             </Link>
             <h1 className="text-lg sm:text-xl font-semibold">Timeline</h1>
+            <Link to="/timeline-orbit">
+              <Button variant="outline" size="sm">
+                3D View
+              </Button>
+            </Link>
           </div>
           
           <div className="flex items-center gap-2">
