@@ -824,9 +824,9 @@ const Solin: React.FC<SolinProps> = ({
       */}
       {isOpen && (
         <Card className={cn(
-          "fixed inset-4 md:bottom-20 md:right-4 md:left-auto md:top-auto md:w-96 md:max-h-[600px] z-50",
+          "fixed inset-2 md:bottom-20 md:right-4 md:left-auto md:top-auto md:w-96 md:max-h-[600px] z-50",
           "bg-card/95 backdrop-blur-sm border-memory/20",
-          "shadow-2xl animate-scale-in overflow-hidden"
+          "shadow-2xl animate-scale-in overflow-hidden flex flex-col"
         )}>
           {/* 
             INTERFACE HEADER
