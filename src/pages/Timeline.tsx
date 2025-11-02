@@ -105,20 +105,18 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
       significance: detectEventSignificance(memory)
     }));
     
-    const hasMajorEvents = yearEvents.some(e => e.significance === 'major') || 
-                          yearMemories.some(m => m.significance === 'major');
+    const hasMajorEvents = yearMemories.some(m => m.significance === 'major');
     
-    const hasAnyContent = yearEvents.length > 0 || yearMemories.length > 0;
+    const hasAnyContent = yearMemories.length > 0;
     
-    // Include content years, birth/current, and 5-year milestone labels (no cards)
-    const isMilestoneYear = year % 5 === 0;
-    if (year === birthYear || year === currentYear || hasAnyContent || isMilestoneYear) {
+    // Include only years that have memories
+    if (hasAnyContent) {
       timelineData.push({
         year,
-        events: yearEvents,
+        events: [],
         memories: yearMemories,
         hasContent: hasAnyContent,
-        isCurrentYear: year === currentYear,
+        isCurrentYear: false,
         significance: hasMajorEvents ? 'major' : 'minor'
       });
     }
@@ -223,15 +221,8 @@ const Timeline = () => {
     return timelineData.map((yearData) => {
       const nestedItems = [];
       
-      // Add events as nested items
-      yearData.events.forEach((event: any) => {
-        nestedItems.push({
-          title: new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          cardTitle: event.event,
-          cardSubtitle: event.location ? `📍 ${event.location}` : '',
-          cardDetailedText: event.type === 'milestone' ? '🎉 Major Life Event' : '',
-        });
-      });
+      // Events disabled; only showing memories
+
       
       // Add memories as nested items
       yearData.memories.forEach((memory: any) => {
@@ -246,22 +237,12 @@ const Timeline = () => {
       });
       
       // Build card title based on content
-      let cardTitle = '';
-      const isMilestone = yearData.year % 5 === 0;
-      if (yearData.events.length > 0) {
-        cardTitle = yearData.events.map(e => e.event).join(', ');
-      } else if (yearData.memories.length > 0) {
-        cardTitle = `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`;
-      } else if (yearData.isCurrentYear) {
-        cardTitle = 'Present';
-      } else {
-        cardTitle = `${yearData.year}`;
-      }
+      const cardTitle = `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`;
       
       return {
         title: yearData.year.toString(),
         cardTitle,
-        cardSubtitle: yearData.isCurrentYear ? 'Current year' : (isMilestone && yearData.events.length === 0 && yearData.memories.length === 0 ? 'Milestone' : ''),
+        cardSubtitle: '',
         items: nestedItems.length > 0 ? nestedItems : undefined,
       };
     });
