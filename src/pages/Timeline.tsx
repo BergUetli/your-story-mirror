@@ -218,27 +218,56 @@ const Timeline = () => {
 
   // Transform to react-chrono nested format
   const chronoItems = useMemo(() => {
-    return timelineData.map((yearData) => {
-      const nestedItems = [];
-      
-      // Events disabled; only showing memories
+    // Compute birth info for marker-only item
+    const p: any = timelineProfile || profile || {};
+    let birthYear: number | undefined;
+    if (p?.birth_date) {
+      const bd = String(p.birth_date);
+      const match = bd.match(/^(\d{4})/);
+      if (match) birthYear = parseInt(match[1], 10);
+      else {
+        const d = new Date(bd);
+        if (!isNaN(d.getTime())) birthYear = d.getFullYear();
+      }
+    } else if (typeof p?.age === 'number' && isFinite(p.age)) {
+      birthYear = new Date().getFullYear() - p.age;
+    }
+    const birthPlace = p?.birth_place || p?.hometown || p?.location || '';
 
-      
+    const yearsWithMemories = new Set(timelineData.map((y: any) => y.year));
+
+    const items = timelineData.map((yearData) => {
+      const nestedItems: any[] = [];
+
+      // Inject a lightweight Birth marker inside the birth year bucket
+      if (birthYear && yearData.year === birthYear) {
+        const bdTitle = p?.birth_date
+          ? new Date(p.birth_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : 'Jan 1';
+        nestedItems.push({
+          title: bdTitle,
+          cardTitle: 'Birth',
+          cardSubtitle: birthPlace ? `Born in ${birthPlace}` : '',
+          cardDetailedText: '',
+          metadata: { isBirth: true }
+        });
+      }
+
       // Add memories as nested items
       yearData.memories.forEach((memory: any) => {
         const memoryDate = new Date(memory.memory_date || memory.created_at);
         nestedItems.push({
           title: memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           cardTitle: memory.title,
-          cardSubtitle: memory.text ? memory.text.substring(0, 100) + (memory.text.length > 100 ? '...' : '') : '',
+          cardSubtitle: memory.text ? memory.text.substring(0, 80) + (memory.text.length > 80 ? '...' : '') : '',
           cardDetailedText: memory.text || '',
           metadata: { memoryId: memory.id, isMemory: true, fullMemory: memory }
         });
       });
-      
+
       // Build card title based on content
       const cardTitle = `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`;
-      
+
       return {
         title: yearData.year.toString(),
         cardTitle,
@@ -246,7 +275,19 @@ const Timeline = () => {
         items: nestedItems.length > 0 ? nestedItems : undefined,
       };
     });
-  }, [timelineData]);
+
+    // If there are no memories in the birth year, add a small standalone Birth marker item
+    if (birthYear && !yearsWithMemories.has(birthYear)) {
+      items.unshift({
+        title: String(birthYear),
+        cardTitle: 'Birth',
+        cardSubtitle: birthPlace ? `Born in ${birthPlace}` : '',
+        items: [],
+      });
+    }
+
+    return items;
+  }, [timelineData, timelineProfile, profile]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -323,41 +364,41 @@ const Timeline = () => {
                 
                 /* Ensure proper spacing */
                 [data-testid="timeline-main-wrapper"] {
-                  padding: 20px 0 !important;
+                  padding: 12px 0 !important;
                 }
                 
                 /* Card spacing */
                 [class*="timeline-card-content"] {
-                  padding: 16px !important;
-                  margin: 10px 0 !important;
-                  min-height: 120px !important;
+                  padding: 12px !important;
+                  margin: 8px 0 !important;
+                  min-height: 90px !important;
                 }
                 
                 /* Year labels - prevent overlap */
                 [class*="timeline-title"] {
-                  font-size: 1rem !important;
+                  font-size: 0.95rem !important;
                   font-weight: 600 !important;
-                  padding: 8px 12px !important;
-                  background: white !important;
-                  border: 2px solid #e5e7eb !important;
-                  border-radius: 8px !important;
-                  margin: 20px 0 !important;
+                  padding: 4px 8px !important;
+                  background: transparent !important;
+                  border: 1px solid #e5e7eb !important;
+                  border-radius: 6px !important;
+                  margin: 12px 0 !important;
                   white-space: nowrap !important;
                 }
                 
                 /* Timeline line */
                 [class*="timeline-vertical-circle"] {
-                  margin: 20px 0 !important;
+                  margin: 12px 0 !important;
                 }
                 
                 /* Responsive adjustments */
                 @media (max-width: 768px) {
                   [class*="timeline-card-content"] {
-                    font-size: 0.875rem !important;
+                    font-size: 0.8125rem !important;
                   }
                   
                   [class*="timeline-title"] {
-                    font-size: 0.875rem !important;
+                    font-size: 0.85rem !important;
                   }
                 }
               `}
@@ -367,8 +408,8 @@ const Timeline = () => {
               mode="VERTICAL"
               scrollable={true}
               hideControls={false}
-              cardHeight={150}
-              nestedCardHeight={180}
+              cardHeight={110}
+              nestedCardHeight={130}
               disableClickOnCircle={false}
               useReadMore={false}
               onItemSelected={(item) => {
@@ -390,10 +431,10 @@ const Timeline = () => {
                 titleColorActive: '#3b82f6',
               }}
               fontSizes={{
-                cardSubtitle: '0.875rem',
-                cardText: '0.875rem',
-                cardTitle: '1rem',
-                title: '1rem',
+                cardSubtitle: '0.8rem',
+                cardText: '0.8rem',
+                cardTitle: '0.95rem',
+                title: '0.9rem',
               }}
             />
           </div>
