@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Voice Recording - REAL TESTS', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to sanctuary page
-    await page.goto('http://localhost:5173/sanctuary');
+    await page.goto('http://localhost:8080/sanctuary');
     
     // Wait for page to load
     await page.waitForLoadState('networkidle');
@@ -38,7 +38,7 @@ test.describe('Voice Recording - REAL TESTS', () => {
     await page.waitForSelector('[data-testid="recording-saved"]');
     
     // Navigate to archive
-    await page.goto('http://localhost:5173/archive');
+    await page.goto('http://localhost:8080/archive');
     
     // Check that latest recording exists
     const latestRecording = page.locator('[data-testid="recording-item"]').first();
@@ -79,7 +79,7 @@ test.describe('Voice Recording - REAL TESTS', () => {
     await stopButton.click();
     
     // Check recording metadata
-    await page.goto('http://localhost:5173/archive');
+    await page.goto('http://localhost:8080/archive');
     const latestRecording = page.locator('[data-testid="recording-item"]').first();
     await latestRecording.click();
     
@@ -96,7 +96,7 @@ test.describe('Voice Recording - REAL TESTS', () => {
 
   test('voice-003: Audio playback works with transcript sync', async ({ page }) => {
     // Navigate to archive
-    await page.goto('http://localhost:5173/archive');
+    await page.goto('http://localhost:8080/archive');
     
     // Select first recording
     const recording = page.locator('[data-testid="recording-item"]').first();

@@ -10,11 +10,11 @@ import { test, expect } from '@playwright/test';
 test.describe('Timeline Display - REAL TESTS', () => {
   test.beforeEach(async ({ page }) => {
     // Login first
-    await page.goto('http://localhost:5173/auth');
+    await page.goto('http://localhost:8080/auth');
     // Assume we have test credentials or use existing session
     
     // Navigate to timeline
-    await page.goto('http://localhost:5173/timeline');
+    await page.goto('http://localhost:8080/timeline');
     await page.waitForLoadState('networkidle');
   });
 
