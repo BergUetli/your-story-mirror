@@ -12,7 +12,7 @@ export default defineConfig({
   workers: 1, // Single worker for consistent results
   
   // Global setup - login once for all tests
-  globalSetup: require.resolve('./testing/e2e/global-setup.ts'),
+  globalSetup: './testing/e2e/global-setup.ts',
   
   reporter: [
     ['html', { outputFolder: 'testing/playwright-report' }],
