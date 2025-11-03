@@ -22,3 +22,20 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Testing framework - Generated files
+testing/bug-tracker.json
+testing/test-results.json
+testing/fix-queue.json
+testing/fix-history.json
+testing/release-history.json
+testing/manual-fix-report.md
+testing/logs/
+testing/manual-fixes/
+testing/releases/
+testing/test-reports/
+testing/agent-decisions.json
+
+# Core dumps
+core
+core.*

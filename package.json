@@ -8,7 +8,19 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node testing/test-engine.js",
+    "test:group": "node testing/test-engine.js --group=",
+    "test:single": "node testing/test-engine.js --test=",
+    "test:auth": "node testing/test-engine.js --group=auth",
+    "test:memory": "node testing/test-engine.js --group=memory",
+    "test:voice": "node testing/test-engine.js --group=voice",
+    "test:pipeline": "node testing/release-pipeline.js",
+    "test:pipeline:auto": "node testing/release-pipeline.js --auto-commit --auto-push",
+    "test:pipeline:enhanced": "node testing/enhanced-release-pipeline.js",
+    "test:pipeline:enhanced:auto": "node testing/enhanced-release-pipeline.js --auto-commit --auto-push",
+    "test:pipeline:individual": "node testing/enhanced-release-pipeline.js --individual-fixes",
+    "test:pipeline:individual:auto": "node testing/enhanced-release-pipeline.js --individual-fixes --auto-commit --auto-push"
   },
   "dependencies": {
     "@11labs/react": "^0.2.0",

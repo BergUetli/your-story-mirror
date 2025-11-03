@@ -1,0 +1,981 @@
+{
+  "version": "1.0.0",
+  "description": "You, Remembered - Comprehensive Test Suite",
+  "testGroups": [
+    {
+      "groupId": "auth",
+      "name": "Authentication & Authorization",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "auth-001",
+          "name": "User Sign Up Flow",
+          "type": "e2e",
+          "description": "Test complete user registration process",
+          "steps": [
+            "Navigate to sign up page",
+            "Fill in email and password",
+            "Submit form",
+            "Verify redirect to onboarding",
+            "Check user exists in auth.users table"
+          ],
+          "expectedResult": "User successfully created and redirected to onboarding",
+          "criticalPath": true
+        },
+        {
+          "testId": "auth-002",
+          "name": "User Sign In Flow",
+          "type": "e2e",
+          "description": "Test user login process",
+          "steps": [
+            "Navigate to sign in page",
+            "Fill in credentials",
+            "Submit form",
+            "Verify redirect to sanctuary",
+            "Check session token exists"
+          ],
+          "expectedResult": "User successfully authenticated and redirected",
+          "criticalPath": true
+        },
+        {
+          "testId": "auth-003",
+          "name": "Row Level Security - Memories",
+          "type": "api",
+          "description": "Verify users can only access their own memories",
+          "endpoint": "/rest/v1/memories",
+          "expectedResult": "Only user's memories returned, 403 on others' data",
+          "criticalPath": true
+        },
+        {
+          "testId": "auth-004",
+          "name": "Row Level Security - Voice Recordings",
+          "type": "api",
+          "description": "Verify users can only access their own recordings",
+          "endpoint": "/rest/v1/voice_recordings",
+          "expectedResult": "Only user's recordings returned",
+          "criticalPath": true
+        }
+      ]
+    },
+    {
+      "groupId": "onboarding",
+      "name": "User Onboarding",
+      "priority": "high",
+      "tests": [
+        {
+          "testId": "onboard-001",
+          "name": "13-Question Onboarding Completion",
+          "type": "e2e",
+          "description": "Complete all 13 onboarding questions",
+          "steps": [
+            "Answer all 13 questions",
+            "Verify profile completeness score = 100%",
+            "Check user_profiles table populated",
+            "Verify onboarding_completed = true"
+          ],
+          "expectedResult": "Profile fully populated in database",
+          "criticalPath": true
+        },
+        {
+          "testId": "onboard-002",
+          "name": "Onboarding Skip Functionality",
+          "type": "e2e",
+          "description": "Test skip onboarding option",
+          "steps": [
+            "Click 'Skip for Now' button",
+            "Verify redirect to sanctuary",
+            "Check onboarding_completed = false",
+            "Verify profile_completeness_score < 100%"
+          ],
+          "expectedResult": "User can skip and access main app",
+          "criticalPath": false
+        },
+        {
+          "testId": "onboard-003",
+          "name": "Profile Completeness Calculation",
+          "type": "unit",
+          "description": "Verify profile completeness score accuracy",
+          "expectedResult": "Score accurately reflects filled fields",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "memory",
+      "name": "Memory Management",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "memory-001",
+          "name": "Save Memory via Voice Conversation",
+          "type": "integration",
+          "description": "Test memory save during ElevenLabs conversation",
+          "steps": [
+            "Start voice conversation",
+            "Trigger save_memory client tool",
+            "Verify memory in database",
+            "Check foreign key constraints satisfied"
+          ],
+          "expectedResult": "Memory saved with correct user_id",
+          "criticalPath": true
+        },
+        {
+          "testId": "memory-002",
+          "name": "Manual Memory Creation",
+          "type": "e2e",
+          "description": "Create memory via UI form",
+          "steps": [
+            "Navigate to memory creation form",
+            "Fill in title, content, date, location",
+            "Add tags",
+            "Submit form",
+            "Verify memory appears in timeline"
+          ],
+          "expectedResult": "Memory created and visible in timeline",
+          "criticalPath": true
+        },
+        {
+          "testId": "memory-003",
+          "name": "Memory Retrieve via Client Tool",
+          "type": "integration",
+          "description": "Test retrieve_memory client tool",
+          "steps": [
+            "Create test memory",
+            "Trigger retrieve_memory with query",
+            "Verify correct memory returned",
+            "Check response time < 100ms"
+          ],
+          "expectedResult": "Memory retrieved instantly",
+          "criticalPath": true
+        },
+        {
+          "testId": "memory-004",
+          "name": "Memory Chunking for Long Content",
+          "type": "unit",
+          "description": "Test automatic memory chunking > 8KB",
+          "steps": [
+            "Create memory with 10KB content",
+            "Verify multiple chunks created",
+            "Check chunk_sequence numbers",
+            "Verify is_primary_chunk flag",
+            "Test chunk reconstruction"
+          ],
+          "expectedResult": "Long memories split and reconstructed correctly",
+          "criticalPath": false
+        },
+        {
+          "testId": "memory-005",
+          "name": "Memory Search - Semantic",
+          "type": "integration",
+          "description": "Test AI-powered semantic search",
+          "steps": [
+            "Create memories with various content",
+            "Search with semantic query",
+            "Verify relevant results returned",
+            "Check relevance scoring"
+          ],
+          "expectedResult": "Semantically relevant memories found",
+          "criticalPath": true
+        },
+        {
+          "testId": "memory-006",
+          "name": "Memory Timeline Display",
+          "type": "e2e",
+          "description": "Verify timeline shows memories correctly",
+          "steps": [
+            "Create memories with different dates",
+            "Navigate to /timeline",
+            "Verify chronological order",
+            "Test complete/incomplete filtering",
+            "Check birth date appears first"
+          ],
+          "expectedResult": "Timeline displays correctly with proper ordering",
+          "criticalPath": true
+        }
+      ]
+    },
+    {
+      "groupId": "voice",
+      "name": "Voice Recording & Playback",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "voice-001",
+          "name": "Voice Recording - Microphone Capture",
+          "type": "e2e",
+          "description": "Test standard voice recording mode",
+          "steps": [
+            "Grant microphone permissions",
+            "Start conversation",
+            "Record audio",
+            "Stop conversation",
+            "Verify recording saved to Supabase storage",
+            "Check voice_recordings table entry"
+          ],
+          "expectedResult": "Recording saved with transcript and metadata",
+          "criticalPath": true
+        },
+        {
+          "testId": "voice-002",
+          "name": "Voice Recording - Enhanced Mode",
+          "type": "e2e",
+          "description": "Test dual audio capture (mic + system)",
+          "steps": [
+            "Enable enhanced recording mode",
+            "Grant screen share permission",
+            "Record conversation",
+            "Verify both audio streams captured",
+            "Check file quality metrics"
+          ],
+          "expectedResult": "Both user and AI audio captured",
+          "criticalPath": false
+        },
+        {
+          "testId": "voice-003",
+          "name": "Voice Recording Playback",
+          "type": "e2e",
+          "description": "Test audio playback with transcript sync",
+          "steps": [
+            "Navigate to /archive",
+            "Select a recording",
+            "Play audio",
+            "Verify transcript highlights synchronously",
+            "Test pause/seek functionality"
+          ],
+          "expectedResult": "Audio plays with synchronized transcript",
+          "criticalPath": true
+        },
+        {
+          "testId": "voice-004",
+          "name": "Voice Archive Search",
+          "type": "integration",
+          "description": "Test AI-powered voice search",
+          "steps": [
+            "Create multiple recordings",
+            "Search with semantic query",
+            "Verify 4 search strategies applied",
+            "Check relevance scoring",
+            "Verify results accuracy"
+          ],
+          "expectedResult": "Relevant recordings found via semantic search",
+          "criticalPath": true
+        },
+        {
+          "testId": "voice-005",
+          "name": "Memory-to-Voice Generation - Reflection Style",
+          "type": "integration",
+          "description": "Generate voice recording from text memory",
+          "steps": [
+            "Create text memory without recording",
+            "Trigger generation with 'reflection' style",
+            "Verify conversation script created",
+            "Check recording linked to memory",
+            "Verify recording appears in archive"
+          ],
+          "expectedResult": "Voice recording generated and linked",
+          "criticalPath": false
+        },
+        {
+          "testId": "voice-006",
+          "name": "Voice Storage Bucket Permissions",
+          "type": "api",
+          "description": "Test Supabase storage RLS policies",
+          "steps": [
+            "Upload recording as user A",
+            "Try to access as user B",
+            "Verify 403 error",
+            "Access as user A - success"
+          ],
+          "expectedResult": "Storage respects RLS policies",
+          "criticalPath": true
+        }
+      ]
+    },
+    {
+      "groupId": "identity",
+      "name": "Identity Training System",
+      "priority": "medium",
+      "tests": [
+        {
+          "testId": "identity-001",
+          "name": "HuggingFace Identity Training",
+          "type": "integration",
+          "description": "Test complete identity training flow",
+          "steps": [
+            "Upload 3-40 photos",
+            "Enter identity name",
+            "Confirm consent",
+            "Trigger training",
+            "Verify HuggingFace repo created",
+            "Check trained_identities table entry",
+            "Verify status = 'training'"
+          ],
+          "expectedResult": "Identity training initiated successfully",
+          "criticalPath": false
+        },
+        {
+          "testId": "identity-002",
+          "name": "Identity Photo Validation",
+          "type": "unit",
+          "description": "Test photo upload validation rules",
+          "steps": [
+            "Upload < 3 photos - should fail",
+            "Upload > 40 photos - should fail",
+            "Upload invalid format - should fail",
+            "Upload 5 valid photos - should pass"
+          ],
+          "expectedResult": "Validation enforces 3-40 photo rule",
+          "criticalPath": false
+        },
+        {
+          "testId": "identity-003",
+          "name": "Identity Deletion",
+          "type": "e2e",
+          "description": "Test identity removal",
+          "steps": [
+            "Create test identity",
+            "Delete identity",
+            "Verify removed from database",
+            "Check HuggingFace repo still exists (expected)"
+          ],
+          "expectedResult": "Identity removed from local database",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "admin",
+      "name": "Admin & Diagnostics",
+      "priority": "high",
+      "tests": [
+        {
+          "testId": "admin-001",
+          "name": "Voice Recording Diagnostics Panel",
+          "type": "e2e",
+          "description": "Test diagnostic panel functionality",
+          "steps": [
+            "Navigate to /admin",
+            "Run 'Test Audio File Save & Retrieval'",
+            "Verify test passes",
+            "Run 'Test RLS Policies'",
+            "Verify policies correct",
+            "Run 'Full Diagnostic'",
+            "Check all systems green"
+          ],
+          "expectedResult": "All diagnostic tests pass",
+          "criticalPath": true
+        },
+        {
+          "testId": "admin-002",
+          "name": "Database Diagnostic SQL",
+          "type": "api",
+          "description": "Run DIAGNOSTIC_USER_ISSUES.sql",
+          "steps": [
+            "Execute diagnostic SQL for test user",
+            "Verify user exists in auth.users",
+            "Check user_profiles entry",
+            "Verify foreign key relationships"
+          ],
+          "expectedResult": "User account properly configured",
+          "criticalPath": true
+        },
+        {
+          "testId": "admin-003",
+          "name": "Diagnostic Event Logging",
+          "type": "integration",
+          "description": "Test diagnostic logger service",
+          "steps": [
+            "Trigger various system events",
+            "Verify logs written to diagnostic_logs",
+            "Check log categorization",
+            "Verify severity levels correct"
+          ],
+          "expectedResult": "Events logged with proper metadata",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "edge-functions",
+      "name": "Edge Functions",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "edge-001",
+          "name": "ElevenLabs Agent Token Generation",
+          "type": "api",
+          "description": "Test signed URL generation",
+          "endpoint": "functions/v1/elevenlabs-agent-token",
+          "steps": [
+            "Call edge function with valid auth",
+            "Verify signed URL returned",
+            "Check URL format correct",
+            "Test URL expiration handling"
+          ],
+          "expectedResult": "Valid signed URL generated",
+          "criticalPath": true
+        },
+        {
+          "testId": "edge-002",
+          "name": "Orchestrator Agent - Memory Operations",
+          "type": "api",
+          "description": "Test orchestrator edge function",
+          "endpoint": "functions/v1/orchestrator",
+          "steps": [
+            "Call with retrieve_memories tool",
+            "Verify response format",
+            "Test save_memory tool",
+            "Check database updates"
+          ],
+          "expectedResult": "Orchestrator processes tools correctly",
+          "criticalPath": true
+        },
+        {
+          "testId": "edge-003",
+          "name": "Train Identity Edge Function",
+          "type": "api",
+          "description": "Test HuggingFace integration",
+          "endpoint": "functions/v1/train-identity",
+          "steps": [
+            "Call with photo data",
+            "Verify HuggingFace API called",
+            "Check repository created",
+            "Verify database entry"
+          ],
+          "expectedResult": "Identity training initiated via HuggingFace",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "performance",
+      "name": "Performance & Load",
+      "priority": "medium",
+      "tests": [
+        {
+          "testId": "perf-001",
+          "name": "Memory Retrieval Performance",
+          "type": "performance",
+          "description": "Test query response times",
+          "steps": [
+            "Create 100 test memories",
+            "Query single memory",
+            "Measure response time",
+            "Verify < 50ms"
+          ],
+          "expectedResult": "Memory queries under 50ms",
+          "criticalPath": false
+        },
+        {
+          "testId": "perf-002",
+          "name": "Voice Recording Upload Speed",
+          "type": "performance",
+          "description": "Test storage upload performance",
+          "steps": [
+            "Upload 5MB audio file",
+            "Measure upload time",
+            "Verify < 10s"
+          ],
+          "expectedResult": "Uploads complete within 10 seconds",
+          "criticalPath": false
+        },
+        {
+          "testId": "perf-003",
+          "name": "Timeline Rendering Performance",
+          "type": "performance",
+          "description": "Test timeline with many memories",
+          "steps": [
+            "Load timeline with 500 memories",
+            "Measure initial render time",
+            "Test scroll performance",
+            "Verify smooth 60fps"
+          ],
+          "expectedResult": "Timeline renders smoothly with many items",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "sanctuary",
+      "name": "Sanctuary (Voice Agent Interface)",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "sanctuary-001",
+          "name": "Voice Agent Connection",
+          "type": "e2e",
+          "description": "Test ElevenLabs voice agent connection and initialization",
+          "steps": [
+            "Navigate to /sanctuary (Index page)",
+            "Click 'Start Conversation' button",
+            "Grant microphone permissions",
+            "Verify voice agent connects (WebSocket)",
+            "Check AnimatedOrb shows active state",
+            "Verify conversation recording starts"
+          ],
+          "expectedResult": "Voice agent connects successfully and conversation begins",
+          "criticalPath": true
+        },
+        {
+          "testId": "sanctuary-002",
+          "name": "Voice Agent Conversation Flow",
+          "type": "integration",
+          "description": "Test complete conversation with Solin",
+          "steps": [
+            "Start voice conversation",
+            "Speak a test phrase",
+            "Wait for AI response",
+            "Verify audio playback from Solin",
+            "Check conversation transcript recorded",
+            "Stop conversation",
+            "Verify session saved"
+          ],
+          "expectedResult": "Complete bidirectional conversation with transcript",
+          "criticalPath": true
+        },
+        {
+          "testId": "sanctuary-003",
+          "name": "Voice Agent Memory Integration",
+          "type": "integration",
+          "description": "Test memory saving during voice conversation",
+          "steps": [
+            "Start conversation",
+            "Share a memory verbally",
+            "Trigger save_memory tool via conversation",
+            "Verify memory appears in database",
+            "Check memory linked to voice recording",
+            "Verify memory accessible in timeline"
+          ],
+          "expectedResult": "Memory saved from conversation and linked to recording",
+          "criticalPath": true
+        },
+        {
+          "testId": "sanctuary-004",
+          "name": "Voice Agent Memory Retrieval",
+          "type": "integration",
+          "description": "Test memory retrieval during conversation",
+          "steps": [
+            "Create test memory in database",
+            "Start conversation",
+            "Ask Solin about the memory",
+            "Verify retrieve_memory tool triggered",
+            "Check memory returned to conversation",
+            "Verify Solin responds with memory details"
+          ],
+          "expectedResult": "Solin retrieves and discusses user's memories",
+          "criticalPath": true
+        },
+        {
+          "testId": "sanctuary-005",
+          "name": "Voice Agent Error Handling",
+          "type": "e2e",
+          "description": "Test voice agent handles errors gracefully",
+          "steps": [
+            "Start conversation",
+            "Simulate network interruption",
+            "Verify reconnection attempt",
+            "Test microphone access revoked",
+            "Verify error message shown",
+            "Check recovery options displayed"
+          ],
+          "expectedResult": "Graceful error handling with user-friendly messages",
+          "criticalPath": false
+        },
+        {
+          "testId": "sanctuary-006",
+          "name": "Voice Agent Session Management",
+          "type": "integration",
+          "description": "Test session persistence and cleanup",
+          "steps": [
+            "Start conversation",
+            "Generate session ID",
+            "Stop conversation",
+            "Verify session saved to database",
+            "Check voice recording linked to session",
+            "Verify cleanup on navigation away"
+          ],
+          "expectedResult": "Sessions properly managed and cleaned up",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "timeline-features",
+      "name": "Timeline & Memory Display",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "timeline-001",
+          "name": "Timeline Page Load",
+          "type": "e2e",
+          "description": "Test timeline page loads with memories",
+          "steps": [
+            "Create 5 test memories with dates",
+            "Navigate to /timeline",
+            "Verify page loads without errors",
+            "Check memories display in chronological order",
+            "Verify birth date marker appears first",
+            "Verify 'Today' marker appears last"
+          ],
+          "expectedResult": "Timeline loads with all memories in correct order",
+          "criticalPath": true
+        },
+        {
+          "testId": "timeline-002",
+          "name": "Timeline Filtering - Complete vs Incomplete",
+          "type": "e2e",
+          "description": "Test timeline filtering functionality",
+          "steps": [
+            "Create memories with full data (date, location)",
+            "Create memories with partial data",
+            "Navigate to /timeline",
+            "Toggle 'Show Complete' filter",
+            "Verify only complete memories shown",
+            "Toggle 'Show Incomplete' filter",
+            "Verify filtering works correctly"
+          ],
+          "expectedResult": "Timeline filters work correctly for complete/incomplete",
+          "criticalPath": true
+        },
+        {
+          "testId": "timeline-003",
+          "name": "Timeline Memory Card Interaction",
+          "type": "e2e",
+          "description": "Test memory card click and detail view",
+          "steps": [
+            "Navigate to /timeline",
+            "Click on a memory card",
+            "Verify detail modal/dialog opens",
+            "Check memory content displayed correctly",
+            "Verify tags shown",
+            "Test close button works"
+          ],
+          "expectedResult": "Memory details shown when card clicked",
+          "criticalPath": true
+        },
+        {
+          "testId": "timeline-004",
+          "name": "Timeline Performance with Many Memories",
+          "type": "performance",
+          "description": "Test timeline with 100+ memories",
+          "steps": [
+            "Create 100 test memories",
+            "Navigate to /timeline",
+            "Measure initial render time",
+            "Test scroll performance",
+            "Verify no lag or freezing",
+            "Check memory virtualization if implemented"
+          ],
+          "expectedResult": "Timeline handles 100+ memories smoothly",
+          "criticalPath": false
+        },
+        {
+          "testId": "timeline-005",
+          "name": "Timeline Date Parsing",
+          "type": "unit",
+          "description": "Test multiple date format support",
+          "steps": [
+            "Create memory with YYYY-MM-DD format",
+            "Create memory with YYYY-MM format",
+            "Create memory with YYYY format",
+            "Navigate to /timeline",
+            "Verify all memories display correctly",
+            "Check date labels show proper format"
+          ],
+          "expectedResult": "All date formats parsed and displayed correctly",
+          "criticalPath": true
+        },
+        {
+          "testId": "timeline-006",
+          "name": "Timeline Empty State",
+          "type": "e2e",
+          "description": "Test timeline with no memories",
+          "steps": [
+            "Use account with no memories",
+            "Navigate to /timeline",
+            "Verify empty state shown",
+            "Check helpful message displayed",
+            "Verify CTA to create first memory",
+            "Test CTA navigation works"
+          ],
+          "expectedResult": "Empty state shown with helpful guidance",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "archive-features",
+      "name": "Archive Page Features",
+      "priority": "high",
+      "tests": [
+        {
+          "testId": "archive-001",
+          "name": "Archive Dual-Tab Interface",
+          "type": "e2e",
+          "description": "Test archive page tab navigation",
+          "steps": [
+            "Navigate to /archive",
+            "Verify two tabs shown: Voice Recordings, Memory Archive",
+            "Click Voice Recordings tab",
+            "Verify voice recordings displayed",
+            "Click Memory Archive tab",
+            "Verify text memories displayed"
+          ],
+          "expectedResult": "Both tabs work and show correct content",
+          "criticalPath": true
+        },
+        {
+          "testId": "archive-002",
+          "name": "Archive Voice Recording List",
+          "type": "e2e",
+          "description": "Test voice recordings display in archive",
+          "steps": [
+            "Create 3 test voice recordings",
+            "Navigate to /archive (Voice Recordings tab)",
+            "Verify all recordings listed",
+            "Check recording metadata shown (date, duration)",
+            "Verify thumbnails/icons displayed",
+            "Test recording ordering (newest first)"
+          ],
+          "expectedResult": "All voice recordings displayed with metadata",
+          "criticalPath": true
+        },
+        {
+          "testId": "archive-003",
+          "name": "Archive Audio Playback",
+          "type": "e2e",
+          "description": "Test audio playback functionality",
+          "steps": [
+            "Navigate to /archive",
+            "Click on a voice recording",
+            "Verify AudioPlayer component loads",
+            "Click play button",
+            "Verify audio plays",
+            "Test pause button",
+            "Test seek/scrub functionality"
+          ],
+          "expectedResult": "Audio plays with full playback controls",
+          "criticalPath": true
+        },
+        {
+          "testId": "archive-004",
+          "name": "Archive Transcript Synchronization",
+          "type": "e2e",
+          "description": "Test transcript highlights during playback",
+          "steps": [
+            "Select recording with transcript",
+            "Start playback",
+            "Verify transcript displayed",
+            "Check current word/phrase highlighted",
+            "Verify highlight moves with playback",
+            "Test clicking transcript to seek"
+          ],
+          "expectedResult": "Transcript syncs perfectly with audio playback",
+          "criticalPath": true
+        },
+        {
+          "testId": "archive-005",
+          "name": "Archive Search Functionality",
+          "type": "integration",
+          "description": "Test AI-powered search across recordings",
+          "steps": [
+            "Create recordings with known content",
+            "Enter search query in archive search",
+            "Verify semantic search executed",
+            "Check relevance scoring applied",
+            "Verify results ranked correctly",
+            "Test filtering by date range"
+          ],
+          "expectedResult": "Search finds relevant recordings accurately",
+          "criticalPath": true
+        },
+        {
+          "testId": "archive-006",
+          "name": "Archive Memory Linking",
+          "type": "integration",
+          "description": "Test recordings linked to memories",
+          "steps": [
+            "Create memory with linked recording",
+            "Navigate to Memory Archive tab",
+            "Select memory",
+            "Verify link to recording shown",
+            "Click recording link",
+            "Verify switches to Voice Recordings tab with recording selected"
+          ],
+          "expectedResult": "Memories and recordings properly linked",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "story-reconstruction",
+      "name": "Story & Reconstruction Features",
+      "priority": "medium",
+      "tests": [
+        {
+          "testId": "story-001",
+          "name": "Story Page Generation",
+          "type": "e2e",
+          "description": "Test flowing narrative generation from memories",
+          "steps": [
+            "Create 5+ memories spanning years",
+            "Navigate to /story",
+            "Verify page loads",
+            "Check narrative text generated",
+            "Verify chapter organization",
+            "Test collapsible sections"
+          ],
+          "expectedResult": "Story generated with flowing narrative",
+          "criticalPath": false
+        },
+        {
+          "testId": "story-002",
+          "name": "Story Chapter Navigation",
+          "type": "e2e",
+          "description": "Test story chapter organization",
+          "steps": [
+            "Navigate to /story with memories",
+            "Verify chapters shown (Early Years, Discovery, etc.)",
+            "Click to expand chapter",
+            "Verify chapter content shown",
+            "Click to collapse",
+            "Test navigation between chapters"
+          ],
+          "expectedResult": "Chapter navigation works smoothly",
+          "criticalPath": false
+        },
+        {
+          "testId": "story-003",
+          "name": "Reconstruction Page Load",
+          "type": "e2e",
+          "description": "Test reconstruction/image generation page",
+          "steps": [
+            "Navigate to /reconstruction",
+            "Verify page loads",
+            "Check memory selection interface",
+            "Verify identity selector (if trained identities exist)",
+            "Test image generation trigger"
+          ],
+          "expectedResult": "Reconstruction page functional",
+          "criticalPath": false
+        }
+      ]
+    },
+    {
+      "groupId": "dashboard",
+      "name": "Dashboard & Settings",
+      "priority": "medium",
+      "tests": [
+        {
+          "testId": "dashboard-001",
+          "name": "Dashboard Page Load",
+          "type": "e2e",
+          "description": "Test dashboard shows user overview",
+          "steps": [
+            "Navigate to /dashboard",
+            "Verify page loads",
+            "Check memory count displayed",
+            "Verify recording count shown",
+            "Test recent activity section",
+            "Check statistics accurate"
+          ],
+          "expectedResult": "Dashboard shows complete user overview",
+          "criticalPath": false
+        },
+        {
+          "testId": "dashboard-002",
+          "name": "Settings Page Functionality",
+          "type": "e2e",
+          "description": "Test user settings management",
+          "steps": [
+            "Navigate to /settings",
+            "Verify settings sections shown",
+            "Test profile editing",
+            "Test notification preferences",
+            "Test privacy settings",
+            "Save changes and verify"
+          ],
+          "expectedResult": "Settings can be updated successfully",
+          "criticalPath": false
+        },
+        {
+          "testId": "dashboard-003",
+          "name": "Add Memory Form",
+          "type": "e2e",
+          "description": "Test manual memory addition",
+          "steps": [
+            "Navigate to /add-memory or click Add Memory button",
+            "Fill in memory form (title, content, date)",
+            "Add location",
+            "Add tags",
+            "Upload image (optional)",
+            "Submit form",
+            "Verify memory created"
+          ],
+          "expectedResult": "Memory added successfully via form",
+          "criticalPath": true
+        }
+      ]
+    },
+    {
+      "groupId": "security",
+      "name": "Security & Data Privacy",
+      "priority": "critical",
+      "tests": [
+        {
+          "testId": "security-001",
+          "name": "JWT Token Validation",
+          "type": "api",
+          "description": "Test authentication token handling",
+          "steps": [
+            "Request with invalid token",
+            "Verify 401 response",
+            "Request with expired token",
+            "Verify 401 response",
+            "Request with valid token",
+            "Verify 200 response"
+          ],
+          "expectedResult": "Only valid tokens accepted",
+          "criticalPath": true
+        },
+        {
+          "testId": "security-002",
+          "name": "SQL Injection Prevention",
+          "type": "security",
+          "description": "Test against SQL injection attacks",
+          "steps": [
+            "Submit memory with SQL injection attempt",
+            "Verify sanitization",
+            "Check database integrity",
+            "Test search with malicious input"
+          ],
+          "expectedResult": "All inputs properly sanitized",
+          "criticalPath": true
+        },
+        {
+          "testId": "security-003",
+          "name": "XSS Prevention",
+          "type": "security",
+          "description": "Test against cross-site scripting",
+          "steps": [
+            "Submit memory with script tags",
+            "Verify script not executed",
+            "Check HTML escaping",
+            "Test in memory display"
+          ],
+          "expectedResult": "Scripts properly escaped and not executed",
+          "criticalPath": true
+        }
+      ]
+    }
+  ],
+  "configuration": {
+    "maxRetries": 5,
+    "retryDelay": 5000,
+    "timeout": 30000,
+    "parallelExecution": false,
+    "stopOnCriticalFailure": false,
+    "generateFixesAfterRun": true,
+    "batchFixesBeforeRelease": true
+  }
+}
