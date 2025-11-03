@@ -39,3 +39,6 @@ testing/agent-decisions.json
 # Core dumps
 core
 core.*
+
+# Playwright auth state (contains session cookies)
+.auth/

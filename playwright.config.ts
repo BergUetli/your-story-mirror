@@ -10,6 +10,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: 1, // Single worker for consistent results
+  
+  // Global setup - login once for all tests
+  globalSetup: require.resolve('./testing/e2e/global-setup.ts'),
+  
   reporter: [
     ['html', { outputFolder: 'testing/playwright-report' }],
     ['json', { outputFile: 'testing/playwright-results.json' }],
@@ -21,6 +25,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // Use saved authentication state for all tests
+    storageState: '.auth/user.json',
   },
 
   projects: [
