@@ -18,11 +18,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import dotenv from 'dotenv';
 import TestEngine from './test-engine.js';
 import AIFixGenerator from './ai-fix-generator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 class ReleasePipeline {
   constructor(options = {}) {
