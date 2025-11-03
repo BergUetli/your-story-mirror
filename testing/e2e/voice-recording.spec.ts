@@ -97,41 +97,33 @@ test.describe('Voice Recording - REAL TESTS', () => {
   test('voice-002: Enhanced mode captures BOTH user and AI audio', async ({ page }) => {
     console.log('\ud83e\uddea TEST: voice-002 - Dual audio recording (YOUR BUG)');
     
-    // Make sure we're on sanctuary page
-    await page.goto('http://localhost:8080/sanctuary');
+    // Navigate to sanctuary/home page (index)
+    await page.goto('http://localhost:8080/');
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
     console.log(`Current URL: ${page.url()}`);
     
-    // Take screenshot to see what's on page
-    await page.screenshot({ path: 'voice-002-page.png' });
-    console.log('Screenshot saved: voice-002-page.png');
-    
-    // Look for enhanced recording toggle/settings
-    const settingsButton = page.locator('button[aria-label*="settings"], button[aria-label*="Settings"], [class*="settings"]').first();
-    
-    if (await settingsButton.isVisible({ timeout: 3000 })) {
-      await settingsButton.click();
-      console.log('\u2713 Opened settings');
-      await page.waitForTimeout(500);
-      
-      // Look for enhanced/dual recording option
-      const enhancedOption = page.locator('text=/enhanced.*record|dual.*audio|record.*both/i');
-      if (await enhancedOption.isVisible({ timeout: 2000 })) {
-        await enhancedOption.click();
-        console.log('\u2713 Enabled enhanced recording');
-      }
+    // Check if we're on the voice agent page (look for orb or voice indicator)
+    const voiceAgent = page.locator('[class*="orb"], [class*="pulse"], [class*="agent"]').first();
+    if (!await voiceAgent.isVisible({ timeout: 3000 })) {
+      console.log('\u26a0\ufe0f Not on voice agent page, taking screenshot...');
+      await page.screenshot({ path: 'voice-002-wrong-page.png' });
+      test.skip();
+      return;
     }
     
-    // Start conversation - try multiple selectors
-    const startButton = page.locator('button:has-text("Start Conversation"), button:has-text("Start"), button:has-text("Connect")').first();
+    console.log('\u2713 On voice agent page');
     
-    if (await startButton.isVisible({ timeout: 5000 })) {
-      await startButton.click();
+    // Start conversation - look specifically for "Start Conversation" only
+    const startButton = page.locator('button').filter({ hasText: /^Start Conversation$/ });
+    
+    if (await startButton.count() > 0 && await startButton.first().isVisible({ timeout: 5000 })) {
+      await startButton.first().click();
       console.log('\u2713 Started conversation');
     } else {
-      console.log('\u274c Start button not visible');
+      console.log('\u274c Start Conversation button not found');
+      await page.screenshot({ path: 'voice-002-no-button.png' });
       test.skip();
       return;
     }
