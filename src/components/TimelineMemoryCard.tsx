@@ -25,6 +25,7 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
   return (
     <Card
       id={`memory-${memory.id}`}
+      data-testid="memory-item"
       className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
         isMaterializing
           ? 'ring-2 ring-primary border-primary animate-pulse'
@@ -53,7 +54,7 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <h3 className="text-xs font-medium text-card-foreground truncate flex-1">
+              <h3 data-testid="memory-label" className="text-xs font-medium text-card-foreground truncate flex-1">
                 {memory.title}
               </h3>
               
