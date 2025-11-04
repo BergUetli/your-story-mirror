@@ -889,14 +889,36 @@ export class EnhancedConversationRecordingService {
   private setupDOMObserver(): void {
     if (!this.currentSession) return;
 
+    // CRITICAL: First, capture any EXISTING audio elements that might already be in the DOM
+    console.log('🔍 Scanning for existing audio elements...');
+    const existingAudios = document.querySelectorAll('audio');
+    console.log(`Found ${existingAudios.length} existing audio element(s)`);
+    
+    existingAudios.forEach((audioElement, index) => {
+      console.log(`🎵 Existing audio element ${index}:`, {
+        src: audioElement.src?.substring(0, 80),
+        autoplay: audioElement.autoplay,
+        controls: audioElement.controls,
+        display: (audioElement as HTMLAudioElement).style.display,
+        paused: audioElement.paused,
+        readyState: audioElement.readyState
+      });
+      
+      // Capture existing audio elements with a small delay
+      setTimeout(() => {
+        this.captureElevenLabsAudioElement(audioElement as HTMLAudioElement);
+      }, 500); // Longer delay for existing elements
+    });
+
+    // ALSO set up observer for NEW audio elements added later
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           // Check if the added node is an audio element
           if (node.nodeName === 'AUDIO') {
             const audioElement = node as HTMLAudioElement;
-            console.log('🎵 DOM Observer detected new audio element:', {
-              src: audioElement.src?.substring(0, 50),
+            console.log('🎵 DOM Observer detected NEW audio element:', {
+              src: audioElement.src?.substring(0, 80),
               autoplay: audioElement.autoplay,
               controls: audioElement.controls,
               display: (audioElement.style as any).display
@@ -919,7 +941,7 @@ export class EnhancedConversationRecordingService {
 
     // Store observer for cleanup
     (this.currentSession as any).domObserver = observer;
-    console.log('✅ DOM Observer set up to detect ElevenLabs audio elements');
+    console.log('✅ DOM Observer set up to detect future ElevenLabs audio elements');
   }
 
   private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
