@@ -1,5 +1,27 @@
 # Running Design Analysis Tests
 
+## 🚨 Getting "No tests found" Error?
+
+**First, run the diagnostic script:**
+```powershell
+# Pull latest changes
+git pull origin main
+
+# Run diagnostic (this will tell you exactly what's wrong)
+.\diagnose-playwright.ps1
+```
+
+The diagnostic will:
+- ✅ Check if test files exist
+- ✅ Validate Playwright configuration
+- ✅ Test different command variations
+- ✅ Check Ollama setup
+- ✅ Tell you the exact command to use
+
+**For detailed Windows setup, see:** `WINDOWS_PLAYWRIGHT_SETUP.md`
+
+---
+
 ## Quick Start
 
 Since your `playwright.config.ts` is already configured to look in `./testing/e2e`, you can run tests using just the filename:
