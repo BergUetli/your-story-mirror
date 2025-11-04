@@ -2724,7 +2724,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             
             <div className="flex flex-col items-center gap-6">
               {/* View Mode Tabs - Enhanced design */}
-              <div className="absolute top-4 right-4 flex gap-1 rounded-full p-1.5 border transition-all duration-300"
+              <div className="absolute top-4 right-4 flex gap-1 rounded-full p-1.5 border transition-all duration-300 z-10"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,250,251,0.9))',
                   backdropFilter: 'blur(12px)',
@@ -2971,7 +2971,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
               {/* Header with modern styling */}
-              <div className="mb-3 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+              <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
                 <h2 className="text-base font-bold text-foreground">
                   Live Transcript
                 </h2>

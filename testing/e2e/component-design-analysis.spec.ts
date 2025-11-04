@@ -989,4 +989,275 @@ ${suggestions}
     console.log('\n🎉 Complete design system guide generated!');
     console.log('   This is your roadmap for a full design overhaul.');
   });
+
+  test('Overlap Detection - Check for Overlapping Elements', async ({ page }) => {
+    test.setTimeout(120000); // 2 minutes
+    console.log('🔍 CHECKING: Element Overlap Detection\n');
+    
+    const pagesToCheck = [
+      { url: '/sanctuary', name: 'Sanctuary' },
+      { url: '/timeline', name: 'Timeline' },
+      { url: '/archive', name: 'Archive' },
+      { url: '/dashboard', name: 'Dashboard' },
+    ];
+    
+    const allIssues: any[] = [];
+    
+    for (const pageDef of pagesToCheck) {
+      console.log(`\n📄 Checking: ${pageDef.name}`);
+      await page.goto(`http://localhost:8080${pageDef.url}`);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(2000);
+      
+      const overlaps = await page.evaluate(() => {
+        const issues: any[] = [];
+        
+        // Helper: Get readable element identifier
+        function getElementIdentifier(el: Element): string {
+          if (el.id) return `#${el.id}`;
+          if (el.className && typeof el.className === 'string') {
+            const classes = el.className.split(' ').filter(c => c && !c.startsWith('transition'));
+            if (classes.length > 0) return `.${classes[0]}`;
+          }
+          return el.tagName.toLowerCase();
+        }
+        
+        // Helper: Check if elements overlap
+        function doElementsOverlap(rect1: DOMRect, rect2: DOMRect): boolean {
+          // Check if rectangles overlap
+          return !(
+            rect1.right < rect2.left ||
+            rect1.left > rect2.right ||
+            rect1.bottom < rect2.top ||
+            rect1.top > rect2.bottom
+          );
+        }
+        
+        // Helper: Check if text overlaps with borders
+        function checkTextBorderOverlap(el: Element): any | null {
+          const computed = window.getComputedStyle(el);
+          const rect = el.getBoundingClientRect();
+          
+          // Get text content bounds
+          const range = document.createRange();
+          const textNodes: Node[] = [];
+          
+          function collectTextNodes(node: Node) {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+              textNodes.push(node);
+            } else {
+              node.childNodes.forEach(collectTextNodes);
+            }
+          }
+          collectTextNodes(el);
+          
+          if (textNodes.length === 0) return null;
+          
+          // Check padding
+          const paddingTop = parseFloat(computed.paddingTop);
+          const paddingRight = parseFloat(computed.paddingRight);
+          const paddingBottom = parseFloat(computed.paddingBottom);
+          const paddingLeft = parseFloat(computed.paddingLeft);
+          
+          // Get first and last text positions
+          let firstTextRect: DOMRect | null = null;
+          let lastTextRect: DOMRect | null = null;
+          
+          try {
+            range.selectNodeContents(textNodes[0]);
+            firstTextRect = range.getBoundingClientRect();
+            range.selectNodeContents(textNodes[textNodes.length - 1]);
+            lastTextRect = range.getBoundingClientRect();
+          } catch (e) {
+            return null;
+          }
+          
+          if (!firstTextRect || !lastTextRect) return null;
+          
+          // Check if text is too close to borders (less than 4px)
+          const minPadding = 4;
+          const issues: string[] = [];
+          
+          if (firstTextRect.top - rect.top < minPadding && paddingTop < minPadding) {
+            issues.push(`Text too close to top border (${(firstTextRect.top - rect.top).toFixed(1)}px)`);
+          }
+          if (rect.right - lastTextRect.right < minPadding && paddingRight < minPadding) {
+            issues.push(`Text too close to right border (${(rect.right - lastTextRect.right).toFixed(1)}px)`);
+          }
+          if (rect.bottom - lastTextRect.bottom < minPadding && paddingBottom < minPadding) {
+            issues.push(`Text too close to bottom border (${(rect.bottom - lastTextRect.bottom).toFixed(1)}px)`);
+          }
+          if (firstTextRect.left - rect.left < minPadding && paddingLeft < minPadding) {
+            issues.push(`Text too close to left border (${(firstTextRect.left - rect.left).toFixed(1)}px)`);
+          }
+          
+          if (issues.length > 0) {
+            return {
+              element: getElementIdentifier(el),
+              issues: issues,
+              padding: { paddingTop, paddingRight, paddingBottom, paddingLeft }
+            };
+          }
+          
+          return null;
+        }
+        
+        // Get all visible, interactive elements
+        const elements = Array.from(document.querySelectorAll('button, a, div, section, article, [role="button"]'))
+          .filter(el => {
+            const rect = el.getBoundingClientRect();
+            const computed = window.getComputedStyle(el);
+            return (
+              rect.width > 0 &&
+              rect.height > 0 &&
+              computed.visibility !== 'hidden' &&
+              computed.display !== 'none' &&
+              parseFloat(computed.opacity) > 0
+            );
+          });
+        
+        // Check for overlapping elements (excluding intentional overlays)
+        for (let i = 0; i < elements.length; i++) {
+          const el1 = elements[i];
+          const rect1 = el1.getBoundingClientRect();
+          const computed1 = window.getComputedStyle(el1);
+          
+          // Skip absolutely positioned elements (often intentional overlays)
+          if (computed1.position === 'absolute' || computed1.position === 'fixed') continue;
+          
+          for (let j = i + 1; j < elements.length; j++) {
+            const el2 = elements[j];
+            const rect2 = el2.getBoundingClientRect();
+            const computed2 = window.getComputedStyle(el2);
+            
+            // Skip if either is absolutely/fixed positioned
+            if (computed2.position === 'absolute' || computed2.position === 'fixed') continue;
+            
+            // Skip if one contains the other (parent-child)
+            if (el1.contains(el2) || el2.contains(el1)) continue;
+            
+            // Check overlap
+            if (doElementsOverlap(rect1, rect2)) {
+              // Calculate overlap area
+              const overlapLeft = Math.max(rect1.left, rect2.left);
+              const overlapRight = Math.min(rect1.right, rect2.right);
+              const overlapTop = Math.max(rect1.top, rect2.top);
+              const overlapBottom = Math.min(rect1.bottom, rect2.bottom);
+              const overlapWidth = overlapRight - overlapLeft;
+              const overlapHeight = overlapBottom - overlapTop;
+              const overlapArea = overlapWidth * overlapHeight;
+              
+              // Only report significant overlaps (> 100px²)
+              if (overlapArea > 100) {
+                issues.push({
+                  type: 'element_overlap',
+                  element1: getElementIdentifier(el1),
+                  element2: getElementIdentifier(el2),
+                  overlapArea: Math.round(overlapArea),
+                  location: `(${Math.round(overlapLeft)}, ${Math.round(overlapTop)})`
+                });
+              }
+            }
+          }
+          
+          // Check text-border overlap
+          const textIssue = checkTextBorderOverlap(el1);
+          if (textIssue) {
+            issues.push({
+              type: 'text_border_overlap',
+              ...textIssue
+            });
+          }
+        }
+        
+        return issues;
+      });
+      
+      if (overlaps.length > 0) {
+        console.log(`   ⚠️  Found ${overlaps.length} overlap issues on ${pageDef.name}`);
+        overlaps.forEach(issue => {
+          if (issue.type === 'element_overlap') {
+            console.log(`      - Elements overlapping: ${issue.element1} ⟷ ${issue.element2}`);
+            console.log(`        Overlap area: ${issue.overlapArea}px² at ${issue.location}`);
+          } else if (issue.type === 'text_border_overlap') {
+            console.log(`      - Text border issue in ${issue.element}`);
+            issue.issues.forEach((desc: string) => console.log(`        • ${desc}`));
+          }
+        });
+        
+        allIssues.push({ page: pageDef.name, url: pageDef.url, issues: overlaps });
+      } else {
+        console.log(`   ✅ No overlap issues found on ${pageDef.name}`);
+      }
+    }
+    
+    // Save report
+    if (allIssues.length > 0) {
+      const reportPath = path.join(process.cwd(), 'testing', 'design-suggestions', 'overlap-report.json');
+      fs.writeFileSync(reportPath, JSON.stringify(allIssues, null, 2));
+      console.log(`\n📄 Detailed report saved to: testing/design-suggestions/overlap-report.json`);
+      
+      // Generate markdown report
+      let markdownReport = `# Element Overlap Detection Report\n\n`;
+      markdownReport += `Generated: ${new Date().toLocaleString()}\n\n`;
+      markdownReport += `## Summary\n\n`;
+      markdownReport += `Total pages checked: ${pagesToCheck.length}\n`;
+      markdownReport += `Pages with issues: ${allIssues.length}\n`;
+      markdownReport += `Total issues found: ${allIssues.reduce((sum, page) => sum + page.issues.length, 0)}\n\n`;
+      
+      allIssues.forEach(pageReport => {
+        markdownReport += `## ${pageReport.page} (${pageReport.url})\n\n`;
+        markdownReport += `Issues found: ${pageReport.issues.length}\n\n`;
+        
+        const elementOverlaps = pageReport.issues.filter((i: any) => i.type === 'element_overlap');
+        const textBorderIssues = pageReport.issues.filter((i: any) => i.type === 'text_border_overlap');
+        
+        if (elementOverlaps.length > 0) {
+          markdownReport += `### Element Overlaps (${elementOverlaps.length})\n\n`;
+          elementOverlaps.forEach((issue: any) => {
+            markdownReport += `- **${issue.element1}** overlaps with **${issue.element2}**\n`;
+            markdownReport += `  - Overlap area: ${issue.overlapArea}px²\n`;
+            markdownReport += `  - Location: ${issue.location}\n\n`;
+          });
+        }
+        
+        if (textBorderIssues.length > 0) {
+          markdownReport += `### Text/Border Issues (${textBorderIssues.length})\n\n`;
+          textBorderIssues.forEach((issue: any) => {
+            markdownReport += `- **${issue.element}**\n`;
+            issue.issues.forEach((desc: string) => {
+              markdownReport += `  - ${desc}\n`;
+            });
+            markdownReport += `  - Current padding: top=${issue.padding.paddingTop}px, right=${issue.padding.paddingRight}px, bottom=${issue.padding.paddingBottom}px, left=${issue.padding.paddingLeft}px\n\n`;
+          });
+        }
+      });
+      
+      markdownReport += `## Recommendations\n\n`;
+      markdownReport += `1. **Element Overlaps**: Review each overlap to determine if it's intentional (e.g., overlay, modal, tooltip) or a layout bug\n`;
+      markdownReport += `2. **Text/Border Issues**: Add minimum padding (8-12px) to ensure text doesn't touch borders\n`;
+      markdownReport += `3. **Test Responsively**: Check if overlaps occur at different viewport sizes\n`;
+      markdownReport += `4. **Use CSS Grid/Flexbox**: Modern layout systems prevent unintentional overlaps\n`;
+      
+      const markdownPath = path.join(process.cwd(), 'testing', 'design-suggestions', 'overlap-report.md');
+      fs.writeFileSync(markdownPath, markdownReport);
+      console.log(`📝 Markdown report saved to: testing/design-suggestions/overlap-report.md`);
+    }
+    
+    // Assert: This test passes but warns about issues
+    console.log(`\n📊 Final Summary:`);
+    console.log(`   Pages checked: ${pagesToCheck.length}`);
+    console.log(`   Pages with overlap issues: ${allIssues.length}`);
+    console.log(`   Total issues: ${allIssues.reduce((sum, page) => sum + page.issues.length, 0)}`);
+    
+    if (allIssues.length > 0) {
+      console.log(`\n⚠️  Warning: Found overlap issues. Review the report for details.`);
+      console.log(`   Note: Some overlaps may be intentional (modals, tooltips, etc.)`);
+    } else {
+      console.log(`\n✅ No overlap issues detected!`);
+    }
+    
+    // Don't fail the test, just report
+    expect(true).toBe(true);
+  });
 });
