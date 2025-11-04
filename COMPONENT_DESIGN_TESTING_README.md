@@ -61,13 +61,21 @@ npx playwright test component-design-analysis
 
 ### 1. Ollama (Required)
 
+**⚡ Quick Check - Is Ollama Running?**
+```powershell
+# Run this first to verify everything
+.\check-ollama.ps1
+```
+
+**If check fails, follow these steps:**
+
 **Install Ollama:**
 - Download from https://ollama.ai
 - Or use: `winget install Ollama.Ollama`
 
 **Start Ollama:**
 ```powershell
-# Terminal 1
+# Terminal 1 - THIS MUST STAY OPEN
 ollama serve
 ```
 
@@ -81,6 +89,8 @@ ollama pull llama3.2
 ```powershell
 ollama run llama3.2 "Say hello in 5 words"
 ```
+
+📚 **Detailed Guide:** See `CHECK_OLLAMA_STATUS.md` for complete instructions
 
 ### 2. Dev Server (Required)
 

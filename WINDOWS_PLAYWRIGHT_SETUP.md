@@ -70,6 +70,19 @@ npx playwright test testing/e2e/component-design-analysis.spec.ts
 
 ### 1. Ollama Must Be Running
 
+**⚡ Quick Status Check:**
+```powershell
+.\check-ollama.ps1
+```
+
+This will verify:
+- ✅ Ollama is installed
+- ✅ Service is running on port 11434
+- ✅ llama3.2 model is downloaded
+- ✅ Inference is working
+
+**If any checks fail:**
+
 **Check if Ollama is installed:**
 ```powershell
 ollama --version
@@ -77,6 +90,7 @@ ollama --version
 
 **Start Ollama service:**
 ```powershell
+# Terminal 1 - KEEP THIS OPEN
 ollama serve
 ```
 
@@ -89,6 +103,8 @@ ollama pull llama3.2
 ```powershell
 ollama run llama3.2 "Say hello"
 ```
+
+📚 **Need Help?** See `CHECK_OLLAMA_STATUS.md` for detailed troubleshooting
 
 ### 2. Dev Server Must Be Running
 
