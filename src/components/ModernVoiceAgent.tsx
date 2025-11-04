@@ -59,19 +59,19 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
         .pulsing-border-wrapper {
           position: relative;
-          width: min(350px, 80vw);
-          height: min(350px, 80vw);
+          width: min(280px, 70vw);
+          height: min(280px, 70vw);
           max-width: 100%;
           border-radius: 50%;
           padding: 8px;
-          flex-shrink: 0;
-          filter: drop-shadow(0 20px 40px rgba(0, 102, 255, 0.25));
+          flex-shrink: 1;
+          filter: drop-shadow(0 15px 30px rgba(0, 102, 255, 0.2));
           transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .pulsing-border-wrapper:hover {
-          filter: drop-shadow(0 25px 50px rgba(0, 102, 255, 0.35));
-          transform: scale(1.02);
+          filter: drop-shadow(0 20px 40px rgba(0, 102, 255, 0.3));
+          transform: scale(1.05);
         }
         
         .pulsing-border-wrapper::before {

@@ -1,0 +1,2131 @@
+{
+  "config": {
+    "configFile": "/home/user/webapp/playwright.config.ts",
+    "rootDir": "/home/user/webapp/testing/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": "/home/user/webapp/testing/e2e/global-setup.ts",
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "testing/playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "testing/playwright-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/user/webapp/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/user/webapp/testing/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:8080",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [
+    {
+      "title": "admin-diagnostics.spec.ts",
+      "file": "admin-diagnostics.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Admin & Diagnostics",
+          "file": "admin-diagnostics.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "admin-001: Database health check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7b1c1ca6cfb312d8bd44-fcd8ab4d1db4c2e5dd5a",
+              "file": "admin-diagnostics.spec.ts",
+              "line": 43,
+              "column": 3
+            },
+            {
+              "title": "admin-002: User management dashboard",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7b1c1ca6cfb312d8bd44-488490112452b9929516",
+              "file": "admin-diagnostics.spec.ts",
+              "line": 96,
+              "column": 3
+            },
+            {
+              "title": "admin-003: System diagnostics panel",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7b1c1ca6cfb312d8bd44-2e5e457928ec10c52258",
+              "file": "admin-diagnostics.spec.ts",
+              "line": 172,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "archive.spec.ts",
+      "file": "archive.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Archive Page - REAL TESTS",
+          "file": "archive.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "archive-001: Display All Recordings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-eafca202c39319bf4a51",
+              "file": "archive.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "archive-002: Search Recordings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-368de6e1cc14f593966d",
+              "file": "archive.spec.ts",
+              "line": 52,
+              "column": 3
+            },
+            {
+              "title": "archive-003: Play Recording",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-7013c24cc2818ef4107d",
+              "file": "archive.spec.ts",
+              "line": 79,
+              "column": 3
+            },
+            {
+              "title": "archive-004: Filter by Date Range",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-3064e8a056bcbce2b918",
+              "file": "archive.spec.ts",
+              "line": 115,
+              "column": 3
+            },
+            {
+              "title": "archive-005: Recording Details View",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-c809456def793207a4d1",
+              "file": "archive.spec.ts",
+              "line": 138,
+              "column": 3
+            },
+            {
+              "title": "archive-006: Delete Recording",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-1ad498ad1070a9aa546f",
+              "file": "archive.spec.ts",
+              "line": 170,
+              "column": 3
+            },
+            {
+              "title": "archive-007: Sort Recordings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-9f2cb2a88e830cba9699",
+              "file": "archive.spec.ts",
+              "line": 202,
+              "column": 3
+            },
+            {
+              "title": "archive-008: Export/Download Recording",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "06fc273b3e07acc807f8-d6f4425013ae7a4fbe92",
+              "file": "archive.spec.ts",
+              "line": 241,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "authentication.spec.ts",
+      "file": "authentication.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Authentication & Authorization - REAL TESTS",
+          "file": "authentication.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "auth-001: User Sign Up Flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-068ea8b858acb2ed1987",
+              "file": "authentication.spec.ts",
+              "line": 9,
+              "column": 3
+            },
+            {
+              "title": "auth-002: User Sign In Flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-efe87ae2849e142637be",
+              "file": "authentication.spec.ts",
+              "line": 61,
+              "column": 3
+            },
+            {
+              "title": "auth-003: Row Level Security - Memories",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-409aae87b9206c4b3553",
+              "file": "authentication.spec.ts",
+              "line": 74,
+              "column": 3
+            },
+            {
+              "title": "auth-004: Row Level Security - Voice Recordings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-83a830390e7d22230fc5",
+              "file": "authentication.spec.ts",
+              "line": 125,
+              "column": 3
+            },
+            {
+              "title": "auth-005: Session Persistence",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-44784e30e922697fb3cb",
+              "file": "authentication.spec.ts",
+              "line": 152,
+              "column": 3
+            },
+            {
+              "title": "auth-006: Logout Flow",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "70f6afe7e350c931056e-9594a3377f56ba2d2ddf",
+              "file": "authentication.spec.ts",
+              "line": 182,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "component-design-analysis.spec.ts",
+      "file": "component-design-analysis.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Component Design Analysis - Ollama AI",
+          "file": "component-design-analysis.spec.ts",
+          "line": 68,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Timeline Component - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-ecbf01e65160fba27e5b",
+              "file": "component-design-analysis.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "Archive Component - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-53828f6d5b0523a6f9da",
+              "file": "component-design-analysis.spec.ts",
+              "line": 208,
+              "column": 3
+            },
+            {
+              "title": "Sanctuary/Voice Agent - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-de983c2c0e8b23c8c729",
+              "file": "component-design-analysis.spec.ts",
+              "line": 321,
+              "column": 3
+            },
+            {
+              "title": "Dashboard Component - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-9b4f1e0b1de99758628a",
+              "file": "component-design-analysis.spec.ts",
+              "line": 439,
+              "column": 3
+            },
+            {
+              "title": "Navigation/Sidebar - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-62b8082f9b0c5c54e803",
+              "file": "component-design-analysis.spec.ts",
+              "line": 550,
+              "column": 3
+            },
+            {
+              "title": "Memory Card Component - Design Analysis",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-34b2b6abe3d095141b10",
+              "file": "component-design-analysis.spec.ts",
+              "line": 661,
+              "column": 3
+            },
+            {
+              "title": "Complete Design System - Generate Comprehensive Guide",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "7da983b3fc5eeeb14969-63b25a9244a2ba961137",
+              "file": "component-design-analysis.spec.ts",
+              "line": 779,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "dashboard-settings.spec.ts",
+      "file": "dashboard-settings.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard & Settings",
+          "file": "dashboard-settings.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "dashboard-001: User dashboard overview",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "57681746c0c8bbc28028-99f4bc097cb8894b27ca",
+              "file": "dashboard-settings.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "dashboard-002: Settings page navigation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "57681746c0c8bbc28028-433cfaf2bb7081ee726d",
+              "file": "dashboard-settings.spec.ts",
+              "line": 165,
+              "column": 3
+            },
+            {
+              "title": "dashboard-003: Profile settings update",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "57681746c0c8bbc28028-e03a9eaa39c58edd7677",
+              "file": "dashboard-settings.spec.ts",
+              "line": 252,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "debug-auth.spec.ts",
+      "file": "debug-auth.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "DEBUG: Check auth page and credentials",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [],
+              "status": "skipped"
+            }
+          ],
+          "id": "74a41eb7534a1cb0c9db-377543e521c3a212b261",
+          "file": "debug-auth.spec.ts",
+          "line": 6,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "design-agent.spec.ts",
+      "file": "design-agent.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Design Agent - Automated Design Audit",
+          "file": "design-agent.spec.ts",
+          "line": 61,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Design Agent 1: Color consistency audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-e501f00accce2fbf7d86",
+              "file": "design-agent.spec.ts",
+              "line": 63,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 2: Typography consistency audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-6824df71e52b679541c8",
+              "file": "design-agent.spec.ts",
+              "line": 128,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 3: Accessibility (WCAG) audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-c6c4b26e81e2d6e34bdf",
+              "file": "design-agent.spec.ts",
+              "line": 192,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 4: Responsive design audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-4ea01fb1a6a2b0783cd8",
+              "file": "design-agent.spec.ts",
+              "line": 302,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 5: Animation performance audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-d79bfa719007b1f25589",
+              "file": "design-agent.spec.ts",
+              "line": 365,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 6: Spacing consistency audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-f144aa251f080d1d2c90",
+              "file": "design-agent.spec.ts",
+              "line": 436,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 7: Visual regression check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-cdda6087a3c3209aaf1e",
+              "file": "design-agent.spec.ts",
+              "line": 505,
+              "column": 3
+            },
+            {
+              "title": "Design Agent 8: Component audit (Solin Voice Agent)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2d8a5a3b64d82c98a5da-8bb9c77c500b651ef290",
+              "file": "design-agent.spec.ts",
+              "line": 534,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "design-ai-agent.spec.ts",
+      "file": "design-ai-agent.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "AI-Powered Design Agent - Style Improvement Suggestions",
+          "file": "design-ai-agent.spec.ts",
+          "line": 321,
+          "column": 6,
+          "specs": [
+            {
+              "title": "AI Agent 1: Analyze and improve color palette",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6192cbba4353a37c3043-a3d6119f60d9aab97c34",
+              "file": "design-ai-agent.spec.ts",
+              "line": 323,
+              "column": 3
+            },
+            {
+              "title": "AI Agent 2: Analyze and improve typography",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6192cbba4353a37c3043-db53358b7176c5f6a822",
+              "file": "design-ai-agent.spec.ts",
+              "line": 399,
+              "column": 3
+            },
+            {
+              "title": "AI Agent 3: Analyze and improve layout",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6192cbba4353a37c3043-6a2c1b977937858ccc2f",
+              "file": "design-ai-agent.spec.ts",
+              "line": 473,
+              "column": 3
+            },
+            {
+              "title": "AI Agent 4: Generate complete style improvement guide",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "6192cbba4353a37c3043-178ade0e7cb49e7d4e33",
+              "file": "design-ai-agent.spec.ts",
+              "line": 547,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "edge-functions.spec.ts",
+      "file": "edge-functions.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Edge Functions",
+          "file": "edge-functions.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "edge-001: Conversation processing edge function",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2670a694fa6cd651cc24-96445943169850197329",
+              "file": "edge-functions.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "edge-002: Memory extraction edge function",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2670a694fa6cd651cc24-c89fb620f94884bf4b2f",
+              "file": "edge-functions.spec.ts",
+              "line": 123,
+              "column": 3
+            },
+            {
+              "title": "edge-003: Identity training edge function",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2670a694fa6cd651cc24-8e2421292bc009433331",
+              "file": "edge-functions.spec.ts",
+              "line": 231,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "identity-training.spec.ts",
+      "file": "identity-training.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Identity Training",
+          "file": "identity-training.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "identity-001: HuggingFace identity training setup",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b612d8af2f6dd1088aab-d7bf374c3b7bcd5e9b32",
+              "file": "identity-training.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "identity-002: Identity photo upload and validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b612d8af2f6dd1088aab-88c5cc13f3aa982df9a6",
+              "file": "identity-training.spec.ts",
+              "line": 175,
+              "column": 3
+            },
+            {
+              "title": "identity-003: Identity model status and deletion",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b612d8af2f6dd1088aab-cccf068a6681596f29c5",
+              "file": "identity-training.spec.ts",
+              "line": 308,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "memory-management.spec.ts",
+      "file": "memory-management.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Memory Management - REAL TESTS",
+          "file": "memory-management.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "memory-001: Save Memory via Voice Conversation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-e1619235a043fc30e868",
+              "file": "memory-management.spec.ts",
+              "line": 19,
+              "column": 3
+            },
+            {
+              "title": "memory-002: Manual Memory Creation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-ae42b513b711381a7d0d",
+              "file": "memory-management.spec.ts",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "memory-003: Memory Retrieve via Client Tool",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-fc64e88ee8f95329bf3b",
+              "file": "memory-management.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "memory-004: Memory Chunking for Long Content",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-8018e8813e9069f73527",
+              "file": "memory-management.spec.ts",
+              "line": 124,
+              "column": 3
+            },
+            {
+              "title": "memory-005: Memory Search - Semantic",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-dd27ac237ad04c69c518",
+              "file": "memory-management.spec.ts",
+              "line": 163,
+              "column": 3
+            },
+            {
+              "title": "memory-006: Memory Timeline Display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-d220ce8742dcd6d4f5fc",
+              "file": "memory-management.spec.ts",
+              "line": 199,
+              "column": 3
+            },
+            {
+              "title": "memory-007: Edit Existing Memory",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-e58f9a9af90dcd01e05f",
+              "file": "memory-management.spec.ts",
+              "line": 223,
+              "column": 3
+            },
+            {
+              "title": "memory-008: Delete Memory",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-bce91fd088dbb41d410d",
+              "file": "memory-management.spec.ts",
+              "line": 269,
+              "column": 3
+            },
+            {
+              "title": "memory-009: Memory Categories/Tags",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a22de0d3e98bc40f843e-0988fbb7857a57faf47e",
+              "file": "memory-management.spec.ts",
+              "line": 308,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "onboarding.spec.ts",
+      "file": "onboarding.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "User Onboarding - REAL TESTS",
+          "file": "onboarding.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "onboard-001: 13-Question Onboarding Completion",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fe534f0825407f213faa-657ec7383ab180cf50fc",
+              "file": "onboarding.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "onboard-002: Onboarding Skip Functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fe534f0825407f213faa-23b2f00e674dc94ac6a9",
+              "file": "onboarding.spec.ts",
+              "line": 73,
+              "column": 3
+            },
+            {
+              "title": "onboard-003: Profile Completeness Calculation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fe534f0825407f213faa-23b9f01c5144b4ef3f9a",
+              "file": "onboarding.spec.ts",
+              "line": 99,
+              "column": 3
+            },
+            {
+              "title": "onboard-004: Navigate Back Through Questions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fe534f0825407f213faa-9c54cf71d6dcb5f05545",
+              "file": "onboarding.spec.ts",
+              "line": 135,
+              "column": 3
+            },
+            {
+              "title": "onboard-005: Form Validation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "fe534f0825407f213faa-baf05df5d6a266f45819",
+              "file": "onboarding.spec.ts",
+              "line": 169,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "performance.spec.ts",
+      "file": "performance.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Performance & Load Testing",
+          "file": "performance.spec.ts",
+          "line": 18,
+          "column": 6,
+          "specs": [
+            {
+              "title": "perf-001: Memory retrieval performance (<2s for 100 memories)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b15d6361b2fc38288977-fe2fd97f067ec1e98793",
+              "file": "performance.spec.ts",
+              "line": 40,
+              "column": 3
+            },
+            {
+              "title": "perf-002: Voice recording upload speed",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b15d6361b2fc38288977-fd280d15b2aec7c031c5",
+              "file": "performance.spec.ts",
+              "line": 95,
+              "column": 3
+            },
+            {
+              "title": "perf-003: Timeline rendering with many memories (500+)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b15d6361b2fc38288977-72c81650e6bd1aec5d32",
+              "file": "performance.spec.ts",
+              "line": 174,
+              "column": 3
+            },
+            {
+              "title": "perf-004: Search query response time (<1s)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b15d6361b2fc38288977-99611ae8d3bfedb2b759",
+              "file": "performance.spec.ts",
+              "line": 281,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "sanctuary.spec.ts",
+      "file": "sanctuary.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Sanctuary / Voice Agent - REAL TESTS",
+          "file": "sanctuary.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "sanctuary-001: Start Voice Conversation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-7934dda8f5a8aaa79315",
+              "file": "sanctuary.spec.ts",
+              "line": 16,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-002: AI Voice Response",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-ff3800d5a44a2574577d",
+              "file": "sanctuary.spec.ts",
+              "line": 44,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-003: Stop/End Conversation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-f4c876b33bf38672d4d0",
+              "file": "sanctuary.spec.ts",
+              "line": 75,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-004: Conversation Transcript Display",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-25b0871df411411cb481",
+              "file": "sanctuary.spec.ts",
+              "line": 105,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-005: Memory Extraction from Conversation",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-176d8fb0469f38290bee",
+              "file": "sanctuary.spec.ts",
+              "line": 132,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-006: Conversation History",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-e16c222d22570689d6a1",
+              "file": "sanctuary.spec.ts",
+              "line": 164,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-007: AI Voice Settings",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-b4f707e125e49774bd0e",
+              "file": "sanctuary.spec.ts",
+              "line": 192,
+              "column": 3
+            },
+            {
+              "title": "sanctuary-008: Error Handling - No Microphone",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "8585e399e22d105d3e2c-eeabb337888e18b8d1f7",
+              "file": "sanctuary.spec.ts",
+              "line": 220,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "security.spec.ts",
+      "file": "security.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Security",
+          "file": "security.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "security-001: SQL injection prevention",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a7e9410bcc1ef00e9656-eea0cc82a532af6006c4",
+              "file": "security.spec.ts",
+              "line": 41,
+              "column": 3
+            },
+            {
+              "title": "security-002: CSRF protection",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a7e9410bcc1ef00e9656-6227b46f324a6930b08d",
+              "file": "security.spec.ts",
+              "line": 136,
+              "column": 3
+            },
+            {
+              "title": "security-003: XSS prevention",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "a7e9410bcc1ef00e9656-3bccf725f7e939c42634",
+              "file": "security.spec.ts",
+              "line": 240,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "story-reconstruction.spec.ts",
+      "file": "story-reconstruction.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Story Reconstruction",
+          "file": "story-reconstruction.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "story-001: Generate story from memories",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36d40d7da3a921062352-d21f6d994dddb8a67e2e",
+              "file": "story-reconstruction.spec.ts",
+              "line": 39,
+              "column": 3
+            },
+            {
+              "title": "story-002: Story editing and refinement",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36d40d7da3a921062352-532b18919a413e18e5f3",
+              "file": "story-reconstruction.spec.ts",
+              "line": 149,
+              "column": 3
+            },
+            {
+              "title": "story-003: Story export functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "36d40d7da3a921062352-94d75b52bfe8b1abc6ed",
+              "file": "story-reconstruction.spec.ts",
+              "line": 266,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "timeline.spec.ts",
+      "file": "timeline.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Timeline Display - REAL TESTS",
+          "file": "timeline.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "timeline-001: Memory labels display correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-6388170007f5479e47b2",
+              "file": "timeline.spec.ts",
+              "line": 21,
+              "column": 3
+            },
+            {
+              "title": "timeline-002: Timeline scales to fit all memories",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-ab5733c171095faf0700",
+              "file": "timeline.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "timeline-003: Timeline handles many memories without breaking",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-4f78453d45f0af1e2dee",
+              "file": "timeline.spec.ts",
+              "line": 129,
+              "column": 3
+            },
+            {
+              "title": "timeline-004: Memory labels stay readable at different zoom levels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-6b82f95d4aebe5a0c2f2",
+              "file": "timeline.spec.ts",
+              "line": 171,
+              "column": 3
+            },
+            {
+              "title": "timeline-005: Timeline date separators display correctly",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-ff2ba146b32b081d5e3e",
+              "file": "timeline.spec.ts",
+              "line": 222,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "voice-recording-advanced.spec.ts",
+      "file": "voice-recording-advanced.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Voice Recording - ADVANCED PLAYWRIGHT AGENT TEST",
+          "file": "voice-recording-advanced.spec.ts",
+          "line": 30,
+          "column": 6,
+          "specs": [
+            {
+              "title": "voice-002-advanced: Dual audio capture verified with Playwright agents",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "e6cb325f539485232aed-49aa9f29c55afbe2441a",
+              "file": "voice-recording-advanced.spec.ts",
+              "line": 36,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "voice-recording.spec.ts",
+      "file": "voice-recording.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Voice Recording - REAL AUDIO VERIFICATION",
+          "file": "voice-recording.spec.ts",
+          "line": 17,
+          "column": 6,
+          "specs": [
+            {
+              "title": "voice-002: Enhanced mode captures BOTH user and AI audio (REAL AUDIO VERIFICATION)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1866d5471bffaebd9d4e-5aaacab7b3a542e9cf08",
+              "file": "voice-recording.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "voice-001: Standard recording captures microphone audio",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1866d5471bffaebd9d4e-1bb39c5bcdbfd44092e7",
+              "file": "voice-recording.spec.ts",
+              "line": 308,
+              "column": 3
+            },
+            {
+              "title": "voice-003: Audio playback works with transcript sync",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "1866d5471bffaebd9d4e-c0e96812957795fc4a08",
+              "file": "voice-recording.spec.ts",
+              "line": 377,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-04T02:16:05.966Z",
+    "duration": 268.3899999999999,
+    "expected": 0,
+    "skipped": 87,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
