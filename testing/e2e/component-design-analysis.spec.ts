@@ -21,6 +21,10 @@ import * as path from 'path';
 // Helper: Call Ollama AI (running on user's local machine)
 async function callOllamaAI(prompt: string): Promise<string> {
   try {
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+    
     const response = await fetch('http://localhost:11434/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,7 +37,10 @@ async function callOllamaAI(prompt: string): Promise<string> {
           top_p: 0.9,
         }
       }),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       throw new Error(`Ollama API error: ${response.statusText}`);
@@ -68,6 +75,7 @@ function saveSuggestions(componentName: string, content: string) {
 test.describe('Component Design Analysis - Ollama AI', () => {
   
   test('Timeline Component - Design Analysis', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes for Ollama AI inference
     console.log('📅 ANALYZING: Timeline Component\n');
     
     await page.goto('http://localhost:8080/timeline');
@@ -206,6 +214,7 @@ ${suggestions}
   });
 
   test('Archive Component - Design Analysis', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes for Ollama AI inference
     console.log('📼 ANALYZING: Archive Component\n');
     
     await page.goto('http://localhost:8080/archive');
@@ -437,6 +446,7 @@ ${suggestions}
   });
 
   test('Dashboard Component - Design Analysis', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes for Ollama AI inference
     console.log('📊 ANALYZING: Dashboard Component\n');
     
     await page.goto('http://localhost:8080/dashboard');
@@ -548,6 +558,7 @@ ${suggestions}
   });
 
   test('Navigation/Sidebar - Design Analysis', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes for Ollama AI inference
     console.log('🧭 ANALYZING: Navigation/Sidebar Component\n');
     
     await page.goto('http://localhost:8080/');
@@ -659,6 +670,7 @@ ${suggestions}
   });
 
   test('Memory Card Component - Design Analysis', async ({ page }) => {
+    test.setTimeout(180000); // 3 minutes for Ollama AI inference
     console.log('🎴 ANALYZING: Memory Card Component\n');
     
     await page.goto('http://localhost:8080/timeline');
@@ -777,6 +789,7 @@ ${suggestions}
   });
 
   test('Complete Design System - Generate Comprehensive Guide', async ({ page }) => {
+    test.setTimeout(240000); // 4 minutes for comprehensive analysis
     console.log('🎨 GENERATING: Complete Design System Improvements\n');
     
     // Visit all pages to get comprehensive view
