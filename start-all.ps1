@@ -12,6 +12,12 @@ if (-not (Test-Path "playwright.config.ts")) {
     exit 1
 }
 
+# Detect which PowerShell to use for new windows
+$psCommand = "powershell"
+if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+    $psCommand = "pwsh"
+}
+
 # Check if Ollama is installed
 Write-Host "1️⃣ Checking Ollama installation..." -NoNewline
 if (Get-Command ollama -ErrorAction SilentlyContinue) {
@@ -36,7 +42,7 @@ try {
 # Start Ollama if not running
 if (-not $ollamaRunning) {
     Write-Host "   Starting Ollama in new window..."
-    Start-Process pwsh -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '🤖 Ollama Service' -ForegroundColor Cyan; Write-Host '=================' -ForegroundColor Cyan; Write-Host ''; ollama serve"
+    Start-Process $psCommand -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '🤖 Ollama Service' -ForegroundColor Cyan; Write-Host '=================' -ForegroundColor Cyan; Write-Host ''; ollama serve"
     
     # Wait for Ollama to start
     Write-Host "   Waiting for Ollama to start" -NoNewline
@@ -89,7 +95,7 @@ try {
 # Start dev server if not running
 if (-not $devServerRunning) {
     Write-Host "   Starting dev server in new window..."
-    Start-Process pwsh -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '⚡ Dev Server' -ForegroundColor Cyan; Write-Host '=============' -ForegroundColor Cyan; Write-Host ''; npm run dev"
+    Start-Process $psCommand -ArgumentList "-NoExit", "-Command", "cd '$PWD'; Write-Host '⚡ Dev Server' -ForegroundColor Cyan; Write-Host '=============' -ForegroundColor Cyan; Write-Host ''; npm run dev"
     
     # Wait for dev server to start
     Write-Host "   Waiting for dev server to start" -NoNewline
