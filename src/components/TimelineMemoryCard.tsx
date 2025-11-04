@@ -26,77 +26,72 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
     <Card
       id={`memory-${memory.id}`}
       data-testid="memory-item"
-      className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+      className={`group cursor-pointer transition-all duration-300 ease-out hover:shadow-xl ${
         isMaterializing
           ? 'ring-2 ring-primary border-primary animate-pulse'
-          : 'border-border hover:border-primary/50'
+          : 'border-border/40 hover:border-primary/60 hover:-translate-y-1'
       }`}
       style={{
         boxShadow: isMaterializing 
-          ? 'var(--shadow-elevated)' 
-          : 'var(--shadow-soft)',
-        transform: isMaterializing ? 'scale(1.02)' : 'scale(1)'
+          ? '0 8px 32px rgba(96, 165, 250, 0.25)' 
+          : '0 2px 8px rgba(0, 0, 0, 0.04)',
+        transform: isMaterializing ? 'scale(1.02)' : 'scale(1)',
+        borderRadius: '12px'
       }}
       onClick={onClick}
     >
-      <CardContent className="p-2 bg-card">
-        <div className="flex items-center gap-2">
-          {/* Thumbnail */}
+      <CardContent className="p-3 bg-gradient-to-br from-white to-gray-50/50">
+        <div className="flex items-center gap-3">
+          {/* Thumbnail with enhanced styling */}
           {artifact?.artifact_type === 'image' && signedUrl && (
-            <div className="w-10 h-10 flex-shrink-0 rounded overflow-hidden bg-muted">
+            <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 ring-1 ring-black/5 group-hover:ring-primary/20 transition-all duration-300">
               <img
                 src={signedUrl}
                 alt=""
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               />
             </div>
           )}
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <h3 data-testid="memory-label" className="text-xs font-medium text-card-foreground truncate flex-1">
+            <div className="flex items-center gap-2">
+              <h3 data-testid="memory-label" className="text-sm font-semibold text-gray-900 truncate flex-1 group-hover:text-primary transition-colors">
                 {memory.title}
               </h3>
               
-              {/* Media indicators - Made more visible */}
-              <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Media indicators - Enhanced with better visibility */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 {/* Voice recording indicator */}
                 {hasVoiceRecording && (
-                  <div className="w-4 h-4 rounded-sm bg-purple-100 flex items-center justify-center" title="This memory has voice recording">
+                  <div className="w-5 h-5 rounded-md bg-purple-50 border border-purple-200 flex items-center justify-center group-hover:bg-purple-100 transition-colors" title="Voice recording">
                     <Music className="w-3 h-3 text-purple-600" />
                   </div>
                 )}
                 
                 {/* Image indicator */}
                 {(memory.image_urls?.length > 0 || artifact?.artifact_type === 'image') && (
-                  <div className="w-4 h-4 rounded-sm bg-blue-100 flex items-center justify-center" title="This memory has images">
-                    <span className="text-[10px] text-blue-600 font-bold">📷</span>
+                  <div className="w-5 h-5 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center group-hover:bg-blue-100 transition-colors" title="Has images">
+                    <span className="text-xs text-blue-600">📷</span>
                   </div>
                 )}
                 
-                {/* Audio file indicator (different from voice recording) */}
+                {/* Audio file indicator */}
                 {artifact?.artifact_type === 'audio' && (
-                  <div className="w-4 h-4 rounded-sm bg-green-100 flex items-center justify-center" title="This memory has audio files">
-                    <span className="text-[10px] text-green-600 font-bold">🎵</span>
+                  <div className="w-5 h-5 rounded-md bg-green-50 border border-green-200 flex items-center justify-center group-hover:bg-green-100 transition-colors" title="Audio file">
+                    <span className="text-xs text-green-600">🎵</span>
                   </div>
                 )}
-                
-
               </div>
             </div>
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 mt-0.5">
-              <Calendar className="w-2.5 h-2.5 flex-shrink-0" />
-              <span className="truncate">
+            <div className="text-xs text-gray-500 flex items-center gap-2 mt-1.5">
+              <Calendar className="w-3 h-3 flex-shrink-0 opacity-60" />
+              <span className="truncate font-medium">
                 {new Date(memory.memory_date || memory.created_at).toLocaleDateString('en-US', {
                   month: 'short',
-                  day: 'numeric'
+                  day: 'numeric',
+                  year: 'numeric'
                 })}
               </span>
-              {hasVoiceRecording && (
-                <span className="text-primary font-medium text-[9px]">
-                  🎤
-                </span>
-              )}
             </div>
           </div>
         </div>

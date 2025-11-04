@@ -147,20 +147,27 @@
   /* Modern card styles - Structured and cinematic */
   .modern-card {
     @apply transition-all duration-300 ease-out;
-    @apply bg-white border-[1.5px] rounded-lg;
-    border-color: hsl(var(--section-border));
+    @apply bg-white border border-gray-200/60 rounded-xl;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
   }
 
   .modern-card:hover {
-    box-shadow: var(--shadow-soft);
-    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+    border-color: rgb(59 130 246 / 0.3);
   }
 
-  /* Timeline card styles */
+  /* Timeline card styles - Enhanced */
   .timeline-card {
-    background: var(--gradient-card);
+    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,250,251,0.95));
     backdrop-filter: blur(12px);
-    @apply rounded-lg border border-white/10;
+    @apply rounded-xl border border-gray-200/50 shadow-sm;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .timeline-card:hover {
+    @apply shadow-lg border-primary/40;
+    transform: translateY(-4px) scale(1.01);
   }
 
   /* Smooth fade animations */
@@ -211,12 +218,38 @@
   }
 
   .btn-enhanced:hover {
-    @apply shadow-md;
-    transform: scale(1.02);
+    @apply shadow-lg;
+    transform: translateY(-1px) scale(1.02);
   }
 
   .btn-enhanced:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.98);
+  }
+  
+  /* Card with depth - for dashboard metrics */
+  .card-depth {
+    @apply bg-white rounded-xl border border-gray-100;
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.05),
+      0 10px 25px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .card-depth:hover {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.08),
+      0 16px 32px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+  }
+  
+  /* Smooth hover lift */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   }
 
   /* Primary button enhancement */
