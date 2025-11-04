@@ -925,7 +925,7 @@ const Solin: React.FC<SolinProps> = ({
               /* Voice Conversation Interface */
               <div className="h-full min-h-[400px] md:min-h-[500px] flex flex-col">
                 {/* Voice Status */}
-                <div className="p-6 text-center flex-1 flex flex-col items-center justify-start pt-24">
+                <div className="p-6 text-center flex-1 flex flex-col items-center justify-start pt-52">
                   {!speechSupported ? (
                     <div className="text-center space-y-4">
                       <div className="text-muted-foreground">
