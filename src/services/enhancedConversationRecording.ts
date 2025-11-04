@@ -316,13 +316,14 @@ export class EnhancedConversationRecordingService {
       // Step 4: Set up audio mixing and recording
       await this.setupAudioMixing(options);
 
-      // Register for ElevenLabs audio element capture (routes agent voice to systemGain)
-      this.registerElevenLabsAudioCapture();
-
-      // Step 4: Start recording
+      // Step 5: Start recording (MUST happen before registering audio capture)
       this.startRecordingProcess();
 
-      // Step 5: Start quality monitoring
+      // Step 6: Register for ElevenLabs audio element capture (routes agent voice to systemGain)
+      // CRITICAL: Must happen AFTER startRecordingProcess() so session.isRecording = true
+      this.registerElevenLabsAudioCapture();
+
+      // Step 7: Start quality monitoring
       this.startQualityMonitoring();
 
       console.log('✅ Enhanced conversation recording started:', {
@@ -969,8 +970,13 @@ export class EnhancedConversationRecordingService {
   }
 
   private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
-    if (!this.currentSession?.isRecording) {
+    if (!this.currentSession) {
       console.warn('⚠️ Cannot capture ElevenLabs audio - no active enhanced session');
+      return;
+    }
+    
+    if (!this.currentSession.isRecording) {
+      console.warn('⚠️ Cannot capture ElevenLabs audio - recording not started yet (session exists but isRecording=false)');
       return;
     }
 
