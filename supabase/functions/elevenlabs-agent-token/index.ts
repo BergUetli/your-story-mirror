@@ -220,12 +220,8 @@ Welcome them back and ask what's been on their mind lately, or if there's anythi
       firstMessage += `Welcome! `;
     }
     
-    if (memories && memories.length > 0) {
-      const lastMemory = memories[0];
-      // Pass raw title - ElevenLabs will transform it naturally based on the prompt instructions
-      firstMessage += `I've been thinking about ${lastMemory.title || 'what you shared'}. `;
-    }
-    
+    // Let the AI naturally reference memories during conversation
+    // rather than forcing them into the greeting
     firstMessage += `What's been on your mind lately?`;
 
     console.log('✅ Built personalized prompt and greeting for', userName);
