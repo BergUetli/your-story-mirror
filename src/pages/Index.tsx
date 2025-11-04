@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 -mt-20">
+              <div className="text-center space-y-4 -mt-32">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">
@@ -2807,79 +2807,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     <p className="text-base lg:text-lg text-muted-foreground">
                       Ready to continue your memory journey with Solin?
                     </p>
-                  </div>
-                )}
-                
-                {user && (
-                  <div>
-                    {/* Debug button for testing database access */}
-                    <Button
-                      size="sm" 
-                      variant="outline"
-                      onClick={async () => {
-                        console.log('🧪 Testing memory database access...');
-                        toast({
-                          title: 'Testing Database',
-                          description: 'Check browser console for results...',
-                        });
-                        
-                        try {
-                          // Test memory insertion with current user
-                          const testMemory = {
-                            user_id: user.id,
-                            title: 'Database Test Memory',
-                            text: 'This is a test memory to verify database access and RLS policies.',
-                            tags: ['test', 'debug'],
-                            memory_date: '2025-10-20',
-                            memory_location: 'Debug Environment'
-                          };
-                          
-                          console.log('🧪 Attempting to insert test memory...', testMemory);
-                          
-                          const { data: newMemory, error: insertError } = await supabase
-                            .from('memories')
-                            .insert(testMemory)
-                            .select();
-                            
-                          if (insertError) {
-                            console.error('❌ Memory insert failed:', insertError);
-                            toast({
-                              title: 'Database Test Failed',
-                              description: `Error: ${insertError.message}`,
-                              variant: 'destructive'
-                            });
-                          } else {
-                            console.log('✅ Memory insert succeeded!', newMemory);
-                            toast({
-                              title: 'Database Test Passed!',
-                              description: 'Memory creation works - voice recording should work too!',
-                            });
-                            
-                            // Clean up test memory
-                            const { error: deleteError } = await supabase
-                              .from('memories')
-                              .delete()
-                              .eq('id', newMemory[0].id);
-                              
-                            if (deleteError) {
-                              console.warn('⚠️ Failed to clean up test memory:', deleteError);
-                            } else {
-                              console.log('🧹 Test memory cleaned up successfully');
-                            }
-                          }
-                        } catch (error) {
-                          console.error('💥 Unexpected error:', error);
-                          toast({
-                            title: 'Database Test Error',
-                            description: 'Check console for details',
-                            variant: 'destructive'
-                          });
-                        }
-                      }}
-                      className="text-xs"
-                    >
-                      🧪 Test Database Access
-                    </Button>
                   </div>
                 )}
                 
@@ -2924,24 +2851,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                         boxShadow: '0 2px 8px rgba(16,185,129,0.12)'
                       }}
                     >
-                      🎙️ Conversation active — Use the transcript box to save and end
-                    </div>
+                    🎙️ Conversation active — Use the transcript box to save and end
                   </div>
-                ) : (
-                  <Button 
-                    size="lg" 
-                    onClick={startConversation} 
-                    disabled={isConnecting} 
-                    className="rounded-full text-white px-10 py-5 text-base font-semibold transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
-                      boxShadow: '0 8px 24px rgba(0, 102, 255, 0.35), 0 2px 8px rgba(0,0,0,0.08)'
-                    }}
-                  >
-                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
-                  </Button>
-                )}
-              </div>
+                </div>
+              ) : null}
+            </div>
             </div>
           </div>
 
@@ -2961,11 +2875,27 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
               {/* Header with modern styling */}
-              <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-xl lg:text-2xl font-bold text-foreground">
-                  Live Transcript
-                </h2>
-                <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
+              <div className="mb-4 pb-4 border-b flex items-start justify-between" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <div>
+                  <h2 className="text-xl lg:text-2xl font-bold text-foreground">
+                    Live Transcript
+                  </h2>
+                  <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
+                </div>
+                {!isConnected && (
+                  <Button 
+                    size="sm" 
+                    onClick={startConversation} 
+                    disabled={isConnecting} 
+                    className="rounded-full text-white px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
+                      boxShadow: '0 4px 12px rgba(0, 102, 255, 0.25)'
+                    }}
+                  >
+                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
+                  </Button>
+                )}
                 {!isConnected && (
                   <div className="mt-3 text-sm px-4 py-2 rounded-full inline-block transition-all duration-300"
                     style={{
