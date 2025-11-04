@@ -648,7 +648,7 @@ const Index = () => {
                 recordingUserId, 
                 'elevenlabs_conversation',
                 { 
-                  enableSystemAudio: false, // Avoid screen-share prompt; we capture AI audio internally
+                  enableSystemAudio: true, // Enable tab audio sharing to capture both user and AI voice
                   microphoneGain: 1.0,
                   systemAudioGain: 0.85
                 }
