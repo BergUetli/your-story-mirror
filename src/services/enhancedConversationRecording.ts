@@ -959,11 +959,25 @@ export class EnhancedConversationRecordingService {
 
     const captureWhenReady = () => {
       try {
+        console.log('🔄 Attempting to capture audio element...', {
+          src: audioElement.src?.substring(0, 100),
+          readyState: audioElement.readyState,
+          paused: audioElement.paused,
+          currentTime: audioElement.currentTime,
+          duration: audioElement.duration
+        });
+        
         const source = audioContext.createMediaElementSource(audioElement);
+        console.log('✅ createMediaElementSource succeeded');
+        
         // Route to systemGain (which is connected to mixer and recorder)
         source.connect(this.currentSession!.systemGain);
+        console.log('✅ Connected to systemGain');
+        
         // Also to destination for playback
         source.connect(audioContext.destination);
+        console.log('✅ Connected to destination (for playback)');
+        
         this.capturedAudioElements.add(audioElement);
         
         // CRITICAL FIX: Update recording mode to indicate we're capturing agent audio
@@ -975,6 +989,11 @@ export class EnhancedConversationRecordingService {
         console.log('🔊 Enhanced recorder captured ElevenLabs audio element and routed to mixer');
       } catch (err) {
         console.error('❌ Enhanced recorder failed to capture audio element:', err);
+        console.error('❌ Error details:', {
+          name: (err as Error).name,
+          message: (err as Error).message,
+          stack: (err as Error).stack
+        });
       }
     };
 
