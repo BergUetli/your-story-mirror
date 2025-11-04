@@ -2711,35 +2711,57 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         
 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
-          {/* Left Side - Solin Agent - Matched size with transcript */}
+          {/* Left Side - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] bg-white rounded-lg border-[1.5px] shadow-elevated p-8 flex flex-col justify-center animate-fade-in"
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
             style={{ 
-              borderColor: 'hsl(var(--section-border))'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
+              backdropFilter: 'blur(20px)',
+              borderColor: 'rgba(229, 231, 235, 0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
             }}
           >
             
             <div className="flex flex-col items-center gap-6">
-              {/* View Mode Tabs - Small icon switcher */}
-              <div className="absolute top-4 right-4 flex gap-1 bg-white rounded-full p-1 shadow-md border border-border/30">
+              {/* View Mode Tabs - Enhanced design */}
+              <div className="absolute top-4 right-4 flex gap-1 rounded-full p-1.5 border transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,250,251,0.9))',
+                  backdropFilter: 'blur(12px)',
+                  borderColor: 'rgba(0,102,255,0.2)',
+                  boxShadow: '0 4px 16px rgba(0, 102, 255, 0.12), 0 1px 3px rgba(0,0,0,0.06)'
+                }}
+              >
                 <button
                   onClick={() => setViewMode('voice')}
-                  className={`p-2 rounded-full transition-all ${
+                  className={`p-2.5 rounded-full transition-all duration-300 ${
                     viewMode === 'voice' 
-                      ? 'bg-primary text-white' 
-                      : 'text-muted-foreground hover:bg-gray-100'
+                      ? 'text-white shadow-lg' 
+                      : 'text-muted-foreground hover:bg-gray-100/80'
                   }`}
+                  style={{
+                    background: viewMode === 'voice' 
+                      ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
+                      : 'transparent',
+                    transform: viewMode === 'voice' ? 'scale(1.05)' : 'scale(1)'
+                  }}
                   title="Voice Agent"
                 >
                   <Mic className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('particle')}
-                  className={`p-2 rounded-full transition-all ${
+                  className={`p-2.5 rounded-full transition-all duration-300 ${
                     viewMode === 'particle' 
-                      ? 'bg-primary text-white' 
-                      : 'text-muted-foreground hover:bg-gray-100'
+                      ? 'text-white shadow-lg' 
+                      : 'text-muted-foreground hover:bg-gray-100/80'
                   }`}
+                  style={{
+                    background: viewMode === 'particle' 
+                      ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
+                      : 'transparent',
+                    transform: viewMode === 'particle' ? 'scale(1.05)' : 'scale(1)'
+                  }}
                   title="Particle Face"
                 >
                   <Hexagon className="h-4 w-4" />
@@ -2871,16 +2893,30 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                   </div>
                 )}
                 
-                {/* Smart conversation state indicator */}
+                {/* Smart conversation state indicator - Enhanced design */}
                 {isConnected && (
                   <div className="space-y-2">
                     {conversationState.totalMemoriesSaved > 0 && (
-                      <div className="text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-full inline-block">
+                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0,102,255,0.12), rgba(30,144,255,0.08))',
+                          border: '1px solid rgba(0,102,255,0.25)',
+                          color: '#0066FF',
+                          boxShadow: '0 2px 8px rgba(0,102,255,0.12)'
+                        }}
+                      >
                         🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
                       </div>
                     )}
                     {conversationState.userMemoryProfile && (
-                      <div className="text-xs text-accent bg-accent/10 px-3 py-1.5 rounded-full inline-block">
+                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(168,85,247,0.08))',
+                          border: '1px solid rgba(139,92,246,0.25)',
+                          color: '#8b5cf6',
+                          boxShadow: '0 2px 8px rgba(139,92,246,0.12)'
+                        }}
+                      >
                         🎯 Intelligent prompting active • {conversationState.userMemoryProfile.totalMemories} total memories analyzed
                       </div>
                     )}
@@ -2889,8 +2925,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 
                 {isConnected ? (
                   <div className="space-y-3">
-                    {/* Conversation active indicator */}
-                    <div className="text-xs text-muted-foreground bg-green-50 px-4 py-2 rounded-full border border-green-200">
+                    {/* Conversation active indicator - Enhanced design */}
+                    <div className="text-xs px-4 py-2 rounded-full transition-all duration-300"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08))',
+                        border: '1px solid rgba(16,185,129,0.25)',
+                        color: '#10b981',
+                        boxShadow: '0 2px 8px rgba(16,185,129,0.12)'
+                      }}
+                    >
                       🎙️ Conversation active — Use the transcript box to save and end
                     </div>
                   </div>
@@ -2899,7 +2942,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     size="lg" 
                     onClick={startConversation} 
                     disabled={isConnecting} 
-                    className="rounded-full bg-primary hover:bg-primary/90 text-white px-10 py-5 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    className="rounded-full text-white px-10 py-5 text-base font-semibold transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
+                      boxShadow: '0 8px 24px rgba(0, 102, 255, 0.35), 0 2px 8px rgba(0,0,0,0.08)'
+                    }}
                   >
                     {isConnecting ? 'Connecting...' : 'Start Conversation'}
                   </Button>
@@ -2908,32 +2955,38 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             </div>
           </div>
 
-          {/* Right Side - Live Conversation Transcript - Enhanced with golden clouds background */}
+          {/* Right Side - Live Conversation Transcript - Enhanced modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-lg border-[1.5px] shadow-elevated p-5 flex flex-col overflow-hidden relative"
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-5 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
             style={{ 
-              borderColor: 'hsl(var(--section-border))',
-              backgroundImage: 'url(https://page.gensparksite.com/v1/base64_upload/5c053105de9ee6c4ead70f426c7dff6d)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat'
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
+              backdropFilter: 'blur(20px)',
+              borderColor: 'rgba(229, 231, 235, 0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
             }}
           >
-            {/* Overlay to ensure text readability */}
-            <div className="absolute inset-0 bg-white/85 backdrop-blur-[1px] rounded-lg"></div>
+            {/* Subtle background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none"></div>
             
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
-              {/* Header with enhanced styling for visibility over background */}
-              <div className="mb-3 pb-3 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
-                <h2 className="text-base font-bold text-foreground drop-shadow-sm">
+              {/* Header with modern styling */}
+              <div className="mb-3 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <h2 className="text-base font-bold text-foreground">
                   Live Transcript
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5 drop-shadow-sm">Real-time conversation with Solin</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Real-time conversation with Solin</p>
                 {!isConnected && (
-                  <p className="text-xs text-muted-foreground/80 mt-2 bg-white/60 px-3 py-1.5 rounded-full border border-gray-200 inline-block drop-shadow-sm">
+                  <div className="mt-2 text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.85))',
+                      border: '1px solid rgba(229, 231, 235, 0.6)',
+                      color: '#6b7280',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                    }}
+                  >
                     💬 Share as much or as little as you'd like — you can save and stop anytime
-                  </p>
+                  </div>
                 )}
               </div>
               
@@ -2952,11 +3005,20 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg px-3 py-1.5 transition-all hover:scale-[1.02] shadow-sm ${
+                        className={`max-w-[85%] rounded-lg px-3 py-2 transition-all duration-300 hover:scale-[1.02] ${
                           msg.role === 'user'
-                            ? 'bg-primary text-white rounded-br-md'
-                            : 'bg-white/90 text-foreground rounded-bl-md border border-gray-200'
+                            ? 'text-white rounded-br-md'
+                            : 'text-foreground rounded-bl-md'
                         }`}
+                        style={{
+                          background: msg.role === 'user' 
+                            ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
+                            : 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
+                          border: msg.role === 'user' ? 'none' : '1px solid rgba(229, 231, 235, 0.6)',
+                          boxShadow: msg.role === 'user' 
+                            ? '0 4px 12px rgba(0, 102, 255, 0.25), 0 1px 3px rgba(0,0,0,0.08)' 
+                            : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
+                        }}
                       >
                         <div className={`text-xs font-medium mb-0.5 ${
                           msg.role === 'user' ? 'text-white/70' : 'opacity-70'
@@ -2975,22 +3037,34 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
               
-              {/* Save and End Button - Prominently placed in transcript box */}
+              {/* Save and End Button - Enhanced modern design */}
               {isConnected && (
-                <div className="border-t pt-4 space-y-3" style={{ borderColor: 'hsl(var(--section-border))' }}>
-                  {/* Helpful message */}
+                <div className="border-t pt-4 space-y-3" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                  {/* Helpful message with modern styling */}
                   <div className="text-center">
-                    <p className="text-xs text-muted-foreground bg-white/60 px-3 py-2 rounded-full border border-gray-200 inline-block drop-shadow-sm">
+                    <div className="text-xs px-3 py-2 rounded-full inline-block transition-all duration-300"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.85))',
+                        border: '1px solid rgba(229, 231, 235, 0.6)',
+                        color: '#6b7280',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                      }}
+                    >
                       💬 Click below anytime to save and end your conversation
-                    </p>
+                    </div>
                   </div>
                   
-                  {/* Prominent Save & End Button */}
+                  {/* Prominent Save & End Button - Enhanced design */}
                   <Button 
                     onClick={endConversation} 
                     size="lg"
                     disabled={isEndingConversation}
-                    className="w-full rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] border-2 border-white/20 disabled:opacity-70 disabled:hover:scale-100"
+                    className="w-full rounded-xl text-white font-semibold transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
+                    style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+                      boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35), 0 2px 8px rgba(0,0,0,0.08)',
+                      border: '2px solid rgba(255,255,255,0.2)'
+                    }}
                   >
                     {isEndingConversation ? (
                       <>⏳ Waiting for Solin to finish speaking...</>
@@ -2999,10 +3073,17 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     )}
                   </Button>
                   
-                  {/* Session info */}
+                  {/* Session info - Enhanced styling */}
                   {conversationState.totalMemoriesSaved > 0 && (
                     <div className="text-center">
-                      <div className="text-xs text-muted-foreground bg-white/60 px-3 py-1.5 rounded-full inline-block border border-gray-200 drop-shadow-sm">
+                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0,102,255,0.1), rgba(30,144,255,0.08))',
+                          border: '1px solid rgba(0,102,255,0.2)',
+                          color: '#0066FF',
+                          boxShadow: '0 2px 8px rgba(0,102,255,0.12)'
+                        }}
+                      >
                         🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
                       </div>
                     </div>

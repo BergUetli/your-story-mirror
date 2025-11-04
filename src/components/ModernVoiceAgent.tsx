@@ -32,6 +32,9 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[500px] w-full py-8">
+      {/* Background gradient enhancements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-transparent to-purple-50/20 pointer-events-none rounded-2xl" />
+      <div className="absolute inset-0 bg-gradient-radial from-blue-100/20 via-transparent to-transparent pointer-events-none" />
       <style>{`
         @keyframes pulsing-border {
           0%, 100% {
@@ -61,6 +64,13 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
           border-radius: 50%;
           padding: 8px;
           flex-shrink: 0;
+          filter: drop-shadow(0 20px 40px rgba(0, 102, 255, 0.25));
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .pulsing-border-wrapper:hover {
+          filter: drop-shadow(0 25px 50px rgba(0, 102, 255, 0.35));
+          transform: scale(1.02);
         }
         
         .pulsing-border-wrapper::before {
@@ -93,19 +103,19 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
         <button
           onClick={onClick}
           disabled={isActive}
-          className="relative w-full h-full rounded-full flex items-center justify-center transition-all duration-300 hover:scale-105 disabled:cursor-not-allowed overflow-hidden"
+          className="relative w-full h-full rounded-full flex items-center justify-center transition-all duration-500 hover:scale-105 disabled:cursor-not-allowed overflow-hidden"
           style={{
             background: state === 'speaking' 
-              ? 'radial-gradient(circle, rgba(0,102,255,0.4) 0%, rgba(30,144,255,0.3) 50%, rgba(0,191,255,0.2) 100%)'
+              ? 'radial-gradient(circle at 30% 30%, rgba(0,102,255,0.5) 0%, rgba(30,144,255,0.35) 40%, rgba(0,191,255,0.25) 100%)'
               : state === 'listening'
-              ? 'radial-gradient(circle, rgba(0,191,255,0.4) 0%, rgba(0,102,255,0.3) 50%, rgba(65,105,225,0.2) 100%)'
-              : 'radial-gradient(circle, rgba(0,102,255,0.2) 0%, rgba(30,144,255,0.15) 50%, rgba(0,191,255,0.1) 100%)',
-            backdropFilter: 'blur(20px)',
+              ? 'radial-gradient(circle at 30% 30%, rgba(0,191,255,0.5) 0%, rgba(0,102,255,0.35) 40%, rgba(65,105,225,0.25) 100%)'
+              : 'radial-gradient(circle at 30% 30%, rgba(0,102,255,0.25) 0%, rgba(30,144,255,0.18) 40%, rgba(0,191,255,0.12) 100%)',
+            backdropFilter: 'blur(24px) saturate(1.2)',
             boxShadow: state === 'speaking'
-              ? '0 0 80px rgba(0,102,255,0.5), 0 0 40px rgba(30,144,255,0.4), inset 0 0 60px rgba(0,191,255,0.3)'
+              ? '0 0 100px rgba(0,102,255,0.6), 0 0 50px rgba(30,144,255,0.45), 0 10px 40px rgba(0,102,255,0.3), inset 0 0 80px rgba(0,191,255,0.35)'
               : state === 'listening'
-              ? '0 0 60px rgba(0,191,255,0.4), 0 0 30px rgba(0,102,255,0.3), inset 0 0 40px rgba(0,102,255,0.2)'
-              : '0 0 40px rgba(0,102,255,0.3), inset 0 0 30px rgba(30,144,255,0.15)'
+              ? '0 0 80px rgba(0,191,255,0.5), 0 0 40px rgba(0,102,255,0.35), 0 10px 35px rgba(0,191,255,0.25), inset 0 0 60px rgba(0,102,255,0.25)'
+              : '0 0 50px rgba(0,102,255,0.35), 0 5px 25px rgba(0,102,255,0.2), inset 0 0 40px rgba(30,144,255,0.18)'
           }}
           aria-label={getAriaLabel()}
           aria-pressed={isActive}
@@ -131,17 +141,19 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
         </button>
       </div>
 
-      {/* Caption card */}
+      {/* Caption card - Enhanced design */}
       {state !== 'idle' && (
         <div 
-          className="mt-6 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 animate-fade-in"
+          className="mt-6 px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 animate-fade-in"
           style={{
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(10px)',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(249, 250, 251, 0.95))',
+            backdropFilter: 'blur(16px) saturate(1.1)',
             border: '2px solid',
-            borderColor: state === 'speaking' ? '#00BFFF' : '#1E90FF',
+            borderColor: state === 'speaking' ? 'rgba(0, 191, 255, 0.5)' : 'rgba(30, 144, 255, 0.5)',
             color: state === 'speaking' ? '#0066FF' : '#0066FF',
-            boxShadow: `0 4px 20px ${state === 'speaking' ? 'rgba(0,191,255,0.3)' : 'rgba(30,144,255,0.3)'}`
+            boxShadow: `0 8px 24px ${state === 'speaking' ? 'rgba(0,191,255,0.25)' : 'rgba(30,144,255,0.25)'}, 0 2px 8px rgba(0,0,0,0.08)`,
+            transform: 'translateY(0)',
+            letterSpacing: '0.01em'
           }}
           aria-live="polite"
         >
@@ -150,13 +162,16 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
         </div>
       )}
 
-      {/* Provenance chip */}
+      {/* Provenance chip - Enhanced design */}
       <div 
-        className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium"
+        className="mt-3 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 hover:scale-105"
         style={{
-          background: 'rgba(0,102,255,0.1)',
-          border: '1px solid rgba(0,102,255,0.2)',
-          color: '#0066FF'
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(249, 250, 251, 0.88))',
+          backdropFilter: 'blur(12px)',
+          border: '1.5px solid rgba(0,102,255,0.25)',
+          color: '#0066FF',
+          boxShadow: '0 4px 12px rgba(0, 102, 255, 0.12), 0 1px 3px rgba(0,0,0,0.06)',
+          letterSpacing: '0.02em'
         }}
       >
         <div 
