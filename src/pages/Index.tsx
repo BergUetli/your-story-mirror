@@ -2713,7 +2713,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
           {/* Left Side - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-4 sm:p-6 lg:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[55vh] lg:h-[65vh] rounded-2xl border-[1.5px] p-4 sm:p-6 lg:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2797,24 +2797,24 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-3 mt-8">
+              <div className="text-center space-y-4 mt-6">
                 {/* Personalized welcome message */}
                 {user && (
-                  <div className="mb-6">
-                    <h2 className="text-xl font-bold text-foreground mb-1">
+                  <div className="mb-4">
+                    <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
                       Welcome, {displayFirstName}!
                     </h2>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base lg:text-lg text-muted-foreground">
                       Ready to continue your memory journey with Solin?
                     </p>
                   </div>
                 )}
                 
-                <p className="text-base font-semibold text-foreground">
+                <p className="text-lg lg:text-xl font-semibold text-foreground">
                   {isConnecting ? 'Connecting to Solin...' : isConnected ? (isSpeaking ? 'Solin is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
                 </p>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground max-w-md">
+                <div className="space-y-3">
+                  <p className="text-base lg:text-lg text-muted-foreground max-w-md mx-auto">
                     {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
                   </p>
 
@@ -2823,12 +2823,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 {/* User authentication indicator */}
                 {user && (
                   <div className="space-y-2">
-                    <div className="text-xs bg-green-100 text-green-800 px-3 py-2 rounded-full border border-green-200">
+                    <div className="text-sm font-medium bg-green-100 text-green-800 px-4 py-2.5 rounded-full border border-green-200">
                       ✅ Signed in as {user.email}
                     </div>
                     {/* VERSION INDICATOR - Visible deployment check */}
-                    <div className="text-xs font-bold bg-purple-600 text-white px-4 py-2 rounded-lg border-2 border-purple-700 shadow-lg">
-                      🎯 VERSION: v3-ZOOM-FIX | 85% Container Width | Works at ALL Zoom Levels
+                    <div className="text-sm font-bold bg-orange-500 text-white px-5 py-3 rounded-lg border-2 border-orange-600 shadow-lg">
+                      🎯 v4-DESIGN-UPDATE | Improved Navigation + Typography + Container Heights
                     </div>
                     {/* Debug button for testing database access */}
                     <Button 
@@ -2965,7 +2965,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
           {/* Right Side - Live Conversation Transcript - Enhanced modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-5 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[55vh] lg:h-[65vh] rounded-2xl border-[1.5px] p-5 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2980,12 +2980,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             <div className="relative z-10 flex flex-col h-full">
               {/* Header with modern styling */}
               <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-base font-bold text-foreground">
+                <h2 className="text-xl lg:text-2xl font-bold text-foreground">
                   Live Transcript
                 </h2>
-                <p className="text-xs text-muted-foreground mt-0.5">Real-time conversation with Solin</p>
+                <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
                 {!isConnected && (
-                  <div className="mt-2 text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
+                  <div className="mt-3 text-sm px-4 py-2 rounded-full inline-block transition-all duration-300"
                     style={{
                       background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.85))',
                       border: '1px solid rgba(229, 231, 235, 0.6)',
@@ -2999,10 +2999,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               </div>
               
               {/* Messages container */}
-              <div className="flex-1 overflow-y-auto space-y-2 pr-2 mb-4">
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
                 {conversationMessages.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm text-center drop-shadow-sm">
+                    <p className="text-muted-foreground text-base lg:text-lg text-center">
                       Your conversation will appear here...
                     </p>
                   </div>
@@ -3013,7 +3013,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg px-3 py-2 transition-all duration-300 hover:scale-[1.02] ${
+                        className={`max-w-[85%] rounded-lg px-4 py-3 transition-all duration-300 hover:scale-[1.02] ${
                           msg.role === 'user'
                             ? 'text-white rounded-br-md'
                             : 'text-foreground rounded-bl-md'
@@ -3028,15 +3028,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                             : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
                         }}
                       >
-                        <div className={`text-xs font-medium mb-0.5 ${
-                          msg.role === 'user' ? 'text-white/70' : 'opacity-70'
+                        <div className={`text-sm font-semibold mb-1 ${
+                          msg.role === 'user' ? 'text-white/80' : 'opacity-70'
                         }`}>
                           {msg.role === 'user' ? 'You' : 'Solin'}
                         </div>
-                        <div className="text-xs leading-snug whitespace-pre-wrap break-words">
+                        <div className="text-sm lg:text-base leading-relaxed whitespace-pre-wrap break-words">
                           {msg.text}
                           {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
-                            <span className="inline-block w-1 h-3 bg-primary ml-1 animate-pulse rounded-sm" />
+                            <span className="inline-block w-1 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
                           )}
                         </div>
                       </div>

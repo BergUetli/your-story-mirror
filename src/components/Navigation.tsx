@@ -114,28 +114,28 @@ const Navigation = () => {
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-[1.5px] z-40" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-3 lg:px-6 relative">
-          <div className="flex items-center justify-between h-12 gap-2">
+      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-2 z-40 shadow-sm" style={{ borderColor: 'hsl(var(--section-border))' }}>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
+          <div className="flex items-center justify-between h-20 gap-3">
             {/* 
               INFORMATION SECTION (Left Side)
               BUSINESS PURPOSE: Provides access to educational content and help resources.
               Users can learn about the platform before engaging with core features.
               RESPONSIVE: Compact spacing and text on smaller tablets
             */}
-            <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
-                    size="sm"
+                    size="default"
                     className={cn(
-                      "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
+                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5",
                       isActive(path) && "border-b-2 rounded-b-none"
                     )}
                     style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                   >
-                    <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
                     <span className="hidden lg:inline">{label}</span>
                     <span className="lg:hidden">{label.split(' ')[0]}</span>
                   </Button>
@@ -153,18 +153,30 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4"
+                className="flex-shrink-0 text-2xl lg:text-3xl font-black tracking-tight hover:text-primary transition-colors mx-3 lg:mx-6"
+                style={{
+                  background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
               >
                 <span className="hidden lg:inline">Solin One</span>
-                <span className="lg:hidden">Solin</span>
+                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>Solin</span>
               </Link>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 text-lg lg:text-2xl font-bold tracking-wide hover:text-primary transition-colors mx-2 lg:mx-4 cursor-pointer"
+                className="flex-shrink-0 text-2xl lg:text-3xl font-black tracking-tight hover:text-primary transition-colors mx-3 lg:mx-6 cursor-pointer"
+                style={{
+                  background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text'
+                }}
               >
                 <span className="hidden lg:inline">Solin One</span>
-                <span className="lg:hidden">Solin</span>
+                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>Solin</span>
               </button>
             )}
             
@@ -192,20 +204,20 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-center gap-1 lg:gap-3 flex-shrink-0">
-                <div className="flex items-center gap-1 lg:gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
+              <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
+                <div className="flex items-center gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
                   {rightNavItems.map(({ path, icon: Icon, label }) => (
                     <Link key={path} to={path} className="flex-shrink-0">
                       <Button
                         variant={isActive(path) ? 'default' : 'ghost'}
-                        size="sm"
+                        size="default"
                         className={cn(
-                          "font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3",
+                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5",
                           isActive(path) && "border-b-2 rounded-b-none"
                         )}
                         style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
                       >
-                        <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
+                        <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
                         <span className="hidden xl:inline">{label}</span>
                         <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
                         <span className="lg:hidden sr-only">{label}</span>
@@ -215,14 +227,14 @@ const Navigation = () => {
                 </div>
                 
                 {/* Sign Out Button */}
-                <div className="ml-2 lg:ml-4 border-l border-border/30 pl-2 lg:pl-4">
+                <div className="ml-3 lg:ml-6 border-l-2 border-border/30 pl-3 lg:pl-6">
                   <Button
                     variant="outline"
-                    size="sm"
+                    size="default"
                     onClick={handleSignOut}
-                    className="font-medium lg:font-semibold flex items-center gap-1 lg:gap-2 transition-all duration-200 hover:scale-105 text-xs lg:text-sm px-2 lg:px-3 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
+                    className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
                   >
-                    <LogOut className="w-3 h-3 lg:w-4 lg:h-4" />
+                    <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
                     <span className="hidden lg:inline">Sign Out</span>
                   </Button>
                 </div>
@@ -293,7 +305,7 @@ const Navigation = () => {
         behind the fixed desktop navigation bar. This ensures all page content is
         visible and properly positioned below the navigation.
       */}
-      <div className="hidden sm:block h-12"></div>
+      <div className="hidden sm:block h-20"></div>
       
       {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
