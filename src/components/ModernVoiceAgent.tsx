@@ -31,7 +31,7 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[550px] w-full py-8">
+    <div className="relative flex flex-col items-center justify-center min-h-[550px] w-full max-w-full py-8">
       {/* Background gradient enhancements */}
       <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-transparent to-purple-50/20 pointer-events-none rounded-2xl" />
       <div className="absolute inset-0 bg-gradient-radial from-blue-100/20 via-transparent to-transparent pointer-events-none" />
@@ -59,8 +59,9 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
         .pulsing-border-wrapper {
           position: relative;
-          width: 350px;
-          height: 350px;
+          width: min(350px, 80vw);
+          height: min(350px, 80vw);
+          max-width: 100%;
           border-radius: 50%;
           padding: 8px;
           flex-shrink: 0;

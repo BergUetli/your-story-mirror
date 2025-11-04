@@ -2713,7 +2713,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
           {/* Left Side - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[75vh] lg:h-[85vh] rounded-2xl border-[1.5px] p-4 sm:p-6 lg:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2768,7 +2768,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 </button>
               </div>
 
-              <div className="relative mt-12">
+              <div className="relative mt-12 w-full flex justify-center">
                 {viewMode === 'particle' ? (
                   <div className="w-full max-w-md mx-auto">
                     <ParticleFaceCanvas
@@ -2785,11 +2785,13 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     <Sparkles className="h-14 w-14 text-primary animate-pulse" />
                   </div>
                 ) : (
-                  <ModernVoiceAgent 
-                    isActive={isConnected} 
-                    isSpeaking={isSpeaking}
-                    onClick={handleOrbPress}
-                  />
+                  <div className="w-full max-w-[400px] flex justify-center">
+                    <ModernVoiceAgent 
+                      isActive={isConnected} 
+                      isSpeaking={isSpeaking}
+                      onClick={handleOrbPress}
+                    />
+                  </div>
                 )}
               </div>
 
