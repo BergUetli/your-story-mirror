@@ -2810,28 +2810,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                   </div>
                 )}
                 
-                <p className="text-lg lg:text-xl font-semibold text-foreground">
-                  {isConnecting ? 'Connecting to Solin...' : isConnected ? (isSpeaking ? 'Solin is speaking' : 'Listening to you...') : 'Ready to preserve your memories'}
-                </p>
-                <div className="space-y-3">
-                  <p className="text-base lg:text-lg text-muted-foreground max-w-md mx-auto">
-                    {!isConnected && 'Click the microphone to start a natural conversation with Solin'}
-                  </p>
-
-                </div>
-                
-                {/* User authentication indicator */}
                 {user && (
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium bg-green-100 text-green-800 px-4 py-2.5 rounded-full border border-green-200">
-                      ✅ Signed in as {user.email}
-                    </div>
-                    {/* VERSION INDICATOR - Visible deployment check */}
-                    <div className="text-sm font-bold bg-orange-500 text-white px-5 py-3 rounded-lg border-2 border-orange-600 shadow-lg">
-                      🎯 v4-DESIGN-UPDATE | Improved Navigation + Typography + Container Heights
-                    </div>
+                  <div>
                     {/* Debug button for testing database access */}
-                    <Button 
+                    <Button
                       size="sm" 
                       variant="outline"
                       onClick={async () => {
