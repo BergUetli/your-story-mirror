@@ -367,38 +367,97 @@ const Timeline = () => {
                   padding: 12px 0 !important;
                 }
                 
-                /* Card spacing */
+                /* Enhanced Card Styling - Apple/Google Photos inspired */
                 [class*="timeline-card-content"] {
-                  padding: 12px !important;
-                  margin: 8px 0 !important;
-                  min-height: 90px !important;
+                  padding: 16px !important;
+                  margin: 12px 0 !important;
+                  min-height: 100px !important;
+                  border-radius: 12px !important;
+                  background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95)) !important;
+                  border: 1px solid rgba(229, 231, 235, 0.6) !important;
+                  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+                  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 }
                 
-                /* Year labels - prevent overlap */
-                [class*="timeline-title"] {
-                  font-size: 0.95rem !important;
+                /* Enhanced hover state */
+                [class*="timeline-card-content"]:hover {
+                  transform: translateY(-4px) scale(1.01) !important;
+                  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+                  border-color: rgba(59, 130, 246, 0.4) !important;
+                }
+                
+                /* Card titles - better typography */
+                [class*="timeline-card-content"] [class*="card-title"] {
+                  font-size: 1rem !important;
                   font-weight: 600 !important;
-                  padding: 4px 8px !important;
-                  background: transparent !important;
-                  border: 1px solid #e5e7eb !important;
-                  border-radius: 6px !important;
-                  margin: 12px 0 !important;
-                  white-space: nowrap !important;
+                  color: #111827 !important;
+                  margin-bottom: 6px !important;
+                  line-height: 1.4 !important;
                 }
                 
-                /* Timeline line */
+                /* Card subtitles */
+                [class*="timeline-card-content"] [class*="card-sub-title"] {
+                  font-size: 0.875rem !important;
+                  color: #6b7280 !important;
+                  line-height: 1.5 !important;
+                }
+                
+                /* Year labels - enhanced styling */
+                [class*="timeline-title"] {
+                  font-size: 1rem !important;
+                  font-weight: 700 !important;
+                  padding: 6px 14px !important;
+                  background: linear-gradient(135deg, #ffffff, #f9fafb) !important;
+                  border: 1.5px solid rgba(59, 130, 246, 0.2) !important;
+                  border-radius: 10px !important;
+                  margin: 14px 0 !important;
+                  white-space: nowrap !important;
+                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+                  color: #1f2937 !important;
+                }
+                
+                /* Timeline line enhancement */
                 [class*="timeline-vertical-circle"] {
-                  margin: 12px 0 !important;
+                  margin: 14px 0 !important;
+                  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+                }
+                
+                /* Timeline dots */
+                [class*="timeline-circle"] {
+                  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+                }
+                
+                /* Nested items enhancement */
+                [class*="nested-card"] {
+                  border-radius: 10px !important;
+                  background: rgba(255, 255, 255, 0.95) !important;
+                  border: 1px solid rgba(229, 231, 235, 0.5) !important;
+                  margin: 8px 0 !important;
+                  padding: 12px !important;
+                  transition: all 0.2s ease !important;
+                }
+                
+                [class*="nested-card"]:hover {
+                  transform: translateX(4px) !important;
+                  border-color: rgba(59, 130, 246, 0.3) !important;
+                  background: rgba(255, 255, 255, 1) !important;
+                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
                 }
                 
                 /* Responsive adjustments */
                 @media (max-width: 768px) {
                   [class*="timeline-card-content"] {
-                    font-size: 0.8125rem !important;
+                    font-size: 0.875rem !important;
+                    padding: 14px !important;
                   }
                   
                   [class*="timeline-title"] {
-                    font-size: 0.85rem !important;
+                    font-size: 0.9rem !important;
+                    padding: 5px 12px !important;
+                  }
+                  
+                  [class*="timeline-card-content"] [class*="card-title"] {
+                    font-size: 0.9375rem !important;
                   }
                 }
               `}
@@ -425,10 +484,11 @@ const Timeline = () => {
               theme={{
                 primary: '#3b82f6',
                 secondary: '#f9fafb',
-                cardBgColor: '#ffffff',
+                cardBgColor: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
                 cardForeColor: '#111827',
                 titleColor: '#1f2937',
                 titleColorActive: '#3b82f6',
+                cardBorderRadius: '12px',
               }}
               fontSizes={{
                 cardSubtitle: '0.8rem',
