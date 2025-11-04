@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 -mt-32">
+              <div className="text-center space-y-4 mt-6">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">
@@ -2851,11 +2851,24 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                         boxShadow: '0 2px 8px rgba(16,185,129,0.12)'
                       }}
                     >
-                    🎙️ Conversation active — Use the transcript box to save and end
+                      🎙️ Conversation active — Use the transcript box to save and end
+                    </div>
                   </div>
-                </div>
-              ) : null}
-            </div>
+                ) : (
+                  <Button 
+                    size="lg" 
+                    onClick={startConversation} 
+                    disabled={isConnecting} 
+                    className="rounded-full text-white px-10 py-5 text-base font-semibold transition-all duration-300 hover:scale-105"
+                    style={{
+                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
+                      boxShadow: '0 8px 24px rgba(0, 102, 255, 0.35), 0 2px 8px rgba(0,0,0,0.08)'
+                    }}
+                  >
+                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -2875,27 +2888,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
               {/* Header with modern styling */}
-              <div className="mb-4 pb-4 border-b flex items-start justify-between" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <div>
-                  <h2 className="text-xl lg:text-2xl font-bold text-foreground">
-                    Live Transcript
-                  </h2>
-                  <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
-                </div>
-                {!isConnected && (
-                  <Button 
-                    size="sm" 
-                    onClick={startConversation} 
-                    disabled={isConnecting} 
-                    className="rounded-full text-white px-6 py-2 text-sm font-semibold transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
-                      boxShadow: '0 4px 12px rgba(0, 102, 255, 0.25)'
-                    }}
-                  >
-                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
-                  </Button>
-                )}
+              <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <h2 className="text-xl lg:text-2xl font-bold text-foreground">
+                  Live Transcript
+                </h2>
+                <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
                 {!isConnected && (
                   <div className="mt-3 text-sm px-4 py-2 rounded-full inline-block transition-all duration-300"
                     style={{
