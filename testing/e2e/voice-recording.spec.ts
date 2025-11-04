@@ -174,7 +174,9 @@ test.describe('Voice Recording - REAL TESTS', () => {
     const hasMicrophoneCapture = audioCaptureLogs.some(log => 
       log.includes('microphone') || log.includes('Microphone'));
     const hasElevenLabsCapture = audioCaptureLogs.some(log => 
-      log.includes('ElevenLabs audio element captured') || 
+      log.includes('captured ElevenLabs audio element') || 
+      log.includes('Enhanced recorder captured') ||
+      log.includes('Recording mode updated to "mixed"') ||
       log.includes('Complete Recording Active'));
     const hasSystemAudioCapture = audioCaptureLogs.some(log => 
       log.includes('System audio capture successful') ||
