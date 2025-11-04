@@ -897,6 +897,8 @@ export class EnhancedConversationRecordingService {
     existingAudios.forEach((audioElement, index) => {
       console.log(`🎵 Existing audio element ${index}:`, {
         src: audioElement.src?.substring(0, 80),
+        srcObject: audioElement.srcObject ? 'MediaStream attached' : 'none',
+        srcObjectTracks: audioElement.srcObject ? (audioElement.srcObject as MediaStream).getAudioTracks().length : 0,
         autoplay: audioElement.autoplay,
         controls: audioElement.controls,
         display: (audioElement as HTMLAudioElement).style.display,
@@ -904,10 +906,32 @@ export class EnhancedConversationRecordingService {
         readyState: audioElement.readyState
       });
       
-      // Capture existing audio elements with a small delay
-      setTimeout(() => {
+      // If srcObject exists (WebRTC), capture immediately
+      // If not, wait for it to be set
+      if (audioElement.srcObject) {
+        console.log('✅ Audio element already has srcObject, capturing now');
         this.captureElevenLabsAudioElement(audioElement as HTMLAudioElement);
-      }, 500); // Longer delay for existing elements
+      } else {
+        console.log('⏳ Audio element has no srcObject yet, will monitor for changes');
+        
+        // Watch for srcObject being set
+        const checkInterval = setInterval(() => {
+          if (audioElement.srcObject) {
+            console.log('✅ Audio element srcObject now available, capturing!');
+            clearInterval(checkInterval);
+            this.captureElevenLabsAudioElement(audioElement as HTMLAudioElement);
+          }
+        }, 100); // Check every 100ms
+        
+        // Also capture after delay as fallback
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          if (!this.capturedAudioElements.has(audioElement as HTMLAudioElement)) {
+            console.log('⏰ Timeout reached, attempting capture anyway');
+            this.captureElevenLabsAudioElement(audioElement as HTMLAudioElement);
+          }
+        }, 2000); // 2 second timeout
+      }
     });
 
     // ALSO set up observer for NEW audio elements added later
