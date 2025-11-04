@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 -mt-44">
+              <div className="text-center space-y-4 mt-12">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">
