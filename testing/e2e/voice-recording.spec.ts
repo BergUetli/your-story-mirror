@@ -117,12 +117,17 @@ test.describe('Voice Recording - REAL TESTS', () => {
     
     // CRITICAL: Set up console log listener to capture audio routing logs
     const audioCaptureLogs: string[] = [];
+    const allLogs: string[] = [];
     page.on('console', msg => {
       const text = msg.text();
+      allLogs.push(text);
+      
       // Capture logs about audio capture/routing from conversationRecording.ts
       if (text.includes('audio') || text.includes('Audio') || 
           text.includes('capture') || text.includes('mixer') ||
-          text.includes('ElevenLabs') || text.includes('speaker')) {
+          text.includes('ElevenLabs') || text.includes('speaker') ||
+          text.includes('DOM') || text.includes('Observer') ||
+          text.includes('element')) {
         audioCaptureLogs.push(text);
         console.log('🎵 Audio log:', text);
       }
@@ -148,6 +153,22 @@ test.describe('Voice Recording - REAL TESTS', () => {
     // Check console logs for audio capture success
     console.log('\n📊 Audio Capture Analysis:');
     console.log('Total audio-related logs:', audioCaptureLogs.length);
+    
+    // Check actual DOM for audio elements
+    const audioElements = await page.evaluate(() => {
+      const audios = Array.from(document.querySelectorAll('audio'));
+      return audios.map(a => ({
+        src: a.src?.substring(0, 50),
+        autoplay: a.autoplay,
+        display: (a.style as any).display,
+        parentTag: a.parentElement?.tagName,
+        hasSource: !!a.src
+      }));
+    });
+    console.log('🔍 Audio elements in DOM:', audioElements.length);
+    audioElements.forEach((el, i) => {
+      console.log(`  Audio ${i}:`, el);
+    });
     
     // Key indicators that dual audio is working:
     const hasMicrophoneCapture = audioCaptureLogs.some(log => 
