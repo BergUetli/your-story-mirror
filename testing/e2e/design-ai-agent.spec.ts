@@ -19,10 +19,10 @@ import * as path from 'path';
 // Free AI model options (no API key needed for local Ollama)
 const AI_MODELS = {
   // Option 1: Ollama (local, completely free)
-  // Install: curl https://ollama.ai/install.sh | sh
-  // Then: ollama pull llama3.2
+  // Install: bash setup-ollama.sh
+  // Or manually: curl https://ollama.ai/install.sh | sh && ollama pull llama3.2
   ollama: {
-    enabled: false, // Set to true if you have Ollama installed
+    enabled: true, // ENABLED - User requested Ollama
     baseUrl: 'http://localhost:11434',
     model: 'llama3.2',
   },
