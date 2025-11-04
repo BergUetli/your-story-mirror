@@ -59,9 +59,9 @@ export const ModernVoiceAgent: React.FC<ModernVoiceAgentProps> = ({
 
         .pulsing-border-wrapper {
           position: relative;
-          width: min(280px, 70vw);
-          height: min(280px, 70vw);
-          max-width: 100%;
+          width: 100%;
+          max-width: 280px;
+          aspect-ratio: 1 / 1;
           border-radius: 50%;
           padding: 8px;
           flex-shrink: 1;

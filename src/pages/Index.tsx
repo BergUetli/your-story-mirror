@@ -2785,12 +2785,14 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     <Sparkles className="h-14 w-14 text-primary animate-pulse" />
                   </div>
                 ) : (
-                  <div className="w-full max-w-[320px] flex justify-center px-4">
-                    <ModernVoiceAgent 
-                      isActive={isConnected} 
-                      isSpeaking={isSpeaking}
-                      onClick={handleOrbPress}
-                    />
+                  <div className="w-full flex justify-center items-center">
+                    <div className="w-[85%] max-w-[300px]">
+                      <ModernVoiceAgent 
+                        isActive={isConnected} 
+                        isSpeaking={isSpeaking}
+                        onClick={handleOrbPress}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -2825,8 +2827,8 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       ✅ Signed in as {user.email}
                     </div>
                     {/* VERSION INDICATOR - Visible deployment check */}
-                    <div className="text-xs font-bold bg-blue-500 text-white px-4 py-2 rounded-lg border-2 border-blue-600 shadow-lg">
-                      🚀 VERSION: 2024-11-04-FIX-v2 | Responsive Orb Applied
+                    <div className="text-xs font-bold bg-purple-600 text-white px-4 py-2 rounded-lg border-2 border-purple-700 shadow-lg">
+                      🎯 VERSION: v3-ZOOM-FIX | 85% Container Width | Works at ALL Zoom Levels
                     </div>
                     {/* Debug button for testing database access */}
                     <Button 
