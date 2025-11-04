@@ -33,16 +33,17 @@ export function UnsplashImageSearch({ open, onOpenChange, onSelectImage }: Unspl
 
     setLoading(true)
     try {
-      // Note: User needs to add UNSPLASH_ACCESS_KEY to Supabase secrets
-      // For now, using demo mode with placeholder
-      const UNSPLASH_ACCESS_KEY = 'DEMO_KEY_PLACEHOLDER'
-      
       const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=12`,
+        `https://gulydhhzwlltkxbfnclu.supabase.co/functions/v1/unsplash-search`,
         {
+          method: 'POST',
           headers: {
-            Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ 
+            query: searchQuery,
+            perPage: 12 
+          }),
         }
       )
 
@@ -54,7 +55,6 @@ export function UnsplashImageSearch({ open, onOpenChange, onSelectImage }: Unspl
       setResults(data.results || [])
     } catch (error) {
       console.error('Error searching Unsplash:', error)
-      // Show demo images for now
       setResults([])
     } finally {
       setLoading(false)
