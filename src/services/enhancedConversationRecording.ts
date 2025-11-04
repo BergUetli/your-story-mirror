@@ -611,6 +611,13 @@ export class EnhancedConversationRecordingService {
         this.elevenLabsAudioCallback = undefined;
       }
 
+      // Stop DOM observer
+      const domObserver = (this.currentSession as any).domObserver as MutationObserver;
+      if (domObserver) {
+        domObserver.disconnect();
+        console.log('✅ DOM Observer stopped');
+      }
+
       // Stop quality monitoring
       if (this.qualityAnalysisTimer) {
         clearInterval(this.qualityAnalysisTimer);
@@ -867,9 +874,52 @@ export class EnhancedConversationRecordingService {
 
       voiceService.onAudioElementCreated(this.elevenLabsAudioCallback);
       console.log('✅ Enhanced recorder registered for ElevenLabs audio elements');
+      
+      // CRITICAL: Also set up DOM observer to detect ElevenLabs WebRTC audio elements
+      // ElevenLabs SDK creates hidden audio elements dynamically that voiceService doesn't know about
+      this.setupDOMObserver();
     } catch (e) {
       console.warn('⚠️ Could not register ElevenLabs audio capture for enhanced recorder:', e);
     }
+  }
+
+  /**
+   * Set up MutationObserver to detect dynamically added audio elements (ElevenLabs WebRTC)
+   */
+  private setupDOMObserver(): void {
+    if (!this.currentSession) return;
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is an audio element
+          if (node.nodeName === 'AUDIO') {
+            const audioElement = node as HTMLAudioElement;
+            console.log('🎵 DOM Observer detected new audio element:', {
+              src: audioElement.src?.substring(0, 50),
+              autoplay: audioElement.autoplay,
+              controls: audioElement.controls,
+              display: (audioElement.style as any).display
+            });
+            
+            // Small delay to let ElevenLabs initialize the element
+            setTimeout(() => {
+              this.captureElevenLabsAudioElement(audioElement);
+            }, 100);
+          }
+        });
+      });
+    });
+
+    // Observe the entire document body for added audio elements
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Store observer for cleanup
+    (this.currentSession as any).domObserver = observer;
+    console.log('✅ DOM Observer set up to detect ElevenLabs audio elements');
   }
 
   private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {

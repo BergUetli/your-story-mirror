@@ -648,7 +648,7 @@ const Index = () => {
                 recordingUserId, 
                 'elevenlabs_conversation',
                 { 
-                  enableSystemAudio: true, // Enable tab audio sharing to capture both user and AI voice
+                  enableSystemAudio: false, // DOM observer captures ElevenLabs audio elements automatically
                   microphoneGain: 1.0,
                   systemAudioGain: 0.85
                 }
