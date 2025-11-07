@@ -2768,7 +2768,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 </button>
               </div>
 
-              <div className="relative mt-12 w-full flex justify-center">
+              <div className="relative mt-20 w-full flex justify-center">
                 {viewMode === 'particle' ? (
                   <div className="w-full max-w-md mx-auto">
                     <ParticleFaceCanvas
