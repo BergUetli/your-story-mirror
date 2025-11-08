@@ -153,26 +153,57 @@ const About = () => {
         </div>
       </div>
 
-      {/* Century-Scale Preservation */}
+      {/* Swiss Memory Vault - Privacy First */}
       <div className="max-w-7xl mx-auto px-8 py-24">
         <div className="text-center space-y-6 mb-16">
-          <h2 className="text-5xl font-bold">Century-Scale Preservation</h2>
+          <div className="inline-block px-6 py-3 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20">
+            🇨🇭 Your Swiss Memory Vault
+          </div>
+          <h2 className="text-5xl font-bold">Uncompromising Privacy & Security</h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Designed for families, generations, and beyond
+            Your memories are stored on dedicated servers in Switzerland, protected by the world&apos;s strongest privacy laws
           </p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
+          <Card className="modern-card border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+            <CardContent className="p-8 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Lock className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-2xl font-semibold">Swiss Data Sovereignty</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                All your memories are stored on dedicated servers located in Switzerland, governed by Swiss privacy laws—among the strongest in the world. Your data never leaves Swiss jurisdiction.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="modern-card border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
+            <CardContent className="p-8 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-2xl font-semibold">End-to-End Encryption</h3>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Military-grade encryption protects every memory, voice recording, and conversation. Your data is encrypted at rest and in transit—only you and those you authorize can access it.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Mountain className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Swiss Permanence</h3>
+                <h3 className="text-2xl font-semibold">Never Sold, Never Shared</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Built on principles of Swiss stability and neutrality, ensuring your memories are safeguarded with the same care as the world&apos;s most trusted archives.
+                Your memories belong to you. We will never sell your data to third parties or share it without your express approval. Your legacy is yours alone.
               </p>
             </CardContent>
           </Card>
@@ -197,10 +228,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Future-Resilient Technology</h3>
+                <h3 className="text-2xl font-semibold">Century-Scale Preservation</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Annual technology reviews ensure independence from shifting platforms. Preparing for quantum durability and advances in storage to extend permanence indefinitely.
+                Built on principles of Swiss permanence and neutrality. Annual technology reviews ensure independence from shifting platforms, extending your legacy indefinitely.
               </p>
             </CardContent>
           </Card>
@@ -214,7 +245,7 @@ const About = () => {
                 <h3 className="text-2xl font-semibold">Geopolitical Neutrality</h3>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Built in jurisdictions known for stability and neutrality, protecting your legacy from geopolitical uncertainty and ensuring access across generations.
+                Switzerland&apos;s long tradition of neutrality and stability protects your legacy from geopolitical uncertainty, ensuring access across generations.
               </p>
             </CardContent>
           </Card>

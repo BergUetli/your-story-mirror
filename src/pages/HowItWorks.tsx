@@ -165,10 +165,10 @@ const HowItWorks = () => {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                     <Shield className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold">Privacy Control</h3>
+                  <h3 className="text-xl font-semibold">Swiss-Grade Privacy</h3>
                 </div>
                 <p className="text-muted-foreground">
-                  Choose who can access different memories—family, friends, or keep them private.
+                  Military-grade encryption on dedicated Swiss servers. Your data is protected by Swiss privacy laws and will never be sold or shared without your express approval.
                 </p>
               </div>
             </CardContent>
@@ -205,14 +205,14 @@ const HowItWorks = () => {
             </CardContent>
           </Card>
 
-          <Card className="modern-card border-border/50">
+          <Card className="modern-card border-primary/30 bg-gradient-to-br from-primary/5 to-accent/5">
             <CardContent className="p-8 space-y-4 text-center">
               <div className="w-12 h-12 mx-auto rounded-xl bg-primary/10 flex items-center justify-center">
                 <Shield className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Century-Scale Storage</h3>
+              <h3 className="text-xl font-semibold">Swiss Memory Vault</h3>
               <p className="text-muted-foreground">
-                Built on Swiss principles of permanence and neutrality
+                All data stored on dedicated servers in Switzerland, protected by Swiss privacy laws. Encrypted, secure, and never shared with third parties.
               </p>
             </CardContent>
           </Card>
