@@ -21,10 +21,8 @@ class MemoryService {
       const { data, error } = await this.supabase
         .from('memories')
         .select('*')
-        // Only get complete memories for Timeline - must have date AND location
         .not('memory_date', 'is', null)
-        .not('memory_location', 'is', null)
-        .eq('chunk_sequence', 1) // Only primary chunks to avoid duplicates
+        .or('is_primary_chunk.is.true,is_primary_chunk.is.null')
         .order('memory_date', { ascending: false });
 
       if (error) throw error;
