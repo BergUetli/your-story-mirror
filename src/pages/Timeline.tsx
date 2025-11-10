@@ -151,8 +151,9 @@ const Timeline = () => {
         .from('memories')
         .select('*')
         .eq('user_id', userId)
+        .not('memory_date', 'is', null)
         .or('is_primary_chunk.is.true,is_primary_chunk.is.null')
-        .order('created_at', { ascending: false });
+        .order('memory_date', { ascending: false });
 
       if (memoriesError) throw memoriesError;
 
