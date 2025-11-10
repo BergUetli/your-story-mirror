@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 -mt-11">
+              <div className="text-center space-y-4 -mt-20">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">
@@ -2840,7 +2840,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                   </div>
                 )}
                 
-                {isConnected ? (
+                {isConnected && (
                   <div className="space-y-3">
                     {/* Conversation active indicator - Enhanced design */}
                     <div className="text-xs px-4 py-2 rounded-full transition-all duration-300"
@@ -2854,19 +2854,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       🎙️ Conversation active — Use the transcript box to save and end
                     </div>
                   </div>
-                ) : (
-                  <Button 
-                    size="lg" 
-                    onClick={startConversation} 
-                    disabled={isConnecting} 
-                    className="rounded-full text-white px-10 py-5 text-base font-semibold transition-all duration-300 hover:scale-105"
-                    style={{
-                      background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
-                      boxShadow: '0 8px 24px rgba(0, 102, 255, 0.35), 0 2px 8px rgba(0,0,0,0.08)'
-                    }}
-                  >
-                    {isConnecting ? 'Connecting...' : 'Start Conversation'}
-                  </Button>
                 )}
               </div>
             </div>
