@@ -3028,31 +3028,6 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
   return (
     <div className="h-screen bg-background overflow-hidden">
 
-      {/* Navigation */}
-      <nav className="absolute top-0 left-0 right-0 z-40 bg-transparent border-b-[1.5px]" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="text-2xl font-bold">You, Remembered</div>
-          <div className="flex gap-4 items-center">
-            <Button variant="ghost" asChild>
-              <Link to="/about">About</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/how-it-works">How It Works</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/mic-test" className="flex items-center gap-2">
-                <Mic className="h-4 w-4" />
-                Mic Test
-              </Link>
-            </Button>
-            {!effectiveUser && (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
-            )}
-          </div>
-        </div>
-      </nav>
 
       {/* Single Screen Hero */}
       <div className="h-full flex items-center justify-center px-6">
