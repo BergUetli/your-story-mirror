@@ -294,22 +294,11 @@ const Timeline = () => {
       // Add memories as nested items
       yearData.memories.forEach((memory: any) => {
         const memoryDate = new Date(memory.memory_date || memory.created_at);
-        const artifacts = memoryArtifacts.get(memory.id) || [];
-        
-        // Build thumbnail gallery HTML if there are visual artifacts
-        let thumbnailsHtml = '';
-        if (artifacts.length > 0) {
-          const thumbnailImages = artifacts.map((artifact: any) => 
-            `<img src="${artifact.signedUrl}" alt="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(229, 231, 235, 0.8);" />`
-          ).join('');
-          thumbnailsHtml = `<div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">${thumbnailImages}</div>`;
-        }
         
         const item: any = {
           title: memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           cardTitle: memory.title,
-          cardSubtitle: memory.text ? memory.text.substring(0, 80) + (memory.text.length > 80 ? '...' : '') : '',
-          cardDetailedText: `${memory.text || ''}${thumbnailsHtml}`,
+          cardSubtitle: memory.text ? memory.text.substring(0, 100) + (memory.text.length > 100 ? '...' : '') : '',
           metadata: { memoryId: memory.id, isMemory: true, fullMemory: memory }
         };
         
