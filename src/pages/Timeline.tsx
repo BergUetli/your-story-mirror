@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
+import { getSignedUrl } from '@/lib/storage';
 
 // Detect significant events based on keywords
 const detectEventSignificance = (memory: any): 'major' | 'minor' => {
@@ -136,6 +137,7 @@ const Timeline = () => {
   const [timelineMemories, setTimelineMemories] = useState<any[]>([]);
   const [timelineProfile, setTimelineProfile] = useState<any>(null);
   const [timelineLoading, setTimelineLoading] = useState(true);
+  const [memoryArtifacts, setMemoryArtifacts] = useState<Map<string, any>>(new Map());
   
   const [showVoiceSearch, setShowVoiceSearch] = useState(false);
 
@@ -192,6 +194,36 @@ const Timeline = () => {
       
       const completeMemories = (memories || []).filter((m: any) => !!m.title && !!m.text && !!(m.memory_date || m.created_at || m.date));
       console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories');
+      
+      // Fetch artifacts for all memories
+      const memoryIds = completeMemories.map((m: any) => m.id);
+      if (memoryIds.length > 0) {
+        const { data: artifactLinks, error: artifactError } = await supabase
+          .from('memory_artifacts')
+          .select('memory_id, artifact_id, artifacts(id, artifact_type, storage_path)')
+          .in('memory_id', memoryIds);
+        
+        if (!artifactError && artifactLinks) {
+          const artifactMap = new Map();
+          
+          // Fetch signed URLs for all image artifacts
+          for (const link of artifactLinks) {
+            const artifact = (link as any).artifacts;
+            if (artifact?.artifact_type === 'image' && artifact.storage_path) {
+              const signedUrl = await getSignedUrl('memory-images', artifact.storage_path, 3600);
+              if (signedUrl) {
+                artifactMap.set((link as any).memory_id, {
+                  ...artifact,
+                  signedUrl
+                });
+              }
+            }
+          }
+          
+          setMemoryArtifacts(artifactMap);
+        }
+      }
+      
       setTimelineMemories(completeMemories);
       console.info('🧬 Combined profile for timeline:', { combinedProfile });
       setTimelineProfile(combinedProfile);
@@ -256,13 +288,27 @@ const Timeline = () => {
       // Add memories as nested items
       yearData.memories.forEach((memory: any) => {
         const memoryDate = new Date(memory.memory_date || memory.created_at);
-        nestedItems.push({
+        const artifact = memoryArtifacts.get(memory.id);
+        
+        const item: any = {
           title: memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           cardTitle: memory.title,
           cardSubtitle: memory.text ? memory.text.substring(0, 80) + (memory.text.length > 80 ? '...' : '') : '',
           cardDetailedText: memory.text || '',
           metadata: { memoryId: memory.id, isMemory: true, fullMemory: memory }
-        });
+        };
+        
+        // Add media if artifact image exists
+        if (artifact?.signedUrl) {
+          item.media = {
+            type: 'IMAGE',
+            source: {
+              url: artifact.signedUrl
+            }
+          };
+        }
+        
+        nestedItems.push(item);
       });
 
       // Build card title based on content
@@ -287,7 +333,7 @@ const Timeline = () => {
     }
 
     return items;
-  }, [timelineData, timelineProfile, profile]);
+  }, [timelineData, timelineProfile, profile, memoryArtifacts]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
