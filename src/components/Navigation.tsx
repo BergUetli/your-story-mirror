@@ -114,9 +114,9 @@ const Navigation = () => {
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-2 z-40 shadow-sm" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
-          <div className="flex items-center justify-between h-20 gap-3">
+      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-2 z-50 shadow-sm pointer-events-auto" style={{ borderColor: 'hsl(var(--section-border))' }}>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative pointer-events-auto">
+          <div className="flex items-center justify-between h-20 gap-3 pointer-events-auto">
             {/* 
               INFORMATION SECTION (Left Side)
               BUSINESS PURPOSE: Provides access to educational content and help resources.
