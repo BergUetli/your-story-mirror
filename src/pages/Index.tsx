@@ -821,8 +821,12 @@ const Index = () => {
   
   // Auto-scroll transcript to bottom when new messages arrive
   useEffect(() => {
-    if (transcriptScrollRef.current && conversationMessages.length > 0) {
-      transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
+    if (transcriptScrollRef.current) {
+      setTimeout(() => {
+        if (transcriptScrollRef.current) {
+          transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
+        }
+      }, 100);
     }
   }, [conversationMessages]);
   
@@ -2870,7 +2874,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
           {/* Right Side - Live Conversation Transcript - Enhanced modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[45vh] lg:h-[50vh] max-h-[400px] rounded-2xl border-[1.5px] p-4 sm:p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2884,11 +2888,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
               {/* Header with modern styling */}
-              <div className="mb-3 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-lg lg:text-xl font-bold text-foreground">
+              <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <h2 className="text-xl lg:text-2xl font-bold text-foreground">
                   Live Transcript
                 </h2>
-                <p className="text-xs lg:text-sm text-muted-foreground mt-1">Real-time conversation with Solin</p>
+                <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
                 {!isConnected && (
                   <div className="mt-3 text-sm px-4 py-2 rounded-full inline-block transition-all duration-300"
                     style={{
@@ -2904,10 +2908,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               </div>
               
               {/* Messages container */}
-              <div ref={transcriptScrollRef} className="flex-1 overflow-y-auto space-y-2 pr-2 mb-3">
+              <div ref={transcriptScrollRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
                 {conversationMessages.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm lg:text-base text-center">
+                    <p className="text-muted-foreground text-base lg:text-lg text-center">
                       Your conversation will appear here...
                     </p>
                   </div>
@@ -2918,7 +2922,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg px-3 py-2 transition-all duration-300 hover:scale-[1.02] ${
+                        className={`max-w-[85%] rounded-lg px-4 py-3 transition-all duration-300 hover:scale-[1.02] ${
                           msg.role === 'user'
                             ? 'text-white rounded-br-md'
                             : 'text-foreground rounded-bl-md'
@@ -2933,15 +2937,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                             : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
                         }}
                       >
-                        <div className={`text-xs font-semibold mb-0.5 ${
+                        <div className={`text-sm font-semibold mb-1 ${
                           msg.role === 'user' ? 'text-white/80' : 'opacity-70'
                         }`}>
                           {msg.role === 'user' ? 'You' : 'Solin'}
                         </div>
-                        <div className="text-xs lg:text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        <div className="text-sm lg:text-base leading-relaxed whitespace-pre-wrap break-words">
                           {msg.text}
                           {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
-                            <span className="inline-block w-1 h-3 bg-primary ml-1 animate-pulse rounded-sm" />
+                            <span className="inline-block w-1 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
                           )}
                         </div>
                       </div>
