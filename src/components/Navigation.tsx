@@ -161,8 +161,8 @@ const Navigation = () => {
                   backgroundClip: 'text'
                 }}
               >
-                <span className="hidden lg:inline">Solin One</span>
-                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>Solin</span>
+                <span className="hidden lg:inline">1000years.ai</span>
+                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>1000years.ai</span>
               </Link>
             ) : (
               <button
@@ -175,8 +175,8 @@ const Navigation = () => {
                   backgroundClip: 'text'
                 }}
               >
-                <span className="hidden lg:inline">Solin One</span>
-                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>Solin</span>
+                <span className="hidden lg:inline">1000years.ai</span>
+                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>1000years.ai</span>
               </button>
             )}
             

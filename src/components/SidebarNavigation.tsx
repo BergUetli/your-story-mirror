@@ -127,14 +127,14 @@ const SidebarNavigation = () => {
               </div>
               {user ? (
                 <Link to="/sanctuary" className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hover:from-primary hover:to-primary/70 transition-all duration-300">
-                  Solin One
+                  1000years.ai
                 </Link>
               ) : (
                 <button
                   onClick={() => setIsAuthModalOpen(true)}
                   className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hover:from-primary hover:to-primary/70 transition-all duration-300"
                 >
-                  Solin One
+                  1000years.ai
                 </button>
               )}
             </div>
