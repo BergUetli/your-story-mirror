@@ -2713,7 +2713,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-8 lg:gap-10">
           {/* Left Side - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 lg:p-10 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2768,7 +2768,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 </button>
               </div>
 
-              <div className="relative mt-12 w-full flex justify-center">
+              <div className="relative mt-8 w-full flex justify-center">
                 {viewMode === 'particle' ? (
                   <div className="w-full max-w-md mx-auto">
                     <ParticleFaceCanvas
@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 mt-12">
+              <div className="text-center space-y-4 mt-8">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">
@@ -2874,7 +2874,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
           {/* Right Side - Live Conversation Transcript - Enhanced modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[55vh] lg:h-[65vh] rounded-2xl border-[1.5px] p-5 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
