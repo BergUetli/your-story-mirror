@@ -456,10 +456,19 @@ const Timeline = () => {
                   color: #1f2937 !important;
                 }
                 
-                /* Timeline line enhancement */
+                /* Hide timeline connecting lines */
                 [class*="timeline-vertical-circle"] {
-                  margin: 14px 0 !important;
-                  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+                  display: none !important;
+                }
+                
+                /* Hide vertical timeline line */
+                [class*="timeline-vertical"] [class*="line"] {
+                  display: none !important;
+                }
+                
+                /* Hide all connector lines */
+                .vertical-item-row::before {
+                  display: none !important;
                 }
                 
                 /* Timeline dots */
