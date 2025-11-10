@@ -114,7 +114,7 @@ const Navigation = () => {
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-b-2 z-50 shadow-sm pointer-events-auto" style={{ borderColor: 'hsl(var(--section-border))' }}>
+      <div className="hidden sm:block fixed top-0 left-0 right-0 isolate z-[200] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm pointer-events-auto" style={{ borderColor: 'hsl(var(--section-border))' }}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8 relative pointer-events-auto">
           <div className="flex items-center justify-between h-20 gap-3 pointer-events-auto">
             {/* 
@@ -123,7 +123,7 @@ const Navigation = () => {
               Users can learn about the platform before engaging with core features.
               RESPONSIVE: Compact spacing and text on smaller tablets
             */}
-            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full">
+            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full pointer-events-auto relative z-[201]">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
@@ -204,7 +204,7 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full">
+              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full pointer-events-auto">
                 <div className="flex items-end gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
                   {rightNavItems.map(({ path, icon: Icon, label }) => (
                     <Link key={path} to={path} className="flex-shrink-0">

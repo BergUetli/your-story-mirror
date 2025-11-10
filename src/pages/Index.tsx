@@ -2707,7 +2707,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
   if (shouldShowSolinInterface) {
     return (
-      <div className="min-h-screen bg-background overflow-hidden relative">
+      <div className="min-h-screen bg-background overflow-hidden relative z-0">
         
 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-8 lg:gap-10">
