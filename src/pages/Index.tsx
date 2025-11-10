@@ -2710,10 +2710,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       <div className="min-h-screen bg-background overflow-hidden relative">
         
 
-        <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-10 gap-8 lg:gap-10">
+        <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-8 lg:gap-10">
           {/* Left Side - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[55vh] lg:h-[65vh] rounded-2xl border-[1.5px] p-4 sm:p-6 lg:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 lg:p-10 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2768,7 +2768,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 </button>
               </div>
 
-              <div className="relative mt-20 w-full flex justify-center">
+              <div className="relative mt-12 w-full flex justify-center">
                 {viewMode === 'particle' ? (
                   <div className="w-full max-w-md mx-auto">
                     <ParticleFaceCanvas
@@ -2785,8 +2785,8 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     <Sparkles className="h-14 w-14 text-primary animate-pulse" />
                   </div>
                 ) : (
-                  <div className="w-full flex justify-center items-center">
-                    <div className="w-[85%] max-w-[300px]">
+                  <div className="w-full flex justify-center items-center py-4">
+                    <div className="w-[80%] max-w-[280px]">
                       <ModernVoiceAgent 
                         isActive={isConnected} 
                         isSpeaking={isSpeaking}
@@ -2797,7 +2797,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 )}
               </div>
 
-              <div className="text-center space-y-4 mt-20">
+              <div className="text-center space-y-4 mt-12">
                 {/* Personalized welcome message */}
                 {user && (
                   <div className="mb-4">

@@ -153,7 +153,7 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-2xl lg:text-3xl font-black tracking-tight hover:text-primary transition-colors mx-3 lg:mx-6"
+                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2"
                 style={{
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
@@ -167,7 +167,7 @@ const Navigation = () => {
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 text-2xl lg:text-3xl font-black tracking-tight hover:text-primary transition-colors mx-3 lg:mx-6 cursor-pointer"
+                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 cursor-pointer"
                 style={{
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
