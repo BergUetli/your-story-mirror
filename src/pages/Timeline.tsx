@@ -206,13 +206,19 @@ const Timeline = () => {
         if (!artifactError && artifactLinks) {
           const artifactMap = new Map();
           
-          // Fetch signed URLs for all image artifacts
+          // Group artifacts by memory_id and fetch signed URLs for visual artifacts only
           for (const link of artifactLinks) {
             const artifact = (link as any).artifacts;
-            if (artifact?.artifact_type === 'image' && artifact.storage_path) {
+            const memoryId = (link as any).memory_id;
+            
+            // Only process image and video artifacts (exclude text/documents)
+            if (artifact && (artifact.artifact_type === 'image' || artifact.artifact_type === 'video') && artifact.storage_path) {
               const signedUrl = await getSignedUrl('memory-images', artifact.storage_path, 3600);
               if (signedUrl) {
-                artifactMap.set((link as any).memory_id, {
+                if (!artifactMap.has(memoryId)) {
+                  artifactMap.set(memoryId, []);
+                }
+                artifactMap.get(memoryId).push({
                   ...artifact,
                   signedUrl
                 });
@@ -288,25 +294,24 @@ const Timeline = () => {
       // Add memories as nested items
       yearData.memories.forEach((memory: any) => {
         const memoryDate = new Date(memory.memory_date || memory.created_at);
-        const artifact = memoryArtifacts.get(memory.id);
+        const artifacts = memoryArtifacts.get(memory.id) || [];
+        
+        // Build thumbnail gallery HTML if there are visual artifacts
+        let thumbnailsHtml = '';
+        if (artifacts.length > 0) {
+          const thumbnailImages = artifacts.map((artifact: any) => 
+            `<img src="${artifact.signedUrl}" alt="" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(229, 231, 235, 0.8);" />`
+          ).join('');
+          thumbnailsHtml = `<div style="display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap;">${thumbnailImages}</div>`;
+        }
         
         const item: any = {
           title: memoryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           cardTitle: memory.title,
           cardSubtitle: memory.text ? memory.text.substring(0, 80) + (memory.text.length > 80 ? '...' : '') : '',
-          cardDetailedText: memory.text || '',
+          cardDetailedText: `${memory.text || ''}${thumbnailsHtml}`,
           metadata: { memoryId: memory.id, isMemory: true, fullMemory: memory }
         };
-        
-        // Add media if artifact image exists
-        if (artifact?.signedUrl) {
-          item.media = {
-            type: 'IMAGE',
-            source: {
-              url: artifact.signedUrl
-            }
-          };
-        }
         
         nestedItems.push(item);
       });
