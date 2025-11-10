@@ -123,14 +123,14 @@ const Navigation = () => {
               Users can learn about the platform before engaging with core features.
               RESPONSIVE: Compact spacing and text on smaller tablets
             */}
-            <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
+            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
                 <Link key={path} to={path}>
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="default"
                     className={cn(
-                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5",
+                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1",
                       isActive(path) && "border-b-2 rounded-b-none"
                     )}
                     style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
@@ -204,15 +204,15 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-center gap-2 lg:gap-4 flex-shrink-0">
-                <div className="flex items-center gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
+              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full">
+                <div className="flex items-end gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
                   {rightNavItems.map(({ path, icon: Icon, label }) => (
                     <Link key={path} to={path} className="flex-shrink-0">
                       <Button
                         variant={isActive(path) ? 'default' : 'ghost'}
                         size="default"
                         className={cn(
-                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5",
+                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1",
                           isActive(path) && "border-b-2 rounded-b-none"
                         )}
                         style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
@@ -227,12 +227,12 @@ const Navigation = () => {
                 </div>
                 
                 {/* Sign Out Button */}
-                <div className="ml-3 lg:ml-6 border-l-2 border-border/30 pl-3 lg:pl-6">
+                <div className="ml-3 lg:ml-6 border-l-2 border-border/30 pl-3 lg:pl-6 h-full flex items-end">
                   <Button
                     variant="outline"
                     size="default"
                     onClick={handleSignOut}
-                    className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
+                    className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
                   >
                     <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
                     <span className="hidden lg:inline">Sign Out</span>
