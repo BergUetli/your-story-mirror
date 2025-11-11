@@ -114,7 +114,7 @@ const Navigation = () => {
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm" style={{ borderColor: 'hsl(var(--section-border))' }}>
+      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[2147483647] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm isolate pointer-events-auto" style={{ borderColor: 'hsl(var(--section-border))' }}>
         <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
           <div className="flex items-center justify-between h-20 gap-3">
             {/* 
@@ -125,7 +125,7 @@ const Navigation = () => {
             */}
             <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
-                <Link key={path} to={path} className="relative z-10">
+                <Link key={path} to={path} className="relative z-10 pointer-events-auto">
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="default"
@@ -153,7 +153,7 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2"
+                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto"
                 style={{
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
@@ -167,7 +167,7 @@ const Navigation = () => {
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 cursor-pointer"
+                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
                 style={{
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
@@ -207,7 +207,7 @@ const Navigation = () => {
               <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative">
                 <div className="flex items-end gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
                   {rightNavItems.map(({ path, icon: Icon, label }) => (
-                    <Link key={path} to={path} className="flex-shrink-0 relative z-10">
+                    <Link key={path} to={path} className="flex-shrink-0 relative z-10 pointer-events-auto">
                       <Button
                         variant={isActive(path) ? 'default' : 'ghost'}
                         size="default"
