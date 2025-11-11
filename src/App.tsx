@@ -21,6 +21,7 @@ import TestMemoryRecordings from "./pages/TestMemoryRecordings";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
+import BetaLanding from "./pages/BetaLanding";
 import Auth from "./pages/Auth";
 import Navigation from "./components/Navigation";
 import NotFound from "./pages/NotFound";
@@ -53,10 +54,11 @@ const AppContent = () => {
       <Navigation />
       <Routes>
         {/* Authentication-based routing */}
-        {/* Non-signed-in users: Always land on About page */}
+        {/* Non-signed-in users: Always land on Beta Landing page */}
         {/* Signed-in users: Always land on Sanctuary (Solin) page */}
-        <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <About />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <BetaLanding />} />
+        {/* About page hidden during beta - uncomment when ready to reveal */}
+        {/* <Route path="/about" element={<About />} /> */}
         <Route path="/sanctuary" element={
           <ProtectedRoute>
             <Index />
