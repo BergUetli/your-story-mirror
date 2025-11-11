@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@11labs/react';
 import { useToast } from '@/hooks/use-toast';
@@ -2753,8 +2752,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               </div>
               
               {/* Mode Selection Cards - Scrollable */}
-              <ScrollArea className="flex-1 pr-2">
-                <div className="space-y-2.5">
+              <div className="flex-1 overflow-y-auto pr-2 space-y-2.5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(203, 213, 225, 0.5) transparent' }}>
                 {/* Present - Daily Journaling */}
                 <button
                   onClick={() => setSelectedMode('present')}
@@ -2834,8 +2832,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     </div>
                   </div>
                 </button>
-                </div>
-              </ScrollArea>
+              </div>
               
               {/* Current Selection Indicator */}
               {!isConnected && (
