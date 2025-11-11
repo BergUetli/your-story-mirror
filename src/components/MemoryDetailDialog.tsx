@@ -470,14 +470,14 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="max-w-2xl max-h-[80vh] flex flex-col"
         style={bestBgUrl ? {
           backgroundImage: `linear-gradient(to bottom, hsl(var(--background) / 0.6), hsl(var(--background) / 0.95)), url(${bestBgUrl})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         } : undefined}
       >
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl">
               {isEditing ? 'Edit Memory' : memory.title}
@@ -513,7 +513,12 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
           </div>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-4 overflow-y-auto flex-1 pr-2"
+          style={{
+            scrollbarWidth: 'thin',
+            scrollbarColor: 'hsl(var(--border)) transparent'
+          }}
+        >
           {isEditing ? (
             /* Edit Mode */
             <>
@@ -836,6 +841,19 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                 {memory.conversation_text}
               </div>
             </details>
+          )}
+
+          {/* Close Button in View Mode */}
+          {!isEditing && (
+            <div className="flex justify-end pt-4 border-t border-border/50 sticky bottom-0 bg-background/95 backdrop-blur-sm -mx-2 px-2 pb-2">
+              <Button
+                onClick={() => onOpenChange(false)}
+                className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg font-medium"
+                size="lg"
+              >
+                Close
+              </Button>
+            </div>
           )}
         </div>
       </DialogContent>
