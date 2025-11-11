@@ -2729,7 +2729,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           
           {/* Left Side - Conversation Mode Selector (Moved from right) */}
           <div 
-            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-1 lg:order-1"
+            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col relative transition-all duration-300 hover:shadow-2xl order-1 lg:order-1"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2743,7 +2743,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
               {/* Header */}
-              <div className="mb-4 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+              <div className="mb-4 pb-3 border-b flex-shrink-0" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
                 <h2 className="text-lg lg:text-xl font-bold text-foreground">
                   Choose Your Mode
                 </h2>
@@ -2752,8 +2752,9 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                 </p>
               </div>
               
-              {/* Mode Selection Cards */}
-              <div className="flex-1 space-y-2.5 overflow-y-auto">
+              {/* Mode Selection Cards - Scrollable */}
+              <ScrollArea className="flex-1 pr-2">
+                <div className="space-y-2.5">
                 {/* Present - Daily Journaling */}
                 <button
                   onClick={() => setSelectedMode('present')}
@@ -2833,11 +2834,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                     </div>
                   </div>
                 </button>
-              </div>
+                </div>
+              </ScrollArea>
               
               {/* Current Selection Indicator */}
               {!isConnected && (
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <div className="mt-3 pt-3 border-t flex-shrink-0" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
                   <div className="text-center">
                     <p className="text-xs text-muted-foreground">
                       Selected: <span className="font-semibold text-foreground text-xs">
