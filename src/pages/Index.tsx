@@ -2853,7 +2853,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             </div>
           </div>
 
-          {/* Center - Solin Agent - Enhanced with modern design */}
+          {/* Center - Solin Agent */}
           <div 
             className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-2 lg:order-2"
             style={{ 
@@ -2863,132 +2863,15 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
             }}
           >
-            {/* Subtle background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none"></div>
-            
-            {/* Content container with relative positioning */}
-            <div className="relative z-10 flex flex-col h-full">
-              {/* Header */}
-              <div className="mb-6 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-xl lg:text-2xl font-bold text-foreground">
-                  Choose Your Mode
-                </h2>
-                <p className="text-sm lg:text-base text-muted-foreground mt-1">
-                  What would you like to talk about today?
-                </p>
-              </div>
-              
-              {/* Mode Selection Cards */}
-              <div className="flex-1 space-y-3 overflow-y-auto">
-                {/* Present - Daily Journaling */}
-                <button
-                  onClick={() => setSelectedMode('present')}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'present'
-                      ? 'border-blue-400 bg-blue-50/50'
-                      : 'border-gray-200 hover:border-blue-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">📝</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Present - Daily Journal</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Share what's happening in your life right now. Daily thoughts and experiences.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 italic">
-                        These stay private unless you flag them for the timeline
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Past - Memories */}
-                <button
-                  onClick={() => setSelectedMode('past')}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'past'
-                      ? 'border-purple-400 bg-purple-50/50'
-                      : 'border-gray-200 hover:border-purple-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">🕰️</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Past - Memories</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Preserve important memories and experiences from your past.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 italic">
-                        Appears on your timeline
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Future - Plans & Messages */}
-                <button
-                  onClick={() => setSelectedMode('future')}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'future'
-                      ? 'border-green-400 bg-green-50/50'
-                      : 'border-gray-200 hover:border-green-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">🔮</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Future - Plans & Messages</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Document plans, goals, or messages for your future self.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 italic">
-                        Hidden until the date arrives (if set)
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Wisdom - Reflections */}
-                <button
-                  onClick={() => setSelectedMode('wisdom')}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'wisdom'
-                      ? 'border-amber-400 bg-amber-50/50'
-                      : 'border-gray-200 hover:border-amber-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="text-2xl">💭</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">Wisdom - Deeper Topics</h3>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Explore cultural influences, music, philosophies, and deeper reflections.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 italic">
-                        Saved as personal reflections
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Current Selection Indicator */}
-              {!isConnected && (
-                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground">
-                      Selected: <span className="font-semibold text-foreground">
-                        {selectedMode === 'present' && '📝 Present - Daily Journal'}
-                        {selectedMode === 'past' && '🕰️ Past - Memories'}
-                        {selectedMode === 'future' && '🔮 Future - Plans'}
-                        {selectedMode === 'wisdom' && '💭 Wisdom - Reflections'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            {viewMode === 'voice' ? (
+              <ModernVoiceAgent 
+                isActive={isConnected}
+                isSpeaking={conversation.isSpeaking}
+                onClick={startConversation}
+              />
+            ) : (
+              <ParticleFaceCanvas />
+            )}
           </div>
 
           {/* Right Side - Chat Transcript Box */}
