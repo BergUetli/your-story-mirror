@@ -2725,10 +2725,11 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       <div className="min-h-screen bg-background overflow-hidden relative z-0">
         
 
-        <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-8 lg:gap-10">
-          {/* Left Side - Solin Agent - Enhanced with modern design */}
+        <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-6 lg:gap-8">
+          
+          {/* Left Side - Conversation Mode Selector (Moved from right) */}
           <div 
-            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-1 lg:order-1"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2736,147 +2737,125 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
             }}
           >
+            {/* Subtle background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none"></div>
             
-            <div className="flex flex-col items-center gap-6">
-              {/* View Mode Tabs - Enhanced design */}
-              <div className="absolute top-4 right-4 flex gap-1 rounded-full p-1.5 border transition-all duration-300 z-10"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,250,251,0.9))',
-                  backdropFilter: 'blur(12px)',
-                  borderColor: 'rgba(0,102,255,0.2)',
-                  boxShadow: '0 4px 16px rgba(0, 102, 255, 0.12), 0 1px 3px rgba(0,0,0,0.06)'
-                }}
-              >
-                <button
-                  onClick={() => setViewMode('voice')}
-                  className={`p-2.5 rounded-full transition-all duration-300 ${
-                    viewMode === 'voice' 
-                      ? 'text-white shadow-lg' 
-                      : 'text-muted-foreground hover:bg-gray-100/80'
-                  }`}
-                  style={{
-                    background: viewMode === 'voice' 
-                      ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
-                      : 'transparent',
-                    transform: viewMode === 'voice' ? 'scale(1.05)' : 'scale(1)'
-                  }}
-                  title="Voice Agent"
-                >
-                  <Mic className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('particle')}
-                  className={`p-2.5 rounded-full transition-all duration-300 ${
-                    viewMode === 'particle' 
-                      ? 'text-white shadow-lg' 
-                      : 'text-muted-foreground hover:bg-gray-100/80'
-                  }`}
-                  style={{
-                    background: viewMode === 'particle' 
-                      ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
-                      : 'transparent',
-                    transform: viewMode === 'particle' ? 'scale(1.05)' : 'scale(1)'
-                  }}
-                  title="Particle Face"
-                >
-                  <Hexagon className="h-4 w-4" />
-                </button>
+            {/* Content container with relative positioning */}
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Header */}
+              <div className="mb-4 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <h2 className="text-lg lg:text-xl font-bold text-foreground">
+                  Choose Your Mode
+                </h2>
+                <p className="text-xs lg:text-sm text-muted-foreground mt-1">
+                  What would you like to talk about?
+                </p>
               </div>
-
-              <div className="relative -mt-8 w-full flex justify-center">
-                {viewMode === 'particle' ? (
-                  <div className="w-full max-w-md mx-auto">
-                    <ParticleFaceCanvas
-                      particleCount={2000}
-                      flowSpeed={1}
-                      expression={isSpeaking ? 'speaking' : isConnected ? 'thinking' : 'neutral'}
-                      ditherStyle="halftone"
-                      holographicIntensity={0.7}
-                      audioReactive={isConnected}
-                    />
-                  </div>
-                ) : isConnecting ? (
-                  <div className="w-40 h-40 flex items-center justify-center">
-                    <Sparkles className="h-14 w-14 text-primary animate-pulse" />
-                  </div>
-                ) : (
-                  <div className="w-full flex justify-center items-center py-4">
-                    <div className="w-[80%] max-w-[280px]">
-                      <ModernVoiceAgent 
-                        isActive={isConnected} 
-                        isSpeaking={isSpeaking}
-                        onClick={handleOrbPress}
-                      />
+              
+              {/* Mode Selection Cards */}
+              <div className="flex-1 space-y-2.5 overflow-y-auto">
+                {/* Present - Daily Journaling */}
+                <button
+                  onClick={() => setSelectedMode('present')}
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'present'
+                      ? 'border-blue-400 bg-blue-50/50'
+                      : 'border-gray-200 hover:border-blue-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="text-xl">📝</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-foreground">Present - Daily Journal</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Daily thoughts and experiences
+                      </p>
                     </div>
                   </div>
-                )}
-              </div>
+                </button>
 
-              <div className="text-center space-y-4 -mt-36">
-                {/* Personalized welcome message */}
-                {user && (
-                  <div className="mb-4">
-                    <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-                      Welcome, {displayFirstName}!
-                    </h2>
-                    <p className="text-base lg:text-lg text-muted-foreground">
-                      Ready to continue your memory journey with Solin?
+                {/* Past - Memories */}
+                <button
+                  onClick={() => setSelectedMode('past')}
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'past'
+                      ? 'border-purple-400 bg-purple-50/50'
+                      : 'border-gray-200 hover:border-purple-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="text-xl">🕰️</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-foreground">Past - Memories</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Important memories from your past
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Future - Plans & Messages */}
+                <button
+                  onClick={() => setSelectedMode('future')}
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'future'
+                      ? 'border-green-400 bg-green-50/50'
+                      : 'border-gray-200 hover:border-green-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="text-xl">🔮</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-foreground">Future - Plans & Messages</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Plans and messages for your future
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Wisdom - Reflections */}
+                <button
+                  onClick={() => setSelectedMode('wisdom')}
+                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'wisdom'
+                      ? 'border-amber-400 bg-amber-50/50'
+                      : 'border-gray-200 hover:border-amber-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className="text-xl">💭</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm text-foreground">Wisdom - Deeper Topics</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Culture, music, philosophy, reflections
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              
+              {/* Current Selection Indicator */}
+              {!isConnected && (
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground">
+                      Selected: <span className="font-semibold text-foreground text-xs">
+                        {selectedMode === 'present' && '📝 Present'}
+                        {selectedMode === 'past' && '🕰️ Past'}
+                        {selectedMode === 'future' && '🔮 Future'}
+                        {selectedMode === 'wisdom' && '💭 Wisdom'}
+                      </span>
                     </p>
                   </div>
-                )}
-                
-                {/* Smart conversation state indicator - Enhanced design */}
-                {isConnected && (
-                  <div className="space-y-2">
-                    {conversationState.totalMemoriesSaved > 0 && (
-                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(0,102,255,0.12), rgba(30,144,255,0.08))',
-                          border: '1px solid rgba(0,102,255,0.25)',
-                          color: '#0066FF',
-                          boxShadow: '0 2px 8px rgba(0,102,255,0.12)'
-                        }}
-                      >
-                        🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
-                      </div>
-                    )}
-                    {conversationState.userMemoryProfile && (
-                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(168,85,247,0.08))',
-                          border: '1px solid rgba(139,92,246,0.25)',
-                          color: '#8b5cf6',
-                          boxShadow: '0 2px 8px rgba(139,92,246,0.12)'
-                        }}
-                      >
-                        🎯 Intelligent prompting active • {conversationState.userMemoryProfile.totalMemories} total memories analyzed
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {isConnected && (
-                  <div className="space-y-3">
-                    {/* Conversation active indicator - Enhanced design */}
-                    <div className="text-xs px-4 py-2 rounded-full transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08))',
-                        border: '1px solid rgba(16,185,129,0.25)',
-                        color: '#10b981',
-                        boxShadow: '0 2px 8px rgba(16,185,129,0.12)'
-                      }}
-                    >
-                      🎙️ Conversation active — Use the transcript box to save and end
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Right Side - Conversation Mode Selector */}
+          {/* Center - Solin Agent - Enhanced with modern design */}
           <div 
-            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-2 lg:order-2"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -3007,6 +2986,87 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       </span>
                     </p>
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Side - Chat Transcript Box */}
+          <div 
+            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-3 lg:order-3"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
+              backdropFilter: 'blur(20px)',
+              borderColor: 'rgba(229, 231, 235, 0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            {/* Subtle background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 via-transparent to-blue-50/20 rounded-2xl pointer-events-none"></div>
+            
+            {/* Content container */}
+            <div className="relative z-10 flex flex-col h-full">
+              {/* Header */}
+              <div className="mb-4 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                <h2 className="text-lg lg:text-xl font-bold text-foreground">
+                  Conversation
+                </h2>
+                <p className="text-xs lg:text-sm text-muted-foreground mt-1">
+                  {isConnected ? 'Live transcript' : 'Start a conversation to see the transcript'}
+                </p>
+              </div>
+              
+              {/* Transcript Messages - Scrollable */}
+              <div 
+                ref={transcriptScrollRef}
+                className="flex-1 space-y-3 overflow-y-auto mb-4"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(203, 213, 225, 0.5) transparent'
+                }}
+              >
+                {conversationMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-sm text-muted-foreground text-center px-4">
+                      Your conversation will appear here once you start talking with Solin
+                    </p>
+                  </div>
+                ) : (
+                  conversationMessages.map((msg, idx) => (
+                    <div 
+                      key={idx}
+                      className={`p-3 rounded-lg transition-all duration-200 ${
+                        msg.role === 'user' 
+                          ? 'bg-blue-50/80 border border-blue-100 ml-auto max-w-[85%]' 
+                          : 'bg-purple-50/80 border border-purple-100 mr-auto max-w-[85%]'
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="text-xs font-semibold" style={{ 
+                          color: msg.role === 'user' ? '#0066FF' : '#8b5cf6' 
+                        }}>
+                          {msg.role === 'user' ? 'You' : 'Solin'}
+                        </div>
+                      </div>
+                      <p className="text-sm text-foreground mt-1 leading-relaxed">
+                        {msg.text}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Action Buttons - Only show when connected */}
+              {isConnected && (
+                <div className="space-y-2 pt-3 border-t" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                  <Button
+                    onClick={endConversation}
+                    disabled={isEndingConversation}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {isEndingConversation ? 'Ending...' : 'End & Save Conversation'}
+                  </Button>
                 </div>
               )}
             </div>
