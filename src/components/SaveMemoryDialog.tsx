@@ -1,6 +1,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface SaveMemoryDialogProps {
   isOpen: boolean;
@@ -15,19 +21,17 @@ const SaveMemoryDialog: React.FC<SaveMemoryDialogProps> = ({
   onCancel,
   transcript
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full bg-card/95 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-lg">Save this memory?</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-muted-foreground">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="max-w-md bg-card/95 backdrop-blur-sm">
+        <DialogHeader>
+          <DialogTitle className="text-lg">Save this memory?</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Would you like to preserve this conversation as a memory in your timeline?
-          </p>
-          
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
           {transcript && (
             <div className="p-3 bg-muted/30 rounded-lg max-h-32 overflow-y-auto">
               <p className="text-sm text-muted-foreground mb-1">Your conversation:</p>
@@ -50,9 +54,9 @@ const SaveMemoryDialog: React.FC<SaveMemoryDialogProps> = ({
               Save Memory
             </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
