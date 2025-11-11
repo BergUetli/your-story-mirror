@@ -244,21 +244,48 @@ When they share something, react like a real friend:
 
 Ask what's been happening with them lately or what's on their mind.`;
 
-    // Build a personalized first message
+    // Build a personalized first message based on mode
     const userName = profileData?.preferred_name || 'friend';
     let firstMessage = `Hey ${userName}! `;
     
-    if (conversationHistory && conversationHistory.length > 0) {
-      firstMessage += `Good to hear from you again! `;
-    } else if (memories && memories.length > 0) {
-      firstMessage += `What's up? `;
+    // Mode-specific greetings
+    if (conversationMode === 'present') {
+      // Daily journal mode - casual check-in
+      const greetings = [
+        `How was your day? Same old?`,
+        `What's been going on today?`,
+        `How's everything going? Anything interesting today?`,
+        `What's up? How are you feeling today?`
+      ];
+      firstMessage += greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (conversationMode === 'future') {
+      // Future plans mode
+      const greetings = [
+        `Got any plans or dreams you want to capture?`,
+        `Thinking about the future? What's on your mind?`,
+        `Want to set some intentions or leave a note for future you?`,
+        `What are you hoping for down the road?`
+      ];
+      firstMessage += greetings[Math.floor(Math.random() * greetings.length)];
+    } else if (conversationMode === 'wisdom') {
+      // Deeper reflections mode
+      const greetings = [
+        `In the mood for a deeper chat? What's on your mind?`,
+        `Want to talk about what matters to you?`,
+        `Got any thoughts you've been mulling over?`,
+        `What's been shaping your thinking lately?`
+      ];
+      firstMessage += greetings[Math.floor(Math.random() * greetings.length)];
     } else {
-      firstMessage += `How's it going? `;
+      // Past memories mode - the default
+      const greetings = [
+        `Got a story you want to save?`,
+        `What memory's been on your mind?`,
+        `Any moments from your past you want to capture?`,
+        `What story should we preserve today?`
+      ];
+      firstMessage += greetings[Math.floor(Math.random() * greetings.length)];
     }
-    
-    // Let the AI naturally reference memories during conversation
-    // rather than forcing them into the greeting
-    firstMessage += `What's been happening with you lately?`;
 
     console.log('✅ Built personalized prompt and greeting for', userName);
 
