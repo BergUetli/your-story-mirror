@@ -2854,7 +2854,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
           {/* Center - Solin Agent */}
           <div 
-            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-2 lg:order-2"
+            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-2 lg:order-2 overflow-hidden"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
