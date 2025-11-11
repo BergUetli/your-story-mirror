@@ -211,45 +211,42 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative z-10">
-                <div className="flex items-end gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
-                  {rightNavItems.map(({ path, icon: Icon, label }) => (
-                    <Link 
-                      key={path} 
-                      to={path} 
-                      className="flex-shrink-0 relative z-10 pointer-events-auto cursor-pointer"
-                      style={{ pointerEvents: 'auto' }}
-                    >
-                      <Button
-                        variant={isActive(path) ? 'default' : 'ghost'}
-                        size="default"
-                        className={cn(
-                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
-                          isActive(path) && "border-b-2 rounded-b-none"
-                        )}
-                        style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
-                      >
-                        <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
-                        <span className="hidden xl:inline">{label}</span>
-                        <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
-                        <span className="lg:hidden sr-only">{label}</span>
-                      </Button>
-                    </Link>
-                  ))}
-                </div>
-                
-                {/* Sign Out Button */}
-                <div className="ml-3 lg:ml-6 border-l-2 border-border/30 pl-3 lg:pl-6 h-full flex items-end">
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={handleSignOut}
-                    className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 border-destructive/30 text-destructive hover:bg-destructive hover:text-white"
+              <div className="flex items-end gap-2 lg:gap-4 flex-shrink flex-nowrap h-full relative z-10">
+                {rightNavItems.map(({ path, icon: Icon, label }) => (
+                  <Link 
+                    key={path} 
+                    to={path} 
+                    className="flex-shrink-0 relative z-10 pointer-events-auto cursor-pointer"
+                    style={{ pointerEvents: 'auto' }}
                   >
-                    <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="hidden lg:inline">Sign Out</span>
-                  </Button>
-                </div>
+                    <Button
+                      variant={isActive(path) ? 'default' : 'ghost'}
+                      size="default"
+                      className={cn(
+                        "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-3 lg:px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
+                        isActive(path) && "border-b-2 rounded-b-none"
+                      )}
+                      style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
+                    >
+                      <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
+                      <span className="hidden xl:inline">{label}</span>
+                      <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
+                      <span className="lg:hidden sr-only">{label}</span>
+                    </Button>
+                  </Link>
+                ))}
+                
+                {/* Sign Out Button - Always Visible */}
+                <Button
+                  variant="outline"
+                  size="default"
+                  onClick={handleSignOut}
+                  className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-3 lg:px-4 py-5 mb-1 border-destructive text-destructive hover:bg-destructive hover:text-white pointer-events-auto cursor-pointer flex-shrink-0"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
+                  <span className="hidden lg:inline">Sign Out</span>
+                </Button>
               </div>
             )}
           </div>
