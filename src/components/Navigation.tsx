@@ -114,26 +114,31 @@ const Navigation = () => {
         - Active state highlighting with bottom border for clear orientation
         - Hover animations for interactive feedback
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[2147483647] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm isolate pointer-events-auto" style={{ borderColor: 'hsl(var(--section-border))' }}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative">
-          <div className="flex items-center justify-between h-20 gap-3">
+      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[2147483647] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm isolate" style={{ borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' }}>
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative" style={{ pointerEvents: 'auto' }}>
+          <div className="flex items-center justify-between h-20 gap-3" style={{ pointerEvents: 'auto' }}>
             {/* 
               INFORMATION SECTION (Left Side)
               BUSINESS PURPOSE: Provides access to educational content and help resources.
               Users can learn about the platform before engaging with core features.
               RESPONSIVE: Compact spacing and text on smaller tablets
             */}
-            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative">
+            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative z-10">
               {leftNavItems.map(({ path, icon: Icon, label }) => (
-                <Link key={path} to={path} className="relative z-10 pointer-events-auto">
+                <Link 
+                  key={path} 
+                  to={path} 
+                  className="relative z-10 pointer-events-auto cursor-pointer"
+                  style={{ pointerEvents: 'auto' }}
+                >
                   <Button
                     variant={isActive(path) ? 'default' : 'ghost'}
                     size="default"
                     className={cn(
-                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1",
+                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
                       isActive(path) && "border-b-2 rounded-b-none"
                     )}
-                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
+                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
                   >
                     <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
                     <span className="hidden lg:inline">{label}</span>
@@ -153,12 +158,13 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto"
+                className="flex-shrink-0 text-3xl lg:text-4xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
                 style={{
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  backgroundClip: 'text',
+                  pointerEvents: 'auto'
                 }}
               >
                 <span className="hidden lg:inline">1000years.ai</span>
@@ -172,7 +178,8 @@ const Navigation = () => {
                   background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text'
+                  backgroundClip: 'text',
+                  pointerEvents: 'auto'
                 }}
               >
                 <span className="hidden lg:inline">1000years.ai</span>
@@ -204,18 +211,23 @@ const Navigation = () => {
               - Overflow handling with scroll on extreme cases
             */}
             {user && (
-              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative">
+              <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative z-10">
                 <div className="flex items-end gap-2 overflow-x-auto max-w-[50%] lg:max-w-none">
                   {rightNavItems.map(({ path, icon: Icon, label }) => (
-                    <Link key={path} to={path} className="flex-shrink-0 relative z-10 pointer-events-auto">
+                    <Link 
+                      key={path} 
+                      to={path} 
+                      className="flex-shrink-0 relative z-10 pointer-events-auto cursor-pointer"
+                      style={{ pointerEvents: 'auto' }}
+                    >
                       <Button
                         variant={isActive(path) ? 'default' : 'ghost'}
                         size="default"
                         className={cn(
-                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1",
+                          "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
                           isActive(path) && "border-b-2 rounded-b-none"
                         )}
-                        style={isActive(path) ? { borderColor: 'hsl(var(--section-border))' } : {}}
+                        style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
                       >
                         <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
                         <span className="hidden xl:inline">{label}</span>
