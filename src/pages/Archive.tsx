@@ -59,7 +59,7 @@ const Archive = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'memories'>('date');
-  const [activeTab, setActiveTab] = useState<'recordings' | 'memories'>('recordings');
+  const [activeTab, setActiveTab] = useState<'recordings' | 'memories' | 'journals'>('recordings');
   const [deletingRecordings, setDeletingRecordings] = useState<Set<string>>(new Set());
   
   // Load all voice recordings

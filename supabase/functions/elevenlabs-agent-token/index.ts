@@ -47,7 +47,7 @@ serve(async (req) => {
       );
     }
 
-    const { agentId } = await req.json();
+    const { agentId, mode } = await req.json();
     
     if (!agentId) {
       return new Response(
@@ -58,6 +58,8 @@ serve(async (req) => {
         }
       );
     }
+    
+    const conversationMode = mode || 'past'; // default to 'past' if not provided
 
     const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
     
@@ -107,6 +109,38 @@ serve(async (req) => {
 
     // Build personalized context for system prompt with conversation flow guidance
     let personalizedPrompt = `You're Solin, their childhood friend who's been through life with them. You've known each other forever and you genuinely care about their stories and life.
+
+## Current Conversation Mode: ${conversationMode}
+`;
+
+    // Add mode-specific guidance
+    if (conversationMode === 'present') {
+      personalizedPrompt += `- You're helping them journal their current day/week
+- Ask about how they're feeling right now, what's happening today
+- Keep it casual and present-focused
+- These are daily check-ins, not deep historical memories
+`;
+    } else if (conversationMode === 'future') {
+      personalizedPrompt += `- You're helping them document plans or messages for the future
+- Ask what they hope will happen, what they want to remember
+- Help them set intentions or leave notes for their future self
+- Ask if they want to set a specific future date for this
+`;
+    } else if (conversationMode === 'wisdom') {
+      personalizedPrompt += `- You're exploring deeper topics - culture, music, philosophy, values
+- Ask about what shapes their worldview
+- Discuss music that moves them, cultural influences, life lessons
+- Keep it meaningful but still conversational
+`;
+    } else {
+      personalizedPrompt += `- You're helping them preserve important memories from their past
+- Ask about significant moments, people, and experiences
+- Go deep into the details and emotions
+- These are the stories for their timeline
+`;
+    }
+
+    personalizedPrompt += `
 
 ## How you talk (IMPORTANT):
 - Talk like a close friend, not a therapist or interviewer

@@ -99,13 +99,16 @@ export type Database = {
         Row: {
           chunk_sequence: number | null
           created_at: string
+          future_date: string | null
           id: string
           image_urls: string[] | null
           is_primary_chunk: boolean | null
           memory_date: string | null
           memory_group_id: string | null
           memory_location: string | null
+          memory_mode: string | null
           recipient: string | null
+          show_on_timeline: boolean | null
           source_type: string | null
           tags: string[] | null
           text: string
@@ -117,13 +120,16 @@ export type Database = {
         Insert: {
           chunk_sequence?: number | null
           created_at?: string
+          future_date?: string | null
           id?: string
           image_urls?: string[] | null
           is_primary_chunk?: boolean | null
           memory_date?: string | null
           memory_group_id?: string | null
           memory_location?: string | null
+          memory_mode?: string | null
           recipient?: string | null
+          show_on_timeline?: boolean | null
           source_type?: string | null
           tags?: string[] | null
           text: string
@@ -135,13 +141,16 @@ export type Database = {
         Update: {
           chunk_sequence?: number | null
           created_at?: string
+          future_date?: string | null
           id?: string
           image_urls?: string[] | null
           is_primary_chunk?: boolean | null
           memory_date?: string | null
           memory_group_id?: string | null
           memory_location?: string | null
+          memory_mode?: string | null
           recipient?: string | null
+          show_on_timeline?: boolean | null
           source_type?: string | null
           tags?: string[] | null
           text?: string

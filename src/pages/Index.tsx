@@ -818,6 +818,7 @@ const Index = () => {
 
   const [conversationMessages, setConversationMessages] = useState<Array<{role: string, text: string}>>([]);
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
+  const [selectedMode, setSelectedMode] = useState<'present' | 'past' | 'future' | 'wisdom'>('past');
   
   // Auto-scroll transcript to bottom when new messages arrive
   useEffect(() => {
@@ -2217,7 +2218,8 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
       
       const response = await supabase.functions.invoke('elevenlabs-agent-token', {
         body: { 
-          agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4'
+          agentId: 'agent_3201k6n4rrz8e2wrkf9tv372y0w4',
+          mode: selectedMode // Pass the selected conversation mode
         }
       });
       
@@ -2872,7 +2874,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             </div>
           </div>
 
-          {/* Right Side - Live Conversation Transcript - Enhanced modern design */}
+          {/* Right Side - Conversation Mode Selector */}
           <div 
             className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl"
             style={{ 
@@ -2887,151 +2889,128 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             
             {/* Content container with relative positioning */}
             <div className="relative z-10 flex flex-col h-full">
-              {/* Header with modern styling */}
-              <div className="mb-4 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+              {/* Header */}
+              <div className="mb-6 pb-4 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
                 <h2 className="text-xl lg:text-2xl font-bold text-foreground">
-                  Live Transcript
+                  Choose Your Mode
                 </h2>
-                <p className="text-sm lg:text-base text-muted-foreground mt-1">Real-time conversation with Solin</p>
-                {!isConnected && (
-                  <div className="mt-3 text-sm px-4 py-2 rounded-full inline-block transition-all duration-300"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.85))',
-                      border: '1px solid rgba(229, 231, 235, 0.6)',
-                      color: '#6b7280',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                    }}
-                  >
-                    💬 Share as much or as little as you'd like — you can save and stop anytime
-                  </div>
-                )}
+                <p className="text-sm lg:text-base text-muted-foreground mt-1">
+                  What would you like to talk about today?
+                </p>
               </div>
               
-              {/* Messages container */}
-              <div ref={transcriptScrollRef} className="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
-                {conversationMessages.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-muted-foreground text-base lg:text-lg text-center">
-                      Your conversation will appear here...
+              {/* Mode Selection Cards */}
+              <div className="flex-1 space-y-3 overflow-y-auto">
+                {/* Present - Daily Journaling */}
+                <button
+                  onClick={() => setSelectedMode('present')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'present'
+                      ? 'border-blue-400 bg-blue-50/50'
+                      : 'border-gray-200 hover:border-blue-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">📝</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">Present - Daily Journal</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Share what's happening in your life right now. Daily thoughts and experiences.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 italic">
+                        These stay private unless you flag them for the timeline
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Past - Memories */}
+                <button
+                  onClick={() => setSelectedMode('past')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'past'
+                      ? 'border-purple-400 bg-purple-50/50'
+                      : 'border-gray-200 hover:border-purple-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">🕰️</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">Past - Memories</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Preserve important memories and experiences from your past.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 italic">
+                        Appears on your timeline
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Future - Plans & Messages */}
+                <button
+                  onClick={() => setSelectedMode('future')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'future'
+                      ? 'border-green-400 bg-green-50/50'
+                      : 'border-gray-200 hover:border-green-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">🔮</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">Future - Plans & Messages</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Document plans, goals, or messages for your future self.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 italic">
+                        Hidden until the date arrives (if set)
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Wisdom - Reflections */}
+                <button
+                  onClick={() => setSelectedMode('wisdom')}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                    selectedMode === 'wisdom'
+                      ? 'border-amber-400 bg-amber-50/50'
+                      : 'border-gray-200 hover:border-amber-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl">💭</div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">Wisdom - Deeper Topics</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Explore cultural influences, music, philosophies, and deeper reflections.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 italic">
+                        Saved as personal reflections
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+              
+              {/* Current Selection Indicator */}
+              {!isConnected && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
+                  <div className="text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Selected: <span className="font-semibold text-foreground">
+                        {selectedMode === 'present' && '📝 Present - Daily Journal'}
+                        {selectedMode === 'past' && '🕰️ Past - Memories'}
+                        {selectedMode === 'future' && '🔮 Future - Plans'}
+                        {selectedMode === 'wisdom' && '💭 Wisdom - Reflections'}
+                      </span>
                     </p>
                   </div>
-                ) : (
-                  conversationMessages.map((msg, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-[85%] rounded-lg px-4 py-3 transition-all duration-300 hover:scale-[1.02] ${
-                          msg.role === 'user'
-                            ? 'text-white rounded-br-md'
-                            : 'text-foreground rounded-bl-md'
-                        }`}
-                        style={{
-                          background: msg.role === 'user' 
-                            ? 'linear-gradient(135deg, #0066FF, #1E90FF)' 
-                            : 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
-                          border: msg.role === 'user' ? 'none' : '1px solid rgba(229, 231, 235, 0.6)',
-                          boxShadow: msg.role === 'user' 
-                            ? '0 4px 12px rgba(0, 102, 255, 0.25), 0 1px 3px rgba(0,0,0,0.08)' 
-                            : '0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)'
-                        }}
-                      >
-                        <div className={`text-sm font-semibold mb-1 ${
-                          msg.role === 'user' ? 'text-white/80' : 'opacity-70'
-                        }`}>
-                          {msg.role === 'user' ? 'You' : 'Solin'}
-                        </div>
-                        <div className="text-sm lg:text-base leading-relaxed whitespace-pre-wrap break-words">
-                          {msg.text}
-                          {idx === conversationMessages.length - 1 && msg.role === 'ai' && (
-                            <span className="inline-block w-1 h-4 bg-primary ml-1 animate-pulse rounded-sm" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              
-              {/* Save and End Button - Enhanced modern design */}
-              {isConnected && (
-                <div className="border-t pt-4 space-y-3" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                  {/* Helpful message with modern styling */}
-                  <div className="text-center">
-                    <div className="text-xs px-3 py-2 rounded-full inline-block transition-all duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.9), rgba(249,250,251,0.85))',
-                        border: '1px solid rgba(229, 231, 235, 0.6)',
-                        color: '#6b7280',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-                      }}
-                    >
-                      💬 Click below anytime to save and end your conversation
-                    </div>
-                  </div>
-                  
-                  {/* Prominent Save & End Button - Enhanced design */}
-                  <Button 
-                    onClick={endConversation} 
-                    size="lg"
-                    disabled={isEndingConversation}
-                    className="w-full rounded-xl text-white font-semibold transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
-                    style={{
-                      background: 'linear-gradient(135deg, #f59e0b, #f97316)',
-                      boxShadow: '0 8px 24px rgba(245, 158, 11, 0.35), 0 2px 8px rgba(0,0,0,0.08)',
-                      border: '2px solid rgba(255,255,255,0.2)'
-                    }}
-                  >
-                    {isEndingConversation ? (
-                      <>⏳ Waiting for Solin to finish speaking...</>
-                    ) : (
-                      <>✨ Save & End Conversation ✨</>
-                    )}
-                  </Button>
-                  
-                  {/* Session info - Enhanced styling */}
-                  {conversationState.totalMemoriesSaved > 0 && (
-                    <div className="text-center">
-                      <div className="text-xs px-3 py-1.5 rounded-full inline-block transition-all duration-300"
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(0,102,255,0.1), rgba(30,144,255,0.08))',
-                          border: '1px solid rgba(0,102,255,0.2)',
-                          color: '#0066FF',
-                          boxShadow: '0 2px 8px rgba(0,102,255,0.12)'
-                        }}
-                      >
-                        🧠 {conversationState.totalMemoriesSaved} memories saved • {conversationState.recentTopics.length} topics discussed
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           </div>
-          
-          {/* Intelligent Prompting Debug Panel */}
-          {conversationState.suggestedQuestions.length > 0 && (
-            <div 
-              className="flex-1 max-w-xl bg-accent/5 rounded-lg border-[1.5px] p-4 max-h-64 overflow-y-auto"
-              style={{ borderColor: 'hsl(var(--section-border))' }}
-            >
-              <div className="mb-3 pb-2 border-b" style={{ borderColor: 'hsl(var(--section-border))' }}>
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  🧠 Intelligent Suggestions
-                  <span className="text-xs bg-accent/20 px-2 py-0.5 rounded-full">Debug Mode</span>
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">Solin can use these personalized questions</p>
-              </div>
-              <div className="space-y-2">
-                {conversationState.suggestedQuestions.slice(0, 4).map((question, idx) => (
-                  <div key={idx} className="text-xs bg-white/50 rounded p-2 border" style={{ borderColor: 'hsl(var(--section-border))' }}>
-                    <span className="font-medium text-accent">{idx + 1}.</span> {question}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
           
         </div>
       </div>
