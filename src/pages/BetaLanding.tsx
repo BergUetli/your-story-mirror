@@ -23,10 +23,20 @@ const BetaLanding = () => {
     setIsSubmitting(true);
     
     try {
-      // Store beta signup in a waitlist table (you'll need to create this)
-      // For now, we'll just show success
-      toast.success('Thank you! We\'ll be in touch soon.');
-      setEmail('');
+      const { error } = await supabase
+        .from('waitlist')
+        .insert([{ email }]);
+
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast.error("You're already on the waitlist!");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Thank you! We\'ll be in touch soon.');
+        setEmail('');
+      }
     } catch (error) {
       console.error('Signup error:', error);
       toast.error('Something went wrong. Please try again.');
