@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { Heart, ArrowRight, Calendar, MapPin, Home, User, Briefcase, Users, Globe, Target, Sparkles, Book, X, LogOut } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, MapPin, Phone, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,8 +21,24 @@ interface StepData {
   type: string;
   placeholder: string;
   required: boolean;
-  options?: string[];
 }
+
+const COUNTRY_CODES = [
+  { code: '+1', name: 'US/Canada' },
+  { code: '+44', name: 'UK' },
+  { code: '+91', name: 'India' },
+  { code: '+86', name: 'China' },
+  { code: '+81', name: 'Japan' },
+  { code: '+49', name: 'Germany' },
+  { code: '+33', name: 'France' },
+  { code: '+39', name: 'Italy' },
+  { code: '+34', name: 'Spain' },
+  { code: '+61', name: 'Australia' },
+  { code: '+55', name: 'Brazil' },
+  { code: '+52', name: 'Mexico' },
+  { code: '+27', name: 'South Africa' },
+  { code: '+41', name: 'Switzerland' },
+];
 
 const Onboarding = ({ onComplete }: OnboardingProps) => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -31,50 +47,13 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
   const { signOut } = useAuth();
   
   const [formData, setFormData] = useState({
-    // Basic Information (Step 1-5)
-    name: '',
-    age: '',
     birthDate: '',
     birthPlace: '',
-    currentLocation: '',
-    
-    // Professional & Personal (Step 6-7)
-    occupation: '',
-    relationshipStatus: '',
-    
-    // Cultural Background (Step 8)
-    culturalBackground: '',
-    languagesSpoken: '',
-    
-    // Life & Interests (Step 9-10)
-    hobbiesInterests: '',
-    majorLifeEvent: '',
-    
-    // Values & Personality (Step 11-12)
-    coreValues: '',
-    lifeGoals: ''
+    phoneNumber: '',
+    countryCode: '+1'
   });
 
   const steps: StepData[] = [
-    // Basic Identity
-    {
-      title: "What's your name?",
-      subtitle: "The name you'd like to be remembered by",
-      icon: User,
-      field: 'name',
-      type: 'text',
-      placeholder: 'Enter your name...',
-      required: true
-    },
-    {
-      title: "How old are you?",
-      subtitle: "This helps us understand your life's timeline",
-      icon: Calendar,
-      field: 'age',
-      type: 'number',
-      placeholder: 'Enter your age...',
-      required: true
-    },
     {
       title: "When were you born?",
       subtitle: "Your birth date anchors your memory timeline",
@@ -94,99 +73,13 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       required: true
     },
     {
-      title: "Where do you live now?",
-      subtitle: "Your current home in the world",
-      icon: Home,
-      field: 'currentLocation',
-      type: 'text',
-      placeholder: 'City, Country...',
+      title: "What's your phone number?",
+      subtitle: "Stay connected with your memories",
+      icon: Phone,
+      field: 'phoneNumber',
+      type: 'phone',
+      placeholder: 'Phone number...',
       required: true
-    },
-    
-    // Professional Life
-    {
-      title: "What do you do for a living?",
-      subtitle: "Your work or what keeps you busy",
-      icon: Briefcase,
-      field: 'occupation',
-      type: 'text',
-      placeholder: 'e.g., Software Engineer, Teacher, Student, Retired...',
-      required: true
-    },
-    
-    // Personal Life
-    {
-      title: "What's your relationship status?",
-      subtitle: "Helps us understand your life context",
-      icon: Heart,
-      field: 'relationshipStatus',
-      type: 'select',
-      placeholder: 'Select one...',
-      options: ['Single', 'In a relationship', 'Engaged', 'Married', 'Divorced', 'Widowed', 'It\'s complicated', 'Prefer not to say'],
-      required: false
-    },
-    
-    // Cultural Background
-    {
-      title: "What's your cultural background?",
-      subtitle: "The cultures and traditions that shaped you",
-      icon: Globe,
-      field: 'culturalBackground',
-      type: 'text',
-      placeholder: 'e.g., Indian, Chinese-American, Brazilian...',
-      required: false
-    },
-    
-    {
-      title: "What languages do you speak?",
-      subtitle: "All the languages you're comfortable with",
-      icon: Book,
-      field: 'languagesSpoken',
-      type: 'text',
-      placeholder: 'e.g., English, Spanish, Mandarin...',
-      required: false
-    },
-    
-    // Life & Interests
-    {
-      title: "What do you love doing?",
-      subtitle: "Your hobbies, passions, and interests",
-      icon: Sparkles,
-      field: 'hobbiesInterests',
-      type: 'textarea',
-      placeholder: 'e.g., Reading, hiking, cooking, playing guitar, photography...',
-      required: false
-    },
-    
-    {
-      title: "Share a moment that defined you",
-      subtitle: "A major life event that shaped who you are today",
-      icon: Calendar,
-      field: 'majorLifeEvent',
-      type: 'textarea',
-      placeholder: 'e.g., Graduating college, moving to a new country, starting a family, a career change...',
-      required: false
-    },
-    
-    // Values & Goals
-    {
-      title: "What matters most to you?",
-      subtitle: "Your core values and principles",
-      icon: Heart,
-      field: 'coreValues',
-      type: 'textarea',
-      placeholder: 'e.g., Family, honesty, creativity, kindness, learning, helping others...',
-      required: false
-    },
-    
-    {
-      title: "What are you working towards?",
-      subtitle: "Your dreams, aspirations, and life goals",
-      icon: Target,
-      field: 'lifeGoals',
-      type: 'textarea',
-      placeholder: 'e.g., Build a successful career, travel the world, start a family, learn new skills...',
-      required: false
     }
   ];
 
@@ -212,16 +105,6 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     }
   };
 
-  const handleSkip = () => {
-    if (confirm('Are you sure you want to skip this setup? You can complete it later from your profile settings.')) {
-      toast({
-        title: "Setup skipped",
-        description: "You can complete your profile anytime from settings.",
-      });
-      onComplete();
-    }
-  };
-
   const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out? You can complete this setup when you sign in again.')) {
       await signOut();
@@ -241,265 +124,197 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         throw new Error('No user found');
       }
 
-      // Helper to split comma-separated strings into arrays
-      const splitToArray = (str: string) => {
-        return str ? str.split(',').map(s => s.trim()).filter(s => s.length > 0) : [];
-      };
-
-      // Calculate completeness score based on filled fields
-      const filledFields = Object.values(formData).filter(v => v && v.toString().trim()).length;
-      const totalFields = Object.keys(formData).length;
-      const completenessScore = Math.round((filledFields / totalFields) * 100);
-
-      const profileData = {
-        user_id: user.id,
-        
-        // Basic Information
-        preferred_name: formData.name,
-        age: parseInt(formData.age),
-        location: formData.currentLocation,
-        hometown: formData.birthPlace,
-        occupation: formData.occupation || null,
-        relationship_status: formData.relationshipStatus || null,
-        
-        // Cultural Background
-        cultural_background: splitToArray(formData.culturalBackground),
-        languages_spoken: splitToArray(formData.languagesSpoken),
-        
-        // Life & Interests
-        hobbies_interests: splitToArray(formData.hobbiesInterests),
-        major_life_events: formData.majorLifeEvent ? [{
-          event: formData.majorLifeEvent,
-          significance: "Shared during onboarding",
-          year: new Date().getFullYear()
-        }] : [],
-        
-        // Values & Goals
-        core_values: splitToArray(formData.coreValues),
-        life_goals: splitToArray(formData.lifeGoals),
-        
-        // Metadata
-        onboarding_completed: true,
-        first_conversation_completed: false,
-        profile_completeness_score: completenessScore,
-      };
-
-      console.log('📝 Saving comprehensive onboarding data:', profileData);
-
-      // Use user_profiles table with correct column mappings
-      const { data: upsertData, error: upsertError } = await supabase
+      // Update user profile with birth info
+      const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert(profileData, { 
-          onConflict: 'user_id' 
-        })
-        .select();
+        .upsert({
+          user_id: user.id,
+          onboarding_completed: true,
+          profile_completeness_score: 100
+        });
 
-      if (upsertError) {
-        console.error('❌ Profile upsert error:', upsertError);
-        throw upsertError;
+      if (profileError) throw profileError;
+
+      // Update users table with birth info
+      const { error: usersError } = await supabase
+        .from('users')
+        .update({
+          birth_date: formData.birthDate,
+          birth_place: formData.birthPlace,
+          onboarding_completed: true
+        })
+        .eq('user_id', user.id);
+
+      if (usersError) throw usersError;
+
+      // Save phone number if provided
+      if (formData.phoneNumber) {
+        const fullPhoneNumber = `${formData.countryCode}${formData.phoneNumber}`;
+        const { error: phoneError } = await supabase
+          .from('user_phone_numbers')
+          .upsert({
+            user_id: user.id,
+            phone_number: fullPhoneNumber,
+            provider: 'whatsapp',
+            verified: false
+          });
+
+        if (phoneError) throw phoneError;
       }
 
-      console.log('✅ Onboarding data saved successfully:', upsertData);
-
       toast({
-        title: "Welcome to Memory Scape! 🌟",
-        description: `Your sanctuary has been created. Profile ${completenessScore}% complete!`,
+        title: "Welcome to 1000years.ai! 🎉",
+        description: "Your Memory Scape is ready. Start preserving your life's journey.",
       });
 
       onComplete();
-    } catch (error) {
-      console.error('❌ Onboarding error:', error);
-      
-      // Show detailed error to help debugging
-      let errorMessage = 'Unknown error occurred';
-      let errorDetails = '';
-      
-      if (error && typeof error === 'object') {
-        if ('message' in error) {
-          errorMessage = String(error.message);
-        }
-        if ('details' in error) {
-          errorDetails = String(error.details);
-        }
-        if ('hint' in error) {
-          errorDetails += (errorDetails ? ' | ' : '') + String(error.hint);
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
       toast({
-        title: "Couldn't save your profile",
-        description: errorDetails || errorMessage,
+        title: "Error",
+        description: error.message || "Failed to complete setup. Please try again.",
         variant: "destructive"
       });
-      
-      // Don't keep user stuck - offer to skip
-      const shouldSkip = confirm(`There was an error saving your profile:\n\n${errorMessage}\n${errorDetails}\n\nWould you like to skip this step and continue? You can complete your profile later from settings.`);
-      if (shouldSkip) {
-        onComplete();
-      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const updateFormData = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
-  const StepIcon = currentStepData.icon;
+  const renderField = () => {
+    const field = currentStepData.field as keyof typeof formData;
+
+    if (currentStepData.type === 'phone') {
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Country Code</Label>
+            <Select
+              value={formData.countryCode}
+              onValueChange={(value) => setFormData({ ...formData, countryCode: value })}
+            >
+              <SelectTrigger className="bg-card/50 border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRY_CODES.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.code} ({country.name})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Phone Number</Label>
+            <Input
+              type="tel"
+              value={formData[field]}
+              onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+              placeholder={currentStepData.placeholder}
+              className="bg-card/50 border-border text-lg"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <Input
+        type={currentStepData.type}
+        value={formData[field]}
+        onChange={(e) => setFormData({ ...formData, [field]: e.target.value })}
+        placeholder={currentStepData.placeholder}
+        className="bg-card/50 border-border text-lg"
+        disabled={isSubmitting}
+      />
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-background to-memory/10 flex items-center justify-center p-6">
-      <Card className="w-full max-w-md bg-card/95 backdrop-blur-md border-primary/30 shadow-cosmic relative">
-        {/* Close button in top-right corner */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleSkip}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
-          title="Skip setup"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-
-        <CardHeader className="text-center pb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary/30 to-memory/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-primary/30">
-            <Heart className="w-8 h-8 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-2xl">
+        {/* Header with Sign Out */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-foreground mb-2">Welcome to 1000years.ai</h1>
+            <p className="text-muted-foreground">Let's set up your Memory Scape</p>
           </div>
-          <CardTitle className="text-2xl font-light text-foreground">
-            Welcome to Memory Scape
-          </CardTitle>
-          <p className="text-muted-foreground">
-            Step {currentStep} of {steps.length}
-          </p>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="text-center space-y-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-memory/10 rounded-full flex items-center justify-center mx-auto border border-primary/20">
-              <StepIcon className="w-6 h-6 text-primary" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSignOut}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sign Out
+          </Button>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between mb-2">
+            <span className="text-sm text-muted-foreground">Step {currentStep} of {steps.length}</span>
+            <span className="text-sm text-muted-foreground">{Math.round((currentStep / steps.length) * 100)}% Complete</span>
+          </div>
+          <div className="h-2 bg-border rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-300 ease-out"
+              style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Main Card */}
+        <Card className="modern-card border-border/50">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <currentStepData.icon className="w-8 h-8 text-primary" />
             </div>
-            <h3 className="text-xl font-medium text-foreground">
-              {currentStepData.title}
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              {currentStepData.subtitle}
-            </p>
-          </div>
+            <CardTitle className="text-2xl mb-2">{currentStepData.title}</CardTitle>
+            <p className="text-muted-foreground">{currentStepData.subtitle}</p>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              {renderField()}
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={currentStepData.field} className="text-foreground">
-              {currentStepData.required && <span className="text-destructive mr-1">*</span>}
-              {currentStepData.title}
-            </Label>
-            
-            {currentStepData.type === 'textarea' ? (
-              <Textarea
-                id={currentStepData.field}
-                placeholder={currentStepData.placeholder}
-                value={formData[currentStepData.field as keyof typeof formData]}
-                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
-                className="bg-background/50 border-primary/30 min-h-[120px] resize-none"
-                autoFocus
-              />
-            ) : currentStepData.type === 'select' ? (
-              <select
-                id={currentStepData.field}
-                value={formData[currentStepData.field as keyof typeof formData]}
-                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
-                className="w-full px-3 py-2 bg-background/50 border border-primary/30 rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                autoFocus
-              >
-                <option value="">{currentStepData.placeholder}</option>
-                {currentStepData.options?.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <Input
-                id={currentStepData.field}
-                type={currentStepData.type}
-                placeholder={currentStepData.placeholder}
-                value={formData[currentStepData.field as keyof typeof formData]}
-                onChange={(e) => updateFormData(currentStepData.field, e.target.value)}
-                className="bg-background/50 border-primary/30"
-                autoFocus
-              />
-            )}
-            
-            {!currentStepData.required && (
-              <p className="text-xs text-muted-foreground">Optional - but helps us know you better</p>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <Button 
-              onClick={handleNext} 
-              disabled={isSubmitting}
-              className="w-full bg-gradient-to-r from-primary to-memory hover:from-primary/90 hover:to-memory/90 text-white shadow-starlight"
-            >
-              {currentStep < steps.length ? (
-                <>
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              ) : isSubmitting ? (
-                'Creating your sanctuary...'
-              ) : (
-                'Complete Setup'
-              )}
-            </Button>
-            
-            <div className="flex gap-2">
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
               {currentStep > 1 && (
-                <Button 
-                  variant="ghost" 
-                  onClick={() => setCurrentStep(currentStep - 1)}
-                  className="flex-1 text-muted-foreground hover:text-foreground"
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
                   disabled={isSubmitting}
+                  className="flex-1"
                 >
                   Back
                 </Button>
               )}
-              <Button 
-                variant="outline" 
-                onClick={handleSkip}
-                className="flex-1 text-muted-foreground hover:text-foreground border-primary/30"
+              <Button
+                onClick={handleNext}
                 disabled={isSubmitting}
+                className="flex-1 bg-primary hover:bg-primary/90"
               >
-                Skip for Now
+                {isSubmitting ? (
+                  "Completing Setup..."
+                ) : currentStep === steps.length ? (
+                  "Complete Setup"
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </div>
-          </div>
-
-          <div className="w-full bg-primary/10 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-primary to-memory h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentStep / steps.length) * 100}%` }}
-            />
-          </div>
-
-          {/* Sign out option */}
-          <div className="pt-4 border-t border-primary/20">
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
-              disabled={isSubmitting}
-            >
-              <LogOut className="w-3 h-3 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
