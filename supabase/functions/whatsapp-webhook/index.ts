@@ -513,20 +513,26 @@ PERSONALITY:
 YOUR APPROACH TO MEMORIES:
 1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
 2. Ask about: feelings, specific details, why it mattered, who was involved
-3. After exploring (3-4 exchanges about the topic), ask: "Want me to save this memory?"
-4. ONLY save when they explicitly confirm "yes"
-5. DO NOT ask about photos/videos - the system will ask automatically after saving
+3. CRITICAL: Before asking to save, always confirm WHEN (date/year) and WHERE (place) the memory happened
+4. If they haven't mentioned when/where, ask: "When did this happen?" or "Where were you?"
+5. After exploring and getting date/place, ask: "Want me to save this memory?"
+6. ONLY save when they explicitly confirm "yes"
+7. DO NOT ask about photos/videos - the system will ask automatically after saving
 
 IMPORTANT RULES:
 - Ask ONE question at a time
 - Keep it conversational, not interrogative
 - NEVER ask about photos, images, or videos - this is handled automatically
+- ALWAYS get date and location before offering to save
 - Reference their past memories naturally when relevant${memoryContext}
 ${sessionContext.awaiting_save_confirmation ? '\n\nNOTE: User is responding to your question about saving a memory. If they confirm, acknowledge and mark [SAVE_MEMORY].' : ''}
-${sessionContext.memory_discussion_count >= 2 ? '\n\nNOTE: You\'ve asked a couple follow-up questions. After one more, you can ask if they want to save this memory.' : ''}
+${sessionContext.memory_discussion_count >= 2 && !sessionContext.has_date_and_place ? '\n\nNOTE: You\'ve explored the memory. Now ask about WHEN and WHERE before offering to save.' : ''}
+${sessionContext.has_date_and_place ? '\n\nNOTE: You have date and location. You can now ask if they want to save this memory.' : ''}
 
 Response format:
 - Normal conversation: Just respond naturally
+- Asking for date: "When did this happen?" or "What year was that?"
+- Asking for place: "Where were you?" or "Where did this happen?"
 - When asking to save: "Want me to save this memory?"
 - When user confirms save: "Got it, saved! 💫 [SAVE_MEMORY: brief descriptive title]"`;
 
@@ -562,10 +568,46 @@ Response format:
 
 async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext) {
   // Get the relevant parts of the conversation that led to this memory
-  const recentExchanges = conversationHistory.slice(-6); // Last 3 exchanges (6 messages)
+  const recentExchanges = conversationHistory.slice(-8); // Last 4 exchanges (8 messages)
   const memoryText = recentExchanges
     .map(msg => `${msg.role === 'user' ? 'Me' : 'Solin'}: ${msg.content}`)
     .join('\n\n');
+  
+  // Extract date and location from conversation
+  const conversationString = memoryText.toLowerCase();
+  let memoryDate = null;
+  let memoryLocation = null;
+  
+  // Try to extract year/date mentions
+  const yearMatch = conversationString.match(/\b(19|20)\d{2}\b/);
+  const dateMatch = conversationString.match(/\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/);
+  
+  if (dateMatch) {
+    // Parse the date format
+    const dateParts = dateMatch[0].split(/[\/\-]/);
+    if (dateParts.length === 3) {
+      // Assume MM/DD/YYYY or DD/MM/YYYY
+      let year = parseInt(dateParts[2]);
+      if (year < 100) year += 2000; // Handle 2-digit years
+      memoryDate = `${year}-01-01`; // Default to Jan 1st if only year
+    }
+  } else if (yearMatch) {
+    memoryDate = `${yearMatch[0]}-01-01`;
+  }
+  
+  // Extract location mentions (look for city/place names after location questions)
+  const locationPatterns = [
+    /(?:where were you|where did|in |at |from )\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})/,
+    /in ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/
+  ];
+  
+  for (const pattern of locationPatterns) {
+    const match = memoryText.match(pattern);
+    if (match && match[1]) {
+      memoryLocation = match[1].trim();
+      break;
+    }
+  }
   
   const title = recentExchanges[0]?.content?.split('\n')[0].substring(0, 100) || 'WhatsApp Memory';
   
@@ -578,8 +620,9 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
       tags: ['whatsapp', 'conversation'],
       recipient: 'private',
       source_type: 'whatsapp',
-      memory_date: new Date().toISOString(),
-      show_on_timeline: true
+      memory_date: memoryDate,
+      memory_location: memoryLocation,
+      show_on_timeline: memoryDate ? true : false
     })
     .select('id')
     .single();
@@ -587,6 +630,10 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
   if (error) {
     console.error('❌ Error creating memory:', error);
     return null;
+  }
+
+  if (!memoryDate) {
+    console.warn('⚠️ Memory saved without date - will not appear on timeline');
   }
 
   return data.id;
@@ -745,8 +792,24 @@ serve(async (req) => {
 
       if (isMemoryDiscussion) {
         sessionContext.memory_discussion_count = (sessionContext.memory_discussion_count || 0) + 1;
+        
+        // Check if date and place have been mentioned
+        const messageLower = message.text.toLowerCase();
+        const hasDateInfo = /\b(19|20)\d{2}\b/.test(message.text) || 
+          /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/.test(message.text) ||
+          /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(messageLower);
+        
+        const hasPlaceInfo = /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(message.text) &&
+          (messageLower.includes('in ') || messageLower.includes('at ') || messageLower.includes('from '));
+        
+        if (hasDateInfo) sessionContext.has_date = true;
+        if (hasPlaceInfo) sessionContext.has_place = true;
+        sessionContext.has_date_and_place = sessionContext.has_date && sessionContext.has_place;
       } else {
         sessionContext.memory_discussion_count = 0;
+        sessionContext.has_date = false;
+        sessionContext.has_place = false;
+        sessionContext.has_date_and_place = false;
       }
 
       const { response, shouldCreateMemory, memoryContent, isAskingToSave } = await generateSolinResponse(
@@ -769,6 +832,9 @@ serve(async (req) => {
         // After saving, ask about media
         sessionContext.memory_discussion_count = 0;
         sessionContext.awaiting_save_confirmation = false;
+        sessionContext.has_date = false;
+        sessionContext.has_place = false;
+        sessionContext.has_date_and_place = false;
         sessionContext.awaiting_media_for_memory = memoryId;
         sessionContext.media_count = 0;
         await updateSessionContext(supabase, sessionId, sessionContext);
