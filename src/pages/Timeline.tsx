@@ -94,11 +94,22 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
   for (let year = birthYear; year <= currentYear; year++) {
     const yearEvents = lifeEvents.filter(event => event.year === year);
     const yearMemories = actualMemories.filter(memory => {
-      const dateToUse = memory.memory_date || memory.created_at || memory.date;
-      if (!dateToUse) return false;
+      // Use memory_date if available, otherwise fallback to created_at
+      let dateToUse = memory.memory_date;
+      if (!dateToUse || dateToUse === null) {
+        dateToUse = memory.created_at || memory.date;
+      }
+      
+      if (!dateToUse) {
+        console.warn('Memory has no date:', memory.id, memory.title);
+        return false;
+      }
       
       const parsedDate = new Date(dateToUse);
-      if (isNaN(parsedDate.getTime())) return false;
+      if (isNaN(parsedDate.getTime())) {
+        console.warn('Invalid date for memory:', memory.id, dateToUse);
+        return false;
+      }
       
       return parsedDate.getFullYear() === year;
     }).map(memory => ({
