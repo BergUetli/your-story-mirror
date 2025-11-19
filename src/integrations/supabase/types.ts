@@ -194,6 +194,24 @@ export type Database = {
           },
         ]
       }
+      migrations_applied: {
+        Row: {
+          applied_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          applied_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          applied_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       solin_conversations: {
         Row: {
           context_used: Json | null
@@ -231,12 +249,15 @@ export type Database = {
           audio_ducking_release_ms: number | null
           audio_mic_volume: number | null
           audio_timestamp_correlation: boolean | null
+          category: string | null
           created_at: string
           description: string | null
           elevenlabs_agent_id: string | null
           id: string
+          is_public: boolean | null
           key: string
           openai_model: string | null
+          updated_at: string | null
           value: Json | null
           vapi_assistant_id: string | null
           voice_provider: string | null
@@ -250,12 +271,15 @@ export type Database = {
           audio_ducking_release_ms?: number | null
           audio_mic_volume?: number | null
           audio_timestamp_correlation?: boolean | null
+          category?: string | null
           created_at?: string
           description?: string | null
           elevenlabs_agent_id?: string | null
           id?: string
+          is_public?: boolean | null
           key: string
           openai_model?: string | null
+          updated_at?: string | null
           value?: Json | null
           vapi_assistant_id?: string | null
           voice_provider?: string | null
@@ -269,12 +293,15 @@ export type Database = {
           audio_ducking_release_ms?: number | null
           audio_mic_volume?: number | null
           audio_timestamp_correlation?: boolean | null
+          category?: string | null
           created_at?: string
           description?: string | null
           elevenlabs_agent_id?: string | null
           id?: string
+          is_public?: boolean | null
           key?: string
           openai_model?: string | null
+          updated_at?: string | null
           value?: Json | null
           vapi_assistant_id?: string | null
           voice_provider?: string | null
@@ -335,6 +362,42 @@ export type Database = {
           training_status?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_phone_numbers: {
+        Row: {
+          created_at: string
+          id: string
+          phone_number: string
+          provider: string | null
+          updated_at: string
+          user_id: string
+          verification_code: string | null
+          verification_expires_at: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone_number: string
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone_number?: string
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+          verified?: boolean | null
         }
         Relationships: []
       }
@@ -599,11 +662,169 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          notes: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          notes?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          conversation_context: Json | null
+          created_at: string
+          delivered_at: string | null
+          direction: string
+          error_message: string | null
+          id: string
+          is_memory_trigger: boolean | null
+          memory_id: string | null
+          message_text: string
+          message_type: string | null
+          phone_number: string
+          provider: string
+          provider_message_id: string | null
+          provider_metadata: Json | null
+          read_at: string | null
+          session_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_context?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          direction: string
+          error_message?: string | null
+          id?: string
+          is_memory_trigger?: boolean | null
+          memory_id?: string | null
+          message_text: string
+          message_type?: string | null
+          phone_number: string
+          provider?: string
+          provider_message_id?: string | null
+          provider_metadata?: Json | null
+          read_at?: string | null
+          session_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_context?: Json | null
+          created_at?: string
+          delivered_at?: string | null
+          direction?: string
+          error_message?: string | null
+          id?: string
+          is_memory_trigger?: boolean | null
+          memory_id?: string | null
+          message_text?: string
+          message_type?: string | null
+          phone_number?: string
+          provider?: string
+          provider_message_id?: string | null
+          provider_metadata?: Json | null
+          read_at?: string | null
+          session_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_sessions: {
+        Row: {
+          context: Json | null
+          conversation_mode: string | null
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          last_message_at: string
+          memories_created: number | null
+          message_count: number | null
+          phone_number: string
+          session_id: string
+          started_at: string
+          summary: string | null
+          topics: string[] | null
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          conversation_mode?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string
+          memories_created?: number | null
+          message_count?: number | null
+          phone_number: string
+          session_id: string
+          started_at?: string
+          summary?: string | null
+          topics?: string[] | null
+          user_id: string
+        }
+        Update: {
+          context?: Json | null
+          conversation_mode?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_message_at?: string
+          memories_created?: number | null
+          message_count?: number | null
+          phone_number?: string
+          session_id?: string
+          started_at?: string
+          summary?: string | null
+          topics?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      find_or_create_user_by_phone: {
+        Args: { p_phone_number: string; p_provider?: string }
+        Returns: string
+      }
+      get_or_create_whatsapp_session: {
+        Args: {
+          p_conversation_mode?: string
+          p_phone_number: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
