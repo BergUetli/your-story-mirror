@@ -319,17 +319,66 @@ async function getConversationContext(supabase, userId, sessionId, limit = 10) {
   }));
 }
 
-async function generateSolinResponse(userMessage, conversationHistory, userName) {
+async function searchRelevantMemories(supabase, userId, userMessage, limit = 5) {
+  // Get user's recent memories that might be relevant
+  const { data, error } = await supabase
+    .from('memories')
+    .select('id, title, text, memory_date, created_at, tags')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(20); // Get more to search through
+
+  if (error || !data) {
+    console.error('Error fetching memories:', error);
+    return [];
+  }
+
+  // Simple keyword matching for relevance
+  const messageLower = userMessage.toLowerCase();
+  const keywords = messageLower.split(' ').filter(word => word.length > 3);
+
+  const scoredMemories = data.map(memory => {
+    const memoryText = `${memory.title} ${memory.text}`.toLowerCase();
+    const score = keywords.reduce((acc, keyword) => {
+      return acc + (memoryText.includes(keyword) ? 1 : 0);
+    }, 0);
+
+    return { ...memory, relevanceScore: score };
+  });
+
+  // Return top relevant memories
+  return scoredMemories
+    .filter(m => m.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit)
+    .map(m => ({
+      id: m.id,
+      title: m.title,
+      text: m.text.substring(0, 200), // Limit context size
+      date: m.memory_date || m.created_at
+    }));
+}
+
+async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = []) {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) throw new Error("OpenAI API key not configured");
 
   const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
+  let memoryContext = '';
+  if (relevantMemories.length > 0) {
+    memoryContext = '\n\nRelevant memories from past conversations:\n' + 
+      relevantMemories.map(m => 
+        `- ${m.title} (${m.date ? new Date(m.date).toLocaleDateString() : 'recent'}): ${m.text}`
+      ).join('\n');
+  }
 
   const systemPrompt = `You are Solin, an empathetic AI memory companion. You're conversing with ${userName || 'a user'} over WhatsApp.
 
 Your purpose:
 - Have natural, warm conversations about their life, memories, and experiences
 - Help them preserve important moments by identifying stories worth saving
+- Reference their past memories when relevant to show you remember
 - Be concise but meaningful (WhatsApp is for quick exchanges)
 - When they share a significant memory or story, acknowledge it and indicate you'll save it
 
@@ -338,7 +387,7 @@ When to save memories:
 - User explicitly asks to save/remember something
 - A meaningful story or moment is described in detail
 
-Keep responses conversational and under 3-4 sentences unless they're sharing a detailed story.
+Keep responses conversational and under 3-4 sentences unless they're sharing a detailed story.${memoryContext}
 
 If the message seems like a memory worth preserving, end your response with:
 [SAVE_MEMORY: brief title of the memory]
@@ -441,16 +490,21 @@ serve(async (req) => {
       });
 
       const conversationHistory = await getConversationContext(supabase, userId, sessionId);
+      const relevantMemories = await searchRelevantMemories(supabase, userId, message.text);
+      
       const { data: userData } = await supabase
         .from('users')
         .select('name')
         .eq('user_id', userId)
         .maybeSingle();
 
+      console.log(`📚 Found ${relevantMemories.length} relevant memories for context`);
+
       const { response, shouldCreateMemory, memoryContent } = await generateSolinResponse(
         message.text,
         conversationHistory,
-        userData?.name || message.metadata?.name
+        userData?.name || message.metadata?.name,
+        relevantMemories
       );
 
       let memoryId = null;
