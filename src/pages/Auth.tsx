@@ -24,7 +24,8 @@ const Auth = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const { signIn, signUp, user, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -113,7 +114,39 @@ const Auth = () => {
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
+    setIsForgotPassword(false);
     resetForm();
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address to reset your password.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await resetPassword(email);
+      if (error) throw error;
+
+      toast({
+        title: "Check Your Email",
+        description: "We've sent you a password reset link. Please check your inbox.",
+      });
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      toast({
+        title: "Reset Failed",
+        description: error.message || "Failed to send password reset email.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -181,14 +214,24 @@ const Auth = () => {
                   placeholder={isSignUp ? "Create a password (min. 6 characters)" : "Enter your password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
+                  required={!isForgotPassword}
                   disabled={isLoading}
                   minLength={6}
                   className="bg-card border-border"
                 />
+                {!isSignUp && !isForgotPassword && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                    disabled={isLoading}
+                  >
+                    Forgot password?
+                  </button>
+                )}
               </div>
 
-              {isSignUp && (
+              {isSignUp && !isForgotPassword && (
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <Input
@@ -205,35 +248,68 @@ const Auth = () => {
                 </div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full bg-primary hover:bg-primary/90 rounded-full" 
-                disabled={isLoading}
-                size="lg"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                  </>
-                ) : (
-                  isSignUp ? 'Create Account' : 'Sign In'
-                )}
-              </Button>
+              {isForgotPassword ? (
+                <div className="space-y-3">
+                  <Button 
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="w-full bg-primary hover:bg-primary/90 rounded-full" 
+                    disabled={isLoading}
+                    size="lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending Reset Link...
+                      </>
+                    ) : (
+                      'Send Reset Link'
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsForgotPassword(false)}
+                    className="w-full rounded-full"
+                    disabled={isLoading}
+                    size="lg"
+                  >
+                    Back to Sign In
+                  </Button>
+                </div>
+              ) : (
+                <Button 
+                  type="submit" 
+                  className="w-full bg-primary hover:bg-primary/90 rounded-full" 
+                  disabled={isLoading}
+                  size="lg"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                    </>
+                  ) : (
+                    isSignUp ? 'Create Account' : 'Sign In'
+                  )}
+                </Button>
+              )}
             </form>
 
             <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="text-sm text-primary hover:underline"
-                disabled={isLoading}
-              >
-                {isSignUp 
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up"
-                }
-              </button>
+              {!isForgotPassword && (
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="text-sm text-primary hover:underline"
+                  disabled={isLoading}
+                >
+                  {isSignUp 
+                    ? 'Already have an account? Sign in'
+                    : "Don't have an account? Sign up"
+                  }
+                </button>
+              )}
             </div>
 
             {isSignUp && (
