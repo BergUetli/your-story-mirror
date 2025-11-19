@@ -118,23 +118,55 @@ const createTimelineData = (actualMemories: any[], profile: any) => {
     }));
     
     const hasMajorEvents = yearMemories.some(m => m.significance === 'major');
+    const hasAnyContent = yearMemories.length > 0 || yearEvents.length > 0;
     
-    const hasAnyContent = yearMemories.length > 0;
+    // Always include birth year, current year, and years with content
+    const isBirthYear = year === birthYear;
+    const isCurrentYear = year === currentYear;
+    const shouldInclude = isBirthYear || isCurrentYear || hasAnyContent;
     
-    // Include only years that have memories
-    if (hasAnyContent) {
+    if (shouldInclude) {
       timelineData.push({
         year,
-        events: [],
+        events: yearEvents,
         memories: yearMemories,
         hasContent: hasAnyContent,
-        isCurrentYear: false,
-        significance: hasMajorEvents ? 'major' : 'minor'
+        isCurrentYear,
+        isBirthYear,
+        significance: isBirthYear ? 'major' : (hasMajorEvents ? 'major' : 'minor')
       });
     }
   }
   
-  return timelineData;
+  // Add milestone markers every 5-10 years for long empty stretches
+  const finalTimeline = [];
+  for (let i = 0; i < timelineData.length; i++) {
+    finalTimeline.push(timelineData[i]);
+    
+    // Check gap to next entry
+    if (i < timelineData.length - 1) {
+      const currentYear = timelineData[i].year;
+      const nextYear = timelineData[i + 1].year;
+      const gap = nextYear - currentYear;
+      
+      // For gaps > 5 years, add a milestone marker in the middle
+      if (gap > 5) {
+        const midYear = Math.floor((currentYear + nextYear) / 2);
+        finalTimeline.push({
+          year: midYear,
+          events: [],
+          memories: [],
+          hasContent: false,
+          isCurrentYear: false,
+          isBirthYear: false,
+          isGapMarker: true,
+          significance: 'minor'
+        });
+      }
+    }
+  }
+  
+  return finalTimeline;
 };
 
 const Timeline = () => {
@@ -162,9 +194,8 @@ const Timeline = () => {
         .from('memories')
         .select('*')
         .eq('user_id', userId)
-        .not('memory_date', 'is', null)
         .or('is_primary_chunk.is.true,is_primary_chunk.is.null')
-        .order('memory_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (memoriesError) throw memoriesError;
 
