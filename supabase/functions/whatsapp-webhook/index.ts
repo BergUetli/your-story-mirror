@@ -765,7 +765,23 @@ serve(async (req) => {
       }
 
       const supabase = getSupabaseAdmin();
-      const userId = await findOrCreateUserByPhone(supabase, message.from);
+      
+      // Check if this phone number is verified and linked to an account
+      const { data: verifiedPhone } = await supabase
+        .from('user_phone_numbers')
+        .select('user_id')
+        .eq('phone_number', message.from)
+        .eq('verified', true)
+        .single();
+      
+      let userId: string;
+      if (verifiedPhone) {
+        userId = verifiedPhone.user_id;
+        console.log(`✅ Using verified account: ${userId}`);
+      } else {
+        userId = await findOrCreateUserByPhone(supabase, message.from);
+      }
+      
       const sessionId = await getOrCreateSession(supabase, userId, message.from);
 
       // Get session context to check if we're expecting media

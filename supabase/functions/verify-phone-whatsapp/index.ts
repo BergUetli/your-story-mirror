@@ -134,8 +134,53 @@ serve(async (req) => {
 
       if (updateError) throw updateError;
 
+      // Check if there's a WhatsApp-only account with this phone number
+      const { data: whatsappUser } = await supabase.rpc('find_or_create_user_by_phone', {
+        p_phone_number: phone_number
+      });
+
+      if (whatsappUser && whatsappUser !== user.id) {
+        console.log(`🔗 Linking WhatsApp account ${whatsappUser} to web account ${user.id}`);
+        
+        // Migrate all memories from WhatsApp account to web account
+        const { error: migrateError } = await supabase
+          .from('memories')
+          .update({ user_id: user.id })
+          .eq('user_id', whatsappUser);
+
+        if (migrateError) {
+          console.error('Error migrating memories:', migrateError);
+        } else {
+          console.log('✅ Memories migrated successfully');
+        }
+
+        // Migrate WhatsApp messages
+        const { error: messagesError } = await supabase
+          .from('whatsapp_messages')
+          .update({ user_id: user.id })
+          .eq('user_id', whatsappUser);
+
+        if (messagesError) {
+          console.error('Error migrating messages:', messagesError);
+        }
+
+        // Migrate WhatsApp sessions
+        const { error: sessionsError } = await supabase
+          .from('whatsapp_sessions')
+          .update({ user_id: user.id })
+          .eq('user_id', whatsappUser);
+
+        if (sessionsError) {
+          console.error('Error migrating sessions:', sessionsError);
+        }
+      }
+
       return new Response(
-        JSON.stringify({ success: true, message: 'Phone number verified' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Phone number verified',
+          accountLinked: !!whatsappUser && whatsappUser !== user.id
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
