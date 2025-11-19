@@ -515,10 +515,12 @@ YOUR APPROACH TO MEMORIES:
 2. Ask about: feelings, specific details, why it mattered, who was involved
 3. After exploring (3-4 exchanges about the topic), ask: "Want me to save this memory?"
 4. ONLY save when they explicitly confirm "yes"
+5. DO NOT ask about photos/videos - the system will ask automatically after saving
 
 IMPORTANT RULES:
 - Ask ONE question at a time
 - Keep it conversational, not interrogative
+- NEVER ask about photos, images, or videos - this is handled automatically
 - Reference their past memories naturally when relevant${memoryContext}
 ${sessionContext.awaiting_save_confirmation ? '\n\nNOTE: User is responding to your question about saving a memory. If they confirm, acknowledge and mark [SAVE_MEMORY].' : ''}
 ${sessionContext.memory_discussion_count >= 2 ? '\n\nNOTE: You\'ve asked a couple follow-up questions. After one more, you can ask if they want to save this memory.' : ''}
@@ -575,7 +577,9 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
       text: memoryText,
       tags: ['whatsapp', 'conversation'],
       recipient: 'private',
-      source_type: 'whatsapp'
+      source_type: 'whatsapp',
+      memory_date: new Date().toISOString(),
+      show_on_timeline: true
     })
     .select('id')
     .single();
