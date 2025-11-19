@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles, MapPin, Briefcase, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles, MapPin, Briefcase, GraduationCap, Phone, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -33,13 +33,43 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
+  
+  // Phone verification state
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [linkedPhoneNumber, setLinkedPhoneNumber] = useState<string | null>(null);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Load profile data
   useEffect(() => {
     if (user) {
       loadProfile();
+      loadPhoneNumber();
     }
   }, [user]);
+
+  const loadPhoneNumber = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_phone_numbers')
+        .select('*')
+        .eq('user_id', user?.id)
+        .eq('verified', true)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setLinkedPhoneNumber(data.phone_number);
+        setIsPhoneVerified(true);
+      }
+    } catch (error) {
+      console.error('Error loading phone number:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -125,6 +155,85 @@ const Settings = () => {
       });
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleSendVerificationCode = async () => {
+    if (!phoneNumber || phoneNumber.length < 10) {
+      toast({
+        title: "Invalid phone number",
+        description: "Please enter a valid phone number with country code (e.g., +1234567890)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSendingCode(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-phone-whatsapp', {
+        body: { action: 'send_code', phone_number: phoneNumber }
+      });
+
+      if (error) throw error;
+
+      setCodeSent(true);
+      toast({
+        title: "Verification code sent",
+        description: "Check your WhatsApp for the 6-digit code"
+      });
+    } catch (error) {
+      console.error('Error sending code:', error);
+      toast({
+        title: "Failed to send code",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      toast({
+        title: "Invalid code",
+        description: "Please enter the 6-digit verification code",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-phone-whatsapp', {
+        body: { 
+          action: 'verify_code', 
+          phone_number: phoneNumber,
+          verification_code: verificationCode 
+        }
+      });
+
+      if (error) throw error;
+
+      setLinkedPhoneNumber(phoneNumber);
+      setIsPhoneVerified(true);
+      setCodeSent(false);
+      setVerificationCode('');
+      setPhoneNumber('');
+      
+      toast({
+        title: "Phone number verified",
+        description: "Your WhatsApp number is now linked to your account"
+      });
+    } catch (error) {
+      console.error('Error verifying code:', error);
+      toast({
+        title: "Verification failed",
+        description: error.message || "Invalid or expired code",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -323,6 +432,105 @@ const Settings = () => {
             >
               {isUpdating ? 'Saving...' : 'Save Profile'}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* WhatsApp Phone Number */}
+        <Card className="modern-card border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Phone className="w-5 h-5 text-primary" />
+              </div>
+              WhatsApp Integration
+            </CardTitle>
+            <CardDescription>
+              Link your WhatsApp number to access Solin on the go
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {linkedPhoneNumber && isPhoneVerified ? (
+              <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="font-medium">Verified Phone Number</p>
+                      <p className="text-sm text-muted-foreground">{linkedPhoneNumber}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
+                    Active
+                  </Badge>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Phone Number</Label>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="bg-card border-border"
+                    placeholder="+1234567890"
+                    disabled={codeSent}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Include country code (e.g., +1 for US)
+                  </p>
+                </div>
+
+                {!codeSent ? (
+                  <Button 
+                    onClick={handleSendVerificationCode}
+                    disabled={isSendingCode || !phoneNumber}
+                    className="bg-primary hover:bg-primary/90 rounded-full"
+                  >
+                    {isSendingCode ? 'Sending...' : 'Send Verification Code'}
+                  </Button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="verificationCode">Verification Code</Label>
+                      <Input
+                        id="verificationCode"
+                        type="text"
+                        value={verificationCode}
+                        onChange={(e) => setVerificationCode(e.target.value)}
+                        className="bg-card border-border"
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Check your WhatsApp for the verification code
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={handleVerifyCode}
+                        disabled={isVerifying || verificationCode.length !== 6}
+                        className="bg-primary hover:bg-primary/90 rounded-full flex-1"
+                      >
+                        {isVerifying ? 'Verifying...' : 'Verify Code'}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setCodeSent(false);
+                          setVerificationCode('');
+                        }}
+                        className="rounded-full"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
