@@ -48,6 +48,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import solinConfig from '@/agents/solin.json';
 import { AddMemoryForm } from '@/components/AddMemoryForm';
+import { MemoryMediaUploadDialog } from '@/components/MemoryMediaUploadDialog';
 
 /**
  * Component Props Configuration
@@ -100,6 +101,8 @@ const Solin: React.FC<SolinProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);        // Whether saving memory to database
   const [isConversationActive, setIsConversationActive] = useState(false);  // Whether conversation is ongoing
   const [lastResponseTime, setLastResponseTime] = useState<number>(0);  // Timestamp of last AI response
+  const [savedMemoryForMedia, setSavedMemoryForMedia] = useState<{id: string, title: string} | null>(null); // Memory awaiting media upload
+  const [showMediaDialog, setShowMediaDialog] = useState(false);  // Whether to show media upload dialog
   
   // ===== INTELLIGENT CONVERSATION FEATURES =====
   // These states enable natural conversation flow with automatic pause detection
@@ -662,20 +665,23 @@ const Solin: React.FC<SolinProps> = ({
         if (savedMemory) {
           toast({
             title: "Memory Saved",
-            description: "Your conversation has been preserved with full audio recording!",
+            description: "Your conversation has been preserved!",
           });
 
-          // Refresh memories before navigation to ensure timeline is updated
+          // Refresh memories before showing media upload
           await loadMemories();
           
-          // Clear conversation and close interface BEFORE navigating
-          // This ensures clean state transition
+          // Clear conversation and close interface
           setConversationHistory([]);
           setResponse(null);
           setIsOpen(false);
           
-          // Navigate to timeline to show the new memory
-          navigate(`/timeline`);
+          // Show media upload dialog instead of navigating immediately
+          setSavedMemoryForMedia({
+            id: savedMemory.id,
+            title: savedMemory.title || title
+          });
+          setShowMediaDialog(true);
         } else {
           throw new Error('Failed to save memory');
         }
@@ -1169,6 +1175,21 @@ const Solin: React.FC<SolinProps> = ({
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Media Upload Dialog - appears after memory is saved */}
+      {savedMemoryForMedia && (
+        <MemoryMediaUploadDialog
+          isOpen={showMediaDialog}
+          onClose={() => {
+            setShowMediaDialog(false);
+            setSavedMemoryForMedia(null);
+            // Navigate to timeline after media dialog closes
+            navigate('/timeline');
+          }}
+          memoryId={savedMemoryForMedia.id}
+          memoryTitle={savedMemoryForMedia.title}
+        />
       )}
     </>
   );
