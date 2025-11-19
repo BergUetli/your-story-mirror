@@ -272,6 +272,80 @@ const DatabaseManagementPanel = () => {
     }
   };
 
+  const clearMyProfileData = async () => {
+    if (!user) {
+      setError('Must be logged in to clear profile');
+      return;
+    }
+
+    if (!confirm('⚠️ This will DELETE your profile, phone numbers, and reset onboarding. Your memories will be preserved. Continue?')) {
+      return;
+    }
+
+    setIsClearing(true);
+    setResults([]);
+    setError(null);
+    setSuccess(false);
+    setClearingStep('Clearing your profile data...');
+
+    try {
+      // Step 1: Delete phone numbers
+      setClearingStep('Removing phone numbers...');
+      const { error: phoneError } = await supabase
+        .from('user_phone_numbers')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (phoneError) {
+        console.warn('Phone delete error:', phoneError);
+        setResults(prev => [...prev, `⚠️ Phone numbers: ${phoneError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ Phone numbers removed']);
+      }
+
+      // Step 2: Delete user profile
+      setClearingStep('Removing user profile...');
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.warn('Profile delete error:', profileError);
+        setResults(prev => [...prev, `⚠️ User profile: ${profileError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ User profile removed']);
+      }
+
+      // Step 3: Delete users table entry
+      setClearingStep('Removing users table entry...');
+      const { error: usersError } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (usersError && usersError.code !== 'PGRST116') {
+        console.warn('Users table delete error:', usersError);
+        setResults(prev => [...prev, `⚠️ Users table: ${usersError.message}`]);
+      } else {
+        setResults(prev => [...prev, '✅ Users table entry removed']);
+      }
+
+      // Step 4: Refresh onboarding status
+      setClearingStep('Refreshing status...');
+      await checkOnboardingStatus();
+
+      setResults(prev => [...prev, '✅ Profile data cleared! Refresh the page to start onboarding again.']);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('Profile clear failed:', err);
+      setError(`Profile clear failed: ${err.message}`);
+    } finally {
+      setIsClearing(false);
+      setClearingStep('');
+    }
+  };
+
   const forceRefreshOnboarding = async () => {
     setIsClearing(true);
     setResults([]);
@@ -463,6 +537,15 @@ const DatabaseManagementPanel = () => {
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Reset My Onboarding
+                </Button>
+                <Button 
+                  onClick={clearMyProfileData}
+                  disabled={isClearing}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Clear My Profile & Phone
                 </Button>
                 <Button 
                   onClick={forceRefreshOnboarding} 
