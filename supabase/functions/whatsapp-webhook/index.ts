@@ -53,11 +53,28 @@ class MetaWhatsAppAdapter {
       const timestamp = message.timestamp;
 
       let text = '';
+      let mediaId = null;
+      let mediaType = null;
+      let mimeType = null;
+      let caption = null;
+
       if (message.type === 'text') {
         text = message.text?.body || '';
       } else if (message.type === 'interactive') {
         text = message.interactive?.button_reply?.title || 
                message.interactive?.list_reply?.title || '';
+      } else if (message.type === 'image') {
+        mediaId = message.image?.id;
+        mediaType = 'image';
+        mimeType = message.image?.mime_type || 'image/jpeg';
+        caption = message.image?.caption || '';
+        text = caption;
+      } else if (message.type === 'video') {
+        mediaId = message.video?.id;
+        mediaType = 'video';
+        mimeType = message.video?.mime_type || 'video/mp4';
+        caption = message.video?.caption || '';
+        text = caption;
       } else {
         return null;
       }
@@ -70,6 +87,10 @@ class MetaWhatsAppAdapter {
         text,
         messageId,
         timestamp,
+        mediaId,
+        mediaType,
+        mimeType,
+        caption,
         metadata: {
           name: value.contacts?.[0]?.profile?.name,
           provider: 'meta',
@@ -78,6 +99,40 @@ class MetaWhatsAppAdapter {
       };
     } catch (error) {
       console.error('❌ Error parsing Meta message:', error);
+      return null;
+    }
+  }
+
+  async downloadMedia(mediaId) {
+    try {
+      // Get media URL from Meta
+      const urlResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${mediaId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.accessToken}`
+          }
+        }
+      );
+      
+      const urlData = await urlResponse.json();
+      if (!urlData.url) throw new Error('No media URL returned');
+
+      // Download the actual media file
+      const mediaResponse = await fetch(urlData.url, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`
+        }
+      });
+
+      if (!mediaResponse.ok) throw new Error('Failed to download media');
+
+      return {
+        data: await mediaResponse.arrayBuffer(),
+        mimeType: mediaResponse.headers.get('content-type') || 'application/octet-stream'
+      };
+    } catch (error) {
+      console.error('❌ Error downloading media:', error);
       return null;
     }
   }
@@ -298,6 +353,58 @@ async function updateSessionContext(supabase, sessionId, context) {
     .eq('session_id', sessionId);
 }
 
+async function uploadMediaAsArtifact(supabase, userId, mediaData, mimeType, filename) {
+  try {
+    const fileExt = mimeType.split('/')[1] || 'jpg';
+    const storagePath = `${userId}/${Date.now()}_${filename || 'media'}.${fileExt}`;
+    
+    // Upload to memory-images bucket
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('memory-images')
+      .upload(storagePath, mediaData, {
+        contentType: mimeType,
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    // Create artifact record
+    const { data: artifactData, error: artifactError } = await supabase
+      .from('artifacts')
+      .insert({
+        artifact_type: mimeType.startsWith('image/') ? 'image' : 'video',
+        storage_path: uploadData.path,
+        mime_type: mimeType,
+        file_name: filename
+      })
+      .select('id')
+      .single();
+
+    if (artifactError) throw artifactError;
+
+    return artifactData.id;
+  } catch (error) {
+    console.error('❌ Error uploading media artifact:', error);
+    return null;
+  }
+}
+
+async function linkArtifactToMemory(supabase, memoryId, artifactId) {
+  const { error } = await supabase
+    .from('memory_artifacts')
+    .insert({
+      memory_id: memoryId,
+      artifact_id: artifactId
+    });
+
+  if (error) {
+    console.error('❌ Error linking artifact to memory:', error);
+    return false;
+  }
+
+  return true;
+}
+
 async function saveMessage(supabase, { userId, phoneNumber, direction, messageText, provider, providerMessageId, sessionId, memoryId }) {
   const { data, error } = await supabase
     .from('whatsapp_messages')
@@ -515,6 +622,89 @@ serve(async (req) => {
       const userId = await findOrCreateUserByPhone(supabase, message.from);
       const sessionId = await getOrCreateSession(supabase, userId, message.from);
 
+      // Get session context to check if we're expecting media
+      let sessionContext = await getSessionContext(supabase, sessionId);
+
+      // Handle media upload if user sent an image/video
+      if (message.mediaId && sessionContext.awaiting_media_for_memory) {
+        console.log(`📸 Processing media upload for memory ${sessionContext.awaiting_media_for_memory}`);
+        
+        const mediaData = await adapter.downloadMedia(message.mediaId);
+        if (mediaData) {
+          const artifactId = await uploadMediaAsArtifact(
+            supabase,
+            userId,
+            new Uint8Array(mediaData.data),
+            message.mimeType,
+            `whatsapp_${message.messageId}`
+          );
+
+          if (artifactId) {
+            await linkArtifactToMemory(supabase, sessionContext.awaiting_media_for_memory, artifactId);
+            
+            // Clear the waiting state
+            sessionContext.awaiting_media_for_memory = null;
+            sessionContext.media_count = (sessionContext.media_count || 0) + 1;
+            await updateSessionContext(supabase, sessionId, sessionContext);
+
+            const response = "Got it! 📸 I've added that to your memory. Feel free to send more photos/videos, or just say 'done' when you're finished.";
+            
+            await saveMessage(supabase, {
+              userId,
+              phoneNumber: message.from,
+              direction: 'outbound',
+              messageText: response,
+              provider: adapter.name,
+              sessionId
+            });
+
+            await adapter.sendMessage({
+              to: message.from,
+              message: response,
+              sessionId
+            });
+
+            return new Response(
+              JSON.stringify({ success: true, mediaUploaded: true }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+        }
+      }
+
+      // Check if user is done uploading media
+      const isDoneWithMedia = sessionContext.awaiting_media_for_memory && 
+        (message.text.toLowerCase().includes('done') || 
+         message.text.toLowerCase().includes('no more') ||
+         message.text.toLowerCase().includes('that\'s all'));
+
+      if (isDoneWithMedia) {
+        sessionContext.awaiting_media_for_memory = null;
+        await updateSessionContext(supabase, sessionId, sessionContext);
+        
+        const response = `Perfect! I've saved ${sessionContext.media_count || 0} item(s) with your memory. 💫`;
+        
+        await saveMessage(supabase, {
+          userId,
+          phoneNumber: message.from,
+          direction: 'outbound',
+          messageText: response,
+          provider: adapter.name,
+          sessionId
+        });
+
+        await adapter.sendMessage({
+          to: message.from,
+          message: response,
+          sessionId
+        });
+
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       await saveMessage(supabase, {
         userId,
         phoneNumber: message.from,
@@ -572,10 +762,40 @@ serve(async (req) => {
         memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext);
         console.log(`💾 Memory saved with ID: ${memoryId}`);
         
-        // Reset session context after saving
+        // After saving, ask about media
         sessionContext.memory_discussion_count = 0;
         sessionContext.awaiting_save_confirmation = false;
+        sessionContext.awaiting_media_for_memory = memoryId;
+        sessionContext.media_count = 0;
         await updateSessionContext(supabase, sessionId, sessionContext);
+
+        // Send follow-up asking about media
+        const mediaPrompt = "Do you have any pictures or videos of this memory? Feel free to send them to me!";
+        
+        await saveMessage(supabase, {
+          userId,
+          phoneNumber: message.from,
+          direction: 'outbound',
+          messageText: mediaPrompt,
+          provider: adapter.name,
+          sessionId
+        });
+
+        await adapter.sendMessage({
+          to: message.from,
+          message: mediaPrompt,
+          sessionId
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            messageId: message.messageId,
+            memoryCreated: true,
+            awaitingMedia: true
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       await saveMessage(supabase, {
