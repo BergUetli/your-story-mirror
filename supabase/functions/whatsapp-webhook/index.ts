@@ -727,7 +727,7 @@ serve(async (req) => {
       console.log(`📚 Found ${relevantMemories.length} relevant memories for context`);
 
       // Get session context for memory discussion tracking
-      let sessionContext = await getSessionContext(supabase, sessionId);
+      sessionContext = await getSessionContext(supabase, sessionId);
       
       // Detect if this message is part of an ongoing memory discussion
       const isMemoryDiscussion = message.text.length > 50 || 
