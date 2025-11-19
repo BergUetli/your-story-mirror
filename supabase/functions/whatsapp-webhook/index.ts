@@ -75,6 +75,11 @@ class MetaWhatsAppAdapter {
         mimeType = message.video?.mime_type || 'video/mp4';
         caption = message.video?.caption || '';
         text = caption;
+      } else if (message.type === 'audio' || message.type === 'voice') {
+        mediaId = message.audio?.id || message.voice?.id;
+        mediaType = 'audio';
+        mimeType = message.audio?.mime_type || message.voice?.mime_type || 'audio/ogg';
+        text = '[Voice Note]'; // Placeholder, will be transcribed later
       } else {
         return null;
       }
@@ -209,15 +214,44 @@ class TwilioWhatsAppAdapter {
       const body = formData.get('Body')?.toString() || '';
       const messageSid = formData.get('MessageSid')?.toString() || '';
       const profileName = formData.get('ProfileName')?.toString() || '';
+      const numMedia = parseInt(formData.get('NumMedia')?.toString() || '0');
 
       const cleanFrom = from.replace('whatsapp:', '');
       const cleanTo = to.replace('whatsapp:', '');
 
+      let mediaId = null;
+      let mediaType = null;
+      let mimeType = null;
+      let text = body;
+
+      // Handle media if present
+      if (numMedia > 0) {
+        const mediaUrl = formData.get('MediaUrl0')?.toString();
+        const mediaContentType = formData.get('MediaContentType0')?.toString();
+        
+        if (mediaUrl && mediaContentType) {
+          mediaId = mediaUrl;
+          mimeType = mediaContentType;
+          
+          if (mediaContentType.startsWith('image/')) {
+            mediaType = 'image';
+          } else if (mediaContentType.startsWith('video/')) {
+            mediaType = 'video';
+          } else if (mediaContentType.startsWith('audio/')) {
+            mediaType = 'audio';
+            text = '[Voice Note]';
+          }
+        }
+      }
+
       return {
         from: cleanFrom,
         to: cleanTo,
-        text: body,
+        text,
         messageId: messageSid,
+        mediaId,
+        mediaType,
+        mimeType,
         metadata: {
           name: profileName,
           provider: 'twilio'
@@ -225,6 +259,26 @@ class TwilioWhatsAppAdapter {
       };
     } catch (error) {
       console.error('❌ Error parsing Twilio message:', error);
+      return null;
+    }
+  }
+
+  async downloadMedia(mediaUrl) {
+    try {
+      const response = await fetch(mediaUrl, {
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${this.accountSid}:${this.authToken}`)
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to download media from Twilio');
+
+      return {
+        data: await response.arrayBuffer(),
+        mimeType: response.headers.get('content-type') || 'application/octet-stream'
+      };
+    } catch (error) {
+      console.error('❌ Error downloading Twilio media:', error);
       return null;
     }
   }
@@ -372,7 +426,7 @@ async function uploadMediaAsArtifact(supabase, userId, mediaData, mimeType, file
     const { data: artifactData, error: artifactError } = await supabase
       .from('artifacts')
       .insert({
-        artifact_type: mimeType.startsWith('image/') ? 'image' : 'video',
+        artifact_type: mimeType.startsWith('image/') ? 'image' : mimeType.startsWith('video/') ? 'video' : 'audio',
         storage_path: uploadData.path,
         mime_type: mimeType,
         file_name: filename
@@ -403,6 +457,47 @@ async function linkArtifactToMemory(supabase, memoryId, artifactId) {
   }
 
   return true;
+}
+
+async function transcribeAudio(audioData: ArrayBuffer, mimeType: string): Promise<string | null> {
+  try {
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) {
+      console.error('❌ OpenAI API key not configured');
+      return null;
+    }
+
+    // Create form data for Whisper API
+    const formData = new FormData();
+    const blob = new Blob([audioData], { type: mimeType });
+    formData.append('file', blob, 'audio.ogg');
+    formData.append('model', 'whisper-1');
+    formData.append('response_format', 'text');
+
+    console.log(`🎤 Transcribing audio (${mimeType})...`);
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ OpenAI Whisper API error: ${errorText}`);
+      return null;
+    }
+
+    const transcription = await response.text();
+    console.log(`✅ Transcription complete: "${transcription.substring(0, 100)}..."`);
+    
+    return transcription;
+  } catch (error) {
+    console.error('❌ Error transcribing audio:', error);
+    return null;
+  }
 }
 
 async function saveMessage(supabase, { userId, phoneNumber, direction, messageText, provider, providerMessageId, sessionId, memoryId }) {
@@ -676,8 +771,28 @@ serve(async (req) => {
       // Get session context to check if we're expecting media
       let sessionContext = await getSessionContext(supabase, sessionId);
 
-      // Handle media upload if user sent an image/video
-      if (message.mediaId && sessionContext.awaiting_media_for_memory) {
+      // Handle voice notes - transcribe them first
+      if (message.mediaType === 'audio' && message.mediaId) {
+        console.log(`🎤 Processing voice note from ${message.from}`);
+        
+        const audioData = await adapter.downloadMedia(message.mediaId);
+        if (audioData) {
+          const transcription = await transcribeAudio(audioData.data, message.mimeType);
+          if (transcription) {
+            message.text = transcription;
+            console.log(`✅ Voice note transcribed: "${transcription.substring(0, 100)}..."`);
+          } else {
+            console.error('❌ Failed to transcribe voice note');
+            message.text = '[Voice note - transcription failed]';
+          }
+        } else {
+          console.error('❌ Failed to download voice note');
+          message.text = '[Voice note - download failed]';
+        }
+      }
+
+      // Handle media upload if user sent an image/video (not audio)
+      if (message.mediaId && message.mediaType !== 'audio' && sessionContext.awaiting_media_for_memory) {
         console.log(`📸 Processing media upload for memory ${sessionContext.awaiting_media_for_memory}`);
         
         const mediaData = await adapter.downloadMedia(message.mediaId);
