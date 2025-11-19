@@ -281,6 +281,23 @@ async function getOrCreateSession(supabase, userId, phoneNumber) {
   return data;
 }
 
+async function getSessionContext(supabase, sessionId) {
+  const { data } = await supabase
+    .from('whatsapp_sessions')
+    .select('context')
+    .eq('session_id', sessionId)
+    .single();
+  
+  return data?.context || {};
+}
+
+async function updateSessionContext(supabase, sessionId, context) {
+  await supabase
+    .from('whatsapp_sessions')
+    .update({ context })
+    .eq('session_id', sessionId);
+}
+
 async function saveMessage(supabase, { userId, phoneNumber, direction, messageText, provider, providerMessageId, sessionId, memoryId }) {
   const { data, error } = await supabase
     .from('whatsapp_messages')
@@ -359,7 +376,7 @@ async function searchRelevantMemories(supabase, userId, userMessage, limit = 5) 
     }));
 }
 
-async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = []) {
+async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = [], sessionContext = {}) {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) throw new Error("OpenAI API key not configured");
 
@@ -367,34 +384,42 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
 
   let memoryContext = '';
   if (relevantMemories.length > 0) {
-    memoryContext = '\n\nRelevant memories from past conversations:\n' + 
+    memoryContext = '\n\nRelevant memories:\n' + 
       relevantMemories.map(m => 
-        `- ${m.title} (${m.date ? new Date(m.date).toLocaleDateString() : 'recent'}): ${m.text}`
+        `- When you ${m.title.toLowerCase()}: ${m.text}`
       ).join('\n');
   }
 
-  const systemPrompt = `You are Solin, an empathetic AI memory companion. You're conversing with ${userName || 'a user'} over WhatsApp.
+  // Check if user is confirming to save a memory
+  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save it', 'please', 'definitely'];
+  const isConfirmingSave = sessionContext.awaiting_save_confirmation && 
+    confirmationKeywords.some(word => userMessage.toLowerCase().includes(word));
 
-Your purpose:
-- Have natural, warm conversations about their life, memories, and experiences
-- Help them preserve important moments by identifying stories worth saving
-- Reference their past memories when relevant to show you remember
-- Be concise but meaningful (WhatsApp is for quick exchanges)
-- When they share a significant memory or story, acknowledge it and indicate you'll save it
+  const systemPrompt = `You are Solin, a warm childhood friend helping ${userName || 'your friend'} preserve life memories over WhatsApp.
 
-When to save memories:
-- User shares a specific life event or experience
-- User explicitly asks to save/remember something
-- A meaningful story or moment is described in detail
+PERSONALITY:
+- Playful, fun, and supportive - like a close friend from childhood
+- Culturally neutral - avoid strong Americanisms 
+- Keep responses SHORT (1-3 sentences, 5-10 words per sentence)
+- Sound like someone their age, not a formal assistant
 
-Keep responses conversational and under 3-4 sentences unless they're sharing a detailed story.${memoryContext}
+YOUR APPROACH TO MEMORIES:
+1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
+2. Ask about: feelings, specific details, why it mattered, who was involved
+3. After exploring (3-4 exchanges about the topic), ask: "Want me to save this memory?"
+4. ONLY save when they explicitly confirm "yes"
 
-If the message seems like a memory worth preserving, end your response with:
-[SAVE_MEMORY: brief title of the memory]
+IMPORTANT RULES:
+- Ask ONE question at a time
+- Keep it conversational, not interrogative
+- Reference their past memories naturally when relevant${memoryContext}
+${sessionContext.awaiting_save_confirmation ? '\n\nNOTE: User is responding to your question about saving a memory. If they confirm, acknowledge and mark [SAVE_MEMORY].' : ''}
+${sessionContext.memory_discussion_count >= 2 ? '\n\nNOTE: You\'ve asked a couple follow-up questions. After one more, you can ask if they want to save this memory.' : ''}
 
-Example:
-User: "I just got back from an amazing trip to Japan. We visited Kyoto and saw the most beautiful temples."
-Solin: "That sounds incredible! Kyoto temples are truly magical. I'd love to hear more about what stood out to you most. [SAVE_MEMORY: Trip to Japan - Kyoto temples]"`;
+Response format:
+- Normal conversation: Just respond naturally
+- When asking to save: "Want me to save this memory?"
+- When user confirms save: "Got it, saved! 💫 [SAVE_MEMORY: brief descriptive title]"`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -405,34 +430,45 @@ Solin: "That sounds incredible! Kyoto temples are truly magical. I'd love to hea
   const completion = await openai.chat.completions.create({
     model: "gpt-4.1-2025-04-14",
     messages: messages,
-    temperature: 0.8,
-    max_tokens: 500
+    max_completion_tokens: 500
   });
 
   const responseText = completion.choices[0]?.message?.content || "I'm here to listen and remember with you.";
 
   const saveMemoryMatch = responseText.match(/\[SAVE_MEMORY:\s*(.+?)\]/);
-  const shouldCreateMemory = !!saveMemoryMatch;
+  const shouldCreateMemory = !!saveMemoryMatch && isConfirmingSave;
   const cleanResponse = responseText.replace(/\[SAVE_MEMORY:\s*.+?\]/, '').trim();
+  
+  // Detect if asking about saving memory
+  const isAskingToSave = cleanResponse.toLowerCase().includes('want me to save') || 
+                         cleanResponse.toLowerCase().includes('save this memory');
 
   return {
     response: cleanResponse,
     shouldCreateMemory,
-    memoryContent: shouldCreateMemory ? userMessage : undefined
+    memoryContent: shouldCreateMemory ? userMessage : undefined,
+    isAskingToSave
   };
 }
 
-async function createMemoryFromMessage(supabase, userId, messageText, context) {
-  const title = messageText.split('\n')[0].substring(0, 100) || 'WhatsApp Memory';
+async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext) {
+  // Get the relevant parts of the conversation that led to this memory
+  const recentExchanges = conversationHistory.slice(-6); // Last 3 exchanges (6 messages)
+  const memoryText = recentExchanges
+    .map(msg => `${msg.role === 'user' ? 'Me' : 'Solin'}: ${msg.content}`)
+    .join('\n\n');
+  
+  const title = recentExchanges[0]?.content?.split('\n')[0].substring(0, 100) || 'WhatsApp Memory';
   
   const { data, error } = await supabase
     .from('memories')
     .insert({
       user_id: userId,
       title,
-      text: messageText,
+      text: memoryText,
       tags: ['whatsapp', 'conversation'],
-      recipient: 'private'
+      recipient: 'private',
+      source_type: 'whatsapp'
     })
     .select('id')
     .single();
@@ -500,16 +536,46 @@ serve(async (req) => {
 
       console.log(`📚 Found ${relevantMemories.length} relevant memories for context`);
 
-      const { response, shouldCreateMemory, memoryContent } = await generateSolinResponse(
+      // Get session context for memory discussion tracking
+      let sessionContext = await getSessionContext(supabase, sessionId);
+      
+      // Detect if this message is part of an ongoing memory discussion
+      const isMemoryDiscussion = message.text.length > 50 || 
+        conversationHistory.slice(-3).some(msg => 
+          msg.role === 'assistant' && (
+            msg.content.includes('?') || 
+            msg.content.toLowerCase().includes('tell me') ||
+            msg.content.toLowerCase().includes('what')
+          )
+        );
+
+      if (isMemoryDiscussion) {
+        sessionContext.memory_discussion_count = (sessionContext.memory_discussion_count || 0) + 1;
+      } else {
+        sessionContext.memory_discussion_count = 0;
+      }
+
+      const { response, shouldCreateMemory, memoryContent, isAskingToSave } = await generateSolinResponse(
         message.text,
         conversationHistory,
         userData?.name || message.metadata?.name,
-        relevantMemories
+        relevantMemories,
+        sessionContext
       );
 
+      // Update session context
+      sessionContext.awaiting_save_confirmation = isAskingToSave;
+      await updateSessionContext(supabase, sessionId, sessionContext);
+
       let memoryId = null;
-      if (shouldCreateMemory && memoryContent) {
-        memoryId = await createMemoryFromMessage(supabase, userId, memoryContent, sessionId);
+      if (shouldCreateMemory) {
+        memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext);
+        console.log(`💾 Memory saved with ID: ${memoryId}`);
+        
+        // Reset session context after saving
+        sessionContext.memory_discussion_count = 0;
+        sessionContext.awaiting_save_confirmation = false;
+        await updateSessionContext(supabase, sessionId, sessionContext);
       }
 
       await saveMessage(supabase, {
