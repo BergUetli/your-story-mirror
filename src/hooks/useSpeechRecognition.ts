@@ -161,14 +161,12 @@ declare global {
   interface SpeechRecognitionResultList {
     readonly length: number;
     item(index: number): SpeechRecognitionResult;
-    [index: number]: SpeechRecognitionResult;
   }
 
   interface SpeechRecognitionResult {
     readonly length: number;
     readonly isFinal: boolean;
     item(index: number): SpeechRecognitionAlternative;
-    [index: number]: SpeechRecognitionAlternative;
   }
 
   interface SpeechRecognitionAlternative {

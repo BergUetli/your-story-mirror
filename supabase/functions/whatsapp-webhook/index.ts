@@ -142,17 +142,57 @@ class MetaWhatsAppAdapter {
     }
   }
 
+  async uploadAudio(audioBuffer) {
+    try {
+      // Upload audio to Meta's media API
+      const formData = new FormData();
+      const blob = new Blob([audioBuffer], { type: 'audio/ogg; codecs=opus' });
+      formData.append('file', blob, 'audio.ogg');
+      formData.append('messaging_product', 'whatsapp');
+      formData.append('type', 'audio/ogg');
+
+      const uploadUrl = `https://graph.facebook.com/v18.0/${this.phoneNumberId}/media`;
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+        body: formData
+      });
+
+      const uploadResult = await uploadResponse.json();
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Media upload error: ${JSON.stringify(uploadResult)}`);
+      }
+
+      return uploadResult.id; // Return media ID
+    } catch (error) {
+      console.error('❌ Error uploading audio to Meta:', error);
+      return null;
+    }
+  }
+
   async sendMessage(options) {
     try {
       const url = `https://graph.facebook.com/v18.0/${this.phoneNumberId}/messages`;
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+      let messageBody;
+      
+      if (options.audioMediaId) {
+        // Send audio message
+        messageBody = {
+          messaging_product: 'whatsapp',
+          recipient_type: 'individual',
+          to: options.to,
+          type: 'audio',
+          audio: {
+            id: options.audioMediaId
+          }
+        };
+      } else {
+        // Send text message
+        messageBody = {
           messaging_product: 'whatsapp',
           recipient_type: 'individual',
           to: options.to,
@@ -161,7 +201,16 @@ class MetaWhatsAppAdapter {
             preview_url: false,
             body: options.message
           }
-        })
+        };
+      }
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(messageBody)
       });
 
       const result = await response.json();
@@ -496,6 +545,52 @@ async function transcribeAudio(audioData: ArrayBuffer, mimeType: string): Promis
     return transcription;
   } catch (error) {
     console.error('❌ Error transcribing audio:', error);
+    return null;
+  }
+}
+
+async function generateVoiceResponse(text: string): Promise<ArrayBuffer | null> {
+  try {
+    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    if (!ELEVENLABS_API_KEY) {
+      console.error('❌ ElevenLabs API key not configured');
+      return null;
+    }
+
+    // Use Solin's voice from the agent config
+    const voiceId = '9BWtsMINqrJLrRacOk9x'; // Aria voice
+    
+    console.log(`🎙️ Generating voice for text: "${text.substring(0, 50)}..."`);
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'audio/mpeg',
+        'Content-Type': 'application/json',
+        'xi-api-key': ELEVENLABS_API_KEY,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: {
+          stability: 0.71,
+          similarity_boost: 0.5
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ ElevenLabs API error: ${response.status} - ${errorText}`);
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    console.log(`✅ Voice generated: ${audioBuffer.byteLength} bytes`);
+    
+    return audioBuffer;
+  } catch (error) {
+    console.error('❌ Error generating voice:', error);
     return null;
   }
 }
@@ -866,20 +961,34 @@ serve(async (req) => {
         
         const response = `Perfect! I've saved ${sessionContext.media_count || 0} item(s) with your memory. 💫`;
         
-        await saveMessage(supabase, {
-          userId,
-          phoneNumber: message.from,
-          direction: 'outbound',
-          messageText: response,
-          provider: adapter.name,
-          sessionId
-        });
+      await saveMessage(supabase, {
+        userId,
+        phoneNumber: message.from,
+        direction: 'outbound',
+        messageText: response,
+        provider: adapter.name,
+        sessionId
+      });
 
-        await adapter.sendMessage({
-          to: message.from,
-          message: response,
-          sessionId
-        });
+      // Generate voice response if user sent a voice note
+      let audioMediaId = null;
+      if (message.mediaType === 'audio') {
+        console.log('🎙️ User sent voice, responding with voice...');
+        const audioBuffer = await generateVoiceResponse(response);
+        if (audioBuffer && adapter.uploadAudio) {
+          audioMediaId = await adapter.uploadAudio(audioBuffer);
+          if (audioMediaId) {
+            console.log(`✅ Voice response uploaded: ${audioMediaId}`);
+          }
+        }
+      }
+
+      await adapter.sendMessage({
+        to: message.from,
+        message: response,
+        audioMediaId,
+        sessionId
+      });
 
         return new Response(
           JSON.stringify({ success: true }),
