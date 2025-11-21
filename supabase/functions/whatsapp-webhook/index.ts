@@ -697,8 +697,9 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
 PERSONALITY:
 - Playful, fun, and supportive - like a close friend from childhood
 - Culturally neutral - avoid strong Americanisms 
-- Keep responses SHORT (1-3 sentences, 5-10 words per sentence)
+- Keep responses VERY SHORT for voice (1-2 sentences max, 5-8 words per sentence)
 - Sound like someone their age, not a formal assistant
+- If they're using voice notes, keep your response even more concise and conversational
 
 YOUR APPROACH TO MEMORIES:
 1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
@@ -892,6 +893,22 @@ serve(async (req) => {
           if (transcription) {
             message.text = transcription;
             console.log(`✅ Voice note transcribed: "${transcription.substring(0, 100)}..."`);
+            
+            // Send transcription back to user for reference
+            const transcriptMessage = `🎤 _"${transcription}"_`;
+            await adapter.sendMessage({
+              to: message.from,
+              message: transcriptMessage
+            });
+            
+            await saveMessage(supabase, {
+              userId,
+              phoneNumber: message.from,
+              direction: 'outbound',
+              messageText: transcriptMessage,
+              provider: adapter.name,
+              sessionId
+            });
           } else {
             console.error('❌ Failed to transcribe voice note');
             message.text = '[Voice note - transcription failed]';
@@ -979,14 +996,34 @@ serve(async (req) => {
           audioMediaId = await adapter.uploadAudio(audioBuffer);
           if (audioMediaId) {
             console.log(`✅ Voice response uploaded: ${audioMediaId}`);
+            
+            // Send voice response
+            await adapter.sendMessage({
+              to: message.from,
+              audioMediaId,
+              sessionId
+            });
+            
+            // Also send text version for reference
+            const textReference = `💬 _"${response}"_`;
+            await adapter.sendMessage({
+              to: message.from,
+              message: textReference,
+              sessionId
+            });
+            
+            return new Response(
+              JSON.stringify({ success: true, voiceResponse: true }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
           }
         }
       }
 
+      // Send text response if not voice
       await adapter.sendMessage({
         to: message.from,
         message: response,
-        audioMediaId,
         sessionId
       });
 
