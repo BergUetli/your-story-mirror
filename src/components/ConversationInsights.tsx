@@ -3,12 +3,28 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tag, TrendingUp, Calendar, MapPin, User } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ExtractedTag {
   name: string;
   category: 'people' | 'places' | 'emotions' | 'activities' | 'family' | 'memories';
   count: number;
 }
+
+// Map backend topics to frontend categories
+const TOPIC_TO_CATEGORY_MAP: Record<string, ExtractedTag['category']> = {
+  family: 'family',
+  work: 'activities',
+  travel: 'places',
+  food: 'activities',
+  health: 'activities',
+  hobbies: 'activities',
+  friends: 'people',
+  education: 'activities',
+  home: 'places',
+  emotions: 'emotions',
+};
 
 interface ConversationInsightsProps {
   conversationId?: string;
@@ -25,26 +41,63 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   conversationId,
   tags = []
 }) => {
+  const { user } = useAuth();
   const [extractedTags, setExtractedTags] = useState<ExtractedTag[]>(tags);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for demo - replace with actual API call
+  // Fetch real tags from voice_recordings table
   useEffect(() => {
-    if (conversationId && tags.length === 0) {
-      // Simulate tag extraction after conversation
+    const fetchConversationTags = async () => {
+      if (!user?.id || tags.length > 0) return;
+      
       setIsExtracting(true);
-      setTimeout(() => {
-        setExtractedTags([
-          { name: 'Family', category: 'family', count: 5 },
-          { name: 'Memory', category: 'memories', count: 3 },
-          { name: 'Shiven', category: 'people', count: 8 },
-          { name: 'Zurich', category: 'places', count: 2 },
-          { name: 'Nostalgia', category: 'emotions', count: 4 },
-        ]);
+      setError(null);
+      
+      try {
+        // Fetch the most recent conversation recording for this user
+        const { data: recordings, error: fetchError } = await supabase
+          .from('voice_recordings')
+          .select('topics, transcript_text')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (fetchError) throw fetchError;
+
+        if (recordings && recordings.length > 0 && recordings[0].topics) {
+          const topics = recordings[0].topics as string[];
+          
+          // Convert backend topics to frontend tags with categories
+          const tagsFromTopics: ExtractedTag[] = topics.map(topic => ({
+            name: topic.charAt(0).toUpperCase() + topic.slice(1),
+            category: TOPIC_TO_CATEGORY_MAP[topic] || 'activities',
+            count: 1 // Will be updated with actual frequency in future
+          }));
+
+          // Aggregate duplicate topics
+          const aggregated = tagsFromTopics.reduce((acc, tag) => {
+            const existing = acc.find(t => t.name === tag.name);
+            if (existing) {
+              existing.count++;
+            } else {
+              acc.push({ ...tag });
+            }
+            return acc;
+          }, [] as ExtractedTag[]);
+
+          setExtractedTags(aggregated);
+        }
+      } catch (err) {
+        console.error('Error fetching conversation tags:', err);
+        setError('Failed to load conversation insights');
+      } finally {
         setIsExtracting(false);
-      }, 2000);
-    }
-  }, [conversationId, tags]);
+      }
+    };
+
+    fetchConversationTags();
+  }, [conversationId, tags, user?.id]);
 
   const getCategoryColor = (category: ExtractedTag['category']) => {
     const colors = {
@@ -98,7 +151,12 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
             )}
           </div>
 
-          {extractedTags.length === 0 && !isExtracting ? (
+          {error ? (
+            <div className="text-center py-8 text-destructive">
+              <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">{error}</p>
+            </div>
+          ) : extractedTags.length === 0 && !isExtracting ? (
             <div className="text-center py-8 text-muted-foreground">
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No tags extracted yet</p>
