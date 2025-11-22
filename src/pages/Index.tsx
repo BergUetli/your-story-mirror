@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { ModernVoiceAgent } from '@/components/ModernVoiceAgent';
 import { ParticleFaceCanvas } from '@/components/ParticleFaceCanvas';
+import { ConversationInsights } from '@/components/ConversationInsights';
 import { intelligentPrompting } from '@/services/intelligentPrompting';
 import { chunkMemoryContent } from '@/utils/memoryChunking';
 import { narrativeAI, type NarrativeGenerationContext } from '@/services/narrativeAI';
@@ -2726,135 +2727,9 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
 
         <div className="relative min-h-screen flex flex-col lg:flex-row items-start justify-center px-6 lg:px-12 py-6 gap-6 lg:gap-8">
           
-          {/* Left Side - Conversation Mode Selector (Moved from right) */}
+          {/* Left Side - Solin Agent (40% width on desktop) */}
           <div 
-            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col relative transition-all duration-300 hover:shadow-2xl order-1 lg:order-1"
-            style={{ 
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
-              backdropFilter: 'blur(20px)',
-              borderColor: 'rgba(229, 231, 235, 0.6)',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
-            }}
-          >
-            {/* Subtle background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-purple-50/20 rounded-2xl pointer-events-none"></div>
-            
-            {/* Content container with relative positioning */}
-            <div className="relative z-10 flex flex-col h-full">
-              {/* Header */}
-              <div className="mb-4 pb-3 border-b flex-shrink-0" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-lg lg:text-xl font-bold text-foreground">
-                  Choose Your Mode
-                </h2>
-                <p className="text-xs lg:text-sm text-muted-foreground mt-1">
-                  What would you like to talk about?
-                </p>
-              </div>
-              
-              {/* Mode Selection Cards - Scrollable */}
-              <div className="flex-1 overflow-y-auto pr-2 space-y-2.5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(203, 213, 225, 0.5) transparent' }}>
-                {/* Present - Daily Journaling */}
-                <button
-                  onClick={() => setSelectedMode('present')}
-                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'present'
-                      ? 'border-blue-400 bg-blue-50/50'
-                      : 'border-gray-200 hover:border-blue-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="text-xl">📝</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm text-foreground">Present - Daily Journal</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Daily thoughts and experiences
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Past - Memories */}
-                <button
-                  onClick={() => setSelectedMode('past')}
-                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'past'
-                      ? 'border-purple-400 bg-purple-50/50'
-                      : 'border-gray-200 hover:border-purple-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="text-xl">🕰️</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm text-foreground">Past - Memories</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Important memories from your past
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Future - Plans & Messages */}
-                <button
-                  onClick={() => setSelectedMode('future')}
-                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'future'
-                      ? 'border-green-400 bg-green-50/50'
-                      : 'border-gray-200 hover:border-green-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="text-xl">🔮</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm text-foreground">Future - Plans & Messages</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Plans and messages for your future
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                {/* Wisdom - Reflections */}
-                <button
-                  onClick={() => setSelectedMode('wisdom')}
-                  className={`w-full text-left p-3 rounded-xl border-2 transition-all duration-300 hover:scale-[1.02] ${
-                    selectedMode === 'wisdom'
-                      ? 'border-amber-400 bg-amber-50/50'
-                      : 'border-gray-200 hover:border-amber-200'
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="text-xl">💭</div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm text-foreground">Wisdom - Deeper Topics</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Culture, music, philosophy, reflections
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              
-              {/* Current Selection Indicator */}
-              {!isConnected && (
-                <div className="mt-3 pt-3 border-t flex-shrink-0" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground">
-                      Selected: <span className="font-semibold text-foreground text-xs">
-                        {selectedMode === 'present' && '📝 Present'}
-                        {selectedMode === 'past' && '🕰️ Past'}
-                        {selectedMode === 'future' && '🔮 Future'}
-                        {selectedMode === 'wisdom' && '💭 Wisdom'}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Center - Solin Agent */}
-          <div 
-            className="flex-1 max-w-xl w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-2 lg:order-2 overflow-hidden"
+            className="flex-1 lg:flex-[0_0_40%] w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 sm:p-8 flex flex-col justify-center animate-fade-in transition-all duration-300 hover:shadow-2xl order-1 lg:order-1 overflow-hidden"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2873,9 +2748,9 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             )}
           </div>
 
-          {/* Right Side - Chat Transcript Box */}
+          {/* Middle - Chat Transcript Box (25% width on desktop) */}
           <div 
-            className="flex-1 max-w-sm w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-3 lg:order-3"
+            className="flex-1 lg:flex-[0_0_25%] w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-2 lg:order-2"
             style={{ 
               background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
               backdropFilter: 'blur(20px)',
@@ -2951,6 +2826,27 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                   </Button>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Right Side - Conversation Insights (35% width on desktop) */}
+          <div 
+            className="flex-1 lg:flex-[0_0_35%] w-full h-[60vh] lg:h-[70vh] max-h-[600px] rounded-2xl border-[1.5px] p-6 flex flex-col overflow-hidden relative transition-all duration-300 hover:shadow-2xl order-3 lg:order-3"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.98), rgba(249,250,251,0.95))',
+              backdropFilter: 'blur(20px)',
+              borderColor: 'rgba(229, 231, 235, 0.6)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            {/* Subtle background decoration */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/30 via-transparent to-pink-50/20 rounded-2xl pointer-events-none"></div>
+            
+            {/* Content container */}
+            <div className="relative z-10 flex flex-col h-full">
+              <ConversationInsights 
+                conversationId={isConnected ? 'current' : undefined}
+              />
             </div>
           </div>
           
