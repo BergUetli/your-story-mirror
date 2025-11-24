@@ -736,9 +736,15 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   }
 
   // Check if user is confirming to save a memory
-  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save it', 'please', 'definitely'];
+  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save', 'please', 'definitely', 'go ahead', 'do it'];
+  const denyKeywords = ['no', 'nope', 'don\'t', 'not', 'cancel', 'skip'];
+  
+  const userMessageLower = userMessage.toLowerCase();
+  const hasDenyKeyword = denyKeywords.some(word => userMessageLower.includes(word));
+  const hasConfirmKeyword = confirmationKeywords.some(word => userMessageLower.includes(word));
+  
   const isConfirmingSave = sessionContext.awaiting_save_confirmation && 
-    confirmationKeywords.some(word => userMessage.toLowerCase().includes(word));
+    hasConfirmKeyword && !hasDenyKeyword;
 
   const systemPrompt = `You are Solin, a warm childhood friend helping ${userName || 'your friend'} preserve life memories over WhatsApp.
 
@@ -792,6 +798,12 @@ Response format:
   const saveMemoryMatch = responseText.match(/\[SAVE_MEMORY:\s*(.+?)\]/);
   const shouldCreateMemory = !!saveMemoryMatch && isConfirmingSave;
   const cleanResponse = responseText.replace(/\[SAVE_MEMORY:\s*.+?\]/, '').trim();
+  
+  // Log memory save decision
+  if (saveMemoryMatch) {
+    console.log(`💾 AI marked memory for saving: "${saveMemoryMatch[1]}"`);
+    console.log(`📋 Confirmation check - awaiting: ${sessionContext.awaiting_save_confirmation}, confirming: ${isConfirmingSave}, will save: ${shouldCreateMemory}`);
+  }
   
   // Detect if asking about saving memory
   const isAskingToSave = cleanResponse.toLowerCase().includes('want me to save') || 
