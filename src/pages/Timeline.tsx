@@ -225,15 +225,6 @@ const Timeline = () => {
         )}
       </div>
 
-      {selectedMemory && (
-        <MemoryDetailDialog
-          memory={selectedMemory}
-          open={!!selectedMemory}
-          onOpenChange={(open) => !open && setSelectedMemory(null)}
-          onUpdate={fetchTimelineData}
-        />
-      )}
-
       <EnhancedVoiceSearch
         open={showVoiceSearch}
         onOpenChange={setShowVoiceSearch}
