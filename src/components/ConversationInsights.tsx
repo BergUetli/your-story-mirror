@@ -207,34 +207,15 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       </Card>
 
       {/* Sentiment Timeline (Placeholder) */}
-      <Card className="p-4">
+      <Card className="p-4 flex-1">
         <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />
           Sentiment Timeline
         </h4>
-        <div className="h-24 bg-gradient-to-r from-green-100 via-yellow-100 to-green-100 rounded-lg flex items-center justify-center">
+        <div className="h-full min-h-[120px] bg-gradient-to-r from-green-100 via-yellow-100 to-green-100 rounded-lg flex items-center justify-center">
           <p className="text-xs text-muted-foreground">
             Sentiment analysis coming soon
           </p>
-        </div>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card className="p-3">
-        <h4 className="text-xs font-medium text-foreground mb-2">🔍 Quick Actions</h4>
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" className="text-xs h-8">
-            📥 Export
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs h-8">
-            📋 Copy
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs h-8">
-            🔗 Share
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs h-8">
-            ⭐ Save
-          </Button>
         </div>
       </Card>
     </div>
