@@ -20,7 +20,7 @@ export const TimelineNavigation: React.FC<TimelineNavigationProps> = ({
   onChapterClick,
 }) => {
   return (
-    <nav className="fixed left-0 top-24 bottom-0 w-64 bg-gradient-to-b from-card/80 to-background/80 backdrop-blur-md border-r border-border/50 p-8 overflow-y-auto z-40 hidden lg:block">
+    <nav className="fixed left-0 top-24 bottom-0 w-64 bg-gradient-to-b from-card/80 to-background/80 backdrop-blur-md border-r-2 border-border p-8 overflow-y-auto z-40 hidden lg:block">
       <div className="space-y-2">
         <h3 className="font-manrope font-semibold text-xs uppercase tracking-wider text-muted-foreground mb-6">
           Life Chapters
