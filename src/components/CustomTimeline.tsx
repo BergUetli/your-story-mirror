@@ -142,22 +142,23 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
       {/* Left: Timeline */}
       <div className="flex-1 flex flex-col border-r border-border">
         {/* Navigation Controls */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-background via-card to-background backdrop-blur-sm">
           <Button
             variant="outline"
             size="sm"
             onClick={jumpToPast}
             disabled={viewStartYear <= minYear}
+            className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 shadow-sm"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             Past
           </Button>
           
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-gradient-to-r from-primary/20 to-primary/10 text-primary border-primary/30 shadow-sm px-3 py-1">
               🎂 Birth
             </Badge>
-            <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/20">
+            <Badge variant="outline" className="bg-gradient-to-r from-accent/20 to-accent/10 text-accent-foreground border-accent/30 shadow-sm px-3 py-1">
               ⭐ Today
             </Badge>
           </div>
@@ -167,6 +168,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
             size="sm"
             onClick={jumpToFuture}
             disabled={viewEndYear >= maxYear}
+            className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 shadow-sm"
           >
             Future
             <ChevronRight className="w-4 h-4 ml-1" />
@@ -181,7 +183,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
         >
           <div className="relative py-8 px-4 sm:px-8 max-w-2xl mx-auto">
             {/* Timeline Line */}
-            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-border to-primary/30" />
+            <div className="absolute left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/40 via-primary/20 to-primary/40 rounded-full shadow-lg shadow-primary/10" />
 
             {/* Year Markers and Memories */}
             {displayYears.map((year) => {
@@ -197,42 +199,42 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                   className="relative mb-8 ml-16"
                 >
                   {/* Year Marker Dot */}
-                  <div className="absolute -left-[34px] top-2">
+                  <div className="absolute -left-[36px] top-2">
                     <div
                       className={cn(
-                        "w-3 h-3 rounded-full border-2 transition-all",
+                        "w-4 h-4 rounded-full border-2 transition-all duration-300 hover:scale-125",
                         isBirthYear
-                          ? "bg-primary border-primary shadow-lg shadow-primary/50"
+                          ? "bg-gradient-to-br from-primary to-primary/80 border-primary shadow-xl shadow-primary/50 animate-pulse"
                           : isCurrentYear
-                          ? "bg-accent border-accent shadow-lg shadow-accent/50"
+                          ? "bg-gradient-to-br from-accent to-accent/80 border-accent shadow-xl shadow-accent/50 ring-2 ring-accent/20"
                           : hasMemories
-                          ? "bg-primary/20 border-primary/40"
-                          : "bg-background border-border"
+                          ? "bg-gradient-to-br from-primary/30 to-primary/10 border-primary/40 shadow-md shadow-primary/20"
+                          : "bg-background border-border/60 shadow-sm"
                       )}
                     />
                   </div>
 
                   {/* Year Label */}
-                  <div className="mb-3">
+                  <div className="mb-4">
                     <div
                       className={cn(
-                        "inline-flex items-center gap-2 px-3 py-1 rounded-md font-semibold text-sm transition-all",
+                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105",
                         isBirthYear
-                          ? "bg-primary/10 text-primary border border-primary/20"
+                          ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 shadow-md"
                           : isCurrentYear
-                          ? "bg-accent/10 text-accent-foreground border border-accent/20"
-                          : "text-muted-foreground"
+                          ? "bg-gradient-to-r from-accent/20 to-accent/10 text-accent-foreground border border-accent/30 shadow-md"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <span>{year}</span>
-                      {isBirthYear && <span className="text-xs">Born</span>}
-                      {isCurrentYear && <span className="text-xs">Present</span>}
+                      <span className="text-base">{year}</span>
+                      {isBirthYear && <span className="text-xs opacity-80">Born</span>}
+                      {isCurrentYear && <span className="text-xs opacity-80">Present</span>}
                     </div>
                   </div>
 
                   {/* Memory Cards */}
                   {yearMemories.length > 0 && (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {yearMemories.map((memory) => {
                         const artifacts = memoryArtifacts.get(memory.id) || [];
                         const artifact = artifacts.length > 0 ? artifacts[0] : null;
@@ -240,7 +242,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                         return (
                           <div
                             key={memory.id}
-                            className="transition-all duration-200"
+                            className="transition-all duration-300 hover:translate-x-1"
                           >
                             <TimelineMemoryCard
                               memory={memory}
@@ -260,26 +262,28 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
       </div>
 
       {/* Right: Memory Detail Panel */}
-      <div className="w-[400px] bg-card border-l border-border overflow-y-auto">
+      <div className="w-[400px] bg-gradient-to-b from-card to-background border-l border-border/50 overflow-y-auto shadow-xl">
         {selectedMemory ? (
           <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <h2 className="text-xl font-semibold pr-8">{selectedMemory.title}</h2>
+            <div className="flex items-start justify-between mb-6">
+              <h2 className="text-2xl font-bold pr-8 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                {selectedMemory.title}
+              </h2>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setSelectedMemory(null)}
-                className="flex-shrink-0"
+                className="flex-shrink-0 hover:bg-destructive/10 hover:text-destructive transition-all duration-300"
               >
                 <X className="w-4 h-4" />
               </Button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Date */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>
+              <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 border border-border/50">
+                <Calendar className="w-5 h-5 text-primary" />
+                <span className="font-medium">
                   {new Date(selectedMemory.memory_date || selectedMemory.created_at).toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
@@ -291,19 +295,23 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
 
               {/* Location */}
               {selectedMemory.memory_location && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span>{selectedMemory.memory_location}</span>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground bg-muted/30 rounded-lg p-3 border border-border/50">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <span className="font-medium">{selectedMemory.memory_location}</span>
                 </div>
               )}
 
               {/* Tags */}
               {selectedMemory.tags && selectedMemory.tags.length > 0 && (
-                <div className="flex items-start gap-2">
-                  <Tag className="w-4 h-4 mt-1 text-muted-foreground" />
+                <div className="flex items-start gap-3 bg-muted/30 rounded-lg p-3 border border-border/50">
+                  <Tag className="w-5 h-5 mt-0.5 text-primary flex-shrink-0" />
                   <div className="flex flex-wrap gap-2">
                     {selectedMemory.tags.map((tag: string, index: number) => (
-                      <Badge key={index} variant="secondary">
+                      <Badge 
+                        key={index} 
+                        variant="secondary"
+                        className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 transition-colors duration-200"
+                      >
                         {tag}
                       </Badge>
                     ))}
@@ -313,24 +321,29 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
 
               {/* Images */}
               {memoryArtifacts.get(selectedMemory.id)?.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold">Media</h3>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
+                    <span className="w-1 h-4 bg-primary rounded-full"></span>
+                    Media
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
                     {memoryArtifacts.get(selectedMemory.id).map((artifact: any, index: number) => (
-                      <img
-                        key={index}
-                        src={artifact.signedUrl}
-                        alt=""
-                        className="w-full h-24 object-cover rounded-md border border-border"
-                      />
+                      <div key={index} className="group relative overflow-hidden rounded-lg border border-border/50 shadow-md hover:shadow-xl transition-all duration-300">
+                        <img
+                          src={artifact.signedUrl}
+                          alt=""
+                          className="w-full h-28 object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
               {/* Content */}
-              <div className="pt-4 border-t border-border">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="pt-5 border-t border-border/50">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90">
                   {selectedMemory.text}
                 </p>
               </div>
@@ -338,8 +351,11 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
           </div>
         ) : (
           <div className="flex items-center justify-center h-full p-6 text-center">
-            <div className="space-y-2">
-              <p className="text-muted-foreground">Select a memory to view details</p>
+            <div className="space-y-3">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-primary/5 rounded-full flex items-center justify-center">
+                <Calendar className="w-8 h-8 text-primary/60" />
+              </div>
+              <p className="text-muted-foreground font-medium">Select a memory to view details</p>
               <p className="text-xs text-muted-foreground/60">Click on any memory card on the timeline</p>
             </div>
           </div>
