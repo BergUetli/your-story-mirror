@@ -17,6 +17,7 @@ import { ElevenLabsCreditsPanel } from '@/components/admin/ElevenLabsCreditsPane
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { WaitlistPanel } from '@/components/admin/WaitlistPanel';
 import { InsightsConfigPanel } from '@/components/admin/InsightsConfigPanel';
+import { WhatsAppMemoriesPanel } from '@/components/admin/WhatsAppMemoriesPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -33,7 +34,8 @@ import {
   CheckCircle,
   Trash2,
   Cog,
-  Lightbulb
+  Lightbulb,
+  MessageSquare
 } from 'lucide-react';
 
 const Admin = () => {
@@ -240,10 +242,14 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-11 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-12 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="waitlist" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Users className="w-4 h-4" />
               Waitlist
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <MessageSquare className="w-4 h-4" />
+              WhatsApp
             </TabsTrigger>
             <TabsTrigger value="diagnostics" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Activity className="w-4 h-4" />
@@ -289,6 +295,10 @@ const Admin = () => {
 
           <TabsContent value="waitlist" className="space-y-6">
             <WaitlistPanel />
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-6">
+            <WhatsAppMemoriesPanel />
           </TabsContent>
 
           <TabsContent value="diagnostics" className="space-y-6">
