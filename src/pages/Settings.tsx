@@ -265,10 +265,10 @@ const Settings = () => {
       <div className="max-w-3xl mx-auto px-8 py-16 space-y-12 animate-fade-in">
         {/* Header */}
         <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+          <h1 className="font-manrope text-5xl md:text-6xl font-bold tracking-tight">
             Settings
           </h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="font-manrope text-xl text-muted-foreground">
             Customize your experience and manage your privacy.
           </p>
         </div>

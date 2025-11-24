@@ -343,12 +343,12 @@ const Archive = () => {
             </Link>
             <div className="flex items-center gap-2">
               <ArchiveIcon className="w-6 h-6 text-primary" />
-              <h1 className="text-xl font-semibold">Archive</h1>
+              <h1 className="font-manrope text-xl font-semibold">Archive</h1>
             </div>
           </div>
           
           {/* Stats */}
-          <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground font-manrope font-medium">
             <div className="flex items-center gap-1">
               <FileAudio className="w-4 h-4" />
               {recordings.length} recordings

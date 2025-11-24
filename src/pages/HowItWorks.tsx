@@ -12,11 +12,11 @@ const HowItWorks = () => {
           Simple, Powerful, Timeless
         </div>
         
-        <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
+        <h1 className="font-manrope text-6xl md:text-8xl font-bold tracking-tight">
           How It Works
         </h1>
         
-        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+        <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
           Preserving your legacy is as simple as having a conversation. Here&apos;s how we turn your voice into a timeless digital companion.
         </p>
       </div>
@@ -27,8 +27,8 @@ const HowItWorks = () => {
         {/* Step 1 */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h2 className="text-5xl font-bold">Talk to Solin</h2>
-            <p className="text-xl text-muted-foreground leading-relaxed">
+            <h2 className="font-manrope text-5xl font-bold">Talk to Solin</h2>
+            <p className="font-manrope text-xl text-muted-foreground leading-relaxed">
               Start a natural conversation with Solin, your AI companion. Share stories, memories, life lessons, and wisdom. No forms, no typing—just speak naturally as if talking to a trusted friend.
             </p>
             <div className="pt-4">
