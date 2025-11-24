@@ -20,7 +20,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Plus, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon, Brain } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,40 +40,23 @@ const Navigation = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   /**
-   * INFORMATION NAVIGATION ITEMS
-   * 
-   * BUSINESS PURPOSE: These items help users understand the platform and learn
-   * how to use it effectively. They're positioned on the left for logical
-   * information-seeking behavior.
+   * ALL NAVIGATION ITEMS
+   * Consolidated list for UBS-style equal spacing layout
    */
-  const leftNavItems = [
-    ...(user ? [{ path: '/admin', icon: Shield, label: 'Admin' }] : []),
+  const navItems = user ? [
     { path: '/about', icon: Info, label: 'About' },
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
-  ];
-
-  /**
-   * CORE FEATURE NAVIGATION ITEMS
-   * 
-   * BUSINESS PURPOSE: These are the main functional areas where users spend
-   * their time creating and managing their digital legacy. They're positioned
-   * on the right as the primary action center.
-   * 
-   * FEATURE DESCRIPTIONS:
-   * - Timeline: Chronological view of all memories
-   * - Reconstruction: AI-powered memory enhancement and story generation
-   * - Identities: User profile and family member management
-   * 
-   * NOTE: Add Memory is hidden - users can add memories through Solin agent's manual form option
-   */
-  const rightNavItems = user ? [
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/archive', icon: Database, label: 'Archive' },
     { path: '/story', icon: BookOpen, label: 'Story' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
     { path: '/settings', icon: SettingsIcon, label: 'Settings' },
-  ] : [];
+    ...(user ? [{ path: '/admin', icon: Shield, label: 'Admin' }] : []),
+  ] : [
+    { path: '/about', icon: Info, label: 'About' },
+    { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
+  ];
 
   /**
    * ACTIVE PAGE DETECTION
@@ -102,29 +85,46 @@ const Navigation = () => {
   return (
     <>
       {/* 
-        DESKTOP/TABLET NAVIGATION BAR
-        BUSINESS PURPOSE: Primary navigation interface for desktop and tablet users, providing
-        full access to all features with responsive design that adapts to screen sizes.
-        
-        RESPONSIVE DESIGN FEATURES:
-        - Fixed top positioning for consistent access
-        - Semi-transparent background with backdrop blur for modern aesthetic
-        - Flexible layout that adapts from large screens to tablets
-        - Smart spacing and overflow handling for iPad and smaller tablets
-        - Active state highlighting with bottom border for clear orientation
-        - Hover animations for interactive feedback
+        DESKTOP/TABLET NAVIGATION BAR - UBS Style
+        Clean, minimal design with logo on left and equal spacing for nav items
       */}
-      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[2147483647] bg-white/95 backdrop-blur-sm border-b-2 shadow-sm isolate" style={{ borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' }}>
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 relative" style={{ pointerEvents: 'auto' }}>
-          <div className="flex items-center justify-between h-20 gap-3" style={{ pointerEvents: 'auto' }}>
+      <div className="hidden sm:block fixed top-0 left-0 right-0 z-[2147483647] bg-white border-b shadow-sm isolate" style={{ borderColor: 'hsl(var(--border))', pointerEvents: 'auto' }}>
+        <div className="max-w-7xl mx-auto px-8 relative" style={{ pointerEvents: 'auto' }}>
+          <div className="flex items-center h-16" style={{ pointerEvents: 'auto' }}>
             {/* 
-              INFORMATION SECTION (Left Side)
-              BUSINESS PURPOSE: Provides access to educational content and help resources.
-              Users can learn about the platform before engaging with core features.
-              RESPONSIVE: Compact spacing and text on smaller tablets
+              LOGO SECTION (Left) - UBS Style
+              Small symbol + brand name on the left
             */}
-            <div className="flex items-end gap-2 lg:gap-4 flex-shrink-0 h-full relative z-10">
-              {leftNavItems.map(({ path, icon: Icon, label }) => (
+            {user ? (
+              <Link 
+                to="/" 
+                className="flex items-center gap-2 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <Brain className="w-6 h-6" style={{ color: 'hsl(var(--primary))' }} />
+                <span className="text-xl font-light tracking-tight text-foreground">
+                  Solin
+                </span>
+              </Link>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="flex items-center gap-2 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <Brain className="w-6 h-6" style={{ color: 'hsl(var(--primary))' }} />
+                <span className="text-xl font-light tracking-tight text-foreground">
+                  Solin
+                </span>
+              </button>
+            )}
+            
+            {/* 
+              NAVIGATION ITEMS - Equally Spaced (Center-Right)
+              UBS-style clean navigation with equal spacing
+            */}
+            <div className="flex items-center flex-1 justify-end gap-1 relative z-10">
+              {navItems.map(({ path, icon: Icon, label }) => (
                 <Link 
                   key={path} 
                   to={path} 
@@ -132,139 +132,45 @@ const Navigation = () => {
                   style={{ pointerEvents: 'auto' }}
                 >
                   <Button
-                    variant={isActive(path) ? 'default' : 'ghost'}
-                    size="default"
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                      "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
-                      isActive(path) && "border-b-2 rounded-b-none"
+                      "font-normal flex items-center gap-1.5 transition-colors duration-200 text-sm px-3 py-2 h-9 pointer-events-auto cursor-pointer hover:bg-transparent",
+                      isActive(path) 
+                        ? "text-primary font-medium" 
+                        : "text-muted-foreground hover:text-foreground"
                     )}
-                    style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
+                    style={{ pointerEvents: 'auto' }}
                   >
-                    <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
-                    <span className="hidden lg:inline">{label}</span>
-                    <span className="lg:hidden">{label.split(' ')[0]}</span>
+                    <span>{label}</span>
                   </Button>
                 </Link>
               ))}
-            </div>
-
-            {/* 
-              BRAND SECTION (Center) - Logo and Brand Name
-              BUSINESS PURPOSE: Provides brand recognition and quick access to home page.
-              Acts as a visual anchor and primary logo placement.
-              For unauthenticated users, triggers sign-in modal.
-              RESPONSIVE: Adjusts size and positioning based on screen size
-            */}
-            {user ? (
-              <Link 
-                to="/" 
-                className="flex-shrink-0 flex items-center gap-3 hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
-                style={{ pointerEvents: 'auto' }}
-              >
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm lg:text-base">
-                  1K
-                </div>
-                <span className="text-2xl lg:text-3xl font-light tracking-tight text-foreground">
-                  1000 years
-                </span>
-              </Link>
-            ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 flex items-center gap-3 hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
-                style={{ pointerEvents: 'auto' }}
-              >
-                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm lg:text-base">
-                  1K
-                </div>
-                <span className="text-2xl lg:text-3xl font-light tracking-tight text-foreground">
-                  1000 years
-                </span>
-              </button>
-            )}
-            
-            {/* 
-              CORE FEATURES SECTION (Right Side)
-              BUSINESS PURPOSE: Primary action center where users access main functionality.
-              This is where users spend most of their time creating and managing memories.
               
-              FEATURES INCLUDED:
-              - Home/Sanctuary: Dashboard and overview
-              - Add Memory: Primary content creation
-              - Timeline: Memory organization and viewing
-              - Reconstruction: AI enhancement tools
-              - Identities: User and family management
-            */}
-            {/* 
-              CORE FEATURES SECTION (Right Side)
-              BUSINESS PURPOSE: Primary action center where users access main functionality.
-              This is where users spend most of their time creating and managing memories.
-              
-              RESPONSIVE FEATURES:
-              - Compact spacing on tablets and smaller screens
-              - Icon-only mode on very tight spaces
-              - Flexible gap and text sizing
-              - Overflow handling with scroll on extreme cases
-            */}
-            {user && (
-              <div className="flex items-end gap-2 lg:gap-4 flex-shrink flex-nowrap h-full relative z-10">
-                {rightNavItems.map(({ path, icon: Icon, label }) => (
-                  <Link 
-                    key={path} 
-                    to={path} 
-                    className="flex-shrink-0 relative z-10 pointer-events-auto cursor-pointer"
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <Button
-                      variant={isActive(path) ? 'default' : 'ghost'}
-                      size="default"
-                      className={cn(
-                        "font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-3 lg:px-4 py-5 mb-1 pointer-events-auto cursor-pointer",
-                        isActive(path) && "border-b-2 rounded-b-none"
-                      )}
-                      style={isActive(path) ? { borderColor: 'hsl(var(--section-border))', pointerEvents: 'auto' } : { pointerEvents: 'auto' }}
-                    >
-                      <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
-                      <span className="hidden xl:inline">{label}</span>
-                      <span className="xl:hidden hidden lg:inline">{label.length > 8 ? label.split(' ')[0] : label}</span>
-                      <span className="lg:hidden sr-only">{label}</span>
-                    </Button>
-                  </Link>
-                ))}
-                
-                {/* Sign Out Button - Always Visible */}
+              {/* Sign Out Button */}
+              {user && (
                 <Button
-                  variant="outline"
-                  size="default"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleSignOut}
-                  className="font-semibold flex items-center gap-2 transition-all duration-200 hover:scale-105 text-sm lg:text-base px-3 lg:px-4 py-5 mb-1 border-destructive text-destructive hover:bg-destructive hover:text-white pointer-events-auto cursor-pointer flex-shrink-0"
+                  className="font-normal flex items-center gap-1.5 transition-colors duration-200 text-sm px-3 py-2 h-9 text-muted-foreground hover:text-destructive hover:bg-transparent pointer-events-auto cursor-pointer ml-2"
                   style={{ pointerEvents: 'auto' }}
                 >
-                  <LogOut className="w-4 h-4 lg:w-5 lg:h-5" />
-                  <span className="hidden lg:inline">Sign Out</span>
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
       
       {/* 
         MOBILE NAVIGATION BAR
-        BUSINESS PURPOSE: Optimized navigation for mobile devices, providing thumb-friendly
-        access to all features at the bottom of the screen for easy one-handed use.
-        
-        MOBILE UX CONSIDERATIONS:
-        - Bottom positioning for natural thumb reach
-        - Icon-first layout for space efficiency
-        - Horizontal scroll for overflow handling
-        - Active state highlighting for current page awareness
-        - Combined information and feature items for simplified mobile experience
-        - Responsive text sizing based on number of items
       */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-border sm:hidden z-40">
-        <div className="flex items-center py-2 px-2 overflow-x-auto gap-1 mobile-nav-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {[...leftNavItems, ...rightNavItems].map(({ path, icon: Icon, label }) => (
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border sm:hidden z-40">
+        <div className="flex items-center py-2 px-2 overflow-x-auto gap-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {navItems.map(({ path, icon: Icon, label }) => (
             <Link key={path} to={path} className="flex-shrink-0">
               <Button
                 variant="ghost"
@@ -277,10 +183,7 @@ const Navigation = () => {
                 )}
               >
                 {Icon && <Icon className="w-4 h-4" />}
-                <span className={cn(
-                  "text-xs leading-tight text-center",
-                  [...leftNavItems, ...rightNavItems].length > 6 ? "text-[10px]" : "text-xs"
-                )}>
+                <span className="text-[10px] leading-tight text-center">
                   {label.length > 8 ? label.split(' ')[0] : label}
                 </span>
               </Button>
@@ -304,13 +207,8 @@ const Navigation = () => {
         </div>
       </div>
       
-      {/* 
-        DESKTOP NAVIGATION SPACER
-        BUSINESS PURPOSE: Provides top margin to prevent content from being hidden
-        behind the fixed desktop navigation bar. This ensures all page content is
-        visible and properly positioned below the navigation.
-      */}
-      <div className="hidden sm:block h-20"></div>
+      {/* Desktop Navigation Spacer */}
+      <div className="hidden sm:block h-16"></div>
       
       {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
