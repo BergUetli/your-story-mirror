@@ -658,8 +658,29 @@ async function searchRelevantMemories(supabase, userId, userMessage, limit = 5) 
     return [];
   }
 
-  // Simple keyword matching for relevance
+  // Check if this is a general query about memories
   const messageLower = userMessage.toLowerCase();
+  const isGeneralQuery = messageLower.includes('what memories') || 
+                         messageLower.includes('any other memories') ||
+                         messageLower.includes('what else') ||
+                         messageLower.includes('what do you see') ||
+                         messageLower.includes('what do you have') ||
+                         messageLower.includes('show me');
+
+  // If it's a general query, return most recent complete memories
+  if (isGeneralQuery) {
+    return data
+      .filter(m => m.title && m.title !== 'Processing memory...' && m.text)
+      .slice(0, limit)
+      .map(m => ({
+        id: m.id,
+        title: m.title,
+        text: m.text.substring(0, 200),
+        date: m.memory_date || m.created_at
+      }));
+  }
+
+  // Otherwise use keyword matching for specific queries
   const keywords = messageLower.split(' ').filter(word => word.length > 3);
 
   const scoredMemories = data.map(memory => {
@@ -671,17 +692,33 @@ async function searchRelevantMemories(supabase, userId, userMessage, limit = 5) 
     return { ...memory, relevanceScore: score };
   });
 
-  // Return top relevant memories
-  return scoredMemories
-    .filter(m => m.relevanceScore > 0)
+  // For specific queries, prefer relevant matches but include recent ones if no matches
+  const relevant = scoredMemories
+    .filter(m => m.relevanceScore > 0 && m.title !== 'Processing memory...')
     .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, limit)
-    .map(m => ({
+    .slice(0, limit);
+
+  // If we have good matches, return them
+  if (relevant.length >= 3) {
+    return relevant.map(m => ({
       id: m.id,
       title: m.title,
-      text: m.text.substring(0, 200), // Limit context size
+      text: m.text.substring(0, 200),
       date: m.memory_date || m.created_at
     }));
+  }
+
+  // Otherwise fill with recent memories
+  const recentMemories = data
+    .filter(m => m.title && m.title !== 'Processing memory...')
+    .slice(0, limit);
+
+  return recentMemories.map(m => ({
+    id: m.id,
+    title: m.title,
+    text: m.text.substring(0, 200),
+    date: m.memory_date || m.created_at
+  }));
 }
 
 async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = [], sessionContext = {}) {
