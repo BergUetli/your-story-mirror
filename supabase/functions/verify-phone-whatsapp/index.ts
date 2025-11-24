@@ -67,26 +67,37 @@ serve(async (req) => {
         }
       }
 
-      // If phone belongs to a different user, delete their record first
+      // If phone belongs to a different user, update it to current user
+      // Otherwise insert new record
+      let insertError;
       if (existingUserId) {
-        console.log(`🗑️ Deleting old phone record for user ${existingUserId}`);
-        await supabase
+        console.log(`🔄 Updating phone record from user ${existingUserId} to ${user.id}`);
+        const { error } = await supabase
           .from('user_phone_numbers')
-          .delete()
+          .update({
+            user_id: user.id,
+            phone_number,
+            verification_code: code,
+            verification_expires_at: expiresAt.toISOString(),
+            verified: false,
+            provider: 'whatsapp',
+            updated_at: new Date().toISOString(),
+          })
           .eq('user_id', existingUserId);
+        insertError = error;
+      } else {
+        const { error } = await supabase
+          .from('user_phone_numbers')
+          .insert({
+            user_id: user.id,
+            phone_number,
+            verification_code: code,
+            verification_expires_at: expiresAt.toISOString(),
+            verified: false,
+            provider: 'whatsapp',
+          });
+        insertError = error;
       }
-
-      // Insert new verification record
-      const { error: insertError } = await supabase
-        .from('user_phone_numbers')
-        .insert({
-          user_id: user.id,
-          phone_number,
-          verification_code: code,
-          verification_expires_at: expiresAt.toISOString(),
-          verified: false,
-          provider: 'whatsapp',
-        });
 
       if (insertError) {
         console.error('Error inserting phone record:', insertError);
