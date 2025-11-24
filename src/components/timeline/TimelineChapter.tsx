@@ -85,7 +85,7 @@ export const TimelineChapter: React.FC<TimelineChapterProps> = ({
                 onClick={() => onMemoryClick(memory)}
               >
                 {/* Memory Card */}
-                <Card className="border-0 shadow-md hover:shadow-xl transition-all duration-500 overflow-hidden bg-card/50 backdrop-blur-sm">
+                <Card className="border-2 border-border shadow-md hover:shadow-xl transition-all duration-500 overflow-hidden bg-card/50 backdrop-blur-sm">
                   {/* Image */}
                   {hasImage && (
                     <div className="relative w-full aspect-[16/9] overflow-hidden">
@@ -121,7 +121,7 @@ export const TimelineChapter: React.FC<TimelineChapterProps> = ({
                     </p>
 
                     {/* Location & Tags */}
-                    <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border/50">
+                    <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-border">
                       {memory.memory_location && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <MapPin className="w-3 h-3" />
@@ -135,7 +135,7 @@ export const TimelineChapter: React.FC<TimelineChapterProps> = ({
                             <Badge
                               key={i}
                               variant="secondary"
-                              className="text-xs font-manrope font-light px-2 py-0.5 bg-primary/10 text-primary border-primary/20"
+                              className="text-xs font-manrope font-light px-2 py-0.5 bg-primary/10 text-primary border border-primary/40"
                             >
                               {tag}
                             </Badge>
