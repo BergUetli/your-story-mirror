@@ -425,6 +425,17 @@ async function findOrCreateUserByPhone(supabase, phoneNumber) {
     provider: 'whatsapp'
   });
 
+  // Create basic user_profiles entry for WhatsApp users
+  await supabase.from('user_profiles').insert({
+    user_id: newUser.user.id,
+    onboarding_completed: false,
+    profile_completeness_score: 0
+  }).then(() => {
+    console.log(`✅ Created user_profiles entry for WhatsApp user ${newUser.user.id}`);
+  }).catch((err) => {
+    console.warn(`⚠️ Could not create user_profiles (may already exist): ${err.message}`);
+  });
+
   return newUser.user.id;
 }
 
