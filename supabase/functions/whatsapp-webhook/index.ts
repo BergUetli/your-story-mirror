@@ -853,8 +853,8 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
 
   console.log(`✅ Memory created: ${data.id}`);
 
-  // Trigger AI insights extraction via edge function (non-blocking)
-  supabase.functions
+  // Trigger AI insights extraction via edge function (background task)
+  const insightsTask = supabase.functions
     .invoke('process-memory-insights', {
       body: {
         memory_id: data.id,
@@ -866,12 +866,22 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
       if (invokeError) {
         console.error(`❌ Failed to invoke insights processing for ${data.id}:`, invokeError);
       } else {
-        console.log(`✅ Insights processing triggered for ${data.id}`);
+        console.log(`✅ Insights processing completed for ${data.id}`);
       }
     })
     .catch((err) => {
       console.error(`❌ Exception invoking insights for ${data.id}:`, err);
     });
+
+  // Use EdgeRuntime.waitUntil to ensure background task completes
+  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+    EdgeRuntime.waitUntil(insightsTask);
+    console.log(`⏳ Background task registered for memory ${data.id}`);
+  } else {
+    // Fallback: await if EdgeRuntime not available (shouldn't happen in production)
+    console.warn('⚠️ EdgeRuntime.waitUntil not available, awaiting insights processing');
+    await insightsTask;
+  }
 
   return data.id;
 }
