@@ -6,6 +6,8 @@ interface Chapter {
   startYear: number;
   endYear: number;
   memoryCount: number;
+  isPast?: boolean;
+  isFuture?: boolean;
 }
 
 interface TimelineNavigationProps {
@@ -46,11 +48,16 @@ export const TimelineNavigation: React.FC<TimelineNavigationProps> = ({
                     : "text-foreground group-hover:text-primary"
                 )}
               >
-                {chapter.startYear}–{chapter.endYear}
+                {chapter.isPast ? 'Past' : chapter.isFuture ? 'Future' : `${chapter.startYear}–${chapter.endYear}`}
               </span>
             </div>
             <span className="font-manrope text-xs text-muted-foreground">
-              {chapter.memoryCount} {chapter.memoryCount === 1 ? 'memory' : 'memories'}
+              {chapter.isPast 
+                ? 'Ancestral history'
+                : chapter.isFuture 
+                  ? 'Future messages'
+                  : `${chapter.memoryCount} ${chapter.memoryCount === 1 ? 'memory' : 'memories'}`
+              }
             </span>
           </button>
         ))}

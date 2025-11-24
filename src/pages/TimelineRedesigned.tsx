@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Loader2 } from 'lucide-react';
-import { TimelineHero } from '@/components/timeline/TimelineHero';
 import { TimelineNavigation } from '@/components/timeline/TimelineNavigation';
 import { TimelineChapter } from '@/components/timeline/TimelineChapter';
 import { MemoryDetailDialog } from '@/components/MemoryDetailDialog';
@@ -27,7 +26,6 @@ const TimelineRedesigned = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
   const [activeChapter, setActiveChapter] = useState(0);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   // Fetch memories
   useEffect(() => {
@@ -92,18 +90,30 @@ const TimelineRedesigned = () => {
     fetchMemories();
   }, [user]);
 
-  // Group memories into chapters (decades)
+  // Group memories into chapters (decades) including Past and Future
   const chapters = useMemo(() => {
-    if (memories.length === 0) return [];
-
     const birthYear = profile?.birth_date 
       ? new Date(profile.birth_date).getFullYear()
-      : new Date(memories[0].memory_date).getFullYear();
+      : memories.length > 0 
+        ? new Date(memories[0].memory_date).getFullYear()
+        : new Date().getFullYear();
 
     const currentYear = new Date().getFullYear();
     const chapterList = [];
 
-    // Create decade-based chapters
+    // Add Past chapter (ancestral history - 100 years before birth)
+    const pastStartYear = Math.floor((birthYear - 100) / 10) * 10;
+    const pastEndYear = birthYear - 1;
+    chapterList.push({
+      startYear: pastStartYear,
+      endYear: pastEndYear,
+      memories: [],
+      memoryCount: 0,
+      isPast: true,
+      isFuture: false,
+    });
+
+    // Create decade-based chapters for lifetime
     for (let year = Math.floor(birthYear / 10) * 10; year <= currentYear; year += 10) {
       const startYear = year;
       const endYear = Math.min(year + 9, currentYear);
@@ -113,23 +123,32 @@ const TimelineRedesigned = () => {
         return memYear >= startYear && memYear <= endYear;
       });
 
-      if (chapterMemories.length > 0) {
+      if (chapterMemories.length > 0 || (year >= birthYear && year <= currentYear)) {
         chapterList.push({
           startYear,
           endYear,
           memories: chapterMemories,
           memoryCount: chapterMemories.length,
+          isPast: false,
+          isFuture: false,
         });
       }
     }
 
+    // Add Future chapter (future messages - 100 years after current)
+    const futureStartYear = currentYear + 1;
+    const futureEndYear = Math.ceil((currentYear + 100) / 10) * 10;
+    chapterList.push({
+      startYear: futureStartYear,
+      endYear: futureEndYear,
+      memories: [],
+      memoryCount: 0,
+      isPast: false,
+      isFuture: true,
+    });
+
     return chapterList;
   }, [memories, profile?.birth_date]);
-
-  // Scroll to content
-  const scrollToContent = () => {
-    contentRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   // Scroll to chapter
   const scrollToChapter = (index: number) => {
@@ -189,13 +208,17 @@ const TimelineRedesigned = () => {
 
   return (
     <div className="relative bg-background">
-      {/* Hero Section */}
-      <TimelineHero
-        userName={user?.email?.split('@')[0] || 'Your'}
-        birthDate={profile?.birth_date || null}
-        memoryCount={memories.length}
-        onScrollToContent={scrollToContent}
-      />
+      {/* Memory Count Badge - Top Right */}
+      <div className="fixed top-24 right-6 z-50 bg-card/90 backdrop-blur-sm border-2 border-border rounded-lg px-4 py-2 shadow-lg">
+        <div className="text-center">
+          <div className="font-manrope font-semibold text-2xl text-primary">
+            {memories.length}
+          </div>
+          <div className="font-manrope text-xs text-muted-foreground uppercase tracking-wide">
+            Memories
+          </div>
+        </div>
+      </div>
 
       {/* Navigation */}
       {chapters.length > 1 && (
@@ -207,7 +230,7 @@ const TimelineRedesigned = () => {
       )}
 
       {/* Content */}
-      <div ref={contentRef} className="lg:pl-64">
+      <div className="lg:pl-64 pt-8">
         {chapters.map((chapter, index) => (
           <TimelineChapter
             key={`${chapter.startYear}-${chapter.endYear}`}
@@ -217,6 +240,8 @@ const TimelineRedesigned = () => {
             memoryArtifacts={memoryArtifacts}
             onMemoryClick={setSelectedMemory}
             isActive={activeChapter === index}
+            isPast={chapter.isPast}
+            isFuture={chapter.isFuture}
           />
         ))}
       </div>
