@@ -31,15 +31,15 @@ const About = () => {
           </div>
           
           <h1 className="font-manrope text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            Replicate your presence.
+            Your voice, forever.
             <br />
-            <span className="text-primary bg-clip-text text-transparent">
-              Take the journey to make your story last forever.
+            <span className="text-white">
+              Your wisdom, accessible across generations.
             </span>
           </h1>
           
           <p className="font-manrope text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
+            Solin is an AI companion that preserves your memories, voice, and wisdom—creating a living archive that your loved ones can interact with for centuries to come.
           </p>
           
           {/* CTA moved to top - right after hero text */}
@@ -84,7 +84,7 @@ const About = () => {
             </div>
             
             <p className="font-manrope text-xl text-muted-foreground leading-relaxed">
-              Anchored in principles of Swiss permanence, our mission is to ensure memories remain alive, trusted, and accessible over the long arc of time. We&apos;re not just storing data—we&apos;re preserving presence, wisdom, and the irreplaceable essence of who you are.
+              We believe your voice deserves to outlive you. Built on Swiss principles of permanence and privacy, Solin preserves not just memories, but the essence of who you are—your values, your stories, your guidance—accessible to those you love, whenever they need you most.
             </p>
           </CardContent>
         </Card>
@@ -93,16 +93,16 @@ const About = () => {
       {/* Why It Matters */}
       <div className="max-w-5xl mx-auto px-8 py-12">
         <div className="text-center space-y-6 mb-16">
-          <h2 className="text-5xl font-bold">Why It Matters</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            When someone passes, families lose not just their presence but their voice, perspective, and wisdom. Social media and cloud storage are fragile, built for short-term use—not family legacies.
+          <h2 className="font-manrope text-5xl font-bold">Why It Matters</h2>
+          <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            When someone passes, families don&apos;t just lose their presence—they lose their voice, their guidance, their stories. Today&apos;s platforms weren&apos;t built for legacy. They&apos;re temporary, fragile, designed for short-term engagement—not for preserving what truly matters across lifetimes.
           </p>
         </div>
 
         <Card className="modern-card border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
           <CardContent className="p-10">
-            <blockquote className="text-2xl italic text-center leading-relaxed">
-              &quot;Humanity has always dreamed of speaking across time. We&apos;re making it real, safe, and enduring.&quot;
+            <blockquote className="font-manrope text-2xl italic text-center leading-relaxed">
+              &quot;For the first time in history, technology allows us to preserve not just memories, but presence—enabling conversations across time with the people we love most.&quot;
             </blockquote>
           </CardContent>
         </Card>
@@ -111,8 +111,8 @@ const About = () => {
       {/* Cultural Lineage */}
       <div className="max-w-7xl mx-auto px-8 py-24">
         <div className="text-center space-y-6 mb-16">
-          <h2 className="text-5xl font-bold">Cultural Lineage</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <h2 className="font-manrope text-5xl font-bold">Cultural Lineage</h2>
+          <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto">
             We stand on the shoulders of visionaries who imagined speaking across time
           </p>
         </div>
@@ -120,8 +120,8 @@ const About = () => {
         <div className="grid md:grid-cols-3 gap-6">
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
-              <h3 className="text-2xl font-semibold">The Time Machine (2002)</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <h3 className="font-manrope text-2xl font-semibold">The Time Machine (2002)</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
                 Vox 114, the AI guide that carries knowledge forward through the ages, preserving wisdom for future generations.
               </p>
             </CardContent>
@@ -129,8 +129,8 @@ const About = () => {
 
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
-              <h3 className="text-2xl font-semibold">Superman (1978)</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <h3 className="font-manrope text-2xl font-semibold">Superman (1978)</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
                 Jor-El guiding his son through holographic memory, a father&apos;s presence transcending time and space.
               </p>
             </CardContent>
@@ -138,8 +138,8 @@ const About = () => {
 
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
-              <h3 className="text-2xl font-semibold">Asimov&apos;s Foundation</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <h3 className="font-manrope text-2xl font-semibold">Asimov&apos;s Foundation</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
                 Hari Seldon&apos;s preserved messages shaping future generations through calculated guidance.
               </p>
             </CardContent>
@@ -147,8 +147,8 @@ const About = () => {
         </div>
 
         <div className="text-center mt-12">
-          <p className="text-xl text-primary font-semibold">
-            Solin One is the real-world continuation of these visions—not fiction, but technology with purpose.
+          <p className="font-manrope text-xl text-primary font-semibold">
+            Solin brings these visions to life—not fiction, but technology with purpose.
           </p>
         </div>
       </div>
@@ -159,9 +159,9 @@ const About = () => {
           <div className="inline-block px-6 py-3 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20">
             🇨🇭 Your Swiss Memory Vault
           </div>
-          <h2 className="text-5xl font-bold">Uncompromising Privacy & Security</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Your memories are stored on dedicated servers in Switzerland, protected by the world&apos;s strongest privacy laws
+          <h2 className="font-manrope text-5xl font-bold">Built on Swiss Principles</h2>
+          <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto">
+            Your memories are stored on dedicated servers in Switzerland—protected by the world&apos;s strongest privacy laws, designed to last for generations
           </p>
         </div>
 
@@ -172,10 +172,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Swiss Data Sovereignty</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Swiss Data Sovereignty</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                All your memories are stored on dedicated servers located in Switzerland, governed by Swiss privacy laws—among the strongest in the world. Your data never leaves Swiss jurisdiction.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Every memory lives on dedicated servers in Switzerland, governed by the world&apos;s strongest privacy laws. Your data never leaves Swiss jurisdiction—immune to foreign subpoenas or political interference.
               </p>
             </CardContent>
           </Card>
@@ -186,10 +186,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">End-to-End Encryption</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Military-Grade Encryption</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Military-grade encryption protects every memory, voice recording, and conversation. Your data is encrypted at rest and in transit—only you and those you authorize can access it.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Every memory, voice recording, and conversation is protected with military-grade encryption—both at rest and in transit. Only you and those you explicitly authorize can access your digital legacy.
               </p>
             </CardContent>
           </Card>
@@ -200,10 +200,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Mountain className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Never Sold, Never Shared</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Never Sold, Never Shared</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Your memories belong to you. We will never sell your data to third parties or share it without your express approval. Your legacy is yours alone.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Your memories are yours alone. We will never sell your data, share it with advertisers, or hand it to third parties without your explicit consent. Your legacy belongs to you and those you choose.
               </p>
             </CardContent>
           </Card>
@@ -214,10 +214,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Offline Redundancy</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Offline Redundancy</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Memories stored in encrypted cloud infrastructure plus secure offline vaults, ensuring resilience against technological shifts and corporate failures.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Encrypted cloud infrastructure backed by secure offline vaults. If platforms fail, technologies shift, or companies disappear—your memories persist, protected across multiple layers of redundancy.
               </p>
             </CardContent>
           </Card>
@@ -228,10 +228,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Century-Scale Preservation</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Built for Centuries</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Built on principles of Swiss permanence and neutrality. Annual technology reviews ensure independence from shifting platforms, extending your legacy indefinitely.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Designed with Swiss principles of permanence and stability. Regular technology audits ensure your memories remain accessible and compatible as platforms evolve—extending your legacy across generations.
               </p>
             </CardContent>
           </Card>
@@ -242,10 +242,10 @@ const About = () => {
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Globe className="w-6 h-6 text-primary" />
                 </div>
-                <h3 className="text-2xl font-semibold">Geopolitical Neutrality</h3>
+                <h3 className="font-manrope text-2xl font-semibold">Geopolitical Neutrality</h3>
               </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Switzerland&apos;s long tradition of neutrality and stability protects your legacy from geopolitical uncertainty, ensuring access across generations.
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Switzerland&apos;s centuries-old tradition of neutrality shields your legacy from political turbulence, trade wars, and shifting regulations—ensuring your memories remain accessible no matter what happens in the world.
               </p>
             </CardContent>
           </Card>
@@ -257,8 +257,8 @@ const About = () => {
         <Card className="modern-card border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5">
           <CardContent className="p-12 space-y-8">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl font-bold">Why Now</h2>
-              <p className="text-xl text-muted-foreground">
+              <h2 className="font-manrope text-4xl font-bold">Why Now</h2>
+              <p className="font-manrope text-xl text-muted-foreground">
                 A perfect intersection of timeless values and breakthrough technology
               </p>
             </div>
@@ -267,20 +267,20 @@ const About = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Clock className="w-6 h-6 text-primary" />
-                  <h3 className="text-xl font-semibold">The AI Revolution</h3>
+                  <h3 className="font-manrope text-xl font-semibold">The AI Revolution</h3>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">
-                  Advances in conversational AI and voice synthesis make memory preservation feel natural and personal for the first time in human history.
+                <p className="font-manrope text-muted-foreground leading-relaxed">
+                  For the first time, conversational AI can capture not just words, but personality—making preserved memories feel alive, natural, and deeply personal.
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Mountain className="w-6 h-6 text-primary" />
-                  <h3 className="text-xl font-semibold">Timeless Meets Innovation</h3>
+                  <h3 className="font-manrope text-xl font-semibold">Swiss Permanence Meets AI</h3>
                 </div>
-                <p className="text-muted-foreground leading-relaxed">
-                  Swiss permanence meets real-time AI breakthroughs—enabling what humanity has always wanted: preserving and reliving memory with dignity, truth, and endurance.
+                <p className="font-manrope text-muted-foreground leading-relaxed">
+                  Centuries-old Swiss values of privacy, neutrality, and permanence combined with cutting-edge AI—finally enabling what humanity has always dreamed of: speaking across time with those we love.
                 </p>
               </div>
             </div>
@@ -291,9 +291,9 @@ const About = () => {
       {/* What Makes Us Different */}
       <div className="max-w-7xl mx-auto px-8 py-24">
         <div className="text-center space-y-6 mb-16">
-          <h2 className="text-5xl font-bold">What Makes Us Different</h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            We&apos;re not another cloud storage service—we&apos;re building for generations
+          <h2 className="font-manrope text-5xl font-bold">What Makes Solin Different</h2>
+          <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto">
+            We&apos;re not a cloud storage service—we&apos;re building living archives that last for generations
           </p>
         </div>
 
@@ -301,9 +301,9 @@ const About = () => {
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
               <Shield className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-semibold">No Hallucinations</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Our AI companion answers only with recorded truths, values, and guidance. No made-up stories, just authentic presence.
+              <h3 className="font-manrope text-xl font-semibold">Grounded in Truth</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Solin speaks only from your recorded memories—no fabricated stories, no hallucinated details. Every conversation is rooted in what you actually shared.
               </p>
             </CardContent>
           </Card>
@@ -311,9 +311,9 @@ const About = () => {
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
               <Users className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-semibold">Living Archive</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Multiple family members can contribute, creating a dynamic family history rather than a static time capsule.
+              <h3 className="font-manrope text-xl font-semibold">Living Family Archive</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Multiple family members can add memories, creating a shared, evolving history—not a static time capsule, but a living, breathing family legacy.
               </p>
             </CardContent>
           </Card>
@@ -321,9 +321,9 @@ const About = () => {
           <Card className="modern-card border-border/50">
             <CardContent className="p-8 space-y-4">
               <Heart className="w-10 h-10 text-primary" />
-              <h3 className="text-xl font-semibold">Built for Grief</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Companion conversations designed with sensitivity, allowing loved ones to engage with preserved wisdom whenever they need it.
+              <h3 className="font-manrope text-xl font-semibold">Designed with Sensitivity</h3>
+              <p className="font-manrope text-muted-foreground leading-relaxed">
+                Built for moments of grief, reflection, and celebration—Solin provides comfort when you need guidance, and connection when you miss someone&apos;s voice.
               </p>
             </CardContent>
           </Card>
@@ -332,7 +332,7 @@ const About = () => {
 
       {/* Secondary CTA - Keep this but make it shorter since primary CTA is now at top */}
       <div className="max-w-5xl mx-auto px-8 py-16 text-center space-y-6">
-        <h2 className="text-3xl md:text-4xl font-bold">
+        <h2 className="font-manrope text-3xl md:text-4xl font-bold">
           Ready to preserve your legacy?
         </h2>
         
