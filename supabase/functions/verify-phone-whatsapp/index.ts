@@ -267,7 +267,19 @@ serve(async (req) => {
         
         console.log('✅ Old phone record deleted');
 
-        // Merge or delete user profiles
+        // Merge profile data from WhatsApp user to web user
+        const { data: whatsappUsersData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('user_id', whatsappUserId)
+          .maybeSingle();
+        
+        const { data: webUsersData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
         const { data: whatsappProfile } = await supabase
           .from('user_profiles')
           .select('*')
@@ -280,6 +292,25 @@ serve(async (req) => {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        // Merge users table data - fill in missing web user fields from WhatsApp user
+        if (whatsappUsersData && webUsersData) {
+          const mergedData: any = {};
+          if (!webUsersData.name && whatsappUsersData.name) mergedData.name = whatsappUsersData.name;
+          if (!webUsersData.age && whatsappUsersData.age) mergedData.age = whatsappUsersData.age;
+          if (!webUsersData.birth_date && whatsappUsersData.birth_date) mergedData.birth_date = whatsappUsersData.birth_date;
+          if (!webUsersData.birth_place && whatsappUsersData.birth_place) mergedData.birth_place = whatsappUsersData.birth_place;
+          if (!webUsersData.current_location && whatsappUsersData.current_location) mergedData.current_location = whatsappUsersData.current_location;
+          
+          if (Object.keys(mergedData).length > 0) {
+            await supabase
+              .from('users')
+              .update(mergedData)
+              .eq('user_id', user.id);
+            console.log('✅ Merged users table data from WhatsApp to web user');
+          }
+        }
+
+        // Merge user_profiles data
         if (whatsappProfile && !webProfile) {
           // Move WhatsApp profile to web user
           await supabase
@@ -288,12 +319,30 @@ serve(async (req) => {
             .eq('user_id', whatsappUserId);
           console.log('✅ Moved WhatsApp profile to web user');
         } else if (whatsappProfile && webProfile) {
-          // Both exist - delete WhatsApp profile as web profile takes precedence
+          // Both exist - merge data, web profile takes precedence for filled fields
+          const mergedProfileData: any = {};
+          if (!webProfile.preferred_name && whatsappProfile.preferred_name) mergedProfileData.preferred_name = whatsappProfile.preferred_name;
+          if (!webProfile.age && whatsappProfile.age) mergedProfileData.age = whatsappProfile.age;
+          if (!webProfile.hometown && whatsappProfile.hometown) mergedProfileData.hometown = whatsappProfile.hometown;
+          if (!webProfile.location && whatsappProfile.location) mergedProfileData.location = whatsappProfile.location;
+          if (!webProfile.occupation && whatsappProfile.occupation) mergedProfileData.occupation = whatsappProfile.occupation;
+          if (!webProfile.relationship_status && whatsappProfile.relationship_status) mergedProfileData.relationship_status = whatsappProfile.relationship_status;
+          if (!webProfile.education_background && whatsappProfile.education_background) mergedProfileData.education_background = whatsappProfile.education_background;
+          
+          if (Object.keys(mergedProfileData).length > 0) {
+            await supabase
+              .from('user_profiles')
+              .update(mergedProfileData)
+              .eq('user_id', user.id);
+            console.log('✅ Merged user_profiles data from WhatsApp to web user');
+          }
+          
+          // Delete WhatsApp profile after merge
           await supabase
             .from('user_profiles')
             .delete()
             .eq('user_id', whatsappUserId);
-          console.log('✅ Deleted WhatsApp profile (web profile takes precedence)');
+          console.log('✅ Deleted WhatsApp profile after merge');
         } else if (!whatsappProfile && !webProfile) {
           // Neither exists - create a basic one for the merged account
           await supabase
@@ -307,11 +356,14 @@ serve(async (req) => {
         }
         // If only webProfile exists, no action needed
 
-        // Delete users table entry if exists
-        await supabase
-          .from('users')
-          .delete()
-          .eq('user_id', whatsappUserId);
+        // Delete WhatsApp users table entry after merge
+        if (whatsappUsersData) {
+          await supabase
+            .from('users')
+            .delete()
+            .eq('user_id', whatsappUserId);
+          console.log('✅ Deleted WhatsApp users table entry');
+        }
 
         // Finally, delete the WhatsApp-only auth user
         const { error: deleteUserError } = await supabase.auth.admin.deleteUser(whatsappUserId);
