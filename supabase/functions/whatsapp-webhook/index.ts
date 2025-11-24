@@ -853,195 +853,31 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
 
   console.log(`✅ Memory created: ${data.id}`);
 
-  // Trigger AI insights extraction immediately (non-blocking)
-  processMemoryWithAI(supabase, data.id, memoryText, userId)
+  // Trigger AI insights extraction via edge function (non-blocking)
+  supabase.functions
+    .invoke('process-memory-insights', {
+      body: {
+        memory_id: data.id,
+        conversation_text: memoryText,
+        user_id: userId
+      }
+    })
+    .then(({ data: result, error: invokeError }) => {
+      if (invokeError) {
+        console.error(`❌ Failed to invoke insights processing for ${data.id}:`, invokeError);
+      } else {
+        console.log(`✅ Insights processing triggered for ${data.id}`);
+      }
+    })
     .catch((err) => {
-      console.error(`❌ AI processing failed for memory ${data.id}:`, err);
+      console.error(`❌ Exception invoking insights for ${data.id}:`, err);
     });
 
   return data.id;
 }
 
-async function processMemoryWithAI(supabase, memoryId: string, conversationText: string, userId: string) {
-  console.log(`🤖 Starting AI processing for memory: ${memoryId}`);
-  
-  const openAIKey = Deno.env.get("OPENAI_API_KEY");
-  if (!openAIKey) {
-    console.error('❌ OpenAI API key not configured');
-    return;
-  }
-
-  try {
-    // Step 1: Extract core memory data (title, date, location, summary)
-    const coreDataPrompt = `Extract core memory metadata from this WhatsApp conversation.
-
-Conversation:
-"""
-${conversationText}
-"""
-
-Extract:
-1. TITLE: A concise, descriptive title (5-8 words max)
-2. MEMORY_DATE: The primary date this memory occurred (ISO format: YYYY-MM-DD or YYYY-MM or YYYY). Use null if unclear.
-3. MEMORY_LOCATION: The primary location where this happened. Be specific. Use null if unknown.
-4. SUMMARY: A 2-3 sentence summary of the memory.
-
-Return ONLY valid JSON with keys: title, memory_date, memory_location, summary`;
-
-    const coreResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openAIKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You extract structured metadata from conversations. Always return valid JSON." },
-          { role: "user", content: coreDataPrompt }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.2,
-      }),
-    });
-
-    if (!coreResponse.ok) {
-      throw new Error(`OpenAI API error: ${coreResponse.status}`);
-    }
-
-    const coreData = await coreResponse.json();
-    const extracted = JSON.parse(coreData.choices[0].message.content);
-    
-    console.log(`✅ Core data extracted:`, extracted);
-
-    // Step 2: Extract tags (people, places, events, themes, emotions)
-    const tagsPrompt = `Extract ALL tags from this conversation. Be comprehensive.
-
-Conversation:
-"""
-${conversationText}
-"""
-
-Extract:
-- PEOPLE: Names and relationships (e.g., "Mom", "cousin Sarah")
-- PLACES: Specific locations mentioned
-- EVENTS: Specific events or occasions
-- THEMES: Topics or themes discussed
-- EMOTIONS: Emotional words or feelings expressed
-
-Return ONLY valid JSON with arrays for: people, places, events, themes, emotions`;
-
-    const tagsResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${openAIKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "system", content: "You extract tags from conversations. Always return valid JSON." },
-          { role: "user", content: tagsPrompt }
-        ],
-        response_format: { type: "json_object" },
-        temperature: 0.3,
-      }),
-    });
-
-    if (!tagsResponse.ok) {
-      throw new Error(`OpenAI tags API error: ${tagsResponse.status}`);
-    }
-
-    const tagsData = await tagsResponse.json();
-    const extractedTags = JSON.parse(tagsData.choices[0].message.content);
-    
-    console.log(`✅ Tags extracted:`, extractedTags);
-
-    // Step 3: Flatten tags into string array for existing schema
-    const allTags = [
-      'whatsapp',
-      ...(extractedTags.people || []),
-      ...(extractedTags.places || []),
-      ...(extractedTags.events || []),
-      ...(extractedTags.themes || []),
-      ...(extractedTags.emotions || [])
-    ].filter(tag => tag && tag.length > 0);
-
-    // Step 4: Update memory with AI-extracted data
-    const { error: updateError } = await supabase
-      .from('memories')
-      .update({
-        title: extracted.title || 'WhatsApp Memory',
-        memory_date: extracted.memory_date || null,
-        memory_location: extracted.memory_location || null,
-        tags: allTags,
-        show_on_timeline: !!extracted.memory_date, // Only show on timeline if date exists
-        metadata: {
-          processed_at: new Date().toISOString(),
-          summary: extracted.summary,
-          ai_extracted: true,
-          confidence: {
-            date: extracted.memory_date ? 0.9 : 0.2,
-            location: extracted.memory_location ? 0.85 : 0.2
-          }
-        }
-      })
-      .eq('id', memoryId);
-
-    if (updateError) {
-      console.error(`❌ Error updating memory ${memoryId}:`, updateError);
-      throw updateError;
-    }
-
-    // Step 5: Store detailed insights in memory_insights table
-    const { error: insightsError } = await supabase
-      .from('memory_insights')
-      .insert({
-        memory_id: memoryId,
-        user_id: userId,
-        insights: {
-          people: extractedTags.people || [],
-          places: extractedTags.places || [],
-          dates: extractedTags.dates || [],
-          events: extractedTags.events || [],
-          themes: extractedTags.themes || [],
-          emotions: extractedTags.emotions || [],
-          objects: extractedTags.objects || [],
-          relationships: extractedTags.relationships || [],
-          time_periods: extractedTags.time_periods || []
-        },
-        conversation_context: {
-          key_moments: [],
-          emotional_tone: extractedTags.emotions?.[0] || 'neutral',
-          narrative_arc: 'WhatsApp conversation'
-        },
-        metadata: {
-          word_count: conversationText.split(/\s+/).length,
-          estimated_time_span: null,
-          confidence_scores: {
-            date_extraction: extracted.memory_date ? 0.9 : 0.2,
-            location_extraction: extracted.memory_location ? 0.85 : 0.2,
-            people_extraction: extractedTags.people?.length > 0 ? 0.95 : 0.5
-          }
-        }
-      });
-
-    if (insightsError) {
-      console.error(`⚠️ Error storing insights for ${memoryId}:`, insightsError);
-      // Non-fatal, memory is still saved
-    }
-
-    console.log(`✅ Memory ${memoryId} fully processed with AI insights`);
-    
-    if (!extracted.memory_date) {
-      console.warn(`⚠️ Memory ${memoryId} has no date - will not appear on timeline`);
-    }
-
-  } catch (error) {
-    console.error(`❌ AI processing failed for memory ${memoryId}:`, error);
-    // Don't throw - memory is already saved with basic data
-  }
-}
+// Note: Memory AI processing now handled by separate process-memory-insights edge function
+// See lines 854-872 for invocation
 
 serve(async (req) => {
   const url = new URL(req.url);
