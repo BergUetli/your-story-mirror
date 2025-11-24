@@ -27,7 +27,7 @@ const Dashboard = () => {
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
               Welcome back,
               <br />
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <span className="text-primary">
                 {userName}
               </span>
             </h1>
@@ -39,7 +39,7 @@ const Dashboard = () => {
           {/* Memory Counter */}
           <Card className="modern-card border-border/50 max-w-2xl mx-auto">
             <CardContent className="p-12 text-center space-y-4">
-              <div className="text-7xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <div className="text-7xl font-bold text-primary">
                 {memoryCount}
               </div>
               <div className="text-2xl text-foreground">

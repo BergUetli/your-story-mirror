@@ -46,7 +46,7 @@ const HowItWorks = () => {
           <Card className="modern-card border-border/50">
             <CardContent className="p-12 flex items-center justify-center">
               <div className="relative">
-                <div className="w-48 h-48 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-pulse">
+                <div className="w-48 h-48 rounded-full bg-primary flex items-center justify-center animate-pulse">
                   <Sparkles className="w-24 h-24 text-white" />
                 </div>
                 <div className="absolute inset-0 rounded-full border-2 border-primary/50 animate-ping" />
