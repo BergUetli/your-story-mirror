@@ -1026,13 +1026,22 @@ serve(async (req) => {
 
       const supabase = getSupabaseAdmin();
       
-      // Check if this phone number is verified and linked to an account
-      const { data: verifiedPhone } = await supabase
+      // Check if this phone number is verified and linked to an account (flexible matching)
+      const { data: allVerifiedPhones } = await supabase
         .from('user_phone_numbers')
-        .select('user_id')
-        .eq('phone_number', message.from)
-        .eq('verified', true)
-        .single();
+        .select('user_id, phone_number')
+        .eq('verified', true);
+      
+      // Helper to normalize phone for matching
+      const normalizePhone = (phone: string) => phone.replace(/[^\d+]/g, '');
+      const phonesMatch = (phone1: string, phone2: string) => {
+        const norm1 = normalizePhone(phone1);
+        const norm2 = normalizePhone(phone2);
+        return norm1 === norm2 || norm1 === `+${norm2}` || `+${norm1}` === norm2;
+      };
+      
+      // Find matching verified phone
+      const verifiedPhone = allVerifiedPhones?.find(p => phonesMatch(p.phone_number, message.from));
       
       let userId: string;
       if (verifiedPhone) {

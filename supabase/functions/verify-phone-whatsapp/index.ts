@@ -163,16 +163,30 @@ serve(async (req) => {
         );
       }
 
-      // Mark as verified
+      // Mark as verified - find the phone record flexibly
+      const { data: allUserPhones } = await supabase
+        .from('user_phone_numbers')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      const matchingPhone = allUserPhones?.find(p => phonesMatch(p.phone_number, phone_number));
+      
+      if (!matchingPhone) {
+        return new Response(
+          JSON.stringify({ error: 'Phone number record not found for this user' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const { error: updateError } = await supabase
         .from('user_phone_numbers')
         .update({
           verified: true,
+          phone_number: normalizedPhone, // Normalize the stored format
           verification_code: null,
           verification_expires_at: null,
         })
-        .eq('user_id', user.id)
-        .eq('phone_number', phone_number);
+        .eq('id', matchingPhone.id);
 
       if (updateError) throw updateError;
 
@@ -264,6 +278,29 @@ serve(async (req) => {
           .from('user_phone_numbers')
           .delete()
           .eq('user_id', whatsappUserId);
+        
+        console.log('✅ Old phone record deleted');
+
+        // Ensure web user's phone is in normalized format and verified
+        const { data: webUserPhones } = await supabase
+          .from('user_phone_numbers')
+          .select('*')
+          .eq('user_id', user.id);
+        
+        const webUserPhone = webUserPhones?.find(p => phonesMatch(p.phone_number, normalizedPhone));
+        
+        if (webUserPhone) {
+          await supabase
+            .from('user_phone_numbers')
+            .update({
+              phone_number: normalizedPhone, // Normalize
+              verified: true,
+              verification_code: null,
+              verification_expires_at: null
+            })
+            .eq('id', webUserPhone.id);
+          console.log('✅ Web user phone normalized and verified');
+        }
         
         console.log('✅ Old phone record deleted');
 
