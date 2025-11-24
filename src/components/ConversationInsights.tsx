@@ -206,13 +206,13 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         </div>
       </Card>
 
-      {/* Sentiment Timeline (Placeholder) */}
-      <Card className="p-4 flex-1">
+      {/* Sentiment Analysis (Placeholder) */}
+      <Card className="p-4 flex-1 flex flex-col">
         <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />
-          Sentiment Timeline
+          Sentiment Analysis
         </h4>
-        <div className="h-full min-h-[120px] bg-gradient-to-r from-green-100 via-yellow-100 to-green-100 rounded-lg flex items-center justify-center">
+        <div className="flex-1 bg-gradient-to-r from-green-100 via-yellow-100 to-green-100 rounded-lg flex items-center justify-center">
           <p className="text-xs text-muted-foreground">
             Sentiment analysis coming soon
           </p>
