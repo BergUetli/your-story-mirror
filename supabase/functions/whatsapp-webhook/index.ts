@@ -673,7 +673,7 @@ async function searchRelevantMemories(supabase, userId, userMessage, limit = 5) 
     }));
 }
 
-async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = [], sessionContext = {}) {
+async function generateSolinResponse(userMessage, conversationHistory, userName, relevantMemories = [], sessionContext = {}, userProfile = null) {
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
   if (!OPENAI_API_KEY) throw new Error("OpenAI API key not configured");
 
@@ -692,7 +692,23 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   const isConfirmingSave = sessionContext.awaiting_save_confirmation && 
     confirmationKeywords.some(word => userMessage.toLowerCase().includes(word));
 
+  // Build user context from profile
+  let userContext = userName ? `You're talking to ${userName}` : 'You\'re talking to your friend';
+  if (userProfile) {
+    if (userProfile.age) userContext += `, who is ${userProfile.age} years old`;
+    if (userProfile.location) userContext += ` and lives in ${userProfile.location}`;
+    if (userProfile.hometown && userProfile.hometown !== userProfile.location) {
+      userContext += ` (originally from ${userProfile.hometown})`;
+    }
+    if (userProfile.hobbies_interests && userProfile.hobbies_interests.length > 0) {
+      userContext += `. They enjoy ${userProfile.hobbies_interests.slice(0, 3).join(', ')}`;
+    }
+  }
+  userContext += '.';
+
   const systemPrompt = `You are Solin, a warm childhood friend helping ${userName || 'your friend'} preserve life memories over WhatsApp.
+
+${userContext}
 
 PERSONALITY:
 - Playful, fun, and supportive - like a close friend from childhood
@@ -700,6 +716,7 @@ PERSONALITY:
 - Keep responses VERY SHORT for voice (1-2 sentences max, 5-8 words per sentence)
 - Sound like someone their age, not a formal assistant
 - If they're using voice notes, keep your response even more concise and conversational
+- Reference their name naturally when appropriate, especially when greeting them
 
 YOUR APPROACH TO MEMORIES:
 1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
@@ -1199,12 +1216,23 @@ serve(async (req) => {
       const conversationHistory = await getConversationContext(supabase, userId, sessionId);
       const relevantMemories = await searchRelevantMemories(supabase, userId, message.text);
       
+      // Fetch user profile data for personalized context
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('preferred_name, age, location, hometown, hobbies_interests, personality_traits')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
       const { data: userData } = await supabase
         .from('users')
         .select('name')
         .eq('user_id', userId)
         .maybeSingle();
-
+      
+      // Use preferred_name from profile, fallback to name from users table
+      const userName = userProfile?.preferred_name || userData?.name || message.metadata?.name;
+      
+      console.log(`👤 User context: ${userName}, Age: ${userProfile?.age}, Location: ${userProfile?.location}`);
       console.log(`📚 Found ${relevantMemories.length} relevant memories for context`);
 
       // Get session context for memory discussion tracking
@@ -1245,9 +1273,10 @@ serve(async (req) => {
       const { response, shouldCreateMemory, memoryContent, isAskingToSave } = await generateSolinResponse(
         message.text,
         conversationHistory,
-        userData?.name || message.metadata?.name,
+        userName,
         relevantMemories,
-        sessionContext
+        sessionContext,
+        userProfile
       );
 
       // Update session context
