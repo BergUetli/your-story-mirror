@@ -307,10 +307,12 @@ serve(async (req) => {
             }
           }
 
-          // Delete old user's records
-          await supabase.from('users').delete().eq('user_id', whatsappUserId);
-          await supabase.from('user_profiles').delete().eq('user_id', whatsappUserId);
-          await supabase.from('user_phone_numbers').delete().eq('id', otherPhone.id);
+          // Delete old user's records from all tables
+          await Promise.all([
+            supabase.from('user_phone_numbers').delete().eq('user_id', whatsappUserId),
+            supabase.from('user_profiles').delete().eq('user_id', whatsappUserId),
+            supabase.from('users').delete().eq('user_id', whatsappUserId)
+          ]);
           
           console.log(`✅ Old user records deleted for ${whatsappUserId}`);
         }
