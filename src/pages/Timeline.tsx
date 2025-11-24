@@ -235,8 +235,26 @@ const Timeline = () => {
         combinedProfile.birth_date = `${birthYear}-01-01`;
       }
       
-      const completeMemories = (memories || []).filter((m: any) => !!m.title && !!m.text && !!(m.memory_date || m.created_at || m.date));
-      console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories');
+      // Filter for complete memories with title, text, and memory_date specifically
+      const completeMemories = (memories || []).filter((m: any) => {
+        const hasTitle = !!m.title && m.title.trim().length > 0;
+        const hasText = !!m.text && m.text.trim().length > 0;
+        const hasMemoryDate = !!m.memory_date;
+        
+        if (!hasTitle || !hasText || !hasMemoryDate) {
+          console.log('Filtering out incomplete memory:', {
+            id: m.id,
+            title: m.title,
+            hasTitle,
+            hasText,
+            hasMemoryDate,
+            memory_date: m.memory_date
+          });
+        }
+        
+        return hasTitle && hasText && hasMemoryDate;
+      });
+      console.info('📊 Timeline memories loaded:', completeMemories.length, 'complete memories out of', memories?.length || 0);
       
       // Fetch artifacts for all memories
       const memoryIds = completeMemories.map((m: any) => m.id);
@@ -348,8 +366,16 @@ const Timeline = () => {
         nestedItems.push(item);
       });
 
-      // Build card title based on content
-      const cardTitle = `${yearData.memories.length} ${yearData.memories.length === 1 ? 'Memory' : 'Memories'}`;
+      // Build card title based on content - don't show empty memory counts
+      const memoryCount = yearData.memories.length;
+      const cardTitle = memoryCount > 0 
+        ? `${memoryCount} ${memoryCount === 1 ? 'Memory' : 'Memories'}`
+        : (yearData.isBirthYear ? 'Birth' : '');
+
+      // Only include items with actual content
+      if (nestedItems.length === 0 && !yearData.isBirthYear && !yearData.isCurrentYear) {
+        return null;
+      }
 
       return {
         title: yearData.year.toString(),
@@ -369,7 +395,8 @@ const Timeline = () => {
       });
     }
 
-    return items;
+    // Filter out null items (years with no content)
+    return items.filter(Boolean);
   }, [timelineData, timelineProfile, profile, memoryArtifacts]);
 
   return (
@@ -437,17 +464,20 @@ const Timeline = () => {
           <div className="w-full py-12 px-4" style={{ 
             maxWidth: '1400px', 
             margin: '0 auto',
+            minHeight: '70vh', // Ensure timeline expands even with few items
           }}>
             <style>
               {`
                 /* Fix react-chrono layout issues */
                 .react-chrono-wrapper {
                   width: 100% !important;
+                  min-height: 60vh !important;
                 }
                 
-                /* Ensure proper spacing */
+                /* Ensure proper spacing and expansion */
                 [data-testid="timeline-main-wrapper"] {
                   padding: 12px 0 !important;
+                  min-height: 60vh !important;
                 }
                 
                 /* Enhanced Card Styling - Apple/Google Photos inspired */
@@ -499,24 +529,23 @@ const Timeline = () => {
                   color: #1f2937 !important;
                 }
                 
-                /* Hide timeline connecting lines */
-                [class*="timeline-vertical-circle"] {
-                  display: none !important;
-                }
-                
-                /* Hide vertical timeline line */
+                /* Timeline connecting line - ensure it expands with content */
                 [class*="timeline-vertical"] [class*="line"] {
-                  display: none !important;
+                  min-height: 100% !important;
+                  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1)) !important;
                 }
                 
-                /* Hide all connector lines */
+                /* Ensure vertical line extends properly */
                 .vertical-item-row::before {
-                  display: none !important;
+                  background: linear-gradient(to bottom, rgba(59, 130, 246, 0.3), rgba(59, 130, 246, 0.1)) !important;
                 }
                 
-                /* Timeline dots */
-                [class*="timeline-circle"] {
+                /* Timeline dots/circles */
+                [class*="timeline-circle"],
+                [class*="timeline-vertical-circle"] {
                   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2) !important;
+                  border: 2px solid rgba(59, 130, 246, 0.5) !important;
+                  background: white !important;
                 }
                 
                 /* Nested items enhancement */
