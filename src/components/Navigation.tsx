@@ -149,7 +149,7 @@ const Navigation = () => {
             </div>
 
             {/* 
-              BRAND SECTION (Center) - Flexible positioning for responsive design
+              BRAND SECTION (Center) - Logo and Brand Name
               BUSINESS PURPOSE: Provides brand recognition and quick access to home page.
               Acts as a visual anchor and primary logo placement.
               For unauthenticated users, triggers sign-in modal.
@@ -158,26 +158,28 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-4xl lg:text-5xl font-bold tracking-tight hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
-                style={{
-                  color: 'hsl(217, 91%, 38%)',
-                  pointerEvents: 'auto'
-                }}
+                className="flex-shrink-0 flex items-center gap-3 hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
+                style={{ pointerEvents: 'auto' }}
               >
-                <span className="hidden lg:inline">1000years.ai</span>
-                <span className="lg:hidden">1000years.ai</span>
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm lg:text-base">
+                  1K
+                </div>
+                <span className="text-2xl lg:text-3xl font-light tracking-tight text-foreground">
+                  1000 years
+                </span>
               </Link>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 text-4xl lg:text-5xl font-bold tracking-tight hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
-                style={{
-                  color: 'hsl(217, 91%, 38%)',
-                  pointerEvents: 'auto'
-                }}
+                className="flex-shrink-0 flex items-center gap-3 hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
+                style={{ pointerEvents: 'auto' }}
               >
-                <span className="hidden lg:inline">1000years.ai</span>
-                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>1000years.ai</span>
+                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm lg:text-base">
+                  1K
+                </div>
+                <span className="text-2xl lg:text-3xl font-light tracking-tight text-foreground">
+                  1000 years
+                </span>
               </button>
             )}
             

@@ -22,6 +22,8 @@ interface TimelineChapterProps {
   memoryArtifacts: Map<string, any>;
   onMemoryClick: (memory: Memory) => void;
   isActive?: boolean;
+  isPast?: boolean;
+  isFuture?: boolean;
 }
 
 export const TimelineChapter: React.FC<TimelineChapterProps> = ({
@@ -31,10 +33,41 @@ export const TimelineChapter: React.FC<TimelineChapterProps> = ({
   memoryArtifacts,
   onMemoryClick,
   isActive = false,
+  isPast = false,
+  isFuture = false,
 }) => {
   // Get hero image from first memory with artifacts
   const heroMemory = memories.find(m => memoryArtifacts.get(m.id)?.length > 0);
   const heroArtifact = heroMemory ? memoryArtifacts.get(heroMemory.id)?.[0] : null;
+
+  // Special rendering for Past and Future chapters
+  if (isPast || isFuture) {
+    return (
+      <section 
+        id={`chapter-${startYear}-${endYear}`}
+        className={cn(
+          "min-h-screen py-16 px-6 sm:px-12 lg:px-24 transition-opacity duration-500",
+          isActive ? "opacity-100" : "opacity-60"
+        )}
+      >
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-baseline gap-6 mb-8">
+            <h2 className="font-manrope font-light text-5xl sm:text-6xl lg:text-7xl text-foreground tracking-tight">
+              {isPast ? 'Past' : 'Future'}
+            </h2>
+            <Badge variant="outline" className="text-sm font-manrope font-light px-4 py-1">
+              {startYear}–{endYear}
+            </Badge>
+          </div>
+          <p className="font-manrope text-lg text-muted-foreground max-w-2xl">
+            {isPast 
+              ? 'Ancestral history and family heritage will appear here.'
+              : 'Messages and memories for the future will appear here.'}
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section 
@@ -110,10 +143,18 @@ export const TimelineChapter: React.FC<TimelineChapterProps> = ({
                       })}
                     </div>
 
-                    {/* Title */}
-                    <h3 className="font-manrope font-semibold text-xl sm:text-2xl text-foreground mb-4 leading-tight group-hover:text-primary transition-colors duration-300">
-                      {memory.title}
-                    </h3>
+                    {/* Title with Privacy Badge */}
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <h3 className="font-manrope font-semibold text-xl sm:text-2xl text-foreground leading-tight group-hover:text-primary transition-colors duration-300 flex-1">
+                        {memory.title}
+                      </h3>
+                      <Badge 
+                        variant="secondary" 
+                        className="text-xs font-manrope font-medium px-2 py-1 bg-muted/50 text-foreground border border-border flex-shrink-0"
+                      >
+                        Private
+                      </Badge>
+                    </div>
 
                     {/* Description */}
                     <p className="font-manrope font-light text-sm text-muted-foreground leading-relaxed mb-4 line-clamp-3">
