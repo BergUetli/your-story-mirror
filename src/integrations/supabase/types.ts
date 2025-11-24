@@ -107,6 +107,7 @@ export type Database = {
           memory_group_id: string | null
           memory_location: string | null
           memory_mode: string | null
+          metadata: Json | null
           recipient: string | null
           show_on_timeline: boolean | null
           source_type: string | null
@@ -128,6 +129,7 @@ export type Database = {
           memory_group_id?: string | null
           memory_location?: string | null
           memory_mode?: string | null
+          metadata?: Json | null
           recipient?: string | null
           show_on_timeline?: boolean | null
           source_type?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           memory_group_id?: string | null
           memory_location?: string | null
           memory_mode?: string | null
+          metadata?: Json | null
           recipient?: string | null
           show_on_timeline?: boolean | null
           source_type?: string | null
@@ -187,6 +190,47 @@ export type Database = {
           },
           {
             foreignKeyName: "memory_artifacts_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_insights: {
+        Row: {
+          conversation_context: Json
+          created_at: string | null
+          id: string
+          insights: Json
+          memory_id: string
+          metadata: Json
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_context?: Json
+          created_at?: string | null
+          id?: string
+          insights?: Json
+          memory_id: string
+          metadata?: Json
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_context?: Json
+          created_at?: string | null
+          id?: string
+          insights?: Json
+          memory_id?: string
+          metadata?: Json
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_insights_memory_id_fkey"
             columns: ["memory_id"]
             isOneToOne: false
             referencedRelation: "memories"

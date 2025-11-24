@@ -16,6 +16,7 @@ import { VoiceArchiveDiagnosticsPanel } from '@/components/admin/VoiceArchiveDia
 import { ElevenLabsCreditsPanel } from '@/components/admin/ElevenLabsCreditsPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { WaitlistPanel } from '@/components/admin/WaitlistPanel';
+import { InsightsConfigPanel } from '@/components/admin/InsightsConfigPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -31,7 +32,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Trash2,
-  Cog
+  Cog,
+  Lightbulb
 } from 'lucide-react';
 
 const Admin = () => {
@@ -238,7 +240,7 @@ const Admin = () => {
 
         {/* Main Dashboard Tabs */}
         <Tabs defaultValue="diagnostics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-10 bg-slate-800/50 border-slate-700">
+          <TabsList className="grid w-full grid-cols-11 bg-slate-800/50 border-slate-700">
             <TabsTrigger value="waitlist" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Users className="w-4 h-4" />
               Waitlist
@@ -262,6 +264,10 @@ const Admin = () => {
             <TabsTrigger value="config" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Cog className="w-4 h-4" />
               Configuration
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
+              <Lightbulb className="w-4 h-4" />
+              Insights Config
             </TabsTrigger>
             <TabsTrigger value="database" className="flex items-center gap-2 data-[state=active]:bg-purple-600">
               <Trash2 className="w-4 h-4" />
@@ -306,6 +312,10 @@ const Admin = () => {
 
           <TabsContent value="config" className="space-y-6">
             <ConfigurationPanel />
+          </TabsContent>
+
+          <TabsContent value="insights" className="space-y-6">
+            <InsightsConfigPanel />
           </TabsContent>
 
           <TabsContent value="database" className="space-y-6">
