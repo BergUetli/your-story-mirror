@@ -131,10 +131,18 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
   };
 
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const detailPanelRef = useRef<HTMLDivElement>(null);
 
   const handleMemoryClick = (memory: Memory) => {
     setSelectedMemory(memory);
     onMemoryClick(memory);
+    
+    // Scroll the detail panel to top when a new memory is selected
+    setTimeout(() => {
+      if (detailPanelRef.current) {
+        detailPanelRef.current.scrollTop = 0;
+      }
+    }, 100);
   };
 
   return (
@@ -204,7 +212,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                       className={cn(
                         "w-4 h-4 rounded-full border-2 transition-all duration-300 hover:scale-125",
                         isBirthYear
-                          ? "bg-gradient-to-br from-primary to-primary/80 border-primary shadow-xl shadow-primary/50 animate-pulse"
+                          ? "bg-gradient-to-br from-primary to-primary/80 border-primary shadow-xl shadow-primary/50"
                           : isCurrentYear
                           ? "bg-gradient-to-br from-accent to-accent/80 border-accent shadow-xl shadow-accent/50 ring-2 ring-accent/20"
                           : hasMemories
@@ -218,7 +226,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                   <div className="mb-4">
                     <div
                       className={cn(
-                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105",
+                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-lg font-manrope font-medium text-base tracking-wide transition-all duration-300 hover:scale-105",
                         isBirthYear
                           ? "bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 shadow-md"
                           : isCurrentYear
@@ -226,9 +234,9 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                           : "text-muted-foreground hover:text-foreground"
                       )}
                     >
-                      <span className="text-base">{year}</span>
-                      {isBirthYear && <span className="text-xs opacity-80">Born</span>}
-                      {isCurrentYear && <span className="text-xs opacity-80">Present</span>}
+                      <span className="text-lg font-semibold tabular-nums">{year}</span>
+                      {isBirthYear && <span className="text-xs font-light opacity-80">Born</span>}
+                      {isCurrentYear && <span className="text-xs font-light opacity-80">Present</span>}
                     </div>
                   </div>
 
@@ -262,7 +270,10 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
       </div>
 
       {/* Right: Memory Detail Panel */}
-      <div className="w-[400px] bg-gradient-to-b from-card to-background border-l border-border/50 overflow-y-auto shadow-xl">
+      <div 
+        ref={detailPanelRef}
+        className="w-[400px] bg-gradient-to-b from-card to-background border-l border-border/50 overflow-y-auto shadow-xl scroll-smooth"
+      >
         {selectedMemory ? (
           <div className="p-6">
             <div className="flex items-start justify-between mb-6">
