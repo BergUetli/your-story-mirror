@@ -124,23 +124,15 @@ const Settings = () => {
         topics_of_interest: topicsOfInterest ? topicsOfInterest.split(',').map(s => s.trim()).filter(Boolean) : null,
       };
 
-      if (profileExists) {
-        // Update existing profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .update(profileData)
-          .eq('user_id', user.id);
+      // Use upsert to handle both insert and update
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert(profileData, {
+          onConflict: 'user_id'
+        });
 
-        if (error) throw error;
-      } else {
-        // Create new profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert(profileData);
-
-        if (error) throw error;
-        setProfileExists(true);
-      }
+      if (error) throw error;
+      setProfileExists(true);
       
       toast({
         title: "Profile updated",
