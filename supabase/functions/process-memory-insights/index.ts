@@ -87,15 +87,26 @@ serve(async (req) => {
     };
 
     // Step 6: Update memory record with extracted data
+    // Flatten insights into tag array for memories.tags column
+    const allTags = [
+      ...(insights.people || []),
+      ...(insights.places || []),
+      ...(insights.events || []),
+      ...(insights.themes || []),
+      ...(insights.emotions || [])
+    ].filter(tag => tag && tag.length > 0);
+
     const { error: updateError } = await supabase
       .from("memories")
       .update({
         title: coreData.title,
         memory_date: coreData.memory_date,
         memory_location: coreData.memory_location,
-        tags: insights,
+        tags: allTags,
+        show_on_timeline: !!coreData.memory_date, // Only show if date exists
         metadata: {
           ...metadata,
+          summary: coreData.summary,
           processed_at: new Date().toISOString(),
         },
       })
