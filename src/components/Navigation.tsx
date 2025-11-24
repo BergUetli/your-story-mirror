@@ -158,27 +158,21 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex-shrink-0 text-4xl lg:text-5xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
+                className="flex-shrink-0 text-4xl lg:text-5xl font-bold tracking-tight hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 relative z-20 pointer-events-auto cursor-pointer"
                 style={{
-                  background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  color: 'hsl(217, 91%, 38%)',
                   pointerEvents: 'auto'
                 }}
               >
                 <span className="hidden lg:inline">1000years.ai</span>
-                <span className="lg:hidden text-foreground" style={{ WebkitTextFillColor: 'currentColor' }}>1000years.ai</span>
+                <span className="lg:hidden">1000years.ai</span>
               </Link>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex-shrink-0 text-4xl lg:text-5xl font-black tracking-tight hover:text-primary transition-colors mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
+                className="flex-shrink-0 text-4xl lg:text-5xl font-bold tracking-tight hover:opacity-90 transition-opacity mx-6 lg:mx-10 py-2 cursor-pointer relative z-20 pointer-events-auto"
                 style={{
-                  background: 'linear-gradient(135deg, #0066FF, #1E90FF)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  color: 'hsl(217, 91%, 38%)',
                   pointerEvents: 'auto'
                 }}
               >
