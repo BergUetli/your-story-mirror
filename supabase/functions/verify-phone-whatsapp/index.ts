@@ -321,7 +321,7 @@ serve(async (req) => {
         .from('user_phone_numbers')
         .update({
           verified: true,
-          phone_number: normalizedPhone,
+          phone_number: phone_number,
           verification_code: null,
           verification_expires_at: null,
         })
