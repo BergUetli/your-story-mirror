@@ -1210,11 +1210,13 @@ serve(async (req) => {
       const conversationHistory = await getConversationContext(supabase, userId, sessionId);
       const relevantMemories = await searchRelevantMemories(supabase, userId, message.text);
       
-      const { data: userData } = await supabase
-        .from('users')
-        .select('name')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Fetch user's name from both users and user_profiles tables
+      const [usersResult, profileResult] = await Promise.all([
+        supabase.from('users').select('name').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_profiles').select('preferred_name').eq('user_id', userId).maybeSingle()
+      ]);
+      
+      const userName = profileResult.data?.preferred_name || usersResult.data?.name || message.metadata?.name || 'friend';
 
       console.log(`📚 Found ${relevantMemories.length} relevant memories for context`);
 
@@ -1256,7 +1258,7 @@ serve(async (req) => {
       const { response, shouldCreateMemory, memoryContent, isAskingToSave } = await generateSolinResponse(
         message.text,
         conversationHistory,
-        userData?.name || message.metadata?.name,
+        userName,
         relevantMemories,
         sessionContext
       );
