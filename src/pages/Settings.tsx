@@ -124,25 +124,47 @@ const Settings = () => {
         topics_of_interest: topicsOfInterest ? topicsOfInterest.split(',').map(s => s.trim()).filter(Boolean) : null,
       };
 
-      // Use upsert to handle both insert and update
-      const { error } = await supabase
-        .from('user_profiles')
-        .upsert(profileData, {
-          onConflict: 'user_id'
-        });
+      if (profileExists) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('user_id', user.id);
 
-      if (error) throw error;
-      setProfileExists(true);
+        if (error) throw error;
+      } else {
+        // Insert new profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert(profileData);
+
+        if (error) {
+          // If insert fails due to existing record, try update instead
+          if (error.code === '23505') {
+            const { error: updateError } = await supabase
+              .from('user_profiles')
+              .update(profileData)
+              .eq('user_id', user.id);
+            
+            if (updateError) throw updateError;
+            setProfileExists(true);
+          } else {
+            throw error;
+          }
+        } else {
+          setProfileExists(true);
+        }
+      }
       
       toast({
         title: "Profile updated",
         description: "Your information has been saved successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving profile:', error);
       toast({
         title: "Update failed",
-        description: "Please try again in a moment",
+        description: error.message || "Please try again in a moment",
         variant: "destructive"
       });
     } finally {
