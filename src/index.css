@@ -76,7 +76,24 @@
   body {
     @apply bg-background text-foreground font-metropolitan antialiased;
     min-height: 100vh;
+    font-weight: 400;
+    letter-spacing: -0.011em;
+    line-height: 1.6;
   }
+
+  /* Premium typography scale */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1.2;
+  }
+
+  h1 { font-size: 2.5rem; }
+  h2 { font-size: 2rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  h5 { font-size: 1.125rem; }
+  h6 { font-size: 1rem; }
 
   /* Modern thick scrollbar */
   ::-webkit-scrollbar {
@@ -144,30 +161,28 @@
 }
 
 @layer components {
-  /* Modern card styles - Structured and cinematic */
+  /* Premium card styles - Clean and professional */
   .modern-card {
-    @apply transition-all duration-300 ease-out;
-    @apply bg-white border border-gray-200/60 rounded-xl;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    @apply transition-all duration-200 ease-out;
+    @apply bg-card border border-border rounded;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   .modern-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-    transform: translateY(-2px);
-    border-color: rgb(59 130 246 / 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
   }
 
-  /* Timeline card styles - Enhanced */
+  /* Timeline card styles - Refined and minimal */
   .timeline-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(249,250,251,0.95));
-    backdrop-filter: blur(12px);
-    @apply rounded-xl border border-gray-200/50 shadow-sm;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: hsl(var(--card));
+    @apply rounded border border-border shadow-sm;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .timeline-card:hover {
-    @apply shadow-lg border-primary/40;
-    transform: translateY(-4px) scale(1.01);
+    @apply shadow border-primary/30;
+    transform: translateY(-2px);
   }
 
   /* Smooth fade animations */
@@ -210,59 +225,55 @@
     animation-delay: 300ms;
   }
 
-  /* Enhanced button styles for better visibility and interaction */
+  /* Refined button styles for premium feel */
   .btn-enhanced {
     @apply transition-all duration-200 ease-out;
-    @apply border-2 shadow-sm;
+    @apply shadow-sm;
     transform: scale(1);
   }
 
   .btn-enhanced:hover {
-    @apply shadow-lg;
-    transform: translateY(-1px) scale(1.02);
+    @apply shadow;
+    transform: translateY(-1px);
   }
 
   .btn-enhanced:active {
     transform: translateY(0) scale(0.98);
   }
   
-  /* Card with depth - for dashboard metrics */
+  /* Card with refined depth */
   .card-depth {
-    @apply bg-white rounded-xl border border-gray-100;
-    box-shadow: 
-      0 1px 3px rgba(0, 0, 0, 0.05),
-      0 10px 25px rgba(0, 0, 0, 0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply bg-card rounded border border-border;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .card-depth:hover {
-    box-shadow: 
-      0 4px 12px rgba(0, 0, 0, 0.08),
-      0 16px 32px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
   }
   
-  /* Smooth hover lift */
+  /* Refined hover lift */
   .hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .hover-lift:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
-  /* Primary button enhancement */
+  /* Premium button enhancements */
   .btn-primary-enhanced {
     @apply btn-enhanced;
-    @apply border-primary/30 hover:border-primary;
+    @apply border-primary/20 hover:border-primary/40;
   }
 
-  /* Outline button enhancement */
+  /* Refined outline button */
   .btn-outline-enhanced {
     @apply btn-enhanced;
-    @apply border-muted-foreground/20 hover:border-muted-foreground;
-    @apply hover:bg-muted/50;
+    @apply border-border hover:border-primary/30;
+    @apply hover:bg-accent/30;
   }
 
   /* Mobile navigation scroll hiding */
@@ -291,12 +302,11 @@
     }
   }
 
-  /* Smooth gradient backgrounds */
+  /* Premium gradient backgrounds */
   .sidebar-gradient {
     background: linear-gradient(135deg, 
-      hsl(0 0% 100%) 0%, 
-      hsl(220 15% 98%) 50%, 
-      hsl(0 0% 96%) 100%);
+      hsl(var(--card)) 0%, 
+      hsl(var(--muted)) 100%);
   }
 
   /* ===== SOLIN VOICE AGENT STYLES ===== */
