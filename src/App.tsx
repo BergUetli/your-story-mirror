@@ -58,8 +58,7 @@ const AppContent = () => {
         {/* Non-signed-in users: Always land on Beta Landing page */}
         {/* Signed-in users: Always land on Sanctuary (Solin) page */}
         <Route path="/" element={user ? <Navigate to="/sanctuary" replace /> : <BetaLanding />} />
-        {/* About page hidden during beta - uncomment when ready to reveal */}
-        {/* <Route path="/about" element={<About />} /> */}
+        <Route path="/about" element={<About />} />
         <Route path="/sanctuary" element={
           <ProtectedRoute>
             <Index />
