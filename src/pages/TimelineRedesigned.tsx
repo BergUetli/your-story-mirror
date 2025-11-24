@@ -209,7 +209,7 @@ const TimelineRedesigned = () => {
   return (
     <div className="relative bg-background">
       {/* Memory Count Badge - Top Right */}
-      <div className="fixed top-24 right-6 z-50 bg-card/90 backdrop-blur-sm border-2 border-border rounded-lg px-4 py-2 shadow-lg">
+      <div className="fixed top-20 right-6 z-50 bg-card/90 backdrop-blur-sm border-2 border-border rounded-lg px-4 py-2 shadow-lg">
         <div className="text-center">
           <div className="font-manrope font-semibold text-2xl text-primary">
             {memories.length}
