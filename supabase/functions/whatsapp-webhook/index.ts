@@ -806,7 +806,7 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
     .from('memories')
     .insert({
       user_id: userId,
-      title,
+      title: 'Processing...', // Will be updated by insights processor
       text: memoryText,
       tags: ['whatsapp', 'conversation'],
       recipient: 'private',
@@ -827,7 +827,44 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
     console.warn('⚠️ Memory saved without date - will not appear on timeline');
   }
 
+  // Trigger background processing for insights extraction
+  triggerMemoryProcessing(data.id, memoryText, userId).catch((err) => {
+    console.error('❌ Background processing error:', err);
+  });
+
   return data.id;
+}
+
+async function triggerMemoryProcessing(memoryId: string, conversationText: string, userId: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/process-memory-insights`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+        },
+        body: JSON.stringify({
+          memory_id: memoryId,
+          conversation_text: conversationText,
+          user_id: userId,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`❌ Memory processing failed: ${error}`);
+    } else {
+      console.log(`✅ Memory processing triggered for: ${memoryId}`);
+    }
+  } catch (error) {
+    console.error("❌ Error triggering memory processing:", error);
+  }
 }
 
 serve(async (req) => {
