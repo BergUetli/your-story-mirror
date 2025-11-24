@@ -820,13 +820,14 @@ Response format:
 async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext) {
   console.log('💾 Creating memory from WhatsApp conversation...');
   
-  // Get the relevant parts of the conversation that led to this memory
-  const recentExchanges = conversationHistory.slice(-8); // Last 4 exchanges (8 messages)
-  const memoryText = recentExchanges
+  // Get ALL conversation history for this memory discussion (up to last 20 messages)
+  // This ensures we capture date, location, and context mentioned earlier in the conversation
+  const relevantExchanges = conversationHistory.slice(-20);
+  const memoryText = relevantExchanges
     .map(msg => `${msg.role === 'user' ? 'Me' : 'Solin'}: ${msg.content}`)
     .join('\n\n');
   
-  console.log(`📝 Memory text length: ${memoryText.length} characters`);
+  console.log(`📝 Memory text length: ${memoryText.length} characters, using ${relevantExchanges.length} messages`);
   
   // Create initial memory with temporary title
   const { data, error } = await supabase

@@ -225,7 +225,7 @@ async function extractMemoryCoreData(
 ): Promise<MemoryCoreData> {
   const openAIKey = Deno.env.get("OPENAI_API_KEY");
 
-  const prompt = `Extract core memory metadata from this conversation.
+  const prompt = `Extract core memory metadata from this conversation. Look carefully through the ENTIRE conversation for temporal and location clues.
 
 Conversation:
 """
@@ -234,9 +234,11 @@ ${conversationText}
 
 Extract:
 1. TITLE: A concise, descriptive title (5-8 words max)
-2. MEMORY_DATE: The primary date/time this memory occurred (ISO 8601 format: YYYY-MM-DD or YYYY-MM or YYYY). Use null if no clear date.
-3. MEMORY_LOCATION: The primary location where this memory took place. Be specific. Use null if unknown.
-4. SUMMARY: A 2-3 sentence summary capturing the essence of the memory.
+2. MEMORY_DATE: The primary date/time this memory occurred. Look for explicit years (e.g., "2008", "in 1995"), months (e.g., "July", "in December"), or date references anywhere in the conversation. Format as ISO 8601: YYYY-MM-DD or YYYY-MM or YYYY. Use null ONLY if absolutely no date information exists.
+3. MEMORY_LOCATION: The primary location where this memory took place. Look for city names, places, addresses, venues mentioned anywhere in the conversation. Be specific (include city and country if mentioned). Use null if unknown.
+4. SUMMARY: A 2-3 sentence summary capturing the essence of the memory. Write as a coherent narrative, not a chat transcript.
+
+IMPORTANT: Search the ENTIRE conversation for date and location clues, not just recent messages. Often date/location are mentioned early in the discussion.
 
 Return ONLY valid JSON with these exact keys: title, memory_date, memory_location, summary`;
 
