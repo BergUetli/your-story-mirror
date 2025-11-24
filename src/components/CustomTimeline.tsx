@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight, X, Calendar, MapPin, Tag } from 'lucide-react';
 import { TimelineMemoryCard } from './TimelineMemoryCard';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface Memory {
   id: string;
@@ -129,152 +130,220 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
     }
   };
 
+  const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+
+  const handleMemoryClick = (memory: Memory) => {
+    setSelectedMemory(memory);
+    onMemoryClick(memory);
+  };
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Navigation Controls */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={jumpToPast}
-          disabled={viewStartYear <= minYear}
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          100 Years Past
-        </Button>
-        
-        <Button
-          variant="default"
-          size="sm"
-          onClick={jumpToPresent}
-        >
-          My Lifetime
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={jumpToFuture}
-          disabled={viewEndYear >= maxYear}
-        >
-          100 Years Future
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </Button>
-      </div>
+    <div className="flex h-full">
+      {/* Left: Timeline */}
+      <div className="flex-1 flex flex-col border-r border-border">
+        {/* Navigation Controls */}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={jumpToPast}
+            disabled={viewStartYear <= minYear}
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Past
+          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              🎂 Birth
+            </Badge>
+            <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/20">
+              ⭐ Today
+            </Badge>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={jumpToFuture}
+            disabled={viewEndYear >= maxYear}
+          >
+            Future
+            <ChevronRight className="w-4 h-4 ml-1" />
+          </Button>
+        </div>
 
-      {/* Timeline Display */}
-      <div
-        ref={timelineRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
-        onScroll={handleScroll}
-      >
-        <div className="relative py-8 px-8 max-w-5xl mx-auto">
-          {/* Timeline Line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-border -translate-x-1/2" />
+        {/* Timeline Display */}
+        <div
+          ref={timelineRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden"
+          onScroll={handleScroll}
+        >
+          <div className="relative py-8 px-4 sm:px-8 max-w-2xl mx-auto">
+            {/* Timeline Line */}
+            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/30 via-border to-primary/30" />
 
-          {/* Year Markers and Memories */}
-          {displayYears.map((year) => {
-            const yearMemories = memoriesByYear.get(year) || [];
-            const isBirthYear = year === birthYear;
-            const isCurrentYear = year === currentYear;
-            const isHovered = hoveredYear === year;
+            {/* Year Markers and Memories */}
+            {displayYears.map((year) => {
+              const yearMemories = memoriesByYear.get(year) || [];
+              const isBirthYear = year === birthYear;
+              const isCurrentYear = year === currentYear;
+              const hasMemories = yearMemories.length > 0;
 
-            return (
-              <div
-                key={year}
-                id={`year-${year}`}
-                className="relative mb-12"
-                onMouseEnter={() => setHoveredYear(year)}
-                onMouseLeave={() => setHoveredYear(null)}
-              >
-                {/* Year Label */}
-                <div className="absolute left-1/2 -translate-x-1/2 z-10">
-                  <div
-                    className={cn(
-                      "px-4 py-2 rounded-full font-semibold text-sm transition-all",
-                      isBirthYear || isCurrentYear
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "bg-card border border-border hover:border-primary",
-                      isHovered && "scale-110 shadow-lg"
-                    )}
-                  >
-                    {year}
-                    {isBirthYear && " 🎂"}
-                    {isCurrentYear && " ⭐"}
+              return (
+                <div
+                  key={year}
+                  id={`year-${year}`}
+                  className="relative mb-8 ml-16"
+                >
+                  {/* Year Marker Dot */}
+                  <div className="absolute -left-[34px] top-2">
+                    <div
+                      className={cn(
+                        "w-3 h-3 rounded-full border-2 transition-all",
+                        isBirthYear
+                          ? "bg-primary border-primary shadow-lg shadow-primary/50"
+                          : isCurrentYear
+                          ? "bg-accent border-accent shadow-lg shadow-accent/50"
+                          : hasMemories
+                          ? "bg-primary/20 border-primary/40"
+                          : "bg-background border-border"
+                      )}
+                    />
                   </div>
-                </div>
 
-                {/* Memory Cards */}
-                {yearMemories.length > 0 && (
-                  <div className="pt-12">
-                    <div className="grid grid-cols-2 gap-4">
-                      {yearMemories.map((memory, index) => {
+                  {/* Year Label */}
+                  <div className="mb-3">
+                    <div
+                      className={cn(
+                        "inline-flex items-center gap-2 px-3 py-1 rounded-md font-semibold text-sm transition-all",
+                        isBirthYear
+                          ? "bg-primary/10 text-primary border border-primary/20"
+                          : isCurrentYear
+                          ? "bg-accent/10 text-accent-foreground border border-accent/20"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      <span>{year}</span>
+                      {isBirthYear && <span className="text-xs">Born</span>}
+                      {isCurrentYear && <span className="text-xs">Present</span>}
+                    </div>
+                  </div>
+
+                  {/* Memory Cards */}
+                  {yearMemories.length > 0 && (
+                    <div className="space-y-2">
+                      {yearMemories.map((memory) => {
                         const artifacts = memoryArtifacts.get(memory.id) || [];
                         const artifact = artifacts.length > 0 ? artifacts[0] : null;
                         
                         return (
                           <div
                             key={memory.id}
-                            className={cn(
-                              "transition-all duration-300",
-                              index % 2 === 0 ? "pr-8" : "pl-8 col-start-2",
-                              isHovered ? "opacity-100 scale-100" : index > 2 ? "opacity-50 scale-95" : "opacity-100 scale-100"
-                            )}
+                            className="transition-all duration-200"
                           >
                             <TimelineMemoryCard
                               memory={memory}
                               artifact={artifact}
-                              onClick={() => onMemoryClick(memory)}
+                              onClick={() => handleMemoryClick(memory)}
                             />
                           </div>
                         );
                       })}
                     </div>
-                    
-                    {/* Show count when not hovered and there are many memories */}
-                    {!isHovered && yearMemories.length > 3 && (
-                      <div className="text-center mt-4">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-muted-foreground"
-                          onClick={() => setHoveredYear(year)}
-                        >
-                          +{yearMemories.length - 3} more memories
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Hover Panel for Year Summary */}
-                {isHovered && yearMemories.length > 0 && (
-                  <div className="absolute left-1/2 -translate-x-1/2 top-full mt-4 w-full max-w-md z-20">
-                    <Card className="p-4 shadow-xl border-primary">
-                      <h3 className="font-semibold mb-2">
-                        {yearMemories.length} {yearMemories.length === 1 ? 'Memory' : 'Memories'} in {year}
-                      </h3>
-                      <div className="max-h-64 overflow-y-auto space-y-2">
-                        {yearMemories.map((memory) => (
-                          <button
-                            key={memory.id}
-                            onClick={() => onMemoryClick(memory)}
-                            className="w-full text-left p-2 rounded hover:bg-muted transition-colors"
-                          >
-                            <div className="font-medium text-sm">{memory.title}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {new Date(memory.memory_date || memory.created_at).toLocaleDateString()}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </Card>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
+      </div>
+
+      {/* Right: Memory Detail Panel */}
+      <div className="w-[400px] bg-card border-l border-border overflow-y-auto">
+        {selectedMemory ? (
+          <div className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <h2 className="text-xl font-semibold pr-8">{selectedMemory.title}</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedMemory(null)}
+                className="flex-shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Date */}
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  {new Date(selectedMemory.memory_date || selectedMemory.created_at).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+
+              {/* Location */}
+              {selectedMemory.memory_location && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="w-4 h-4" />
+                  <span>{selectedMemory.memory_location}</span>
+                </div>
+              )}
+
+              {/* Tags */}
+              {selectedMemory.tags && selectedMemory.tags.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Tag className="w-4 h-4 mt-1 text-muted-foreground" />
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMemory.tags.map((tag: string, index: number) => (
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Images */}
+              {memoryArtifacts.get(selectedMemory.id)?.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold">Media</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {memoryArtifacts.get(selectedMemory.id).map((artifact: any, index: number) => (
+                      <img
+                        key={index}
+                        src={artifact.signedUrl}
+                        alt=""
+                        className="w-full h-24 object-cover rounded-md border border-border"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="pt-4 border-t border-border">
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                  {selectedMemory.text}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full p-6 text-center">
+            <div className="space-y-2">
+              <p className="text-muted-foreground">Select a memory to view details</p>
+              <p className="text-xs text-muted-foreground/60">Click on any memory card on the timeline</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
