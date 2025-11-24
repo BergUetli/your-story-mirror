@@ -31,8 +31,6 @@ const About = () => {
           </div>
           
           <h1 className="font-manrope text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
-            Your voice, forever.
-            <br />
             <span className="text-white">
               Your wisdom, accessible across generations.
             </span>
@@ -108,50 +106,6 @@ const About = () => {
         </Card>
       </div>
 
-      {/* Cultural Lineage */}
-      <div className="max-w-7xl mx-auto px-8 py-24">
-        <div className="text-center space-y-6 mb-16">
-          <h2 className="font-manrope text-5xl font-bold">Cultural Lineage</h2>
-          <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto">
-            We stand on the shoulders of visionaries who imagined speaking across time
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="modern-card border-border/50">
-            <CardContent className="p-8 space-y-4">
-              <h3 className="font-manrope text-2xl font-semibold">The Time Machine (2002)</h3>
-              <p className="font-manrope text-muted-foreground leading-relaxed">
-                Vox 114, the AI guide that carries knowledge forward through the ages, preserving wisdom for future generations.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="modern-card border-border/50">
-            <CardContent className="p-8 space-y-4">
-              <h3 className="font-manrope text-2xl font-semibold">Superman (1978)</h3>
-              <p className="font-manrope text-muted-foreground leading-relaxed">
-                Jor-El guiding his son through holographic memory, a father&apos;s presence transcending time and space.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="modern-card border-border/50">
-            <CardContent className="p-8 space-y-4">
-              <h3 className="font-manrope text-2xl font-semibold">Asimov&apos;s Foundation</h3>
-              <p className="font-manrope text-muted-foreground leading-relaxed">
-                Hari Seldon&apos;s preserved messages shaping future generations through calculated guidance.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="text-center mt-12">
-          <p className="font-manrope text-xl text-primary font-semibold">
-            Solin brings these visions to life—not fiction, but technology with purpose.
-          </p>
-        </div>
-      </div>
 
       {/* Swiss Memory Vault - Privacy First */}
       <div className="max-w-7xl mx-auto px-8 py-24">
