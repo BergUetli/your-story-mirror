@@ -96,17 +96,25 @@ serve(async (req) => {
       ...(insights.emotions || [])
     ].filter(tag => tag && tag.length > 0);
 
+    // First, get the original conversation text to archive it
+    const { data: existingMemory } = await supabase
+      .from("memories")
+      .select("text")
+      .eq("id", memory_id)
+      .single();
+
     const { error: updateError } = await supabase
       .from("memories")
       .update({
         title: coreData.title,
+        text: coreData.summary, // Replace raw transcript with AI-generated summary
         memory_date: coreData.memory_date,
         memory_location: coreData.memory_location,
         tags: allTags,
         show_on_timeline: !!coreData.memory_date, // Only show if date exists
         metadata: {
           ...metadata,
-          summary: coreData.summary,
+          original_transcript: existingMemory?.text, // Archive original conversation
           processed_at: new Date().toISOString(),
         },
       })
