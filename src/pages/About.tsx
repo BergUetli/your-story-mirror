@@ -30,7 +30,7 @@ const About = () => {
             Our Mission
           </div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
+          <h1 className="font-manrope text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
             Replicate your presence.
             <br />
             <span className="text-primary bg-clip-text text-transparent">
@@ -38,7 +38,7 @@ const About = () => {
             </span>
           </h1>
           
-          <p className="text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+          <p className="font-manrope text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
             Solin One is building the world&apos;s first resilient digital memory platform — preserving voices, stories, and guidance so loved ones can interact with them not just for years, but for generations.
           </p>
           
@@ -80,10 +80,10 @@ const About = () => {
               <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Sparkles className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-4xl font-bold">The Vision</h2>
+              <h2 className="font-manrope text-4xl font-bold">The Vision</h2>
             </div>
             
-            <p className="text-xl text-muted-foreground leading-relaxed">
+            <p className="font-manrope text-xl text-muted-foreground leading-relaxed">
               Anchored in principles of Swiss permanence, our mission is to ensure memories remain alive, trusted, and accessible over the long arc of time. We&apos;re not just storing data—we&apos;re preserving presence, wisdom, and the irreplaceable essence of who you are.
             </p>
           </CardContent>

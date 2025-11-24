@@ -266,10 +266,10 @@ const Identities = () => {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-serif font-bold mb-3 text-foreground">
+          <h1 className="font-manrope text-4xl font-serif font-bold mb-3 text-foreground">
             Train the characters in your life
           </h1>
-          <p className="text-muted-foreground">
+          <p className="font-manrope text-muted-foreground">
             Upload 3–40 clear photos of one person so Solon can learn their look.
           </p>
         </div>

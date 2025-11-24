@@ -98,20 +98,18 @@ const Navigation = () => {
             {user ? (
               <Link 
                 to="/" 
-                className="flex items-center gap-2.5 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer group"
+                className="flex items-center gap-3 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <div className="relative">
-                  <Infinity 
-                    className="w-7 h-7 transition-transform group-hover:scale-110" 
-                    style={{ 
-                      color: 'hsl(var(--primary))',
-                      strokeWidth: 2.5
-                    }} 
-                  />
-                </div>
+                <Infinity 
+                  className="w-8 h-8 transition-transform group-hover:scale-110" 
+                  style={{ 
+                    color: 'hsl(var(--primary))',
+                    strokeWidth: 2.5
+                  }} 
+                />
                 <span 
-                  className="text-2xl font-bold tracking-tight"
+                  className="text-2xl font-bold tracking-tight leading-none"
                   style={{ 
                     color: 'hsl(var(--primary))',
                     letterSpacing: '-0.02em'
@@ -123,20 +121,18 @@ const Navigation = () => {
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-2.5 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto group"
+                className="flex items-center gap-3 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <div className="relative">
-                  <Infinity 
-                    className="w-7 h-7 transition-transform group-hover:scale-110" 
-                    style={{ 
-                      color: 'hsl(var(--primary))',
-                      strokeWidth: 2.5
-                    }} 
-                  />
-                </div>
+                <Infinity 
+                  className="w-8 h-8 transition-transform group-hover:scale-110" 
+                  style={{ 
+                    color: 'hsl(var(--primary))',
+                    strokeWidth: 2.5
+                  }} 
+                />
                 <span 
-                  className="text-2xl font-bold tracking-tight"
+                  className="text-2xl font-bold tracking-tight leading-none"
                   style={{ 
                     color: 'hsl(var(--primary))',
                     letterSpacing: '-0.02em'
@@ -163,10 +159,10 @@ const Navigation = () => {
                     variant="ghost"
                     size="sm"
                     className={cn(
-                      "font-normal flex items-center gap-1.5 transition-colors duration-200 text-sm px-3 py-2 h-9 pointer-events-auto cursor-pointer hover:bg-transparent",
+                      "font-manrope flex items-center gap-1.5 transition-colors duration-200 text-sm px-4 py-2 h-10 pointer-events-auto cursor-pointer hover:bg-accent/10",
                       isActive(path) 
-                        ? "text-primary font-medium" 
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "text-primary font-semibold" 
+                        : "text-foreground/80 hover:text-foreground font-medium"
                     )}
                     style={{ pointerEvents: 'auto' }}
                   >
@@ -181,7 +177,7 @@ const Navigation = () => {
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="font-normal flex items-center gap-1.5 transition-colors duration-200 text-sm px-3 py-2 h-9 text-muted-foreground hover:text-destructive hover:bg-transparent pointer-events-auto cursor-pointer ml-2"
+                  className="font-manrope font-medium flex items-center gap-1.5 transition-colors duration-200 text-sm px-4 py-2 h-10 text-foreground/80 hover:text-destructive hover:bg-destructive/10 pointer-events-auto cursor-pointer ml-2"
                   style={{ pointerEvents: 'auto' }}
                 >
                   <LogOut className="w-4 h-4" />

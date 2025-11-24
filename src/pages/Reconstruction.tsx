@@ -224,13 +224,13 @@ const Reconstruction = () => {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-serif font-bold mb-3 text-foreground">
+          <h1 className="font-manrope text-4xl font-serif font-bold mb-3 text-foreground">
             Reconstruct a Memory
           </h1>
-          <p className="text-muted-foreground mb-2">
+          <p className="font-manrope text-muted-foreground mb-2">
             Describe a moment; Solon will visualize it as art or photoreal scene.
           </p>
-          <p className="text-sm italic text-muted-foreground mb-4">
+          <p className="font-manrope text-sm italic text-muted-foreground mb-4">
             "Every memory has its own light."
           </p>
           
