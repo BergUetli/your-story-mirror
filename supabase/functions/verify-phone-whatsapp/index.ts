@@ -163,262 +163,167 @@ serve(async (req) => {
         );
       }
 
-      // Mark as verified - find the phone record flexibly
-      const { data: allUserPhones } = await supabase
+      // Find ALL phone records that match this number (including duplicates)
+      const { data: allPhones } = await supabase
         .from('user_phone_numbers')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('*');
       
-      const matchingPhone = allUserPhones?.find(p => phonesMatch(p.phone_number, phone_number));
+      const matchingPhones = allPhones?.filter(p => phonesMatch(p.phone_number, phone_number)) || [];
       
-      if (!matchingPhone) {
+      if (matchingPhones.length === 0) {
         return new Response(
-          JSON.stringify({ error: 'Phone number record not found for this user' }),
+          JSON.stringify({ error: 'Phone number record not found' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
+      console.log(`📱 Found ${matchingPhones.length} matching phone record(s)`);
+
+      // Find the record for the current user
+      const currentUserPhone = matchingPhones.find(p => p.user_id === user.id);
+      
+      if (!currentUserPhone) {
+        return new Response(
+          JSON.stringify({ error: 'Phone number not linked to this account' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Check if any OTHER user has this phone (potential merge scenario)
+      const otherUserPhones = matchingPhones.filter(p => p.user_id !== user.id);
+      
+      if (otherUserPhones.length > 0) {
+        console.log(`🔄 Found ${otherUserPhones.length} duplicate phone record(s) under different user(s). Starting merge...`);
+        
+        for (const otherPhone of otherUserPhones) {
+          const whatsappUserId = otherPhone.user_id;
+          console.log(`🔄 Merging WhatsApp user ${whatsappUserId} into web user ${user.id}`);
+
+          // Migrate memories
+          const { error: memoriesError } = await supabase
+            .from('memories')
+            .update({ user_id: user.id })
+            .eq('user_id', whatsappUserId);
+          
+          if (memoriesError) {
+            console.error('Error migrating memories:', memoriesError);
+          } else {
+            console.log('✅ Memories migrated');
+          }
+
+          // Migrate WhatsApp messages
+          const { error: messagesError } = await supabase
+            .from('whatsapp_messages')
+            .update({ user_id: user.id })
+            .eq('user_id', whatsappUserId);
+          
+          if (messagesError) {
+            console.error('Error migrating messages:', messagesError);
+          } else {
+            console.log('✅ Messages migrated');
+          }
+
+          // Migrate WhatsApp sessions
+          const { error: sessionsError } = await supabase
+            .from('whatsapp_sessions')
+            .update({ user_id: user.id })
+            .eq('user_id', whatsappUserId);
+          
+          if (sessionsError) {
+            console.error('Error migrating sessions:', sessionsError);
+          } else {
+            console.log('✅ Sessions migrated');
+          }
+
+          // Migrate memory insights
+          const { error: insightsError } = await supabase
+            .from('memory_insights')
+            .update({ user_id: user.id })
+            .eq('user_id', whatsappUserId);
+          
+          if (insightsError) {
+            console.error('Error migrating insights:', insightsError);
+          } else {
+            console.log('✅ Insights migrated');
+          }
+
+          // Fetch and merge profile data from both users
+          const [whatsappUserData, whatsappProfileData, webUserData, webProfileData] = await Promise.all([
+            supabase.from('users').select('*').eq('user_id', whatsappUserId).maybeSingle(),
+            supabase.from('user_profiles').select('*').eq('user_id', whatsappUserId).maybeSingle(),
+            supabase.from('users').select('*').eq('user_id', user.id).maybeSingle(),
+            supabase.from('user_profiles').select('*').eq('user_id', user.id).maybeSingle()
+          ]);
+
+          // Merge users table data (fill in nulls in web profile with WhatsApp data)
+          if (whatsappUserData.data && webUserData.data) {
+            const mergedUserData: any = {};
+            ['name', 'age', 'birth_date', 'birth_place', 'current_location', 'email'].forEach(field => {
+              if (!webUserData.data[field] && whatsappUserData.data[field]) {
+                mergedUserData[field] = whatsappUserData.data[field];
+              }
+            });
+
+            if (Object.keys(mergedUserData).length > 0) {
+              await supabase
+                .from('users')
+                .update(mergedUserData)
+                .eq('user_id', user.id);
+              console.log('✅ Users table data merged:', Object.keys(mergedUserData));
+            }
+          }
+
+          // Merge user_profiles table data
+          if (whatsappProfileData.data && webProfileData.data) {
+            const mergedProfileData: any = {};
+            [
+              'preferred_name', 'age', 'hometown', 'location', 'occupation',
+              'relationship_status', 'education_background', 'hobbies_interests',
+              'core_values', 'personality_traits', 'life_goals', 'family_members',
+              'close_friends', 'significant_others', 'major_life_events'
+            ].forEach(field => {
+              if (!webProfileData.data[field] && whatsappProfileData.data[field]) {
+                mergedProfileData[field] = whatsappProfileData.data[field];
+              }
+            });
+
+            if (Object.keys(mergedProfileData).length > 0) {
+              await supabase
+                .from('user_profiles')
+                .update(mergedProfileData)
+                .eq('user_id', user.id);
+              console.log('✅ User profiles data merged:', Object.keys(mergedProfileData));
+            }
+          }
+
+          // Delete old user's records
+          await supabase.from('users').delete().eq('user_id', whatsappUserId);
+          await supabase.from('user_profiles').delete().eq('user_id', whatsappUserId);
+          await supabase.from('user_phone_numbers').delete().eq('id', otherPhone.id);
+          
+          console.log(`✅ Old user records deleted for ${whatsappUserId}`);
+        }
+      }
+
+      // Now update the current user's phone record to verified and normalized
       const { error: updateError } = await supabase
         .from('user_phone_numbers')
         .update({
           verified: true,
-          phone_number: normalizedPhone, // Normalize the stored format
+          phone_number: normalizedPhone,
           verification_code: null,
           verification_expires_at: null,
         })
-        .eq('id', matchingPhone.id);
+        .eq('id', currentUserPhone.id);
 
       if (updateError) throw updateError;
 
-      // Find WhatsApp-only user by checking user_phone_numbers table
-      // We need to find users with matching phone numbers (normalized)
-      const { data: allPhoneNumbers } = await supabase
-        .from('user_phone_numbers')
-        .select('user_id, phone_number, provider');
-      
-      let whatsappUserId = null;
-      if (allPhoneNumbers) {
-        for (const phoneRecord of allPhoneNumbers) {
-          if (phonesMatch(phoneRecord.phone_number, phone_number) && 
-              phoneRecord.user_id !== user.id &&
-              phoneRecord.provider === 'whatsapp') {
-            whatsappUserId = phoneRecord.user_id;
-            console.log(`🔍 Found WhatsApp user ${whatsappUserId} with phone ${phoneRecord.phone_number} matching ${phone_number}`);
-            break;
-          }
-        }
-      }
-
-      if (whatsappUserId) {
-        console.log(`🔗 Starting merge: WhatsApp account ${whatsappUserId} → Web account ${user.id}`);
-        
-        // Count data before migration
-        const { count: memoryCount } = await supabase
-          .from('memories')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', whatsappUserId);
-        
-        const { count: messageCount } = await supabase
-          .from('whatsapp_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', whatsappUserId);
-
-        console.log(`📊 Data to migrate: ${memoryCount} memories, ${messageCount} messages`);
-        
-        // Migrate memories
-        const { error: memoriesError } = await supabase
-          .from('memories')
-          .update({ user_id: user.id })
-          .eq('user_id', whatsappUserId);
-
-        if (memoriesError) {
-          console.error('❌ Error migrating memories:', memoriesError);
-        } else {
-          console.log(`✅ Migrated ${memoryCount} memories`);
-        }
-
-        // Migrate WhatsApp messages
-        const { error: messagesError } = await supabase
-          .from('whatsapp_messages')
-          .update({ user_id: user.id })
-          .eq('user_id', whatsappUserId);
-
-        if (messagesError) {
-          console.error('❌ Error migrating messages:', messagesError);
-        } else {
-          console.log(`✅ Migrated ${messageCount} messages`);
-        }
-
-        // Migrate WhatsApp sessions
-        const { error: sessionsError } = await supabase
-          .from('whatsapp_sessions')
-          .update({ user_id: user.id })
-          .eq('user_id', whatsappUserId);
-
-        if (sessionsError) {
-          console.error('❌ Error migrating sessions:', sessionsError);
-        } else {
-          console.log('✅ Sessions migrated');
-        }
-
-        // Migrate memory insights
-        const { error: insightsError } = await supabase
-          .from('memory_insights')
-          .update({ user_id: user.id })
-          .eq('user_id', whatsappUserId);
-
-        if (insightsError) {
-          console.error('❌ Error migrating insights:', insightsError);
-        } else {
-          console.log('✅ Insights migrated');
-        }
-
-        // Delete old phone number record for WhatsApp user
-        await supabase
-          .from('user_phone_numbers')
-          .delete()
-          .eq('user_id', whatsappUserId);
-        
-        console.log('✅ Old phone record deleted');
-
-        // Ensure web user's phone is in normalized format and verified
-        const { data: webUserPhones } = await supabase
-          .from('user_phone_numbers')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        const webUserPhone = webUserPhones?.find(p => phonesMatch(p.phone_number, normalizedPhone));
-        
-        if (webUserPhone) {
-          await supabase
-            .from('user_phone_numbers')
-            .update({
-              phone_number: normalizedPhone, // Normalize
-              verified: true,
-              verification_code: null,
-              verification_expires_at: null
-            })
-            .eq('id', webUserPhone.id);
-          console.log('✅ Web user phone normalized and verified');
-        }
-        
-        console.log('✅ Old phone record deleted');
-
-        // Merge profile data from WhatsApp user to web user
-        const { data: whatsappUsersData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('user_id', whatsappUserId)
-          .maybeSingle();
-        
-        const { data: webUsersData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        const { data: whatsappProfile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', whatsappUserId)
-          .maybeSingle();
-
-        const { data: webProfile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        // Merge users table data - fill in missing web user fields from WhatsApp user
-        if (whatsappUsersData && webUsersData) {
-          const mergedData: any = {};
-          if (!webUsersData.name && whatsappUsersData.name) mergedData.name = whatsappUsersData.name;
-          if (!webUsersData.age && whatsappUsersData.age) mergedData.age = whatsappUsersData.age;
-          if (!webUsersData.birth_date && whatsappUsersData.birth_date) mergedData.birth_date = whatsappUsersData.birth_date;
-          if (!webUsersData.birth_place && whatsappUsersData.birth_place) mergedData.birth_place = whatsappUsersData.birth_place;
-          if (!webUsersData.current_location && whatsappUsersData.current_location) mergedData.current_location = whatsappUsersData.current_location;
-          
-          if (Object.keys(mergedData).length > 0) {
-            await supabase
-              .from('users')
-              .update(mergedData)
-              .eq('user_id', user.id);
-            console.log('✅ Merged users table data from WhatsApp to web user');
-          }
-        }
-
-        // Merge user_profiles data
-        if (whatsappProfile && !webProfile) {
-          // Move WhatsApp profile to web user
-          await supabase
-            .from('user_profiles')
-            .update({ user_id: user.id })
-            .eq('user_id', whatsappUserId);
-          console.log('✅ Moved WhatsApp profile to web user');
-        } else if (whatsappProfile && webProfile) {
-          // Both exist - merge data, web profile takes precedence for filled fields
-          const mergedProfileData: any = {};
-          if (!webProfile.preferred_name && whatsappProfile.preferred_name) mergedProfileData.preferred_name = whatsappProfile.preferred_name;
-          if (!webProfile.age && whatsappProfile.age) mergedProfileData.age = whatsappProfile.age;
-          if (!webProfile.hometown && whatsappProfile.hometown) mergedProfileData.hometown = whatsappProfile.hometown;
-          if (!webProfile.location && whatsappProfile.location) mergedProfileData.location = whatsappProfile.location;
-          if (!webProfile.occupation && whatsappProfile.occupation) mergedProfileData.occupation = whatsappProfile.occupation;
-          if (!webProfile.relationship_status && whatsappProfile.relationship_status) mergedProfileData.relationship_status = whatsappProfile.relationship_status;
-          if (!webProfile.education_background && whatsappProfile.education_background) mergedProfileData.education_background = whatsappProfile.education_background;
-          
-          if (Object.keys(mergedProfileData).length > 0) {
-            await supabase
-              .from('user_profiles')
-              .update(mergedProfileData)
-              .eq('user_id', user.id);
-            console.log('✅ Merged user_profiles data from WhatsApp to web user');
-          }
-          
-          // Delete WhatsApp profile after merge
-          await supabase
-            .from('user_profiles')
-            .delete()
-            .eq('user_id', whatsappUserId);
-          console.log('✅ Deleted WhatsApp profile after merge');
-        } else if (!whatsappProfile && !webProfile) {
-          // Neither exists - create a basic one for the merged account
-          await supabase
-            .from('user_profiles')
-            .insert({
-              user_id: user.id,
-              onboarding_completed: false,
-              profile_completeness_score: 0
-            });
-          console.log('✅ Created new user_profiles for merged account');
-        }
-        // If only webProfile exists, no action needed
-
-        // Delete WhatsApp users table entry after merge
-        if (whatsappUsersData) {
-          await supabase
-            .from('users')
-            .delete()
-            .eq('user_id', whatsappUserId);
-          console.log('✅ Deleted WhatsApp users table entry');
-        }
-
-        // Finally, delete the WhatsApp-only auth user
-        const { error: deleteUserError } = await supabase.auth.admin.deleteUser(whatsappUserId);
-        
-        if (deleteUserError) {
-          console.error('❌ Error deleting WhatsApp user:', deleteUserError);
-        } else {
-          console.log('✅ WhatsApp auth user deleted');
-        }
-        
-        console.log(`🎉 Account merge complete! Migrated ${memoryCount} memories and ${messageCount} messages`);
-      }
 
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Phone number verified and accounts merged',
-          accountLinked: !!whatsappUserId
+          message: 'Phone number verified successfully',
+          accountLinked: otherUserPhones.length > 0
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
