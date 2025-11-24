@@ -20,7 +20,7 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon, Brain } from 'lucide-react';
+import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon, Infinity } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -92,28 +92,56 @@ const Navigation = () => {
         <div className="max-w-7xl mx-auto px-8 relative" style={{ pointerEvents: 'auto' }}>
           <div className="flex items-center h-16" style={{ pointerEvents: 'auto' }}>
             {/* 
-              LOGO SECTION (Left) - UBS Style
-              Small symbol + brand name on the left
+              LOGO SECTION (Left) - UBS-Inspired Style
+              Bold, prominent logo with infinity symbol for timelessness
             */}
             {user ? (
               <Link 
                 to="/" 
-                className="flex items-center gap-2 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer"
+                className="flex items-center gap-2.5 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <Brain className="w-6 h-6" style={{ color: 'hsl(var(--primary))' }} />
-                <span className="text-xl font-light tracking-tight text-foreground">
+                <div className="relative">
+                  <Infinity 
+                    className="w-7 h-7 transition-transform group-hover:scale-110" 
+                    style={{ 
+                      color: 'hsl(var(--primary))',
+                      strokeWidth: 2.5
+                    }} 
+                  />
+                </div>
+                <span 
+                  className="text-2xl font-bold tracking-tight"
+                  style={{ 
+                    color: 'hsl(var(--primary))',
+                    letterSpacing: '-0.02em'
+                  }}
+                >
                   Solin
                 </span>
               </Link>
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-2 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto"
+                className="flex items-center gap-2.5 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <Brain className="w-6 h-6" style={{ color: 'hsl(var(--primary))' }} />
-                <span className="text-xl font-light tracking-tight text-foreground">
+                <div className="relative">
+                  <Infinity 
+                    className="w-7 h-7 transition-transform group-hover:scale-110" 
+                    style={{ 
+                      color: 'hsl(var(--primary))',
+                      strokeWidth: 2.5
+                    }} 
+                  />
+                </div>
+                <span 
+                  className="text-2xl font-bold tracking-tight"
+                  style={{ 
+                    color: 'hsl(var(--primary))',
+                    letterSpacing: '-0.02em'
+                  }}
+                >
                   Solin
                 </span>
               </button>
