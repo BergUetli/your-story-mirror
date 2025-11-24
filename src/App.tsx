@@ -8,6 +8,7 @@ import { ProtectedRoute, DemoProvider } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
 import Timeline from "./pages/Timeline";
+import TimelineRedesigned from "./pages/TimelineRedesigned";
 import TimelineOrbit from "./pages/TimelineOrbit";
 import Story from "./pages/Story";
 import Reconstruction from "./pages/Reconstruction";
@@ -88,6 +89,11 @@ const AppContent = () => {
           </ProtectedRoute>
         } />
         <Route path="/timeline" element={
+          <ProtectedRoute>
+            <TimelineRedesigned />
+          </ProtectedRoute>
+        } />
+        <Route path="/timeline-old" element={
           <ProtectedRoute>
             <Timeline />
           </ProtectedRoute>
