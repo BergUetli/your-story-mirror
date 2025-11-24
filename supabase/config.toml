@@ -42,5 +42,8 @@ verify_jwt = false
 [functions.whatsapp-webhook]
 verify_jwt = false
 
+[functions.process-memory-insights]
+verify_jwt = false
+
 [functions.verify-phone-whatsapp]
 verify_jwt = true
