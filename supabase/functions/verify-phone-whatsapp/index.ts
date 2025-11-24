@@ -272,13 +272,13 @@ serve(async (req) => {
           .from('user_profiles')
           .select('*')
           .eq('user_id', whatsappUserId)
-          .single();
+          .maybeSingle();
 
         const { data: webProfile } = await supabase
           .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (whatsappProfile && !webProfile) {
           // Move WhatsApp profile to web user
@@ -287,14 +287,25 @@ serve(async (req) => {
             .update({ user_id: user.id })
             .eq('user_id', whatsappUserId);
           console.log('✅ Moved WhatsApp profile to web user');
-        } else if (whatsappProfile) {
-          // Delete WhatsApp profile as web profile takes precedence
+        } else if (whatsappProfile && webProfile) {
+          // Both exist - delete WhatsApp profile as web profile takes precedence
           await supabase
             .from('user_profiles')
             .delete()
             .eq('user_id', whatsappUserId);
           console.log('✅ Deleted WhatsApp profile (web profile takes precedence)');
+        } else if (!whatsappProfile && !webProfile) {
+          // Neither exists - create a basic one for the merged account
+          await supabase
+            .from('user_profiles')
+            .insert({
+              user_id: user.id,
+              onboarding_completed: false,
+              profile_completeness_score: 0
+            });
+          console.log('✅ Created new user_profiles for merged account');
         }
+        // If only webProfile exists, no action needed
 
         // Delete users table entry if exists
         await supabase
