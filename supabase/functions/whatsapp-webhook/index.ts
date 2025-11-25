@@ -736,8 +736,8 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   }
 
   // Check if user is confirming to save a memory
-  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save', 'please', 'definitely', 'go ahead', 'do it'];
-  const denyKeywords = ['no', 'nope', 'don\'t', 'not', 'cancel', 'skip'];
+  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save', 'please', 'definitely', 'go ahead', 'do it', 'done', 'got it', 'yup', 'absolutely', 'of course'];
+  const denyKeywords = ['no', 'nope', 'don\'t', 'not', 'cancel', 'skip', 'never mind'];
   
   const userMessageLower = userMessage.toLowerCase();
   const hasDenyKeyword = denyKeywords.some(word => userMessageLower.includes(word));
