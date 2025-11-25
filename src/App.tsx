@@ -7,9 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute, DemoProvider } from "@/components/auth/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import AddMemory from "./pages/AddMemory";
-import Timeline from "./pages/Timeline";
 import TimelineRedesigned from "./pages/TimelineRedesigned";
-import TimelineOrbit from "./pages/TimelineOrbit";
 import Story from "./pages/Story";
 import Reconstruction from "./pages/Reconstruction";
 import Identities from "./pages/Identities";
@@ -17,8 +15,6 @@ import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
 import Archive from "./pages/Archive";
-import ArchiveSimple from "./pages/ArchiveSimple";
-import TestMemoryRecordings from "./pages/TestMemoryRecordings";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -29,11 +25,7 @@ import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Onboarding from "./components/Onboarding";
-import VoiceTest from "./components/VoiceTest";
-import MicImagePreview from "./pages/MicImagePreview";
-import MicTest from "./pages/MicTest";
 import ScrollToTop from "./components/ScrollToTop";
-import ParticleFace from "./pages/ParticleFace";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +58,6 @@ const AppContent = () => {
         } />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/visitor/:userId" element={<Visitor />} />
-        <Route path="/mic-preview" element={<MicImagePreview />} />
         <Route path="/auth" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
         <Route path="/signup" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
         <Route path="/signin" element={user ? <Navigate to="/sanctuary" replace /> : <Auth />} />
@@ -92,18 +83,7 @@ const AppContent = () => {
             <TimelineRedesigned />
           </ProtectedRoute>
         } />
-        <Route path="/timeline-old" element={
-          <ProtectedRoute>
-            <Timeline />
-          </ProtectedRoute>
-        } />
-        <Route path="/timeline-orbit" element={
-          <ProtectedRoute>
-            <TimelineOrbit />
-          </ProtectedRoute>
-        } />
         <Route path="/archive" element={<Archive />} />
-        <Route path="/archive-simple" element={<ArchiveSimple />} />
         <Route path="/story" element={
           <ProtectedRoute>
             <Story />
@@ -124,27 +104,9 @@ const AppContent = () => {
             <Settings />
           </ProtectedRoute>
         } />
-        <Route path="/voice-test" element={
-          <ProtectedRoute>
-            <div className="min-h-screen bg-background flex items-center justify-center p-6">
-              <VoiceTest />
-            </div>
-          </ProtectedRoute>
-        } />
-        <Route path="/mic-test" element={<MicTest />} />
         <Route path="/admin" element={
           <ProtectedRoute>
             <Admin />
-          </ProtectedRoute>
-        } />
-        <Route path="/test-memory-recordings" element={
-          <ProtectedRoute>
-            <TestMemoryRecordings />
-          </ProtectedRoute>
-        } />
-        <Route path="/particle-face" element={
-          <ProtectedRoute>
-            <ParticleFace />
           </ProtectedRoute>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
