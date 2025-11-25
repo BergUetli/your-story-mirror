@@ -779,7 +779,7 @@ Response format:
 - Asking for date: "When did this happen?" or "What year was that?"
 - Asking for place: "Where were you?" or "Where did this happen?"
 - When asking to save: "Want me to save this memory?"
-- When user confirms save: Use exact phrase "💾 [SAVE_MEMORY]" to trigger memory saving. The system will add the title automatically."`;
+- When user confirms save: "Got it, saved! 💫 [SAVE_MEMORY: brief title]" - Replace "brief title" with 3-5 word description of the memory"`;
 
   const messages = [
     { role: "system", content: systemPrompt },
