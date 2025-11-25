@@ -779,7 +779,7 @@ Response format:
 - Asking for date: "When did this happen?" or "What year was that?"
 - Asking for place: "Where were you?" or "Where did this happen?"
 - When asking to save: "Want me to save this memory?"
-- When user confirms save: "Got it, saved! 💫 [SAVE_MEMORY: brief descriptive title]"`;
+- When user confirms save: Use exact phrase "💾 [SAVE_MEMORY]" to trigger memory saving. The system will add the title automatically."`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -1177,6 +1177,36 @@ serve(async (req) => {
         memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext);
         console.log(`💾 Memory saved with ID: ${memoryId}`);
         
+        // Extract title quickly for confirmation message
+        const memoryExchanges = conversationHistory.slice(-20);
+        const memorySnippet = memoryExchanges.map(m => m.content).join(' ').substring(0, 500);
+        
+        // Quick title extraction for confirmation
+        const titlePrompt = `Extract a short title (5-8 words) for this memory: ${memorySnippet}`;
+        const titleResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You create brief memory titles. Respond with ONLY the title, nothing else." },
+              { role: "user", content: titlePrompt }
+            ],
+            temperature: 0.3,
+            max_tokens: 30
+          }),
+        });
+        const titleData = await titleResponse.json();
+        const extractedTitle = titleData.choices?.[0]?.message?.content?.trim() || "Your memory";
+        
+        sessionContext.last_saved_memory_title = extractedTitle;
+        sessionContext.awaiting_media_for_memory = true;
+        sessionContext.pending_memory_id = memoryId;
+        await updateSessionContext(supabase, sessionId, sessionContext);
+        
         // After saving, ask about media
         sessionContext.memory_discussion_count = 0;
         sessionContext.awaiting_save_confirmation = false;
@@ -1187,21 +1217,21 @@ serve(async (req) => {
         sessionContext.media_count = 0;
         await updateSessionContext(supabase, sessionId, sessionContext);
 
-        // Send follow-up asking about media
-        const mediaPrompt = "Do you have any pictures or videos of this memory? Feel free to send them to me!";
+        // Send confirmation with memory title and ask about media
+        const confirmationMessage = `Perfect! I've saved your memory: "${extractedTitle}" 💾\n\nDo you have any pictures or videos of this memory? Feel free to send them to me!`;
         
         await saveMessage(supabase, {
           userId,
           phoneNumber: message.from,
           direction: 'outbound',
-          messageText: mediaPrompt,
+          messageText: confirmationMessage,
           provider: adapter.name,
           sessionId
         });
 
         await adapter.sendMessage({
           to: message.from,
-          message: mediaPrompt,
+          message: confirmationMessage,
           sessionId
         });
 

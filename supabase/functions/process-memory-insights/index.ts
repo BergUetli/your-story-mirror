@@ -103,19 +103,33 @@ serve(async (req) => {
       .eq("id", memory_id)
       .single();
 
+    // Normalize date to PostgreSQL date format (YYYY-MM-DD)
+    let normalizedDate = coreData.memory_date;
+    if (normalizedDate) {
+      // If date is YYYY-MM format, convert to YYYY-MM-01
+      if (/^\d{4}-\d{2}$/.test(normalizedDate)) {
+        normalizedDate = `${normalizedDate}-01`;
+      }
+      // If date is YYYY format, convert to YYYY-01-01
+      else if (/^\d{4}$/.test(normalizedDate)) {
+        normalizedDate = `${normalizedDate}-01-01`;
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("memories")
       .update({
         title: coreData.title,
         text: coreData.summary, // Replace raw transcript with AI-generated summary
-        memory_date: coreData.memory_date,
+        memory_date: normalizedDate,
         memory_location: coreData.memory_location,
         tags: allTags,
-        show_on_timeline: !!coreData.memory_date, // Only show if date exists
+        show_on_timeline: !!normalizedDate, // Only show if date exists
         metadata: {
           ...metadata,
           original_transcript: existingMemory?.text, // Archive original conversation
           processed_at: new Date().toISOString(),
+          original_date_format: coreData.memory_date, // Store original format
         },
       })
       .eq("id", memory_id);
