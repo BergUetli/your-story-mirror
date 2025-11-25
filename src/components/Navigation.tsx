@@ -20,12 +20,13 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon, Infinity } from 'lucide-react';
+import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { AuthModal } from '@/components/auth/AuthModal';
+import SolinLogo from '@/components/SolinLogo';
 
 /**
  * MAIN NAVIGATION COMPONENT
@@ -101,11 +102,11 @@ const Navigation = () => {
                 className="flex items-center gap-3 mr-12 hover:opacity-80 transition-opacity relative z-20 pointer-events-auto cursor-pointer group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <Infinity 
-                  className="w-8 h-8 transition-transform group-hover:scale-110" 
+                <SolinLogo 
+                  size={36}
+                  className="group-hover:scale-110" 
                   style={{ 
-                    color: 'hsl(var(--primary))',
-                    strokeWidth: 2.5
+                    color: 'hsl(var(--primary))'
                   }} 
                 />
                 <span 
@@ -124,11 +125,11 @@ const Navigation = () => {
                 className="flex items-center gap-3 mr-12 hover:opacity-80 transition-opacity cursor-pointer relative z-20 pointer-events-auto group"
                 style={{ pointerEvents: 'auto' }}
               >
-                <Infinity 
-                  className="w-8 h-8 transition-transform group-hover:scale-110" 
+                <SolinLogo 
+                  size={36}
+                  className="group-hover:scale-110" 
                   style={{ 
-                    color: 'hsl(var(--primary))',
-                    strokeWidth: 2.5
+                    color: 'hsl(var(--primary))'
                   }} 
                 />
                 <span 
