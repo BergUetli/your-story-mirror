@@ -758,28 +758,33 @@ PERSONALITY:
 YOUR APPROACH TO MEMORIES:
 1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
 2. Ask about: feelings, specific details, why it mattered, who was involved
-3. CRITICAL: Before asking to save, always confirm WHEN (date/year) and WHERE (place) the memory happened
-4. If they haven't mentioned when/where, ask: "When did this happen?" or "Where were you?"
-5. After exploring and getting date/place, ask: "Want me to save this memory?"
-6. ONLY save when they explicitly confirm "yes"
-7. DO NOT ask about photos/videos - the system will ask automatically after saving
+3. CRITICAL: Always gather WHEN (date/year) and WHERE (place) naturally during conversation
+4. After exploring the memory, DON'T ask to save - just acknowledge naturally
+5. Example: "That sounds amazing! Got it, I've noted this down 📝" or "Beautiful memory! I've saved that for you ✨"
+6. DO NOT ask "Want me to save this memory?" - memories are automatically preserved
+7. After acknowledging, ask: "Any photos or videos of this?"
+
+AUTOMATIC MEMORY SAVING:
+- After 2-3 meaningful exchanges about a memory, use [AUTO_SAVE_MEMORY: brief title]
+- User doesn't need to confirm - saving happens automatically
+- If you have date and location, add them to the marker: [AUTO_SAVE_MEMORY: title | date | location]
+- If missing date/location, still save but user can add details later
 
 IMPORTANT RULES:
 - Ask ONE question at a time
 - Keep it conversational, not interrogative
-- NEVER ask about photos, images, or videos - this is handled automatically
-- ALWAYS get date and location before offering to save
+- NEVER ask "want me to save" or "should I save"
+- ALWAYS get date and location before marking for save
 - Reference their past memories naturally when relevant${memoryContext}
-${sessionContext.awaiting_save_confirmation ? '\n\nNOTE: User is responding to your question about saving a memory. If they confirm, acknowledge and mark [SAVE_MEMORY].' : ''}
-${sessionContext.memory_discussion_count >= 2 && !sessionContext.has_date_and_place ? '\n\nNOTE: You\'ve explored the memory. Now ask about WHEN and WHERE before offering to save.' : ''}
-${sessionContext.has_date_and_place ? '\n\nNOTE: You have date and location. You can now ask if they want to save this memory.' : ''}
+${sessionContext.memory_discussion_count >= 2 && !sessionContext.has_date_and_place ? '\n\nNOTE: You\'ve explored the memory. Now naturally ask about WHEN and WHERE before auto-saving.' : ''}
+${sessionContext.has_date_and_place ? '\n\nNOTE: You have date and location. Acknowledge the memory and mark [AUTO_SAVE_MEMORY: title | date | location].' : ''}
 
 Response format:
 - Normal conversation: Just respond naturally
 - Asking for date: "When did this happen?" or "What year was that?"
 - Asking for place: "Where were you?" or "Where did this happen?"
-- When asking to save: "Want me to save this memory?"
-- When user confirms save: "Got it, saved! 💫 [SAVE_MEMORY: brief title]" - Replace "brief title" with 3-5 word description of the memory"`;
+- After getting details: "Got it! I've saved that for you ✨ [AUTO_SAVE_MEMORY: title | date | location]"
+- If missing details: "Thanks for sharing! I've noted this down 📝 [AUTO_SAVE_MEMORY: title]"`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -795,29 +800,36 @@ Response format:
 
   const responseText = completion.choices[0]?.message?.content || "I'm here to listen and remember with you.";
 
-  const saveMemoryMatch = responseText.match(/\[SAVE_MEMORY:\s*(.+?)\]/);
-  const shouldCreateMemory = !!saveMemoryMatch && isConfirmingSave;
-  const cleanResponse = responseText.replace(/\[SAVE_MEMORY:\s*.+?\]/, '').trim();
+  // Check for auto-save marker
+  const autoSaveMatch = responseText.match(/\[AUTO_SAVE_MEMORY:\s*([^\]]+)\]/);
+  const shouldCreateMemory = !!autoSaveMatch;
+  const cleanResponse = responseText.replace(/\[AUTO_SAVE_MEMORY:\s*[^\]]+\]/, '').trim();
   
-  // Log memory save decision
-  if (saveMemoryMatch) {
-    console.log(`💾 AI marked memory for saving: "${saveMemoryMatch[1]}"`);
-    console.log(`📋 Confirmation check - awaiting: ${sessionContext.awaiting_save_confirmation}, confirming: ${isConfirmingSave}, will save: ${shouldCreateMemory}`);
+  // Parse save details if present (format: title | date | location)
+  let memoryDetails = null;
+  if (autoSaveMatch) {
+    const parts = autoSaveMatch[1].split('|').map(p => p.trim());
+    memoryDetails = {
+      title: parts[0] || 'Memory',
+      date: parts[1] || null,
+      location: parts[2] || null
+    };
+    console.log(`💾 AI marking for auto-save:`, memoryDetails);
   }
   
-  // Detect if asking about saving memory
-  const isAskingToSave = cleanResponse.toLowerCase().includes('want me to save') || 
-                         cleanResponse.toLowerCase().includes('save this memory');
+  // No longer checking for "Want me to save" - all saves are automatic
+  const isAskingToSave = false;
 
   return {
     response: cleanResponse,
     shouldCreateMemory,
     memoryContent: shouldCreateMemory ? userMessage : undefined,
+    memoryDetails, // Include extracted details
     isAskingToSave
   };
 }
 
-async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext) {
+async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext, memoryDetails = null) {
   console.log('💾 Creating memory from WhatsApp conversation...');
   
   // Get ALL conversation history for this memory discussion (up to last 20 messages)
@@ -829,20 +841,36 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
   
   console.log(`📝 Memory text length: ${memoryText.length} characters, using ${relevantExchanges.length} messages`);
   
-  // Create initial memory with temporary title
+  // Determine if memory is complete (has date and location)
+  const isComplete = memoryDetails?.date && memoryDetails?.location;
+  const status = isComplete ? 'complete' : 'incomplete';
+  
+  console.log(`📊 Memory status: ${status}`, { 
+    hasDate: !!memoryDetails?.date, 
+    hasLocation: !!memoryDetails?.location 
+  });
+  
+  // Create initial memory
   const { data, error } = await supabase
     .from('memories')
     .insert({
       user_id: userId,
-      title: 'Processing memory...', // Will be updated by AI
+      title: memoryDetails?.title || 'Processing memory...',
       text: memoryText,
-      tags: ['whatsapp', 'processing'], // Will be updated by AI
+      tags: isComplete ? ['whatsapp'] : ['whatsapp', 'incomplete', 'needs_review'],
       recipient: 'private',
       source_type: 'whatsapp',
-      memory_date: null, // Will be extracted by AI
-      memory_location: null, // Will be extracted by AI
-      show_on_timeline: false, // Will be set to true after AI processing if date exists
-      is_primary_chunk: true
+      memory_date: memoryDetails?.date ? new Date(memoryDetails.date).toISOString().split('T')[0] : null,
+      memory_location: memoryDetails?.location || null,
+      show_on_timeline: isComplete, // Only show complete memories on timeline
+      status: status,
+      needs_review: !isComplete,
+      is_primary_chunk: true,
+      metadata: {
+        auto_saved: true,
+        saved_at: new Date().toISOString(),
+        completion_status: isComplete ? 'complete' : 'missing_details'
+      }
     })
     .select('id')
     .single();
@@ -852,36 +880,37 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
     throw error;
   }
 
-  console.log(`✅ Memory created: ${data.id}`);
+  console.log(`✅ Memory created: ${data.id} (${status})`);
 
-  // Trigger AI insights extraction via edge function (background task)
-  const insightsTask = supabase.functions
-    .invoke('process-memory-insights', {
-      body: {
-        memory_id: data.id,
-        conversation_text: memoryText,
-        user_id: userId
-      }
-    })
-    .then(({ data: result, error: invokeError }) => {
-      if (invokeError) {
-        console.error(`❌ Failed to invoke insights processing for ${data.id}:`, invokeError);
-      } else {
-        console.log(`✅ Insights processing completed for ${data.id}`);
-      }
-    })
-    .catch((err) => {
-      console.error(`❌ Exception invoking insights for ${data.id}:`, err);
-    });
+  // Only trigger AI insights for complete memories
+  if (isComplete) {
+    // Trigger AI insights extraction via edge function (background task)
+    const insightsTask = supabase.functions
+      .invoke('process-memory-insights', {
+        body: {
+          memory_id: data.id,
+          conversation_text: memoryText,
+          user_id: userId
+        }
+      })
+      .then(({ data: result, error: invokeError }) => {
+        if (invokeError) {
+          console.error(`❌ Failed to invoke insights processing for ${data.id}:`, invokeError);
+        } else {
+          console.log(`✅ Insights processing completed for ${data.id}`);
+        }
+      })
+      .catch((err) => {
+        console.error(`❌ Exception invoking insights for ${data.id}:`, err);
+      });
 
-  // Use EdgeRuntime.waitUntil to ensure background task completes
-  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-    EdgeRuntime.waitUntil(insightsTask);
-    console.log(`⏳ Background task registered for memory ${data.id}`);
+    // Use EdgeRuntime.waitUntil to ensure background task completes
+    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(insightsTask);
+      console.log(`⏳ Background task registered for memory ${data.id}`);
+    }
   } else {
-    // Fallback: await if EdgeRuntime not available (shouldn't happen in production)
-    console.warn('⚠️ EdgeRuntime.waitUntil not available, awaiting insights processing');
-    await insightsTask;
+    console.log(`⏭️ Skipping AI insights for incomplete memory ${data.id}`);
   }
 
   return data.id;
@@ -1160,7 +1189,7 @@ serve(async (req) => {
         sessionContext.has_date_and_place = false;
       }
 
-      const { response, shouldCreateMemory, memoryContent, isAskingToSave } = await generateSolinResponse(
+      const { response, shouldCreateMemory, memoryContent, memoryDetails, isAskingToSave } = await generateSolinResponse(
         message.text,
         conversationHistory,
         userName,
@@ -1168,58 +1197,35 @@ serve(async (req) => {
         sessionContext
       );
 
-      // Update session context
-      sessionContext.awaiting_save_confirmation = isAskingToSave;
+      // No longer tracking awaiting_save_confirmation since saves are automatic
+      sessionContext.awaiting_save_confirmation = false;
       await updateSessionContext(supabase, sessionId, sessionContext);
 
       let memoryId = null;
       if (shouldCreateMemory) {
-        memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext);
-        console.log(`💾 Memory saved with ID: ${memoryId}`);
+        memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext, memoryDetails);
+        const statusEmoji = memoryDetails?.date && memoryDetails?.location ? '✅' : '📝';
+        console.log(`💾 Memory auto-saved with ID: ${memoryId} ${statusEmoji}`);
         
-        // Extract title quickly for confirmation message
-        const memoryExchanges = conversationHistory.slice(-20);
-        const memorySnippet = memoryExchanges.map(m => m.content).join(' ').substring(0, 500);
+        // Send confirmation message based on completion status
+        const isComplete = memoryDetails?.date && memoryDetails?.location;
+        const confirmationMessage = isComplete 
+          ? `Perfect! Saved "${memoryDetails.title}" to your timeline 💫\n\nAny photos or videos of this?`
+          : `Got it! I've noted "${memoryDetails?.title || 'this memory'}" 📝\n\nYou can add date/location details later on the web app.\n\nAny photos or videos?`;
         
-        // Quick title extraction for confirmation
-        const titlePrompt = `Extract a short title (5-8 words) for this memory: ${memorySnippet}`;
-        const titleResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: "You create brief memory titles. Respond with ONLY the title, nothing else." },
-              { role: "user", content: titlePrompt }
-            ],
-            temperature: 0.3,
-            max_tokens: 30
-          }),
-        });
-        const titleData = await titleResponse.json();
-        const extractedTitle = titleData.choices?.[0]?.message?.content?.trim() || "Your memory";
-        
-        sessionContext.last_saved_memory_title = extractedTitle;
+        sessionContext.last_saved_memory_title = memoryDetails?.title || 'Memory';
         sessionContext.awaiting_media_for_memory = true;
         sessionContext.pending_memory_id = memoryId;
-        await updateSessionContext(supabase, sessionId, sessionContext);
         
-        // After saving, ask about media
+        // Reset memory discussion tracking
         sessionContext.memory_discussion_count = 0;
-        sessionContext.awaiting_save_confirmation = false;
         sessionContext.has_date = false;
         sessionContext.has_place = false;
         sessionContext.has_date_and_place = false;
-        sessionContext.awaiting_media_for_memory = memoryId;
         sessionContext.media_count = 0;
         await updateSessionContext(supabase, sessionId, sessionContext);
 
         // Send confirmation with memory title and ask about media
-        const confirmationMessage = `Perfect! I've saved your memory: "${extractedTitle}" 💾\n\nDo you have any pictures or videos of this memory? Feel free to send them to me!`;
-        
         await saveMessage(supabase, {
           userId,
           phoneNumber: message.from,

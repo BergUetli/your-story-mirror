@@ -108,9 +108,11 @@ export type Database = {
           memory_location: string | null
           memory_mode: string | null
           metadata: Json | null
+          needs_review: boolean | null
           recipient: string | null
           show_on_timeline: boolean | null
           source_type: string | null
+          status: string | null
           tags: string[] | null
           text: string
           title: string
@@ -130,9 +132,11 @@ export type Database = {
           memory_location?: string | null
           memory_mode?: string | null
           metadata?: Json | null
+          needs_review?: boolean | null
           recipient?: string | null
           show_on_timeline?: boolean | null
           source_type?: string | null
+          status?: string | null
           tags?: string[] | null
           text: string
           title: string
@@ -152,9 +156,11 @@ export type Database = {
           memory_location?: string | null
           memory_mode?: string | null
           metadata?: Json | null
+          needs_review?: boolean | null
           recipient?: string | null
           show_on_timeline?: boolean | null
           source_type?: string | null
+          status?: string | null
           tags?: string[] | null
           text?: string
           title?: string
