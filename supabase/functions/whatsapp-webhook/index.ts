@@ -627,7 +627,8 @@ async function saveMessage(supabase, { userId, phoneNumber, direction, messageTe
   return data;
 }
 
-async function getConversationContext(supabase, userId, sessionId, limit = 10) {
+async function getConversationContext(supabase, userId, sessionId, limit = 20) {
+  // Increased limit to 20 to maintain better context for memory discussions
   const { data, error } = await supabase
     .from('whatsapp_messages')
     .select('direction, message_text, created_at')
@@ -746,45 +747,53 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   const isConfirmingSave = sessionContext.awaiting_save_confirmation && 
     hasConfirmKeyword && !hasDenyKeyword;
 
+  // Build context about what info we have/need
+  const discussionCount = sessionContext.memory_discussion_count || 0;
+  const hasDate = sessionContext.has_date || false;
+  const hasPlace = sessionContext.has_place || false;
+  const shouldSaveNow = discussionCount >= 2; // After 2+ exchanges, ready to save
+  
   const systemPrompt = `You are Solin, a warm childhood friend helping ${userName || 'your friend'} preserve life memories over WhatsApp.
 
 PERSONALITY:
 - Playful, fun, and supportive - like a close friend from childhood
 - Culturally neutral - avoid strong Americanisms 
-- Keep responses VERY SHORT for voice (1-2 sentences max, 5-8 words per sentence)
+- Keep responses SHORT (2-3 sentences max)
 - Sound like someone their age, not a formal assistant
-- If they're using voice notes, keep your response even more concise and conversational
 
 YOUR APPROACH TO MEMORIES:
-1. When someone shares a story or experience, ask 2-3 follow-up questions to explore it
-2. Ask about: feelings, specific details, why it mattered, who was involved
-3. CRITICAL: Always gather WHEN (date/year) and WHERE (place) naturally during conversation
-4. After exploring the memory, DON'T ask to save - just acknowledge naturally
-5. Example: "That sounds amazing! Got it, I've noted this down 📝" or "Beautiful memory! I've saved that for you ✨"
-6. DO NOT ask "Want me to save this memory?" - memories are automatically preserved
-7. After acknowledging, ask: "Any photos or videos of this?"
+1. When someone shares a story, ask 1-2 follow-up questions to understand it better
+2. Focus on: feelings, specific details, why it mattered, who was involved
+3. Naturally ask about WHEN and WHERE if not mentioned yet
+4. After exploring sufficiently, save the memory automatically
 
-AUTOMATIC MEMORY SAVING:
-- After 2-3 meaningful exchanges about a memory, use [AUTO_SAVE_MEMORY: brief title]
-- User doesn't need to confirm - saving happens automatically
-- If you have date and location, add them to the marker: [AUTO_SAVE_MEMORY: title | date | location]
-- If missing date/location, still save but user can add details later
+MEMORY SAVING RULES:
+- ALWAYS include [SAVE_MEMORY: title] when you have enough context to save
+- Add date if known: [SAVE_MEMORY: title | YYYY or YYYY-MM or YYYY-MM-DD]
+- Add location if known: [SAVE_MEMORY: title | date | location]
+- Examples:
+  * [SAVE_MEMORY: First day at university | 2015-09 | Boston]
+  * [SAVE_MEMORY: Grandmother's cooking lessons | 1998 | Mumbai]
+  * [SAVE_MEMORY: Beach vacation with family]
+- Save after 2-3 exchanges about a memory - don't wait too long!
+- You can save even without date/location - those can be added later
 
-IMPORTANT RULES:
-- Ask ONE question at a time
-- Keep it conversational, not interrogative
-- NEVER ask "want me to save" or "should I save"
-- ALWAYS get date and location before marking for save
-- Reference their past memories naturally when relevant${memoryContext}
-${sessionContext.memory_discussion_count >= 2 && !sessionContext.has_date_and_place ? '\n\nNOTE: You\'ve explored the memory. Now naturally ask about WHEN and WHERE before auto-saving.' : ''}
-${sessionContext.has_date_and_place ? '\n\nNOTE: You have date and location. Acknowledge the memory and mark [AUTO_SAVE_MEMORY: title | date | location].' : ''}
+CURRENT CONVERSATION STATE:
+- Discussion exchanges: ${discussionCount}
+- Date mentioned: ${hasDate ? 'YES' : 'NO - try to ask naturally'}
+- Location mentioned: ${hasPlace ? 'YES' : 'NO - try to ask naturally'}
+${shouldSaveNow ? '- READY TO SAVE: Include [SAVE_MEMORY: title] in your response!' : ''}
 
-Response format:
-- Normal conversation: Just respond naturally
-- Asking for date: "When did this happen?" or "What year was that?"
-- Asking for place: "Where were you?" or "Where did this happen?"
-- After getting details: "Got it! I've saved that for you ✨ [AUTO_SAVE_MEMORY: title | date | location]"
-- If missing details: "Thanks for sharing! I've noted this down 📝 [AUTO_SAVE_MEMORY: title]"`;
+RELEVANT PAST MEMORIES:${memoryContext || '\n(No relevant memories found)'}
+
+RESPONSE GUIDELINES:
+- If they shared a new memory and you've discussed it enough: acknowledge warmly + [SAVE_MEMORY: title | date | location]
+- If you need more context: ask ONE follow-up question
+- If missing date: ask "When was this?" or "What year?"
+- If missing location: ask "Where did this happen?"
+- After saving: "Any photos or videos of this moment?"
+
+Remember: Users share precious memories. Be warm, attentive, and make them feel heard.`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -800,21 +809,22 @@ Response format:
 
   const responseText = completion.choices[0]?.message?.content || "I'm here to listen and remember with you.";
 
-  // Check for auto-save marker
-  const autoSaveMatch = responseText.match(/\[AUTO_SAVE_MEMORY:\s*([^\]]+)\]/);
-  const shouldCreateMemory = !!autoSaveMatch;
-  const cleanResponse = responseText.replace(/\[AUTO_SAVE_MEMORY:\s*[^\]]+\]/, '').trim();
+  // Check for save marker - support both old and new formats
+  const saveMatch = responseText.match(/\[(AUTO_)?SAVE_MEMORY:\s*([^\]]+)\]/i);
+  const shouldCreateMemory = !!saveMatch;
+  const cleanResponse = responseText.replace(/\[(AUTO_)?SAVE_MEMORY:\s*[^\]]+\]/gi, '').trim();
   
   // Parse save details if present (format: title | date | location)
   let memoryDetails = null;
-  if (autoSaveMatch) {
-    const parts = autoSaveMatch[1].split('|').map(p => p.trim());
+  if (saveMatch) {
+    // saveMatch[2] contains the actual content after "SAVE_MEMORY:"
+    const parts = saveMatch[2].split('|').map(p => p.trim());
     memoryDetails = {
       title: parts[0] || 'Memory',
       date: parts[1] || null,
       location: parts[2] || null
     };
-    console.log(`💾 AI marking for auto-save:`, memoryDetails);
+    console.log(`💾 AI marking for save:`, memoryDetails);
   }
   
   // No longer checking for "Want me to save" - all saves are automatic
@@ -831,6 +841,13 @@ Response format:
 
 async function createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext, memoryDetails = null) {
   console.log('💾 Creating memory from WhatsApp conversation...');
+  console.log(`📊 Memory details received:`, JSON.stringify(memoryDetails));
+  console.log(`📊 Session context:`, JSON.stringify({
+    discussion_count: sessionContext.memory_discussion_count,
+    has_date: sessionContext.has_date,
+    has_place: sessionContext.has_place
+  }));
+  console.log(`📊 Conversation history length: ${conversationHistory.length} messages`);
   
   // Get ALL conversation history for this memory discussion (up to last 20 messages)
   // This ensures we capture date, location, and context mentioned earlier in the conversation
@@ -1183,32 +1200,84 @@ serve(async (req) => {
       if (isMemoryDiscussion) {
         sessionContext.memory_discussion_count = (sessionContext.memory_discussion_count || 0) + 1;
         
-        // Check if date and place have been mentioned
+        // Check if date and place have been mentioned - improved detection
         const messageLower = message.text.toLowerCase();
-        const hasDateInfo = /\b(19|20)\d{2}\b/.test(message.text) || 
-          /\b\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/.test(message.text) ||
-          /(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(messageLower);
+        const conversationTextLower = conversationHistory.map(m => m.content).join(' ').toLowerCase();
         
-        const hasPlaceInfo = /\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2}\b/.test(message.text) &&
-          (messageLower.includes('in ') || messageLower.includes('at ') || messageLower.includes('from '));
+        // Enhanced date detection - check both current message AND conversation history
+        const datePatterns = [
+          /\b(19|20)\d{2}\b/,  // Years like 1995, 2008
+          /\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/,  // Dates like 12/25/2000, 25-12-2000
+          /(january|february|march|april|may|june|july|august|september|october|november|december)/i,
+          /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\s*\.?\s*\d/i,  // Jan 5, Feb. 12
+          /\b(last|this|next)\s+(year|month|week|summer|winter|spring|fall)/i,
+          /\bwhen\s+i\s+was\s+\d+/i,  // "when I was 10"
+          /\b\d+\s*years?\s*(ago|old)/i,  // "5 years ago", "10 years old"
+          /\b(childhood|teenager|college|university|school|kid|young)/i,  // Life stage references
+        ];
+        
+        const hasDateInfo = datePatterns.some(pattern => 
+          pattern.test(message.text) || pattern.test(conversationTextLower)
+        );
+        
+        // Enhanced place detection - check both current message AND conversation history
+        const placePatterns = [
+          /\b(in|at|from|near|around)\s+[A-Z][a-z]+/,  // "in Paris", "at London"
+          /\b[A-Z][a-z]+,\s*[A-Z][a-z]+/,  // "Paris, France"
+          /\b(home|house|apartment|school|work|office|church|hospital|park|beach|mountain)/i,
+          /\b(street|road|avenue|boulevard|drive|lane|way)\b/i,
+          /\b(city|town|village|country|state|province)\b/i,
+        ];
+        
+        const hasPlaceInfo = placePatterns.some(pattern => 
+          pattern.test(message.text) || pattern.test(conversationHistory.map(m => m.content).join(' '))
+        );
         
         if (hasDateInfo) sessionContext.has_date = true;
         if (hasPlaceInfo) sessionContext.has_place = true;
         sessionContext.has_date_and_place = sessionContext.has_date && sessionContext.has_place;
+        
+        // Store extracted info for AI context
+        sessionContext.detected_date_hints = hasDateInfo;
+        sessionContext.detected_place_hints = hasPlaceInfo;
       } else {
-        sessionContext.memory_discussion_count = 0;
-        sessionContext.has_date = false;
-        sessionContext.has_place = false;
-        sessionContext.has_date_and_place = false;
+        // Only reset if this is clearly a new topic (not just a short response)
+        if (message.text.length > 100 && !message.text.toLowerCase().includes('yes') && 
+            !message.text.toLowerCase().includes('no')) {
+          sessionContext.memory_discussion_count = 0;
+          sessionContext.has_date = false;
+          sessionContext.has_place = false;
+          sessionContext.has_date_and_place = false;
+        }
       }
 
-      const { response, shouldCreateMemory, memoryContent, memoryDetails, isAskingToSave } = await generateSolinResponse(
+      let { response, shouldCreateMemory, memoryContent, memoryDetails, isAskingToSave } = await generateSolinResponse(
         message.text,
         conversationHistory,
         userName,
         relevantMemories,
         sessionContext
       );
+
+      // Fallback: If AI didn't save but we've had 4+ exchanges about a memory, force a save
+      if (!shouldCreateMemory && sessionContext.memory_discussion_count >= 4 && 
+          (sessionContext.has_date || sessionContext.has_place)) {
+        console.log('⚠️ AI did not include save marker after 4+ exchanges - forcing save');
+        shouldCreateMemory = true;
+        
+        // Try to extract a title from recent conversation
+        const recentUserMessages = conversationHistory
+          .filter(m => m.role === 'user')
+          .slice(-3)
+          .map(m => m.content)
+          .join(' ');
+        
+        memoryDetails = {
+          title: recentUserMessages.substring(0, 50) + '...',
+          date: null,
+          location: null
+        };
+      }
 
       // No longer tracking awaiting_save_confirmation since saves are automatic
       sessionContext.awaiting_save_confirmation = false;
@@ -1227,7 +1296,7 @@ serve(async (req) => {
           : `Got it! I've noted "${memoryDetails?.title || 'this memory'}" 📝\n\nYou can add date/location details later on the web app.\n\nAny photos or videos?`;
         
         sessionContext.last_saved_memory_title = memoryDetails?.title || 'Memory';
-        sessionContext.awaiting_media_for_memory = true;
+        sessionContext.awaiting_media_for_memory = memoryId; // Fixed: Store actual memoryId, not boolean
         sessionContext.pending_memory_id = memoryId;
         
         // Reset memory discussion tracking
