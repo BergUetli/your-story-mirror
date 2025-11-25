@@ -18,6 +18,7 @@ import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { WaitlistPanel } from '@/components/admin/WaitlistPanel';
 import { InsightsConfigPanel } from '@/components/admin/InsightsConfigPanel';
 import { WhatsAppMemoriesPanel } from '@/components/admin/WhatsAppMemoriesPanel';
+import { IncompleteMemoriesPanel } from '@/components/admin/IncompleteMemoriesPanel';
 import { hasAdminAccess } from '@/utils/adminCheck';
 import { 
   Activity,
@@ -299,6 +300,7 @@ const Admin = () => {
 
           <TabsContent value="whatsapp" className="space-y-6">
             <WhatsAppMemoriesPanel />
+            <IncompleteMemoriesPanel />
           </TabsContent>
 
           <TabsContent value="diagnostics" className="space-y-6">
