@@ -1,7 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Music } from 'lucide-react';
-import { useArtifactImage } from '@/hooks/useArtifactImage';
 
 interface TimelineMemoryCardProps {
   memory: any;
@@ -18,7 +17,8 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
   isMaterializing,
   hasVoiceRecording = false
 }) => {
-  const { signedUrl } = useArtifactImage(artifact?.storage_path || null);
+  // Use the signedUrl already included in artifact from Timeline.tsx
+  const signedUrl = artifact?.signedUrl || null;
   
 
 
