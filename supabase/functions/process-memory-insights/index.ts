@@ -64,15 +64,67 @@ serve(async (req) => {
     }
 
     console.log(`[ProcessInsights] Starting processing for memory: ${memory_id}`);
+    
+    // Get the original conversation text to archive it
+    const { data: existingMemory, error: fetchError } = await supabase
+      .from("memories")
+      .select("text, title")
+      .eq("id", memory_id)
+      .single();
+    
+    if (fetchError) {
+      console.error("[ProcessInsights] Failed to fetch existing memory:", fetchError);
+      throw fetchError;
+    }
 
-    // Step 1: Extract insights using OpenAI
-    const insights = await extractConversationInsights(conversation_text);
+    // Step 1: Extract core memory data (most critical)
+    let coreData: MemoryCoreData;
+    try {
+      coreData = await extractMemoryCoreData(conversation_text);
+      console.log(`[ProcessInsights] Extracted core data:`, JSON.stringify(coreData));
+    } catch (error) {
+      console.error("[ProcessInsights] Failed to extract core data:", error);
+      // Fallback: create basic title from first 50 chars
+      const fallbackTitle = conversation_text.substring(0, 50).replace(/\n/g, ' ') + '...';
+      coreData = {
+        title: fallbackTitle,
+        memory_date: null,
+        memory_location: null,
+        summary: conversation_text.substring(0, 500)
+      };
+    }
 
-    // Step 2: Extract core memory data
-    const coreData = await extractMemoryCoreData(conversation_text);
+    // Step 2: Extract insights (optional, can fail gracefully)
+    let insights: MemoryInsights;
+    try {
+      insights = await extractConversationInsights(conversation_text);
+    } catch (error) {
+      console.error("[ProcessInsights] Failed to extract insights:", error);
+      insights = {
+        people: [],
+        places: [],
+        dates: [],
+        events: [],
+        themes: [],
+        emotions: [],
+        objects: [],
+        relationships: [],
+        time_periods: []
+      };
+    }
 
-    // Step 3: Analyze conversation context
-    const conversationContext = await analyzeConversationContext(conversation_text);
+    // Step 3: Analyze conversation context (optional)
+    let conversationContext;
+    try {
+      conversationContext = await analyzeConversationContext(conversation_text);
+    } catch (error) {
+      console.error("[ProcessInsights] Failed to analyze context:", error);
+      conversationContext = {
+        key_moments: [],
+        emotional_tone: "neutral",
+        narrative_arc: "unknown"
+      };
+    }
 
     // Step 4: Calculate metadata
     const metadata = calculateMetadata(conversation_text, insights);
@@ -95,13 +147,6 @@ serve(async (req) => {
       ...(insights.themes || []),
       ...(insights.emotions || [])
     ].filter(tag => tag && tag.length > 0);
-
-    // First, get the original conversation text to archive it
-    const { data: existingMemory } = await supabase
-      .from("memories")
-      .select("text")
-      .eq("id", memory_id)
-      .single();
 
     // Normalize date to PostgreSQL date format (YYYY-MM-DD)
     let normalizedDate = coreData.memory_date;
@@ -163,7 +208,36 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("[ProcessInsights] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("[ProcessInsights] Error stack:", error.stack);
+    
+    // Try to update memory with a fallback title so it's not stuck as "Processing"
+    try {
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+      );
+      
+      const { memory_id } = await req.json();
+      if (memory_id) {
+        await supabase
+          .from("memories")
+          .update({
+            title: "Memory (processing failed)",
+            tags: ["error", "needs_review"],
+            metadata: {
+              processing_error: error.message,
+              error_timestamp: new Date().toISOString()
+            }
+          })
+          .eq("id", memory_id);
+        
+        console.log(`[ProcessInsights] Updated memory with error fallback title`);
+      }
+    } catch (fallbackError) {
+      console.error("[ProcessInsights] Failed to update with fallback:", fallbackError);
+    }
+    
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
