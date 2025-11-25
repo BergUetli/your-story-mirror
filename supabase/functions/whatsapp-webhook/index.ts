@@ -737,12 +737,16 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   }
 
   // Check if user is confirming to save a memory
-  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'save', 'please', 'definitely', 'go ahead', 'do it', 'done', 'got it', 'yup', 'absolutely', 'of course'];
+  const confirmationKeywords = ['yes', 'yeah', 'yep', 'sure', 'ok', 'okay', 'please', 'definitely', 'go ahead', 'do it', 'done', 'got it', 'yup', 'absolutely', 'of course'];
   const denyKeywords = ['no', 'nope', 'don\'t', 'not', 'cancel', 'skip', 'never mind'];
   
   const userMessageLower = userMessage.toLowerCase();
   const hasDenyKeyword = denyKeywords.some(word => userMessageLower.includes(word));
   const hasConfirmKeyword = confirmationKeywords.some(word => userMessageLower.includes(word));
+  
+  // Check if user explicitly wants to save NOW
+  const explicitSaveKeywords = ['save', 'save it', 'save this', 'save the memory', 'save memory'];
+  const wantsToSaveNow = explicitSaveKeywords.some(word => userMessageLower.includes(word));
   
   const isConfirmingSave = sessionContext.awaiting_save_confirmation && 
     hasConfirmKeyword && !hasDenyKeyword;
@@ -751,7 +755,10 @@ async function generateSolinResponse(userMessage, conversationHistory, userName,
   const discussionCount = sessionContext.memory_discussion_count || 0;
   const hasDate = sessionContext.has_date || false;
   const hasPlace = sessionContext.has_place || false;
-  const shouldSaveNow = discussionCount >= 2; // After 2+ exchanges, ready to save
+  // Ready to save after 3+ exchanges, but allow continued conversation if user wants
+  const readyToSave = discussionCount >= 3;
+  // Only push to save if user explicitly asks OR after 5+ exchanges
+  const shouldSaveNow = wantsToSaveNow || discussionCount >= 5;
   
   const systemPrompt = `You are Solin, a warm childhood friend helping ${userName || 'your friend'} preserve life memories over WhatsApp.
 
@@ -761,39 +768,75 @@ PERSONALITY:
 - Keep responses SHORT (2-3 sentences max)
 - Sound like someone their age, not a formal assistant
 
+MEMORY MODES (explain when user asks "capabilities" or "what can you do"):
+1. 🕰️ PAST/ANCESTOR MEMORIES: Stories about ancestors, grandparents, family history before user's birth
+   - User can share "My grandmother told me..." or "Back in 1920, my great-grandfather..."
+   - These appear in a special "Ancestors" section on the timeline
+   
+2. 📝 PRESENT MEMORIES: Daily journals and current life memories
+   - The default mode for sharing experiences from user's lifetime
+   - Dates from birth year to present
+   
+3. 🔮 FUTURE MESSAGES: Time-locked messages for the future
+   - User can say "I want to write a message for my future self" or "Save this for 2035"
+   - Messages stay locked until the target date (with password override option)
+   - Example: Birthday messages, life advice, time capsules
+
+CAPABILITIES COMMAND:
+If user says "capabilities", "what can you do", "help", or "commands", respond with:
+"✨ Here's what I can help you with:
+
+🕰️ **Ancestor Memories** - Share stories about your grandparents, great-grandparents, or family history
+📝 **Present Memories** - Journal your daily life and capture current experiences  
+🔮 **Future Messages** - Create time-locked messages that unlock on a specific date
+
+Just start sharing and I'll help you preserve it! Say 'save' anytime to save what we've discussed."
+
 YOUR APPROACH TO MEMORIES:
 1. When someone shares a story, ask 1-2 follow-up questions to understand it better
 2. Focus on: feelings, specific details, why it mattered, who was involved
 3. Naturally ask about WHEN and WHERE if not mentioned yet
-4. After exploring sufficiently, save the memory automatically
+4. After exploring sufficiently (3+ exchanges), you CAN save but let user continue if they want
+5. If user says "save" explicitly, save immediately
 
 MEMORY SAVING RULES:
-- ALWAYS include [SAVE_MEMORY: title] when you have enough context to save
+- Include [SAVE_MEMORY: title] when you have enough context AND:
+  * User explicitly asks to save, OR
+  * You've had 5+ exchanges about the memory, OR
+  * User seems to be wrapping up the story
 - Add date if known: [SAVE_MEMORY: title | YYYY or YYYY-MM or YYYY-MM-DD]
 - Add location if known: [SAVE_MEMORY: title | date | location]
+- For ANCESTOR memories (dates before user's lifetime): use historical dates like 1920, 1945, etc.
+- For FUTURE messages: use future dates like 2030, 2035-01-01, etc.
 - Examples:
   * [SAVE_MEMORY: First day at university | 2015-09 | Boston]
-  * [SAVE_MEMORY: Grandmother's cooking lessons | 1998 | Mumbai]
+  * [SAVE_MEMORY: Grandmother's cooking lessons | 1955 | Mumbai] (ancestor memory)
+  * [SAVE_MEMORY: Letter to my future self | 2035-01-01] (future message)
   * [SAVE_MEMORY: Beach vacation with family]
-- Save after 2-3 exchanges about a memory - don't wait too long!
+- IMPORTANT: Don't rush to save! Let users share more if they want to.
 - You can save even without date/location - those can be added later
 
 CURRENT CONVERSATION STATE:
 - Discussion exchanges: ${discussionCount}
 - Date mentioned: ${hasDate ? 'YES' : 'NO - try to ask naturally'}
 - Location mentioned: ${hasPlace ? 'YES' : 'NO - try to ask naturally'}
-${shouldSaveNow ? '- READY TO SAVE: Include [SAVE_MEMORY: title] in your response!' : ''}
+- User wants to save now: ${wantsToSaveNow ? 'YES - include [SAVE_MEMORY] marker!' : 'NO'}
+${shouldSaveNow ? '- READY TO SAVE: Include [SAVE_MEMORY: title] in your response!' : readyToSave ? '- ENOUGH CONTEXT: Can save if user seems done, but OK to continue conversation' : ''}
 
 RELEVANT PAST MEMORIES:${memoryContext || '\n(No relevant memories found)'}
 
 RESPONSE GUIDELINES:
-- If they shared a new memory and you've discussed it enough: acknowledge warmly + [SAVE_MEMORY: title | date | location]
+- If user says "capabilities", "help", "commands": explain all memory modes
+- If user says "save": acknowledge and include [SAVE_MEMORY: title | date | location]
+- If they're still sharing details: engage warmly and ask follow-ups
 - If you need more context: ask ONE follow-up question
 - If missing date: ask "When was this?" or "What year?"
 - If missing location: ask "Where did this happen?"
-- After saving: "Any photos or videos of this moment?"
+- For ancestor stories: ask "What year was this?" or "When did this happen?"
+- For future messages: ask "When should this be unlocked?" or "What date in the future?"
+- DO NOT say "Any photos or videos" in your response - that will be handled separately
 
-Remember: Users share precious memories. Be warm, attentive, and make them feel heard.`;
+Remember: Users share precious memories across all time periods. Be warm, attentive, and make them feel heard.`;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -1048,8 +1091,11 @@ serve(async (req) => {
       }
 
       // Handle media upload if user sent an image/video (not audio)
-      if (message.mediaId && message.mediaType !== 'audio' && sessionContext.awaiting_media_for_memory) {
-        console.log(`📸 Processing media upload for memory ${sessionContext.awaiting_media_for_memory}`);
+      // This can happen either:
+      // 1. While awaiting_media_response (before memory is created) - store artifact IDs for later
+      // 2. While awaiting_media_for_memory (after memory exists) - link directly to memory
+      if (message.mediaId && message.mediaType !== 'audio' && 
+          (sessionContext.awaiting_media_response || sessionContext.awaiting_media_for_memory)) {
         
         const mediaData = await adapter.downloadMedia(message.mediaId);
         if (mediaData) {
@@ -1062,14 +1108,21 @@ serve(async (req) => {
           );
 
           if (artifactId) {
-            await linkArtifactToMemory(supabase, sessionContext.awaiting_media_for_memory, artifactId);
+            if (sessionContext.awaiting_media_for_memory) {
+              // Memory already exists - link directly
+              console.log(`📸 Linking media to existing memory ${sessionContext.awaiting_media_for_memory}`);
+              await linkArtifactToMemory(supabase, sessionContext.awaiting_media_for_memory, artifactId);
+            } else {
+              // Memory not created yet - store artifact ID for later
+              console.log(`📸 Storing artifact ${artifactId} for pending memory`);
+              sessionContext.pending_artifact_ids = sessionContext.pending_artifact_ids || [];
+              sessionContext.pending_artifact_ids.push(artifactId);
+            }
             
-            // Clear the waiting state
-            sessionContext.awaiting_media_for_memory = null;
             sessionContext.media_count = (sessionContext.media_count || 0) + 1;
             await updateSessionContext(supabase, sessionId, sessionContext);
 
-            const response = "Got it! 📸 I've added that to your memory. Feel free to send more photos/videos, or just say 'done' when you're finished.";
+            const response = "Got it! 📸 Feel free to send more photos/videos, or just say 'done' when you're finished.";
             
             await saveMessage(supabase, {
               userId,
@@ -1094,66 +1147,138 @@ serve(async (req) => {
         }
       }
 
-      // Check if user is done uploading media
-      const isDoneWithMedia = sessionContext.awaiting_media_for_memory && 
-        (message.text.toLowerCase().includes('done') || 
-         message.text.toLowerCase().includes('no more') ||
-         message.text.toLowerCase().includes('that\'s all'));
+      // Check if user is done uploading media OR declining to add media
+      const userTextLower = message.text.toLowerCase();
+      const isDoneKeyword = userTextLower.includes('done') || 
+                           userTextLower.includes('no more') ||
+                           userTextLower.includes('that\'s all') ||
+                           userTextLower.includes('that is all') ||
+                           userTextLower.includes('thats all');
+      const isDeclineMedia = (userTextLower.includes('no') && !userTextLower.includes('no more')) ||
+                            userTextLower.includes('don\'t have') ||
+                            userTextLower.includes('dont have') ||
+                            userTextLower.includes('nope') ||
+                            userTextLower.includes('skip');
+      
+      // Handle completion when we're waiting for media response (before memory created)
+      const isReadyToCreateMemory = sessionContext.awaiting_media_response && 
+                                   sessionContext.pending_memory_details &&
+                                   (isDoneKeyword || isDeclineMedia);
+      
+      // Handle completion when memory already exists (legacy flow)
+      const isDoneWithExistingMemory = sessionContext.awaiting_media_for_memory && isDoneKeyword;
 
-      if (isDoneWithMedia) {
+      if (isReadyToCreateMemory) {
+        console.log(`💾 User done with media - NOW creating memory with ${sessionContext.pending_artifact_ids?.length || 0} artifacts`);
+        
+        // NOW create the memory with the stored conversation
+        const memoryId = await createMemoryFromMessage(
+          supabase, 
+          userId, 
+          sessionContext.pending_memory_conversation || conversationHistory, 
+          sessionContext, 
+          sessionContext.pending_memory_details
+        );
+        
+        console.log(`✅ Memory created: ${memoryId}`);
+        
+        // Link any pending artifacts to the newly created memory
+        if (sessionContext.pending_artifact_ids && sessionContext.pending_artifact_ids.length > 0) {
+          for (const artifactId of sessionContext.pending_artifact_ids) {
+            await linkArtifactToMemory(supabase, memoryId, artifactId);
+            console.log(`📎 Linked artifact ${artifactId} to memory ${memoryId}`);
+          }
+        }
+        
+        // Clear all pending state
+        sessionContext.awaiting_media_response = false;
+        sessionContext.pending_memory_details = null;
+        sessionContext.pending_memory_conversation = null;
+        sessionContext.pending_artifact_ids = null;
+        await updateSessionContext(supabase, sessionId, sessionContext);
+        
+        const mediaCount = sessionContext.media_count || 0;
+        const memoryTitle = sessionContext.last_saved_memory_title || 'your memory';
+        const response = mediaCount > 0 
+          ? `Perfect! Saved "${memoryTitle}" with ${mediaCount} photo(s)/video(s) to your timeline 💫`
+          : `Got it! Saved "${memoryTitle}" to your timeline 💫`;
+        
+        await saveMessage(supabase, {
+          userId,
+          phoneNumber: message.from,
+          direction: 'outbound',
+          messageText: response,
+          provider: adapter.name,
+          sessionId
+        });
+
+        await adapter.sendMessage({
+          to: message.from,
+          message: response,
+          sessionId
+        });
+
+        return new Response(
+          JSON.stringify({ success: true, memoryCreated: true, memoryId }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Handle "done" when memory already exists (legacy support)
+      if (isDoneWithExistingMemory) {
         sessionContext.awaiting_media_for_memory = null;
         await updateSessionContext(supabase, sessionId, sessionContext);
         
         const response = `Perfect! I've saved ${sessionContext.media_count || 0} item(s) with your memory. 💫`;
         
-      await saveMessage(supabase, {
-        userId,
-        phoneNumber: message.from,
-        direction: 'outbound',
-        messageText: response,
-        provider: adapter.name,
-        sessionId
-      });
+        await saveMessage(supabase, {
+          userId,
+          phoneNumber: message.from,
+          direction: 'outbound',
+          messageText: response,
+          provider: adapter.name,
+          sessionId
+        });
 
-      // Generate voice response if user sent a voice note
-      let audioMediaId = null;
-      if (message.mediaType === 'audio') {
-        console.log('🎙️ User sent voice, responding with voice...');
-        const audioBuffer = await generateVoiceResponse(response);
-        if (audioBuffer && adapter.uploadAudio) {
-          audioMediaId = await adapter.uploadAudio(audioBuffer);
-          if (audioMediaId) {
-            console.log(`✅ Voice response uploaded: ${audioMediaId}`);
-            
-            // Send voice response
-            await adapter.sendMessage({
-              to: message.from,
-              audioMediaId,
-              sessionId
-            });
-            
-            // Also send text version for reference
-            const textReference = `💬 _"${response}"_`;
-            await adapter.sendMessage({
-              to: message.from,
-              message: textReference,
-              sessionId
-            });
-            
-            return new Response(
-              JSON.stringify({ success: true, voiceResponse: true }),
-              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+        // Generate voice response if user sent a voice note
+        let audioMediaId = null;
+        if (message.mediaType === 'audio') {
+          console.log('🎙️ User sent voice, responding with voice...');
+          const audioBuffer = await generateVoiceResponse(response);
+          if (audioBuffer && adapter.uploadAudio) {
+            audioMediaId = await adapter.uploadAudio(audioBuffer);
+            if (audioMediaId) {
+              console.log(`✅ Voice response uploaded: ${audioMediaId}`);
+              
+              // Send voice response
+              await adapter.sendMessage({
+                to: message.from,
+                audioMediaId,
+                sessionId
+              });
+              
+              // Also send text version for reference
+              const textReference = `💬 _"${response}"_`;
+              await adapter.sendMessage({
+                to: message.from,
+                message: textReference,
+                sessionId
+              });
+              
+              return new Response(
+                JSON.stringify({ success: true, voiceResponse: true }),
+                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
           }
         }
-      }
 
-      // Send text response if not voice
-      await adapter.sendMessage({
-        to: message.from,
-        message: response,
-        sessionId
-      });
+        // Send text response if not voice
+        await adapter.sendMessage({
+          to: message.from,
+          message: response,
+          sessionId
+        });
 
         return new Response(
           JSON.stringify({ success: true }),
@@ -1285,19 +1410,14 @@ serve(async (req) => {
 
       let memoryId = null;
       if (shouldCreateMemory) {
-        memoryId = await createMemoryFromMessage(supabase, userId, conversationHistory, sessionContext, memoryDetails);
-        const statusEmoji = memoryDetails?.date && memoryDetails?.location ? '✅' : '📝';
-        console.log(`💾 Memory auto-saved with ID: ${memoryId} ${statusEmoji}`);
+        // DON'T create memory yet - store pending details and ask about media first
+        console.log(`📋 Memory ready to save - storing pending details and asking about media`);
         
-        // Send confirmation message based on completion status
-        const isComplete = memoryDetails?.date && memoryDetails?.location;
-        const confirmationMessage = isComplete 
-          ? `Perfect! Saved "${memoryDetails.title}" to your timeline 💫\n\nAny photos or videos of this?`
-          : `Got it! I've noted "${memoryDetails?.title || 'this memory'}" 📝\n\nYou can add date/location details later on the web app.\n\nAny photos or videos?`;
-        
+        // Store pending memory details in session context (NOT in database yet)
+        sessionContext.pending_memory_details = memoryDetails;
+        sessionContext.pending_memory_conversation = conversationHistory.slice(-20); // Store conversation for later
+        sessionContext.awaiting_media_response = true; // Flag to track we're waiting for media decision
         sessionContext.last_saved_memory_title = memoryDetails?.title || 'Memory';
-        sessionContext.awaiting_media_for_memory = memoryId; // Fixed: Store actual memoryId, not boolean
-        sessionContext.pending_memory_id = memoryId;
         
         // Reset memory discussion tracking
         sessionContext.memory_discussion_count = 0;
@@ -1307,19 +1427,21 @@ serve(async (req) => {
         sessionContext.media_count = 0;
         await updateSessionContext(supabase, sessionId, sessionContext);
 
-        // Send confirmation with memory title and ask about media
+        // Ask about photos/videos BEFORE saving the memory
+        const mediaQuestion = `Got it! Before I save "${memoryDetails?.title || 'this memory'}", do you have any photos or videos to add? 📸\n\nSend them now, or say "done" if you don't have any.`;
+        
         await saveMessage(supabase, {
           userId,
           phoneNumber: message.from,
           direction: 'outbound',
-          messageText: confirmationMessage,
+          messageText: mediaQuestion,
           provider: adapter.name,
           sessionId
         });
 
         await adapter.sendMessage({
           to: message.from,
-          message: confirmationMessage,
+          message: mediaQuestion,
           sessionId
         });
 
@@ -1327,7 +1449,7 @@ serve(async (req) => {
           JSON.stringify({
             success: true,
             messageId: message.messageId,
-            memoryCreated: true,
+            memoryPending: true,
             awaitingMedia: true
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

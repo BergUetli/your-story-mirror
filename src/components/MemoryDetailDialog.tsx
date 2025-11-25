@@ -49,19 +49,7 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
-  // Choose the most relevant image for panel background
-  const bestBgUrl = useMemo(() => {
-    // Prefer memory's own images
-    const memUrl = memoryImageUrls.find((u) => !!u) || null;
-    if (memUrl) return memUrl;
-    // Fallback to the latest image artifact
-    const imageArtifacts = (artifacts as any[]).filter((a) => a.artifact_type === 'image');
-    if (imageArtifacts.length > 0) {
-      const last = imageArtifacts[imageArtifacts.length - 1];
-      return artifactUrls[last.id] || null;
-    }
-    return null;
-  }, [memoryImageUrls, artifacts, artifactUrls]);
+  // Background image feature removed - images shown only as attachments
 
   // Load voice recordings for this memory
   const loadVoiceRecordings = async () => {
@@ -471,11 +459,6 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className="max-w-2xl max-h-[80vh] flex flex-col"
-        style={bestBgUrl ? {
-          backgroundImage: `linear-gradient(to bottom, hsl(var(--background) / 0.6), hsl(var(--background) / 0.95)), url(${bestBgUrl})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : undefined}
       >
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">

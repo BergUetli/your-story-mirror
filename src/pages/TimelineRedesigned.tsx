@@ -101,26 +101,42 @@ const TimelineRedesigned = () => {
     const currentYear = new Date().getFullYear();
     const chapterList = [];
 
-    // Add Past chapter (ancestral history - 100 years before birth)
-    const pastStartYear = Math.floor((birthYear - 100) / 10) * 10;
+    // Filter memories into past (before birth), present (birth to now), future (after now)
+    const pastMemories = memories.filter((m) => {
+      const memYear = new Date(m.memory_date).getFullYear();
+      return memYear < birthYear;
+    });
+    
+    const futureMemories = memories.filter((m) => {
+      const memYear = new Date(m.memory_date).getFullYear();
+      return memYear > currentYear;
+    });
+
+    // Add Past chapter (ancestral history - memories before user's birth)
+    // Find the earliest year among past memories, or default to 100 years before birth
+    const earliestPastYear = pastMemories.length > 0 
+      ? Math.min(...pastMemories.map(m => new Date(m.memory_date).getFullYear()))
+      : birthYear - 100;
+    const pastStartYear = Math.floor(earliestPastYear / 10) * 10;
     const pastEndYear = birthYear - 1;
+    
     chapterList.push({
       startYear: pastStartYear,
       endYear: pastEndYear,
-      memories: [],
-      memoryCount: 0,
+      memories: pastMemories,
+      memoryCount: pastMemories.length,
       isPast: true,
       isFuture: false,
     });
 
-    // Create decade-based chapters for lifetime
+    // Create decade-based chapters for lifetime (birth year to current year)
     for (let year = Math.floor(birthYear / 10) * 10; year <= currentYear; year += 10) {
       const startYear = year;
       const endYear = Math.min(year + 9, currentYear);
       
       const chapterMemories = memories.filter((m) => {
         const memYear = new Date(m.memory_date).getFullYear();
-        return memYear >= startYear && memYear <= endYear;
+        return memYear >= startYear && memYear <= endYear && memYear >= birthYear && memYear <= currentYear;
       });
 
       if (chapterMemories.length > 0 || (year >= birthYear && year <= currentYear)) {
@@ -135,14 +151,19 @@ const TimelineRedesigned = () => {
       }
     }
 
-    // Add Future chapter (future messages - 100 years after current)
+    // Add Future chapter (future messages - memories after current year)
+    // Find the latest year among future memories, or default to 100 years after now
+    const latestFutureYear = futureMemories.length > 0 
+      ? Math.max(...futureMemories.map(m => new Date(m.memory_date).getFullYear()))
+      : currentYear + 100;
     const futureStartYear = currentYear + 1;
-    const futureEndYear = Math.ceil((currentYear + 100) / 10) * 10;
+    const futureEndYear = Math.ceil(latestFutureYear / 10) * 10;
+    
     chapterList.push({
       startYear: futureStartYear,
       endYear: futureEndYear,
-      memories: [],
-      memoryCount: 0,
+      memories: futureMemories,
+      memoryCount: futureMemories.length,
       isPast: false,
       isFuture: true,
     });
