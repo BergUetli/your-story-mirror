@@ -8,6 +8,7 @@ interface TimelineMemoryCardProps {
   onClick: () => void;
   isMaterializing?: boolean;
   hasVoiceRecording?: boolean;
+  memoryImageUrl?: string | null; // Signed URL for memory's image_urls
 }
 
 export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({ 
@@ -15,10 +16,12 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
   artifact, 
   onClick, 
   isMaterializing,
-  hasVoiceRecording = false
+  hasVoiceRecording = false,
+  memoryImageUrl = null
 }) => {
-  // Use the signedUrl already included in artifact from Timeline.tsx
-  const signedUrl = artifact?.signedUrl || null;
+  // Use artifact signedUrl OR memory image URL (prefer artifact)
+  const signedUrl = artifact?.signedUrl || memoryImageUrl || null;
+  const hasImage = !!(artifact?.artifact_type === 'image' && artifact?.signedUrl) || !!memoryImageUrl;
   
 
 
@@ -42,8 +45,8 @@ export const TimelineMemoryCard: React.FC<TimelineMemoryCardProps> = ({
     >
       <CardContent className="p-3 bg-gradient-to-br from-white to-gray-50/50">
         <div className="flex items-center gap-3">
-          {/* Thumbnail with enhanced styling */}
-          {artifact?.artifact_type === 'image' && signedUrl && (
+          {/* Thumbnail with enhanced styling - shows artifact image OR memory image_urls */}
+          {hasImage && signedUrl && (
             <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-gray-100 to-gray-50 ring-1 ring-black/5 group-hover:ring-primary/20 transition-all duration-300">
               <img
                 src={signedUrl}

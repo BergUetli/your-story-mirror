@@ -246,6 +246,8 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                       {yearMemories.map((memory) => {
                         const artifacts = memoryArtifacts.get(memory.id) || [];
                         const artifact = artifacts.length > 0 ? artifacts[0] : null;
+                        // Get first image URL from memory.image_urls as fallback
+                        const memoryImageUrl = memory.image_urls?.[0] || null;
                         
                         return (
                           <div
@@ -255,6 +257,7 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                             <TimelineMemoryCard
                               memory={memory}
                               artifact={artifact}
+                              memoryImageUrl={memoryImageUrl}
                               onClick={() => handleMemoryClick(memory)}
                             />
                           </div>
@@ -330,18 +333,30 @@ export const CustomTimeline: React.FC<CustomTimelineProps> = ({
                 </div>
               )}
 
-              {/* Images */}
-              {memoryArtifacts.get(selectedMemory.id)?.length > 0 && (
+              {/* Images - from both artifacts AND memory.image_urls */}
+              {(memoryArtifacts.get(selectedMemory.id)?.length > 0 || selectedMemory.image_urls?.length > 0) && (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground/80 flex items-center gap-2">
                     <span className="w-1 h-4 bg-primary rounded-full"></span>
                     Media
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
-                    {memoryArtifacts.get(selectedMemory.id).map((artifact: any, index: number) => (
-                      <div key={index} className="group relative overflow-hidden rounded-lg border border-border/50 shadow-md hover:shadow-xl transition-all duration-300">
+                    {/* Artifact images */}
+                    {memoryArtifacts.get(selectedMemory.id)?.map((artifact: any, index: number) => (
+                      <div key={`artifact-${index}`} className="group relative overflow-hidden rounded-lg border border-border/50 shadow-md hover:shadow-xl transition-all duration-300">
                         <img
                           src={artifact.signedUrl}
+                          alt=""
+                          className="w-full h-28 object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
+                    ))}
+                    {/* Memory image_urls (if no artifacts have this image) */}
+                    {selectedMemory.image_urls?.map((imageUrl: string, index: number) => (
+                      <div key={`memory-img-${index}`} className="group relative overflow-hidden rounded-lg border border-border/50 shadow-md hover:shadow-xl transition-all duration-300">
+                        <img
+                          src={imageUrl}
                           alt=""
                           className="w-full h-28 object-cover transition-transform duration-300 group-hover:scale-110"
                         />
