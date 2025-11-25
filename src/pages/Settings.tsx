@@ -5,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles, MapPin, Briefcase, GraduationCap, Phone, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Shield, Heart, User, Mic, Mail, Download, Trash2, Wallet, TrendingUp, Image, Brain, MessageSquare, Volume2, Sparkles, MapPin, Briefcase, GraduationCap, Phone, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import VoiceTest from '@/components/VoiceTest';
+import MicrophoneTest from '@/components/MicrophoneTest';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -42,6 +45,15 @@ const Settings = () => {
   const [codeSent, setCodeSent] = useState(false);
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  // Audio test state
+  const [voiceTestOpen, setVoiceTestOpen] = useState(false);
+  const [micTestOpen, setMicTestOpen] = useState(false);
+  const [lastMicTestResult, setLastMicTestResult] = useState<{
+    qualityScore: number;
+    averageVolume: number;
+    recommendations: string[];
+  } | null>(null);
 
   // Load profile data
   useEffect(() => {
@@ -548,6 +560,101 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* Voice & Microphone Testing */}
+        <Card className="modern-card border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Mic className="w-5 h-5 text-primary" />
+              </div>
+              Voice & Microphone Testing
+            </CardTitle>
+            <CardDescription>
+              Test your audio setup for the best experience with Solin
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Voice Test Collapsible */}
+            <Collapsible open={voiceTestOpen} onOpenChange={setVoiceTestOpen}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-between border-border hover:bg-card rounded-xl p-4 h-auto"
+                >
+                  <div className="flex items-center gap-3">
+                    <Volume2 className="w-5 h-5 text-primary" />
+                    <div className="text-left">
+                      <p className="font-medium">Voice Connection Test</p>
+                      <p className="text-sm text-muted-foreground">Test ElevenLabs voice agent connection</p>
+                    </div>
+                  </div>
+                  {voiceTestOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="rounded-xl border border-border/50 p-4 bg-card/50">
+                  <VoiceTest />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Microphone Test Collapsible */}
+            <Collapsible open={micTestOpen} onOpenChange={setMicTestOpen}>
+              <CollapsibleTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-between border-border hover:bg-card rounded-xl p-4 h-auto"
+                >
+                  <div className="flex items-center gap-3">
+                    <Mic className="w-5 h-5 text-primary" />
+                    <div className="text-left">
+                      <p className="font-medium">Microphone Quality Test</p>
+                      <p className="text-sm text-muted-foreground">
+                        {lastMicTestResult 
+                          ? `Last score: ${lastMicTestResult.qualityScore}/100` 
+                          : 'Check your microphone audio quality'}
+                      </p>
+                    </div>
+                  </div>
+                  {micTestOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="rounded-xl border border-border/50 p-4 bg-card/50">
+                  <MicrophoneTest onTestComplete={(result) => setLastMicTestResult(result)} />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Last test results summary */}
+            {lastMicTestResult && (
+              <div className="p-4 rounded-xl bg-muted/30 space-y-2">
+                <h4 className="font-medium text-sm">Last Microphone Test Results</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Quality Score</p>
+                    <p className="font-medium">{lastMicTestResult.qualityScore}/100</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Average Volume</p>
+                    <p className="font-medium">{lastMicTestResult.averageVolume.toFixed(1)} dB</p>
+                  </div>
+                </div>
+                {lastMicTestResult.recommendations.length > 0 && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground">Recommendations:</p>
+                    <ul className="text-xs text-muted-foreground list-disc list-inside">
+                      {lastMicTestResult.recommendations.map((rec, i) => (
+                        <li key={i}>{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Privacy & Notifications */}
         <Card className="modern-card border-border/50">
           <CardHeader>
@@ -721,10 +828,10 @@ const Settings = () => {
                 </div>
 
                 <p className="text-xs italic pt-3 border-t border-border">
-                  💡 Exchange rate: 1 USD ≈ 0.90 CHF. Prices are estimates based on current service pricing.
+                  Exchange rate: 1 USD = 0.90 CHF. Prices are estimates based on current service pricing.
                 </p>
                 <p className="text-xs font-medium">
-                  📊 These are pay-as-you-go costs charged by external AI services (ElevenLabs, Replicate).
+                  These are pay-as-you-go costs charged by external AI services (ElevenLabs, Replicate).
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Note: AI chat, memory processing, and sketches are included in the platform at no additional cost.
