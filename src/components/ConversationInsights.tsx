@@ -59,7 +59,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         const { data: recordings, error: fetchError } = await supabase
           .from('voice_recordings')
           .select('topics, transcript_text')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id.toString())
           .order('created_at', { ascending: false })
           .limit(1);
 

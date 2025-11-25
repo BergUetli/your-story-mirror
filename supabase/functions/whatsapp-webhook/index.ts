@@ -841,12 +841,25 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
   
   console.log(`📝 Memory text length: ${memoryText.length} characters, using ${relevantExchanges.length} messages`);
   
-  // Determine if memory is complete (has date and location)
-  const isComplete = memoryDetails?.date && memoryDetails?.location;
+  // Parse date safely
+  let parsedDate = null;
+  if (memoryDetails?.date) {
+    try {
+      const dateObj = new Date(memoryDetails.date);
+      if (!isNaN(dateObj.getTime())) {
+        parsedDate = dateObj.toISOString().split('T')[0];
+      }
+    } catch (e) {
+      console.log(`⚠️ Could not parse date: ${memoryDetails.date}`);
+    }
+  }
+  
+  // Determine if memory is complete (has valid date and location)
+  const isComplete = !!parsedDate && !!memoryDetails?.location;
   const status = isComplete ? 'complete' : 'incomplete';
   
   console.log(`📊 Memory status: ${status}`, { 
-    hasDate: !!memoryDetails?.date, 
+    hasDate: !!parsedDate, 
     hasLocation: !!memoryDetails?.location 
   });
   
@@ -860,9 +873,9 @@ async function createMemoryFromMessage(supabase, userId, conversationHistory, se
       tags: isComplete ? ['whatsapp'] : ['whatsapp', 'incomplete', 'needs_review'],
       recipient: 'private',
       source_type: 'whatsapp',
-      memory_date: memoryDetails?.date ? new Date(memoryDetails.date).toISOString().split('T')[0] : null,
+      memory_date: parsedDate,
       memory_location: memoryDetails?.location || null,
-      show_on_timeline: isComplete, // Only show complete memories on timeline
+      show_on_timeline: isComplete,
       status: status,
       needs_review: !isComplete,
       is_primary_chunk: true,
