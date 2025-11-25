@@ -24,7 +24,7 @@ const SolinLogo = ({ className, size = 32, style }: SolinLogoProps) => {
       xmlns="http://www.w3.org/2000/svg"
       style={style}
     >
-      {/* Isometric Cube Logo */}
+      {/* Isometric Cube Logo - Outer cube in blue */}
       {/* Outer hexagon shape */}
       <path 
         d="M50 5 L90 27.5 L90 72.5 L50 95 L10 72.5 L10 27.5 Z"
@@ -35,7 +35,7 @@ const SolinLogo = ({ className, size = 32, style }: SolinLogoProps) => {
         fill="none"
       />
       
-      {/* Top inner diamond - creates the cube top face */}
+      {/* Top face of outer cube */}
       <path 
         d="M50 5 L90 27.5 L50 50 L10 27.5 Z"
         stroke="hsl(var(--primary))"
@@ -45,7 +45,7 @@ const SolinLogo = ({ className, size = 32, style }: SolinLogoProps) => {
         fill="none"
       />
       
-      {/* Center vertical line - front edge of cube */}
+      {/* Center vertical line - front edge of outer cube */}
       <path 
         d="M50 50 L50 95"
         stroke="hsl(var(--primary))"
@@ -54,21 +54,32 @@ const SolinLogo = ({ className, size = 32, style }: SolinLogoProps) => {
         strokeLinejoin="round"
       />
       
-      {/* Inner vertical structure - the "door" or inner cube element */}
+      {/* Inner cube in BLACK - proper isometric cube */}
+      {/* Inner cube - top face (diamond) */}
       <path 
-        d="M50 50 L50 72.5 L35 81.25 L35 58.75 Z"
-        stroke="hsl(var(--primary))"
-        strokeWidth="4"
+        d="M50 38 L65 47 L50 56 L35 47 Z"
+        stroke="black"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
       
-      {/* Right side of inner structure */}
+      {/* Inner cube - left face */}
       <path 
-        d="M50 50 L50 72.5 L65 81.25 L65 58.75 Z"
-        stroke="hsl(var(--primary))"
-        strokeWidth="4"
+        d="M35 47 L50 56 L50 74 L35 65 Z"
+        stroke="black"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      
+      {/* Inner cube - right face */}
+      <path 
+        d="M65 47 L50 56 L50 74 L65 65 Z"
+        stroke="black"
+        strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
