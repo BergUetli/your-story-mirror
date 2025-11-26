@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Mic, MessageCircle, Clock, Shield, Users, Calendar, ArrowRight, Sparkles, Heart } from 'lucide-react';
+import { Mic, MessageCircle, Clock, Shield, Users, Calendar, ArrowRight, Sparkles, Heart, Lock, Server, HardDrive, Database, Key, Globe, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const HowItWorks = () => {
@@ -168,19 +168,191 @@ const HowItWorks = () => {
                   <h3 className="text-xl font-semibold">Swiss-Grade Privacy</h3>
                 </div>
                 <p className="text-muted-foreground">
-                  Military-grade encryption on dedicated Swiss servers. Your data is protected by Swiss privacy laws and will never be sold or shared without your express approval.
+                  Military-grade AES-256 encryption on dedicated Swiss servers. Your data is protected by Swiss privacy laws and will never be sold or shared without your express approval.
                 </p>
               </div>
             </CardContent>
           </Card>
           <div className="space-y-6 md:order-2">
-            <h2 className="text-5xl font-bold">Your Voice Lives On</h2>
-            <p className="text-xl text-muted-foreground leading-relaxed">
+            <h2 className="font-manrope text-5xl font-bold">Your Voice Lives On</h2>
+            <p className="font-manrope text-xl text-muted-foreground leading-relaxed">
               Your loved ones can interact with your preserved wisdom whenever they need guidance, comfort, or simply want to hear your voice again.
             </p>
           </div>
         </div>
 
+      </div>
+
+      {/* Security & Data Protection Section */}
+      <div className="max-w-7xl mx-auto px-8 py-24 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl my-16 text-white">
+        <div className="text-center space-y-6 mb-16">
+          <div className="inline-block px-4 py-2 rounded-full bg-white/10 text-white/90 text-sm font-medium">
+            Enterprise-Grade Security
+          </div>
+          <h2 className="font-manrope text-5xl font-bold">Your Memories, Protected Forever</h2>
+          <p className="font-manrope text-xl text-white/70 max-w-3xl mx-auto">
+            We treat your memories with the same level of protection used by banks and governments. Your legacy deserves nothing less.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Encryption */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Lock className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">End-to-End Encryption</h3>
+            <p className="text-white/70 leading-relaxed">
+              All data is encrypted using AES-256 encryption—the same standard used by military and financial institutions. Your memories are encrypted at rest and in transit.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>AES-256 bit encryption</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>TLS 1.3 secure transport</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Zero-knowledge architecture</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Geographic Redundancy */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Globe className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">Geographic Redundancy</h3>
+            <p className="text-white/70 leading-relaxed">
+              Your data is replicated across multiple secure data centers in different geographic locations. Even if one facility experiences issues, your memories remain safe and accessible.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Multi-region replication</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>99.999% availability SLA</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Automatic failover systems</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Cold Storage */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <HardDrive className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">Cold Storage Backups</h3>
+            <p className="text-white/70 leading-relaxed">
+              In addition to live systems, your memories are archived to offline cold storage. These air-gapped backups are immune to cyber attacks and ensure long-term preservation.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Air-gapped offline storage</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Quarterly archival rotation</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>100+ year media longevity</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Swiss Data Protection */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Server className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">Swiss Data Sovereignty</h3>
+            <p className="text-white/70 leading-relaxed">
+              Primary data centers located in Switzerland, protected by some of the world's strongest privacy laws. Your data is subject to Swiss jurisdiction, not US or EU surveillance programs.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Swiss FADP compliant</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>ISO 27001 certified facilities</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Independent security audits</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Access Control */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Key className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">You Control Access</h3>
+            <p className="text-white/70 leading-relaxed">
+              You decide who can access your memories and when. Set granular permissions, designate beneficiaries, and establish time-locked releases for future generations.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Granular sharing controls</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Multi-factor authentication</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Legacy beneficiary system</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Data Integrity */}
+          <div className="p-8 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Database className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="font-manrope text-xl font-semibold">Immutable Data Integrity</h3>
+            <p className="text-white/70 leading-relaxed">
+              Cryptographic checksums verify your memories remain unchanged. Any tampering is immediately detected, ensuring your authentic voice is preserved exactly as recorded.
+            </p>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>SHA-256 integrity verification</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Tamper-evident logging</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                <span>Version history preserved</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Trust Statement */}
+        <div className="mt-16 text-center p-8 rounded-2xl bg-white/5 border border-white/10">
+          <p className="font-manrope text-lg text-white/80 max-w-4xl mx-auto leading-relaxed">
+            <strong className="text-white">Our Promise:</strong> Your memories are your most precious digital asset. We will never sell, share, or monetize your data. We will never train AI models on your personal content. Your legacy belongs to you and the people you choose to share it with—forever.
+          </p>
+        </div>
       </div>
 
       {/* Key Features */}
