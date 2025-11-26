@@ -2765,10 +2765,10 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             <div className="relative z-10 flex flex-col h-full">
               {/* Header */}
               <div className="mb-4 pb-3 border-b" style={{ borderColor: 'rgba(229, 231, 235, 0.5)' }}>
-                <h2 className="text-lg lg:text-xl font-bold text-foreground">
+                <h2 className="font-manrope text-lg lg:text-xl font-semibold text-foreground tracking-tight">
                   Conversation
                 </h2>
-                <p className="text-xs lg:text-sm text-muted-foreground mt-1">
+                <p className="font-manrope text-xs lg:text-sm text-muted-foreground mt-1">
                   {isConnected ? 'Live transcript' : 'Start a conversation to see the transcript'}
                 </p>
               </div>
@@ -2784,7 +2784,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
               >
                 {conversationMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-muted-foreground text-center px-4">
+                    <p className="font-manrope text-sm text-muted-foreground text-center px-4">
                       Your conversation will appear here once you start talking with Solin
                     </p>
                   </div>
@@ -2799,13 +2799,13 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
                       }`}
                     >
                       <div className="flex items-start gap-2">
-                        <div className="text-xs font-semibold" style={{ 
+                        <div className="font-manrope text-xs font-semibold" style={{ 
                           color: msg.role === 'user' ? '#0066FF' : '#8b5cf6' 
                         }}>
                           {msg.role === 'user' ? 'You' : 'Solin'}
                         </div>
                       </div>
-                      <p className="text-sm text-foreground mt-1 leading-relaxed">
+                      <p className="font-manrope text-sm text-foreground mt-1 leading-relaxed">
                         {msg.text}
                       </p>
                     </div>

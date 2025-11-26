@@ -129,11 +129,11 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+          <h3 className="font-manrope text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
             <Tag className="w-5 h-5" />
             Conversation Insights
           </h3>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="font-manrope text-xs text-muted-foreground mt-1">
             Tags extracted from your conversation
           </p>
         </div>
@@ -143,9 +143,9 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       <Card className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-foreground">🏷️ Tags Extracted</h4>
+            <h4 className="font-manrope text-sm font-medium text-foreground">🏷️ Tags Extracted</h4>
             {isExtracting && (
-              <span className="text-xs text-muted-foreground animate-pulse">
+              <span className="font-manrope text-xs text-muted-foreground animate-pulse">
                 Analyzing...
               </span>
             )}
@@ -154,13 +154,13 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
           {error ? (
             <div className="text-center py-8 text-destructive">
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">{error}</p>
+              <p className="font-manrope text-sm">{error}</p>
             </div>
           ) : extractedTags.length === 0 && !isExtracting ? (
             <div className="text-center py-8 text-muted-foreground">
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No tags extracted yet</p>
-              <p className="text-xs mt-1">Start a conversation to see insights</p>
+              <p className="font-manrope text-sm">No tags extracted yet</p>
+              <p className="font-manrope text-xs mt-1">Start a conversation to see insights</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -178,7 +178,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
                   >
                     <div className="flex items-center gap-2">
                       {getCategoryIcon(tag.category)}
-                      <span className="font-medium text-sm">{tag.name}</span>
+                      <span className="font-manrope font-medium text-sm">{tag.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge 
@@ -208,12 +208,12 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
 
       {/* Sentiment Analysis (Placeholder) */}
       <Card className="p-4 flex-1 flex flex-col">
-        <h4 className="text-sm font-medium text-foreground mb-3 flex items-center gap-2">
+        <h4 className="font-manrope text-sm font-medium text-foreground mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />
           Sentiment Analysis
         </h4>
         <div className="flex-1 bg-gradient-to-r from-green-100 via-yellow-100 to-green-100 rounded-lg flex items-center justify-center">
-          <p className="text-xs text-muted-foreground">
+          <p className="font-manrope text-xs text-muted-foreground">
             Sentiment analysis coming soon
           </p>
         </div>
