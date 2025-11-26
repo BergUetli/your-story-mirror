@@ -198,23 +198,6 @@ class VoiceService {
       this.currentAudio.addEventListener('canplay', () => console.log('✅ Audio can play'));
       this.currentAudio.addEventListener('error', (e) => console.error('❌ Audio element error:', e));
       
-      // Notify registered callbacks about the new audio element
-      if (this.audioStreamCallbacks.length > 0) {
-        console.log(`🎵 Notifying ${this.audioStreamCallbacks.length} callback(s) about new ElevenLabs audio element`);
-        this.audioStreamCallbacks.forEach(callback => {
-          try {
-            console.log('📢 Calling audio stream callback with audio element');
-            callback(this.currentAudio!);
-            console.log('✅ Audio stream callback completed successfully');
-          } catch (error) {
-            console.error('❌ Audio stream callback error:', error);
-            console.error('❌ Error details:', error);
-          }
-        });
-      } else {
-        console.warn('⚠️ No audio stream callbacks registered - recording may be microphone-only');
-      }
-      
       console.log('✅ Playing ElevenLabs audio');
       
       return new Promise((resolve, reject) => {
@@ -229,6 +212,25 @@ class VoiceService {
             URL.revokeObjectURL(audioUrl);
             reject(new Error(`Audio playback failed: ${e instanceof Event ? e.type : 'unknown error'}`));
           };
+          
+          // CRITICAL: Notify callbacks BEFORE play() so they can capture with createMediaElementSource
+          // createMediaElementSource can only be called on an audio element that hasn't started playing
+          if (this.audioStreamCallbacks.length > 0) {
+            console.log(`🎵 Notifying ${this.audioStreamCallbacks.length} callback(s) about new ElevenLabs audio element (BEFORE play)`);
+            this.audioStreamCallbacks.forEach(callback => {
+              try {
+                console.log('📢 Calling audio stream callback with audio element');
+                callback(this.currentAudio!);
+                console.log('✅ Audio stream callback completed successfully');
+              } catch (error) {
+                console.error('❌ Audio stream callback error:', error);
+                console.error('❌ Error details:', error);
+              }
+            });
+          } else {
+            console.warn('⚠️ No audio stream callbacks registered - recording may be microphone-only');
+          }
+          
           this.currentAudio.play().catch(reject);
         }
       });

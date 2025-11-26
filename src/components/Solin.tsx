@@ -503,12 +503,12 @@ const Solin: React.FC<SolinProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({
-        title: "🎙️ Complete Conversation Recording",
+        title: "🎙️ Conversation Recording Active",
         description: user?.id 
-          ? "Recording both your voice and Solin's responses! When prompted, please share tab audio to capture AI voice." 
-          : "Recording your conversation as a guest session. Share tab audio when prompted.",
+          ? "Recording both your voice and Solin's responses automatically!" 
+          : "Recording your conversation as a guest session.",
         variant: "default",
-        duration: 6000
+        duration: 4000
       });
     } catch (error) {
       console.error('❌ Failed to start conversation recording:', error);

@@ -144,17 +144,16 @@ export class ConversationRecordingService {
       // Microphone already routed through compressor/gain to mixer above
 
       // ENHANCED: Register for ElevenLabs audio stream notifications (primary method)
+      // This captures audio directly from voiceService when Solin speaks - NO permission prompt needed
       this.registerElevenLabsAudioCapture();
       
-      // Try to capture system audio (this has browser limitations - fallback method)
-      await this.setupSystemAudioCapture();
+      // NOTE: We intentionally DO NOT call setupSystemAudioCapture() here
+      // That method uses getDisplayMedia which prompts user for screen/tab sharing permission
+      // Instead, we rely on captureElevenLabsAudioElement which uses createMediaElementSource
+      // to capture audio directly without any permission prompt
       
       // Also try to hook into any existing audio elements on the page (fallback method)
       this.attemptAudioElementCapture();
-
-      // NOTE: Avoid prompting for screen/tab sharing by default to keep UX clean
-      // If full tab-audio capture is ever needed, call setupSystemAudioCapture() explicitly from UI.
-      // this.setupSystemAudioCapture();
 
       // Set up recording output
       const destination = audioContext.createMediaStreamDestination();
@@ -371,6 +370,12 @@ export class ConversationRecordingService {
 
   /**
    * Capture and connect ElevenLabs audio element to recording mixer
+   * 
+   * KEY INSIGHT: This method is called BEFORE play() in voiceService.ts
+   * This is critical because createMediaElementSource() must be called
+   * before the audio starts playing.
+   * 
+   * Each TTS response creates a NEW HTMLAudioElement, so we capture each one.
    */
   private captureElevenLabsAudioElement(audioElement: HTMLAudioElement): void {
     if (!this.currentSession || !this.currentSession.isRecording) {
@@ -378,96 +383,86 @@ export class ConversationRecordingService {
       return;
     }
 
+    // Track captured elements to avoid double-capture
+    const capturedElements = (this.currentSession as any).capturedAudioElements || new WeakSet();
+    (this.currentSession as any).capturedAudioElements = capturedElements;
+
+    if (capturedElements.has(audioElement)) {
+      console.log('ℹ️ Audio element already captured, skipping');
+      return;
+    }
+
     try {
       console.log('🎵 Capturing ElevenLabs audio element for recording...', {
         src: audioElement.src?.substring(0, 50) + '...',
-        duration: audioElement.duration || 'unknown',
         readyState: audioElement.readyState,
         currentTime: audioElement.currentTime,
         paused: audioElement.paused
       });
 
-      // CRITICAL FIX: Check if we've already captured this audio element
-      // Allow capturing multiple ElevenLabs audio elements (each TTS creates a new element)
-      console.log('ℹ️ Capturing ElevenLabs audio element (multiple sources supported)');
+      // Mark element as captured immediately to prevent double-capture
+      capturedElements.add(audioElement);
 
-      // CRITICAL FIX: Wait for audio to be ready before capturing
-      const captureWhenReady = () => {
-        try {
-          console.log('🎵 Audio ready state:', audioElement.readyState, '(need at least 2 for HAVE_CURRENT_DATA)');
-          
-          // Create MediaStream from the audio element
-          const elevenLabsSource = this.currentSession!.audioContext.createMediaElementSource(audioElement);
-          
-          // Create gain node for AI voice control
-          const elevenLabsGain = this.currentSession!.audioContext.createGain();
-          elevenLabsGain.gain.value = 0.8; // Slightly lower to prevent clipping when mixed with microphone
-          
-          // Connect to mixer (CRITICAL: This adds AI voice to the recording)
-          elevenLabsSource.connect(elevenLabsGain);
-          elevenLabsGain.connect(this.currentSession!.mixerNode);
-          
-          // IMPORTANT: Also connect back to destination so audio still plays normally
-          elevenLabsSource.connect(this.currentSession!.audioContext.destination);
-          
-          // Store the source for cleanup
-          this.currentSession!.speakerSource = elevenLabsSource;
-          
-          console.log('✅ ElevenLabs audio element captured and connected!');
-          console.log('🎭 Audio routing: ElevenLabs AudioElement → elevenLabsGain → mixerNode → MediaRecorder');
-          console.log('🎧 Audio routing: ElevenLabs AudioElement → audioContext.destination (for playback)');
-          
-          toast({
-            title: "🎵✨ Complete Recording Active",
-            description: "Both your voice AND Solin's responses are being recorded!",
-            variant: "default"
-          });
-        } catch (innerError) {
-          console.error('❌ Failed in captureWhenReady:', innerError);
-          throw innerError;
-        }
-      };
-
-      // If audio is ready now, capture immediately
-      if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA or better
-        console.log('✅ Audio element ready immediately, capturing now');
-        captureWhenReady();
-      } else {
-        // Wait for audio to be ready
-        console.log('⏳ Audio not ready yet, waiting for canplay event...');
-        audioElement.addEventListener('canplay', () => {
-          console.log('✅ Audio canplay event fired, capturing now');
-          captureWhenReady();
-        }, { once: true });
-        
-        // Also try on loadeddata as backup
-        audioElement.addEventListener('loadeddata', () => {
-          console.log('✅ Audio loadeddata event fired, attempting capture');
-          if (!this.currentSession?.speakerSource) { // Only if not already captured
-            captureWhenReady();
-          }
-        }, { once: true });
+      // CRITICAL: createMediaElementSource must be called BEFORE play()
+      // The voiceService now calls our callback before calling play()
+      
+      // Create MediaElementSource - this "hijacks" the audio output
+      // The audio will no longer play through default speakers unless we reconnect it
+      const elevenLabsSource = this.currentSession!.audioContext.createMediaElementSource(audioElement);
+      
+      // Create gain node for AI voice level control
+      const elevenLabsGain = this.currentSession!.audioContext.createGain();
+      elevenLabsGain.gain.value = 1.0; // Full volume for AI voice
+      
+      // Connect to recording mixer (this captures the audio)
+      elevenLabsSource.connect(elevenLabsGain);
+      elevenLabsGain.connect(this.currentSession!.mixerNode);
+      
+      // CRITICAL: Also connect to audio destination so user can still HEAR the audio
+      // Without this, the audio would be captured but not played!
+      elevenLabsSource.connect(this.currentSession!.audioContext.destination);
+      
+      console.log('✅ ElevenLabs audio element captured and connected!');
+      console.log('🎭 Audio routing:');
+      console.log('   ElevenLabs AudioElement');
+      console.log('   ├── → elevenLabsGain → mixerNode → MediaRecorder (for recording)');
+      console.log('   └── → audioContext.destination (for playback)');
+      
+      // Only show toast for first capture to avoid spam
+      const captureCount = (this.currentSession as any).elevenLabsCaptureCount || 0;
+      (this.currentSession as any).elevenLabsCaptureCount = captureCount + 1;
+      
+      if (captureCount === 0) {
+        toast({
+          title: "🎵✨ Complete Recording Active",
+          description: "Both your voice AND Solin's responses are being recorded!",
+          variant: "default"
+        });
       }
 
     } catch (error) {
       console.error('❌ Failed to capture ElevenLabs audio element:', error);
-      console.error('❌ Full error:', error);
       
       // Provide user-friendly error message
       let errorMessage = 'Failed to capture AI voice';
       if (error instanceof Error) {
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error stack:', error.stack);
-        if (error.message.includes('already')) {
-          errorMessage = 'Audio source already in use - may still record microphone only';
+        console.error('❌ Error details:', error.message);
+        if (error.message.includes('already been connected') || error.message.includes('already')) {
+          // This happens if createMediaElementSource was already called on this element
+          errorMessage = 'Audio already being captured';
+          console.log('ℹ️ Audio element was already connected - this is OK');
+          return; // Don't show error toast for this case
         } else if (error.message.includes('InvalidStateError')) {
-          errorMessage = 'Audio element not ready yet - will retry when audio plays';
+          errorMessage = 'Audio element in invalid state - will try next response';
+        } else if (error.message.includes('cross-origin') || error.message.includes('CORS')) {
+          errorMessage = 'CORS restriction on audio - microphone only';
         }
       }
       
+      // Only show toast for actual errors (not already-connected case)
       toast({
-        title: "⚠️ ElevenLabs Audio Capture Issue",
-        description: errorMessage + '. Recording will continue with microphone only.',
+        title: "⚠️ AI Voice Capture Issue",
+        description: errorMessage + '. Recording continues with microphone.',
         variant: "default"
       });
     }
