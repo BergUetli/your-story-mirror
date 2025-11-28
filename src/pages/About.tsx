@@ -32,7 +32,7 @@ const About = () => {
           
           <h1 className="font-manrope text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight">
             <span className="text-white">
-              Your wisdom, accessible across generations.
+              Preserving your memories for future generations.
             </span>
           </h1>
           
