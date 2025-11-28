@@ -113,7 +113,7 @@ const About = () => {
           <div className="inline-block px-6 py-3 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20">
             🇨🇭 Your Swiss Memory Vault
           </div>
-          <h2 className="font-manrope text-5xl font-bold">Built on Swiss Principles</h2>
+          <h2 className="font-manrope text-5xl font-bold">Built like a Swiss Bank Vault</h2>
           <p className="font-manrope text-xl text-muted-foreground max-w-3xl mx-auto">
             Your memories are stored on dedicated servers in Switzerland—protected by the world&apos;s strongest privacy laws, designed to last for generations
           </p>
