@@ -20,13 +20,16 @@
  */
 
 import { Button } from '@/components/ui/button';
-import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon } from 'lucide-react';
+import { Clock, Info, HelpCircle, Sparkles, Users, Shield, BookOpen, LogOut, Database, Settings as SettingsIcon, Search, UserPlus } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthModal } from '@/components/auth/AuthModal';
 import SolinLogo from '@/components/SolinLogo';
+import { UserSearchDialog } from '@/components/social/UserSearchDialog';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * MAIN NAVIGATION COMPONENT
@@ -39,6 +42,45 @@ const Navigation = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
+
+  // Load pending connections count
+  useEffect(() => {
+    if (!user?.id) {
+      setPendingConnectionsCount(0);
+      return;
+    }
+
+    const loadPendingCount = async () => {
+      const { count } = await supabase
+        .from('user_connections')
+        .select('*', { count: 'exact', head: true })
+        .eq('addressee_id', user.id)
+        .eq('status', 'pending');
+      
+      setPendingConnectionsCount(count || 0);
+    };
+
+    loadPendingCount();
+
+    // Subscribe to changes
+    const channel = supabase
+      .channel('connection-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_connections',
+        filter: `addressee_id=eq.${user.id}`
+      }, () => {
+        loadPendingCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
   
   /**
    * ALL NAVIGATION ITEMS
@@ -49,6 +91,7 @@ const Navigation = () => {
     { path: '/how-it-works', icon: HelpCircle, label: 'How It Works' },
     { path: '/timeline', icon: Clock, label: 'Timeline' },
     { path: '/archive', icon: Database, label: 'Archive' },
+    { path: '/connections', icon: UserPlus, label: 'Connections', badge: pendingConnectionsCount },
     { path: '/story', icon: BookOpen, label: 'Story' },
     { path: '/reconstruction', icon: Sparkles, label: 'Reconstruction' },
     { path: '/identities', icon: Users, label: 'Identities' },
@@ -149,7 +192,20 @@ const Navigation = () => {
               UBS-style clean navigation with equal spacing
             */}
             <div className="flex items-center flex-1 justify-end gap-1 relative z-10">
-              {navItems.map(({ path, icon: Icon, label }) => (
+              {/* Search Button */}
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSearchOpen(true)}
+                  className="font-manrope font-medium flex items-center gap-1.5 transition-colors duration-200 text-sm px-3 py-2 h-10 text-foreground/80 hover:text-foreground hover:bg-accent/10 pointer-events-auto cursor-pointer"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+              )}
+              
+              {navItems.map(({ path, icon: Icon, label, badge }) => (
                 <Link 
                   key={path} 
                   to={path} 
@@ -168,6 +224,11 @@ const Navigation = () => {
                     style={{ pointerEvents: 'auto' }}
                   >
                     <span>{label}</span>
+                    {badge && badge > 0 && (
+                      <Badge variant="destructive" className="ml-1 h-5 min-w-5 text-xs px-1">
+                        {badge}
+                      </Badge>
+                    )}
                   </Button>
                 </Link>
               ))}
@@ -237,6 +298,9 @@ const Navigation = () => {
       
       {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
+      
+      {/* User Search Dialog */}
+      <UserSearchDialog open={isSearchOpen} onOpenChange={setIsSearchOpen} />
     </>
   );
 };

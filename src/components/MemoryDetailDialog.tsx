@@ -3,13 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2, Play, Pause, Search } from 'lucide-react';
+import { Calendar, MapPin, Upload, X, FileAudio, FileVideo, Image as ImageIcon, Edit2, Save, Trash2, Play, Pause, Search, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { TagsInput } from '@/components/TagsInput';
 import { getSignedUrl } from '@/lib/storage';
 import { UnsplashImageSearch } from '@/components/UnsplashImageSearch';
+import { ShareMemoryDialog } from '@/components/social/ShareMemoryDialog';
+import { MemoryPerspectives } from '@/components/social/MemoryPerspectives';
 
 interface MemoryDetailDialogProps {
   memory: any;
@@ -48,6 +50,9 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
   const [loadingRecordings, setLoadingRecordings] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  
+  // Share dialog state
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   // Background image feature removed - images shown only as attachments
 
@@ -470,6 +475,15 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => setShowShareDialog(true)}
+                  className="gap-2 border-2 border-blue-200 text-blue-600 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md font-medium"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Share
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setIsEditing(true)}
                   className="gap-2 border-2 border-primary/40 text-primary hover:border-primary hover:bg-primary/10 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md font-medium"
                 >
@@ -868,6 +882,15 @@ export const MemoryDetailDialog = ({ memory, open, onOpenChange, onUpdate }: Mem
             setUploading(false);
           }
         }}
+      />
+
+      {/* Share Memory Dialog */}
+      <ShareMemoryDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        memoryId={memory.id}
+        memoryTitle={memory.title}
+        onSuccess={onUpdate}
       />
 
       {/* Image Enlargement Dialog */}
