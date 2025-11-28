@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Journal from "./pages/Journal";
 import Visitor from "./pages/Visitor";
 import Archive from "./pages/Archive";
+import Connections from "./pages/Connections";
 
 import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
@@ -102,6 +103,11 @@ const AppContent = () => {
         <Route path="/settings" element={
           <ProtectedRoute>
             <Settings />
+          </ProtectedRoute>
+        } />
+        <Route path="/connections" element={
+          <ProtectedRoute>
+            <Connections />
           </ProtectedRoute>
         } />
         <Route path="/admin" element={

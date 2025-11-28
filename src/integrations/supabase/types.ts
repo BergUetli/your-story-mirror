@@ -110,6 +110,7 @@ export type Database = {
           metadata: Json | null
           needs_review: boolean | null
           recipient: string | null
+          shared_with_users: string[] | null
           show_on_timeline: boolean | null
           source_type: string | null
           status: string | null
@@ -119,6 +120,7 @@ export type Database = {
           total_chunks: number | null
           updated_at: string
           user_id: string
+          visibility: string | null
         }
         Insert: {
           chunk_sequence?: number | null
@@ -134,6 +136,7 @@ export type Database = {
           metadata?: Json | null
           needs_review?: boolean | null
           recipient?: string | null
+          shared_with_users?: string[] | null
           show_on_timeline?: boolean | null
           source_type?: string | null
           status?: string | null
@@ -143,6 +146,7 @@ export type Database = {
           total_chunks?: number | null
           updated_at?: string
           user_id: string
+          visibility?: string | null
         }
         Update: {
           chunk_sequence?: number | null
@@ -158,6 +162,7 @@ export type Database = {
           metadata?: Json | null
           needs_review?: boolean | null
           recipient?: string | null
+          shared_with_users?: string[] | null
           show_on_timeline?: boolean | null
           source_type?: string | null
           status?: string | null
@@ -167,6 +172,7 @@ export type Database = {
           total_chunks?: number | null
           updated_at?: string
           user_id?: string
+          visibility?: string | null
         }
         Relationships: []
       }
@@ -237,6 +243,94 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "memory_insights_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_perspectives: {
+        Row: {
+          created_at: string
+          id: string
+          memory_id: string
+          perspective_text: string
+          perspective_title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memory_id: string
+          perspective_text: string
+          perspective_title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memory_id?: string
+          perspective_text?: string
+          perspective_title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_perspectives_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_shares: {
+        Row: {
+          change_request_at: string | null
+          change_request_message: string | null
+          created_at: string
+          id: string
+          memory_id: string
+          recipient_id: string
+          responded_at: string | null
+          share_message: string | null
+          sharer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          change_request_at?: string | null
+          change_request_message?: string | null
+          created_at?: string
+          id?: string
+          memory_id: string
+          recipient_id: string
+          responded_at?: string | null
+          share_message?: string | null
+          sharer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          change_request_at?: string | null
+          change_request_message?: string | null
+          created_at?: string
+          id?: string
+          memory_id?: string
+          recipient_id?: string
+          responded_at?: string | null
+          share_message?: string | null
+          sharer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_shares_memory_id_fkey"
             columns: ["memory_id"]
             isOneToOne: false
             referencedRelation: "memories"
@@ -415,6 +509,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_connections: {
+        Row: {
+          accepted_at: string | null
+          addressee_id: string
+          created_at: string
+          id: string
+          relationship_label: string | null
+          relationship_type: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          addressee_id: string
+          created_at?: string
+          id?: string
+          relationship_label?: string | null
+          relationship_type: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          relationship_label?: string | null
+          relationship_type?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_phone_numbers: {
         Row: {
           created_at: string
@@ -461,6 +591,7 @@ export type Database = {
           created_at: string
           cultural_background: string[] | null
           cultural_influences: string[] | null
+          display_name: string | null
           education_background: string | null
           family_members: Json | null
           fears_concerns: string[] | null
@@ -469,6 +600,7 @@ export type Database = {
           hobbies_interests: string[] | null
           hometown: string | null
           id: string
+          is_searchable: boolean | null
           languages_spoken: string[] | null
           life_goals: string[] | null
           location: string | null
@@ -498,6 +630,7 @@ export type Database = {
           created_at?: string
           cultural_background?: string[] | null
           cultural_influences?: string[] | null
+          display_name?: string | null
           education_background?: string | null
           family_members?: Json | null
           fears_concerns?: string[] | null
@@ -506,6 +639,7 @@ export type Database = {
           hobbies_interests?: string[] | null
           hometown?: string | null
           id?: string
+          is_searchable?: boolean | null
           languages_spoken?: string[] | null
           life_goals?: string[] | null
           location?: string | null
@@ -535,6 +669,7 @@ export type Database = {
           created_at?: string
           cultural_background?: string[] | null
           cultural_influences?: string[] | null
+          display_name?: string | null
           education_background?: string | null
           family_members?: Json | null
           fears_concerns?: string[] | null
@@ -543,6 +678,7 @@ export type Database = {
           hobbies_interests?: string[] | null
           hometown?: string | null
           id?: string
+          is_searchable?: boolean | null
           languages_spoken?: string[] | null
           life_goals?: string[] | null
           location?: string | null
@@ -863,9 +999,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_users_connected: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: boolean
+      }
       find_or_create_user_by_phone: {
         Args: { p_phone_number: string; p_provider?: string }
         Returns: string
+      }
+      get_connected_users: {
+        Args: { target_user_id: string }
+        Returns: {
+          relationship_label: string
+          relationship_type: string
+          user_id: string
+        }[]
       }
       get_or_create_whatsapp_session: {
         Args: {
@@ -881,6 +1029,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_users: {
+        Args: { current_user_id: string; search_query: string }
+        Returns: {
+          connection_status: string
+          display_name: string
+          is_connected: boolean
+          location: string
+          preferred_name: string
+          user_id: string
+        }[]
       }
       user_owns_memory: { Args: { memory_id: string }; Returns: boolean }
     }
