@@ -101,14 +101,29 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   }, []);
 
   // Fetch tags from database when NOT in live conversation
+  // CRITICAL: Use conversationId prop (not isLive state) to detect active voice sessions
+  // This prevents database operations during voice agent connections
   useEffect(() => {
-    // Skip if in live conversation or already fetched
+    // IMMEDIATELY skip if there's an active conversation - prevents interference with voice agent
+    if (conversationId) {
+      console.log('⏭️ ConversationInsights: Skipping DB fetch - active conversation:', conversationId);
+      return;
+    }
+    
+    // Skip if in live conversation state or already fetched
     if (isLive || hasFetchedRef.current) return;
     
     // Skip if no user or already have tags
     if (!user?.id || tags.length > 0 || dbTags.length > 0) return;
 
-    const fetchConversationTags = async () => {
+    // Delay fetch to ensure it doesn't run during conversation startup
+    const timeoutId = setTimeout(async () => {
+      // Double-check conversation state before executing
+      if (conversationId || isLive) {
+        console.log('⏭️ ConversationInsights: Cancelled DB fetch - conversation started');
+        return;
+      }
+      
       hasFetchedRef.current = true;
       
       try {
@@ -120,6 +135,12 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
           .limit(1);
 
         if (fetchError) throw fetchError;
+
+        // Final check before state update
+        if (conversationId || isLive) {
+          console.log('⏭️ ConversationInsights: Skipped state update - conversation active');
+          return;
+        }
 
         if (recordings && recordings.length > 0 && recordings[0].topics) {
           const topics = recordings[0].topics as string[];
@@ -146,10 +167,10 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         console.error('Error fetching conversation tags:', err);
         setError('Failed to load conversation insights');
       }
-    };
+    }, 2000); // 2 second delay to allow conversation to start first
 
-    fetchConversationTags();
-  }, [isLive, tags, user?.id, dbTags.length]);
+    return () => clearTimeout(timeoutId);
+  }, [conversationId, isLive, tags, user?.id, dbTags.length]);
 
   // Determine which tags to display
   const displayTags = liveTags.length > 0 ? liveTags : dbTags;
