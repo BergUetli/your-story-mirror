@@ -827,7 +827,29 @@ const Index = () => {
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
   const [selectedMode, setSelectedMode] = useState<'present' | 'past' | 'future' | 'wisdom'>('past');
   
-  // Auto-scroll transcript to bottom when new messages arrive
+  // Ref to accumulate AI transcript deltas without causing re-renders
+  // Only update state when the transcript is complete (.done event)
+  const pendingAiTranscriptRef = useRef<string>('');
+  const transcriptUpdateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Debounced function to update transcript state - batches rapid updates
+  const flushPendingTranscript = useCallback(() => {
+    if (pendingAiTranscriptRef.current) {
+      const text = pendingAiTranscriptRef.current;
+      pendingAiTranscriptRef.current = '';
+      setConversationMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'ai') {
+          // Update existing AI message
+          return [...prev.slice(0, -1), { role: 'ai', text }];
+        }
+        // Add new AI message
+        return [...prev, { role: 'ai', text }];
+      });
+    }
+  }, []);
+  
+  // Auto-scroll transcript to bottom when new messages arrive (debounced)
   useEffect(() => {
     if (transcriptScrollRef.current) {
       setTimeout(() => {
@@ -2045,19 +2067,34 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
         if (msg.type === 'response.audio_transcript.delta' && msg.delta) {
           transcriptText = msg.delta;
           speaker = 'ai';
-          console.log('📝 AI transcript delta captured:', transcriptText);
+          // Accumulate deltas in ref - NO state update here to avoid re-renders during speech
+          pendingAiTranscriptRef.current += msg.delta;
           
-          setConversationMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last && last.role === 'ai') {
-              return [...prev.slice(0, -1), { role: 'ai', text: last.text + msg.delta }];
-            }
-            return [...prev, { role: 'ai', text: msg.delta }];
-          });
+          // Schedule a debounced UI update (500ms after last delta)
+          if (transcriptUpdateTimerRef.current) {
+            clearTimeout(transcriptUpdateTimerRef.current);
+          }
+          transcriptUpdateTimerRef.current = setTimeout(() => {
+            flushPendingTranscript();
+          }, 500);
         } else if (msg.type === 'response.audio_transcript.done' && msg.transcript) {
           transcriptText = msg.transcript;
           speaker = 'ai';
           console.log('📝 AI transcript complete captured:', transcriptText);
+          
+          // Clear any pending timer and update with final transcript
+          if (transcriptUpdateTimerRef.current) {
+            clearTimeout(transcriptUpdateTimerRef.current);
+            transcriptUpdateTimerRef.current = null;
+          }
+          pendingAiTranscriptRef.current = ''; // Clear pending since we have final
+          setConversationMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === 'ai') {
+              return [...prev.slice(0, -1), { role: 'ai', text: msg.transcript }];
+            }
+            return [...prev, { role: 'ai', text: msg.transcript }];
+          });
         } else if (msg.source === 'user' && msg.message) {
           transcriptText = msg.message;
           speaker = 'user';
