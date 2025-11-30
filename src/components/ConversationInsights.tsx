@@ -87,14 +87,28 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Refs for debouncing - ensures extraction never blocks voice agent
+  // Refs for debouncing and preventing duplicate fetches
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedLengthRef = useRef(0);
-
-  // Debounced async extraction - runs independently of voice agent
+  const isFetchingRef = useRef(false);
+  const messagesRef = useRef(messages);
+  
+  // Keep messages ref updated without triggering effects
   useEffect(() => {
-    // Only process if we have new messages
-    if (messages.length === 0 || messages.length === lastProcessedLengthRef.current) {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  // Debounced async extraction - completely decoupled from voice agent
+  // Uses refs to avoid triggering on every message update
+  useEffect(() => {
+    // Only process if we have messages
+    if (messages.length === 0) {
+      lastProcessedLengthRef.current = 0;
+      return;
+    }
+    
+    // Skip if we've already processed this length
+    if (messages.length === lastProcessedLengthRef.current) {
       return;
     }
 
@@ -103,41 +117,57 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Schedule extraction with debounce - never blocks the main thread
+    // Schedule extraction with longer debounce to reduce frequency
     debounceTimerRef.current = setTimeout(() => {
-      // Use requestIdleCallback if available, otherwise setTimeout
+      // Double-check messages haven't been cleared
+      if (messagesRef.current.length === 0) return;
+      
+      // Use requestIdleCallback if available for zero impact on main thread
       const processExtraction = () => {
-        const extracted = extractTagsFromMessages(messages);
-        lastProcessedLengthRef.current = messages.length;
-        
-        if (extracted.length > 0) {
-          setExtractedTags(extracted);
+        try {
+          const currentMessages = messagesRef.current;
+          if (currentMessages.length === 0) return;
+          
+          const extracted = extractTagsFromMessages(currentMessages);
+          lastProcessedLengthRef.current = currentMessages.length;
+          
+          if (extracted.length > 0) {
+            setExtractedTags(extracted);
+          }
+        } catch (err) {
+          console.warn('Tag extraction error (non-blocking):', err);
         }
       };
 
       if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(processExtraction, { timeout: 2000 });
+        (window as any).requestIdleCallback(processExtraction, { timeout: 3000 });
       } else {
         setTimeout(processExtraction, 0);
       }
-    }, 500); // 500ms debounce
+    }, 1000); // 1000ms debounce - longer to reduce frequency
 
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [messages]);
+  }, [messages.length]); // Only depend on length, not messages array
 
   // Determine which tags to display
   const displayTags = extractedTags.length > 0 ? extractedTags : dbTags;
   const isLiveExtracting = messages.length > 0;
 
   // Fetch tags from voice_recordings table (fallback when no live messages)
+  // Only runs once on mount, not on every message change
   useEffect(() => {
     const fetchConversationTags = async () => {
-      if (!user?.id || tags.length > 0 || messages.length > 0) return;
+      // Skip if already fetching, no user, or we have live messages/tags
+      if (isFetchingRef.current || !user?.id || tags.length > 0) return;
       
+      // Check current messages via ref (avoids stale closure)
+      if (messagesRef.current.length > 0) return;
+      
+      isFetchingRef.current = true;
       setIsExtracting(true);
       setError(null);
       
@@ -177,11 +207,12 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         setError('Failed to load conversation insights');
       } finally {
         setIsExtracting(false);
+        isFetchingRef.current = false;
       }
     };
 
     fetchConversationTags();
-  }, [conversationId, tags, user?.id, messages.length]);
+  }, [conversationId, tags, user?.id]); // Removed messages.length dependency
 
   const getCategoryColor = (category: ExtractedTag['category']) => {
     const colors = {
