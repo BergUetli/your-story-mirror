@@ -2846,6 +2846,7 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
             <div className="relative z-10 flex flex-col h-full">
               <ConversationInsights 
                 conversationId={isConnected ? 'current' : undefined}
+                messages={conversationMessages}
               />
             </div>
           </div>
