@@ -1,61 +1,106 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tag, TrendingUp, Calendar, MapPin, User } from 'lucide-react';
+import { Tag, TrendingUp, Calendar, MapPin, User, Heart, Briefcase, Home, Plane } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ExtractedTag {
   name: string;
-  category: 'people' | 'places' | 'emotions' | 'activities' | 'family' | 'memories';
+  category: 'people' | 'places' | 'emotions' | 'activities' | 'family' | 'memories' | 'work' | 'travel';
   count: number;
 }
 
-// Map backend topics to frontend categories
-const TOPIC_TO_CATEGORY_MAP: Record<string, ExtractedTag['category']> = {
-  family: 'family',
-  work: 'activities',
-  travel: 'places',
-  food: 'activities',
-  health: 'activities',
-  hobbies: 'activities',
-  friends: 'people',
-  education: 'activities',
-  home: 'places',
-  emotions: 'emotions',
+interface ConversationMessage {
+  role: string;
+  text: string;
+}
+
+// Keywords for real-time extraction
+const CATEGORY_KEYWORDS: Record<ExtractedTag['category'], string[]> = {
+  family: ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'grandma', 'grandpa', 'grandmother', 'grandfather', 'aunt', 'uncle', 'cousin', 'family', 'parent', 'child', 'son', 'daughter', 'wife', 'husband', 'spouse'],
+  people: ['friend', 'colleague', 'neighbor', 'boss', 'teacher', 'doctor', 'mentor', 'partner'],
+  places: ['home', 'house', 'school', 'university', 'college', 'office', 'hospital', 'park', 'beach', 'mountain', 'city', 'country', 'town', 'village', 'restaurant', 'cafe'],
+  emotions: ['happy', 'sad', 'angry', 'excited', 'nervous', 'anxious', 'proud', 'grateful', 'love', 'joy', 'fear', 'hope', 'worried', 'peaceful', 'content', 'frustrated', 'surprised'],
+  activities: ['birthday', 'wedding', 'graduation', 'holiday', 'vacation', 'celebration', 'party', 'dinner', 'lunch', 'breakfast', 'meeting', 'event', 'ceremony'],
+  memories: ['remember', 'childhood', 'growing up', 'years ago', 'back then', 'memory', 'memories', 'experience', 'story', 'moment'],
+  work: ['job', 'career', 'work', 'project', 'business', 'company', 'promotion', 'interview', 'meeting', 'presentation'],
+  travel: ['trip', 'travel', 'vacation', 'flight', 'journey', 'adventure', 'explore', 'visit', 'tour']
 };
 
 interface ConversationInsightsProps {
   conversationId?: string;
   tags?: ExtractedTag[];
+  messages?: ConversationMessage[];
 }
 
 /**
  * ConversationInsights Component
  * 
- * Displays color-coded tags extracted from conversations post-call
+ * Displays color-coded tags extracted from conversations in real-time
  * Shows frequency counts and allows filtering of transcript
  */
 export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   conversationId,
-  tags = []
+  tags = [],
+  messages = []
 }) => {
   const { user } = useAuth();
-  const [extractedTags, setExtractedTags] = useState<ExtractedTag[]>(tags);
+  const [dbTags, setDbTags] = useState<ExtractedTag[]>(tags);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch real tags from voice_recordings table
+  // Extract tags from messages in real-time
+  const extractedTags = useMemo(() => {
+    if (messages.length === 0) return dbTags;
+
+    const tagCounts: Record<string, { category: ExtractedTag['category']; count: number }> = {};
+
+    // Combine all message text
+    const allText = messages.map(m => m.text.toLowerCase()).join(' ');
+
+    // Extract keywords for each category
+    Object.entries(CATEGORY_KEYWORDS).forEach(([category, keywords]) => {
+      keywords.forEach(keyword => {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        const matches = allText.match(regex);
+        if (matches && matches.length > 0) {
+          const tagName = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+          if (tagCounts[tagName]) {
+            tagCounts[tagName].count += matches.length;
+          } else {
+            tagCounts[tagName] = {
+              category: category as ExtractedTag['category'],
+              count: matches.length
+            };
+          }
+        }
+      });
+    });
+
+    // Convert to array and sort by count
+    const extracted: ExtractedTag[] = Object.entries(tagCounts)
+      .map(([name, data]) => ({
+        name,
+        category: data.category,
+        count: data.count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 tags
+
+    return extracted.length > 0 ? extracted : dbTags;
+  }, [messages, dbTags]);
+
+  // Fetch tags from voice_recordings table (fallback when no live messages)
   useEffect(() => {
     const fetchConversationTags = async () => {
-      if (!user?.id || tags.length > 0) return;
+      if (!user?.id || tags.length > 0 || messages.length > 0) return;
       
       setIsExtracting(true);
       setError(null);
       
       try {
-        // Fetch the most recent conversation recording for this user
         const { data: recordings, error: fetchError } = await supabase
           .from('voice_recordings')
           .select('topics, transcript_text')
@@ -68,14 +113,12 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         if (recordings && recordings.length > 0 && recordings[0].topics) {
           const topics = recordings[0].topics as string[];
           
-          // Convert backend topics to frontend tags with categories
           const tagsFromTopics: ExtractedTag[] = topics.map(topic => ({
             name: topic.charAt(0).toUpperCase() + topic.slice(1),
-            category: TOPIC_TO_CATEGORY_MAP[topic] || 'activities',
-            count: 1 // Will be updated with actual frequency in future
+            category: 'activities' as ExtractedTag['category'],
+            count: 1
           }));
 
-          // Aggregate duplicate topics
           const aggregated = tagsFromTopics.reduce((acc, tag) => {
             const existing = acc.find(t => t.name === tag.name);
             if (existing) {
@@ -86,7 +129,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
             return acc;
           }, [] as ExtractedTag[]);
 
-          setExtractedTags(aggregated);
+          setDbTags(aggregated);
         }
       } catch (err) {
         console.error('Error fetching conversation tags:', err);
@@ -97,7 +140,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
     };
 
     fetchConversationTags();
-  }, [conversationId, tags, user?.id]);
+  }, [conversationId, tags, user?.id, messages.length]);
 
   const getCategoryColor = (category: ExtractedTag['category']) => {
     const colors = {
@@ -107,6 +150,8 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       emotions: 'from-pink-500 to-pink-600',
       activities: 'from-orange-500 to-orange-600',
       memories: 'from-cyan-500 to-cyan-600',
+      work: 'from-slate-500 to-slate-600',
+      travel: 'from-teal-500 to-teal-600',
     };
     return colors[category] || 'from-gray-500 to-gray-600';
   };
@@ -116,13 +161,17 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       family: User,
       people: User,
       places: MapPin,
-      emotions: TrendingUp,
+      emotions: Heart,
       activities: Calendar,
       memories: Tag,
+      work: Briefcase,
+      travel: Plane,
     };
     const Icon = icons[category] || Tag;
     return <Icon className="w-3 h-3" />;
   };
+
+  const isLiveExtracting = messages.length > 0;
 
   return (
     <div className="space-y-4 h-full flex flex-col">
@@ -132,7 +181,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
           Conversation Insights
         </h2>
         <p className="font-manrope text-xs lg:text-sm text-muted-foreground mt-1">
-          Tags extracted from your conversation
+          {isLiveExtracting ? 'Extracting insights in real-time...' : 'Tags extracted from your conversation'}
         </p>
       </div>
 
@@ -141,9 +190,9 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-manrope text-xs lg:text-sm font-medium text-foreground">🏷️ Tags Extracted</h4>
-            {isExtracting && (
+            {(isExtracting || isLiveExtracting) && (
               <span className="font-manrope text-xs text-muted-foreground animate-pulse">
-                Analyzing...
+                {isLiveExtracting ? 'Live' : 'Analyzing...'}
               </span>
             )}
           </div>
@@ -163,7 +212,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
             <div className="space-y-2">
               {extractedTags.map((tag, index) => (
                 <button
-                  key={index}
+                  key={`${tag.name}-${index}`}
                   className={`w-full group hover:scale-[1.02] transition-all duration-200`}
                 >
                   <div
