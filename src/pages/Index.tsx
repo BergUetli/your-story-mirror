@@ -98,7 +98,10 @@ const Index = () => {
   // Voice recording state
   const [recordingSessionId, setRecordingSessionId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('enhanced'); // Use enhanced mode to capture both user and agent voice
+  // CRITICAL FIX: Use standard mode - enhanced mode's createMediaElementSource() hijacks 
+// ElevenLabs audio elements and causes disconnections at ~2 seconds.
+// The enhanced mode's DOM MutationObserver and audio capture interfere with WebRTC.
+const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('standard');
   
   // View mode state (voice agent vs particle face)
   const [viewMode, setViewMode] = useState<'voice' | 'particle'>('voice');
