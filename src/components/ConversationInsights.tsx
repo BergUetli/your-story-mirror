@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,11 +35,46 @@ interface ConversationInsightsProps {
   messages?: ConversationMessage[];
 }
 
+// Extract tags from text - runs independently, never blocks caller
+const extractTagsFromMessages = (messages: ConversationMessage[]): ExtractedTag[] => {
+  if (messages.length === 0) return [];
+
+  const tagCounts: Record<string, { category: ExtractedTag['category']; count: number }> = {};
+  const allText = messages.map(m => m.text.toLowerCase()).join(' ');
+
+  Object.entries(CATEGORY_KEYWORDS).forEach(([category, keywords]) => {
+    keywords.forEach(keyword => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      const matches = allText.match(regex);
+      if (matches && matches.length > 0) {
+        const tagName = keyword.charAt(0).toUpperCase() + keyword.slice(1);
+        if (tagCounts[tagName]) {
+          tagCounts[tagName].count += matches.length;
+        } else {
+          tagCounts[tagName] = {
+            category: category as ExtractedTag['category'],
+            count: matches.length
+          };
+        }
+      }
+    });
+  });
+
+  return Object.entries(tagCounts)
+    .map(([name, data]) => ({
+      name,
+      category: data.category,
+      count: data.count
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+};
+
 /**
  * ConversationInsights Component
  * 
- * Displays color-coded tags extracted from conversations in real-time
- * Shows frequency counts and allows filtering of transcript
+ * Displays color-coded tags extracted from conversations in real-time.
+ * IMPORTANT: Uses debounced async processing to NEVER block the voice agent.
  */
 export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   conversationId,
@@ -48,49 +83,55 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
 }) => {
   const { user } = useAuth();
   const [dbTags, setDbTags] = useState<ExtractedTag[]>(tags);
+  const [extractedTags, setExtractedTags] = useState<ExtractedTag[]>([]);
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refs for debouncing - ensures extraction never blocks voice agent
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProcessedLengthRef = useRef(0);
 
-  // Extract tags from messages in real-time
-  const extractedTags = useMemo(() => {
-    if (messages.length === 0) return dbTags;
+  // Debounced async extraction - runs independently of voice agent
+  useEffect(() => {
+    // Only process if we have new messages
+    if (messages.length === 0 || messages.length === lastProcessedLengthRef.current) {
+      return;
+    }
 
-    const tagCounts: Record<string, { category: ExtractedTag['category']; count: number }> = {};
+    // Clear any pending extraction
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    // Combine all message text
-    const allText = messages.map(m => m.text.toLowerCase()).join(' ');
-
-    // Extract keywords for each category
-    Object.entries(CATEGORY_KEYWORDS).forEach(([category, keywords]) => {
-      keywords.forEach(keyword => {
-        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-        const matches = allText.match(regex);
-        if (matches && matches.length > 0) {
-          const tagName = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-          if (tagCounts[tagName]) {
-            tagCounts[tagName].count += matches.length;
-          } else {
-            tagCounts[tagName] = {
-              category: category as ExtractedTag['category'],
-              count: matches.length
-            };
-          }
+    // Schedule extraction with debounce - never blocks the main thread
+    debounceTimerRef.current = setTimeout(() => {
+      // Use requestIdleCallback if available, otherwise setTimeout
+      const processExtraction = () => {
+        const extracted = extractTagsFromMessages(messages);
+        lastProcessedLengthRef.current = messages.length;
+        
+        if (extracted.length > 0) {
+          setExtractedTags(extracted);
         }
-      });
-    });
+      };
 
-    // Convert to array and sort by count
-    const extracted: ExtractedTag[] = Object.entries(tagCounts)
-      .map(([name, data]) => ({
-        name,
-        category: data.category,
-        count: data.count
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Top 10 tags
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(processExtraction, { timeout: 2000 });
+      } else {
+        setTimeout(processExtraction, 0);
+      }
+    }, 500); // 500ms debounce
 
-    return extracted.length > 0 ? extracted : dbTags;
-  }, [messages, dbTags]);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [messages]);
+
+  // Determine which tags to display
+  const displayTags = extractedTags.length > 0 ? extractedTags : dbTags;
+  const isLiveExtracting = messages.length > 0;
 
   // Fetch tags from voice_recordings table (fallback when no live messages)
   useEffect(() => {
@@ -171,8 +212,6 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
     return <Icon className="w-3 h-3" />;
   };
 
-  const isLiveExtracting = messages.length > 0;
-
   return (
     <div className="space-y-4 h-full flex flex-col">
       {/* Header */}
@@ -202,7 +241,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="font-manrope text-xs lg:text-sm">{error}</p>
             </div>
-          ) : extractedTags.length === 0 && !isExtracting ? (
+          ) : displayTags.length === 0 && !isExtracting ? (
             <div className="text-center py-8 text-muted-foreground">
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="font-manrope text-xs lg:text-sm">No tags extracted yet</p>
@@ -210,7 +249,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
             </div>
           ) : (
             <div className="space-y-2">
-              {extractedTags.map((tag, index) => (
+              {displayTags.map((tag, index) => (
                 <button
                   key={`${tag.name}-${index}`}
                   className={`w-full group hover:scale-[1.02] transition-all duration-200`}
@@ -240,7 +279,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
             </div>
           )}
 
-          {extractedTags.length > 0 && (
+          {displayTags.length > 0 && (
             <Button
               variant="outline"
               size="sm"
