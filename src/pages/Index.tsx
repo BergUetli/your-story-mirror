@@ -16,6 +16,7 @@ import { voiceRecordingService, testGuestRecording, testAuthenticatedRecording, 
 import { conversationRecordingService } from '@/services/conversationRecording';
 import { enhancedConversationRecordingService } from '@/services/enhancedConversationRecording';
 import { soundEffects } from '@/services/soundEffects';
+import { conversationInsightsService } from '@/lib/conversationInsightsService';
 import { FirstConversationDialog } from '@/components/FirstConversationDialog';
 import { userProfileService } from '@/services/userProfileService';
 import { configurationService } from '@/services/configurationService';
@@ -721,6 +722,9 @@ const Index = () => {
     // Generate conversation starters based on user's memory history
     setTimeout(() => generateIntelligentSuggestions(), 1000);
     
+    // Start conversation insights tracking (completely decoupled from React render cycle)
+    conversationInsightsService.startConversation();
+    
     // Do not reset retryCountRef here; only reset after a stable connection duration
     // retryCountRef will be reset in onDisconnect if the session lasted long enough
     toast({ 
@@ -754,6 +758,9 @@ const Index = () => {
       });
       return;
     }
+    
+    // Stop conversation insights tracking (completely decoupled from React render cycle)
+    conversationInsightsService.endConversation();
     
     // Stop voice recording if active
     if (isRecording && recordingSessionId) {
@@ -2076,6 +2083,12 @@ Keep responses brief and conversational. Make memory and voice interaction feel 
           transcriptText = msg.transcript;
           speaker = 'user';
           console.log('📝 User transcript captured:', transcriptText);
+        }
+        
+        // Add to conversation insights service (completely decoupled - won't cause re-renders)
+        // This runs asynchronously with debouncing and requestIdleCallback
+        if (transcriptText && speaker) {
+          conversationInsightsService.addMessage(speaker, transcriptText);
         }
         
         // Add to conversation recording transcript if we have valid content

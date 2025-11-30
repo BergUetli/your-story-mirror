@@ -5,183 +5,111 @@ import { Button } from '@/components/ui/button';
 import { Tag, TrendingUp, Calendar, MapPin, User, Heart, Briefcase, Home, Plane } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface ExtractedTag {
-  name: string;
-  category: 'people' | 'places' | 'emotions' | 'activities' | 'family' | 'memories' | 'work' | 'travel';
-  count: number;
-}
-
-interface ConversationMessage {
-  role: string;
-  text: string;
-}
-
-// Keywords for real-time extraction
-const CATEGORY_KEYWORDS: Record<ExtractedTag['category'], string[]> = {
-  family: ['mom', 'dad', 'mother', 'father', 'sister', 'brother', 'grandma', 'grandpa', 'grandmother', 'grandfather', 'aunt', 'uncle', 'cousin', 'family', 'parent', 'child', 'son', 'daughter', 'wife', 'husband', 'spouse'],
-  people: ['friend', 'colleague', 'neighbor', 'boss', 'teacher', 'doctor', 'mentor', 'partner'],
-  places: ['home', 'house', 'school', 'university', 'college', 'office', 'hospital', 'park', 'beach', 'mountain', 'city', 'country', 'town', 'village', 'restaurant', 'cafe'],
-  emotions: ['happy', 'sad', 'angry', 'excited', 'nervous', 'anxious', 'proud', 'grateful', 'love', 'joy', 'fear', 'hope', 'worried', 'peaceful', 'content', 'frustrated', 'surprised'],
-  activities: ['birthday', 'wedding', 'graduation', 'holiday', 'vacation', 'celebration', 'party', 'dinner', 'lunch', 'breakfast', 'meeting', 'event', 'ceremony'],
-  memories: ['remember', 'childhood', 'growing up', 'years ago', 'back then', 'memory', 'memories', 'experience', 'story', 'moment'],
-  work: ['job', 'career', 'work', 'project', 'business', 'company', 'promotion', 'interview', 'meeting', 'presentation'],
-  travel: ['trip', 'travel', 'vacation', 'flight', 'journey', 'adventure', 'explore', 'visit', 'tour']
-};
+import {
+  conversationInsightsService,
+  INSIGHTS_EVENTS,
+  ExtractedTag,
+  InsightsStatus
+} from '@/lib/conversationInsightsService';
 
 interface ConversationInsightsProps {
   conversationId?: string;
   tags?: ExtractedTag[];
-  messages?: ConversationMessage[];
 }
-
-// Extract tags from text - runs independently, never blocks caller
-const extractTagsFromMessages = (messages: ConversationMessage[]): ExtractedTag[] => {
-  if (messages.length === 0) return [];
-
-  const tagCounts: Record<string, { category: ExtractedTag['category']; count: number }> = {};
-  const allText = messages.map(m => m.text.toLowerCase()).join(' ');
-
-  Object.entries(CATEGORY_KEYWORDS).forEach(([category, keywords]) => {
-    keywords.forEach(keyword => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
-      const matches = allText.match(regex);
-      if (matches && matches.length > 0) {
-        const tagName = keyword.charAt(0).toUpperCase() + keyword.slice(1);
-        if (tagCounts[tagName]) {
-          tagCounts[tagName].count += matches.length;
-        } else {
-          tagCounts[tagName] = {
-            category: category as ExtractedTag['category'],
-            count: matches.length
-          };
-        }
-      }
-    });
-  });
-
-  return Object.entries(tagCounts)
-    .map(([name, data]) => ({
-      name,
-      category: data.category,
-      count: data.count
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
-};
 
 /**
  * ConversationInsights Component
  * 
  * Displays color-coded tags extracted from conversations in real-time.
- * IMPORTANT: Uses debounced async processing to NEVER block the voice agent.
+ * 
+ * ARCHITECTURE: Uses an event-based system completely decoupled from React's render cycle.
+ * The conversationInsightsService handles all message processing independently,
+ * and this component only subscribes to update events.
+ * 
+ * This design ensures that:
+ * 1. Voice agent message handlers don't trigger React re-renders
+ * 2. Tag extraction runs in browser idle time (requestIdleCallback)
+ * 3. UI updates are batched and debounced (2+ seconds)
  */
 export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   conversationId,
-  tags = [],
-  messages = []
+  tags = []
 }) => {
   const { user } = useAuth();
   const [dbTags, setDbTags] = useState<ExtractedTag[]>(tags);
-  const [extractedTags, setExtractedTags] = useState<ExtractedTag[]>([]);
-  const [isExtracting, setIsExtracting] = useState(false);
+  const [liveTags, setLiveTags] = useState<ExtractedTag[]>([]);
+  const [status, setStatus] = useState<InsightsStatus>('idle');
+  const [isLive, setIsLive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Refs for debouncing and preventing duplicate fetches
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const lastProcessedLengthRef = useRef(0);
-  const isFetchingRef = useRef(false);
-  const messagesRef = useRef(messages);
-  
-  // Keep messages ref updated without triggering effects
+  // Ref to track if we've fetched from DB
+  const hasFetchedRef = useRef(false);
+
+  // Subscribe to insights service events
   useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  // Debounced async extraction - completely decoupled from voice agent
-  // Uses refs to avoid triggering on every message update
-  useEffect(() => {
-    // Only process if we have messages
-    if (messages.length === 0) {
-      lastProcessedLengthRef.current = 0;
-      return;
-    }
-    
-    // Skip if we've already processed this length
-    if (messages.length === lastProcessedLengthRef.current) {
-      return;
-    }
-
-    // Clear any pending extraction
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    // Schedule extraction with longer debounce to reduce frequency
-    debounceTimerRef.current = setTimeout(() => {
-      // Double-check messages haven't been cleared
-      if (messagesRef.current.length === 0) return;
-      
-      // Use requestIdleCallback if available for zero impact on main thread
-      const processExtraction = () => {
-        try {
-          const currentMessages = messagesRef.current;
-          if (currentMessages.length === 0) return;
-          
-          const extracted = extractTagsFromMessages(currentMessages);
-          lastProcessedLengthRef.current = currentMessages.length;
-          
-          if (extracted.length > 0) {
-            setExtractedTags(extracted);
+    // Subscribe to tag updates
+    const unsubTags = conversationInsightsService.constructor.prototype.constructor.subscribe
+      ? (conversationInsightsService.constructor as any).subscribe(
+          INSIGHTS_EVENTS.TAGS_UPDATED,
+          (detail: { tags: ExtractedTag[] }) => {
+            setLiveTags(detail.tags);
           }
-        } catch (err) {
-          console.warn('Tag extraction error (non-blocking):', err);
-        }
-      };
+        )
+      : null;
 
-      if ('requestIdleCallback' in window) {
-        (window as any).requestIdleCallback(processExtraction, { timeout: 3000 });
-      } else {
-        setTimeout(processExtraction, 0);
-      }
-    }, 1000); // 1000ms debounce - longer to reduce frequency
-
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+    // Manual subscription since static method
+    const handleTagsUpdated = (event: Event) => {
+      const { tags } = (event as CustomEvent).detail;
+      setLiveTags(tags);
+    };
+    
+    const handleStatusChanged = (event: Event) => {
+      const { status } = (event as CustomEvent).detail;
+      setStatus(status);
+    };
+    
+    const handleConversationStarted = () => {
+      setIsLive(true);
+      setLiveTags([]);
+    };
+    
+    const handleConversationEnded = (event: Event) => {
+      setIsLive(false);
+      const { tags } = (event as CustomEvent).detail;
+      if (tags?.length > 0) {
+        setLiveTags(tags);
       }
     };
-  }, [messages.length]); // Only depend on length, not messages array
 
-  // Determine which tags to display
-  const displayTags = extractedTags.length > 0 ? extractedTags : dbTags;
-  const isLiveExtracting = messages.length > 0;
+    // Add event listeners
+    window.addEventListener(INSIGHTS_EVENTS.TAGS_UPDATED, handleTagsUpdated);
+    window.addEventListener(INSIGHTS_EVENTS.STATUS_CHANGED, handleStatusChanged);
+    window.addEventListener(INSIGHTS_EVENTS.CONVERSATION_STARTED, handleConversationStarted);
+    window.addEventListener(INSIGHTS_EVENTS.CONVERSATION_ENDED, handleConversationEnded);
 
-  // Fetch tags from voice_recordings table (fallback when no live conversation)
-  // IMPORTANT: Only fetch when there's NO active conversation to avoid interfering with voice agent
-  const hasFetchedRef = useRef(false);
-  
+    // Initialize state from service
+    setLiveTags(conversationInsightsService.getTags());
+    setStatus(conversationInsightsService.getStatus());
+
+    return () => {
+      if (unsubTags) unsubTags();
+      window.removeEventListener(INSIGHTS_EVENTS.TAGS_UPDATED, handleTagsUpdated);
+      window.removeEventListener(INSIGHTS_EVENTS.STATUS_CHANGED, handleStatusChanged);
+      window.removeEventListener(INSIGHTS_EVENTS.CONVERSATION_STARTED, handleConversationStarted);
+      window.removeEventListener(INSIGHTS_EVENTS.CONVERSATION_ENDED, handleConversationEnded);
+    };
+  }, []);
+
+  // Fetch tags from database when NOT in live conversation
   useEffect(() => {
-    // CRITICAL: Never fetch during an active conversation - prevents interference with voice agent
-    if (conversationId) {
-      return;
-    }
+    // Skip if in live conversation or already fetched
+    if (isLive || hasFetchedRef.current) return;
     
-    // Only fetch once per component lifetime when not in conversation
-    if (hasFetchedRef.current || isFetchingRef.current) {
-      return;
-    }
-    
-    // Skip if no user or we already have tags
-    if (!user?.id || tags.length > 0 || dbTags.length > 0) {
-      return;
-    }
-    
+    // Skip if no user or already have tags
+    if (!user?.id || tags.length > 0 || dbTags.length > 0) return;
+
     const fetchConversationTags = async () => {
       hasFetchedRef.current = true;
-      isFetchingRef.current = true;
-      setIsExtracting(true);
-      setError(null);
       
       try {
         const { data: recordings, error: fetchError } = await supabase
@@ -217,14 +145,14 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
       } catch (err) {
         console.error('Error fetching conversation tags:', err);
         setError('Failed to load conversation insights');
-      } finally {
-        setIsExtracting(false);
-        isFetchingRef.current = false;
       }
     };
 
     fetchConversationTags();
-  }, [conversationId, tags, user?.id, dbTags.length]);
+  }, [isLive, tags, user?.id, dbTags.length]);
+
+  // Determine which tags to display
+  const displayTags = liveTags.length > 0 ? liveTags : dbTags;
 
   const getCategoryColor = (category: ExtractedTag['category']) => {
     const colors = {
@@ -255,6 +183,20 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
     return <Icon className="w-3 h-3" />;
   };
 
+  const getStatusText = () => {
+    if (isLive) {
+      switch (status) {
+        case 'processing':
+          return 'Analyzing...';
+        case 'listening':
+          return 'Live';
+        default:
+          return 'Live';
+      }
+    }
+    return 'From last conversation';
+  };
+
   return (
     <div className="space-y-4 h-full flex flex-col">
       {/* Header */}
@@ -263,7 +205,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
           Conversation Insights
         </h2>
         <p className="font-manrope text-xs lg:text-sm text-muted-foreground mt-1">
-          {isLiveExtracting ? 'Extracting insights in real-time...' : 'Tags extracted from your conversation'}
+          {isLive ? 'Extracting insights in real-time...' : 'Tags extracted from your conversation'}
         </p>
       </div>
 
@@ -272,11 +214,9 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-manrope text-xs lg:text-sm font-medium text-foreground">🏷️ Tags Extracted</h4>
-            {(isExtracting || isLiveExtracting) && (
-              <span className="font-manrope text-xs text-muted-foreground animate-pulse">
-                {isLiveExtracting ? 'Live' : 'Analyzing...'}
-              </span>
-            )}
+            <span className={`font-manrope text-xs ${isLive ? 'text-green-600 animate-pulse' : 'text-muted-foreground'}`}>
+              {getStatusText()}
+            </span>
           </div>
 
           {error ? (
@@ -284,7 +224,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="font-manrope text-xs lg:text-sm">{error}</p>
             </div>
-          ) : displayTags.length === 0 && !isExtracting ? (
+          ) : displayTags.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Tag className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="font-manrope text-xs lg:text-sm">No tags extracted yet</p>
