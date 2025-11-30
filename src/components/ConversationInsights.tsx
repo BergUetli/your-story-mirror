@@ -157,16 +157,28 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
   const displayTags = extractedTags.length > 0 ? extractedTags : dbTags;
   const isLiveExtracting = messages.length > 0;
 
-  // Fetch tags from voice_recordings table (fallback when no live messages)
-  // Only runs once on mount, not on every message change
+  // Fetch tags from voice_recordings table (fallback when no live conversation)
+  // IMPORTANT: Only fetch when there's NO active conversation to avoid interfering with voice agent
+  const hasFetchedRef = useRef(false);
+  
   useEffect(() => {
+    // CRITICAL: Never fetch during an active conversation - prevents interference with voice agent
+    if (conversationId) {
+      return;
+    }
+    
+    // Only fetch once per component lifetime when not in conversation
+    if (hasFetchedRef.current || isFetchingRef.current) {
+      return;
+    }
+    
+    // Skip if no user or we already have tags
+    if (!user?.id || tags.length > 0 || dbTags.length > 0) {
+      return;
+    }
+    
     const fetchConversationTags = async () => {
-      // Skip if already fetching, no user, or we have live messages/tags
-      if (isFetchingRef.current || !user?.id || tags.length > 0) return;
-      
-      // Check current messages via ref (avoids stale closure)
-      if (messagesRef.current.length > 0) return;
-      
+      hasFetchedRef.current = true;
       isFetchingRef.current = true;
       setIsExtracting(true);
       setError(null);
@@ -212,7 +224,7 @@ export const ConversationInsights: React.FC<ConversationInsightsProps> = ({
     };
 
     fetchConversationTags();
-  }, [conversationId, tags, user?.id]); // Removed messages.length dependency
+  }, [conversationId, tags, user?.id, dbTags.length]);
 
   const getCategoryColor = (category: ExtractedTag['category']) => {
     const colors = {
