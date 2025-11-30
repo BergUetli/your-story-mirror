@@ -742,6 +742,23 @@ const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('sta
     const elapsed = Date.now() - lastConnectedAtRef.current;
     const timestamp = new Date().toISOString();
     
+    // CRITICAL DIAGNOSTIC: Log disconnect with stack trace to identify cause
+    console.error(`🔴 DISCONNECT DIAGNOSTIC @ ${timestamp}`, {
+      sessionDuration: `${elapsed}ms`,
+      retryCount: retryCountRef.current,
+      wasRecording: isRecording,
+      recordingMode,
+      // Capture what might have caused the disconnect
+      stackTrace: new Error('Disconnect stack trace').stack
+    });
+    
+    // Also log to window for easy access
+    (window as any).__lastDisconnect = {
+      timestamp,
+      elapsed,
+      stack: new Error('Disconnect stack trace').stack
+    };
+    
     console.log(`🔌 CONNECTION HANDOFF: 👋 DISCONNECTED @ ${timestamp}`, {
       status: 'ElevenLabs voice agent disconnected',
       sessionDuration: `${elapsed}ms`,
@@ -819,6 +836,23 @@ const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('sta
   }, [toast, isRecording, recordingSessionId, isEndingConversation, isConnecting]);
 
   const onErrorCb = useCallback((error: unknown) => {
+    // CRITICAL DIAGNOSTIC: Log all errors with details
+    console.error('🔴 ELEVENLABS ERROR DIAGNOSTIC:', {
+      error,
+      errorType: typeof error,
+      errorString: String(error),
+      errorJSON: JSON.stringify(error, null, 2),
+      timestamp: new Date().toISOString(),
+      stack: new Error('Error callback stack').stack
+    });
+    
+    // Store for debugging
+    (window as any).__lastElevenLabsError = {
+      error,
+      timestamp: new Date().toISOString(),
+      stack: new Error('Error callback stack').stack
+    };
+    
     toast({
       title: 'Connection failed',
       description: typeof error === 'string' ? error : 'Please try again',
