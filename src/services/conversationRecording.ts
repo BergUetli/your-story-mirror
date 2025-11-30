@@ -143,17 +143,17 @@ export class ConversationRecordingService {
 
       // Microphone already routed through compressor/gain to mixer above
 
-      // ENHANCED: Register for ElevenLabs audio stream notifications (primary method)
-      // This captures audio directly from voiceService when Solin speaks - NO permission prompt needed
-      this.registerElevenLabsAudioCapture();
+      // CRITICAL FIX: DISABLED - These functions use createMediaElementSource() which
+      // hijacks ElevenLabs audio elements and breaks WebRTC connection causing disconnects.
+      // The ElevenLabs SDK needs full control of its audio elements.
+      // 
+      // TODO: Find alternative method to capture AI voice that doesn't interfere with SDK
+      // For now, we only record the user's microphone.
+      //
+      // this.registerElevenLabsAudioCapture();
+      // this.attemptAudioElementCapture();
       
-      // NOTE: We intentionally DO NOT call setupSystemAudioCapture() here
-      // That method uses getDisplayMedia which prompts user for screen/tab sharing permission
-      // Instead, we rely on captureElevenLabsAudioElement which uses createMediaElementSource
-      // to capture audio directly without any permission prompt
-      
-      // Also try to hook into any existing audio elements on the page (fallback method)
-      this.attemptAudioElementCapture();
+      console.log('📝 Recording mode: microphone-only (AI voice capture disabled to prevent disconnects)');
 
       // Set up recording output
       const destination = audioContext.createMediaStreamDestination();
