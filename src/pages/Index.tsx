@@ -722,8 +722,8 @@ const [recordingMode, setRecordingMode] = useState<'standard' | 'enhanced'>('sta
       // Continue without recording - not critical
     }
     
-    // Generate conversation starters based on user's memory history
-    setTimeout(() => generateIntelligentSuggestions(), 1000);
+    // NOTE: Do NOT generate intelligent suggestions during active conversation
+    // DB fetches during voice sessions cause WebSocket disconnects
     
     // Start conversation insights tracking (completely decoupled from React render cycle)
     conversationInsightsService.startConversation();
