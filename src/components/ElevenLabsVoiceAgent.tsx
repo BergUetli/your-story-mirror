@@ -42,9 +42,10 @@ export function ElevenLabsVoiceAgent({ agentId, onSpeakingChange, onAudioStreamA
         });
         onAudioStreamAvailable?.(audioStream);
       } else {
-        console.log('⚠️ No direct audio stream found, will use fallback audio detection methods');
-        // Trigger enhanced audio element detection
-        setTimeout(() => detectElevenLabsAudioElements(), 1000);
+        // CRITICAL FIX: Do NOT call detectElevenLabsAudioElements() here!
+        // createMediaElementSource() hijacks ElevenLabs audio elements and breaks WebRTC.
+        // The SDK needs full control of its audio elements.
+        console.log('⚠️ No direct audio stream found - audio capture disabled to prevent disconnects');
       }
       
       toast({
